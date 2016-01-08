@@ -1,0 +1,31 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Project:     Pic2Sym
+;;  File:        defaultCfg.txt
+;;
+;;  Author:      Florin Tulba
+;;  Created on:  2015-12-20
+;;  
+;;  Copyright (c) 2016 Florin Tulba
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Height & width in pixels of each character
+; Valid range: 7 .. 50
+FONT_HEIGHT		10
+
+; Maximum number of characters on each row of the resulted image
+; Valid range 3 .. 1024
+RESULT_WIDTH	500
+
+; Maximum number of characters on each column of the resulted image
+; Valid range 3 .. 768
+RESULT_HEIGHT	300
+
+; Threshold <x> below which to use Blank (Space) instead of a barely visible character.
+; If a certain region gets approximated by a poorly visible character,
+; that is when its foreground and background colors are less than <x> units apart,
+; then it makes sense to directly use the Blank character using as its background
+; the mean color of the represented region.
+; For 3-channels images (RGB) the sum of the 3 absolute differences between fg&bg
+; needs to be less than 3*<x> to use the Blank replacement.
+; Valid range: 0 .. 50
+THRESHOLD_FOR_BLANK	4

@@ -1,0 +1,32 @@
+﻿extensions: .c .cpp .h .hpp .cu .cuh
+/**********************************************************
+ Project:     %Project%
+ File:        %FileName%
+
+ Author:      Florin Tulba
+ Created on:  %CreationYear%-%CreationMonth%-%CreationDay%
+ 
+ Copyright (c) 2016 Florin Tulba
+ **********************************************************/
+
+extensions:  .xml .htm .html
+<!--
+	Project:     %Project%
+	File:        %FileName%
+	
+	Author:      Florin Tulba
+	Created on:  %CreationYear%-%CreationMonth%-%CreationDay%
+	
+	Copyright (c) 2016 Florin Tulba
+-->
+
+extensions: .txt
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Project:     %Project%
+;;  File:        %FileName%
+;;
+;;  Author:      Florin Tulba
+;;  Created on:  %CreationYear%-%CreationMonth%-%CreationDay%
+;;  
+;;  Copyright (c) 2016 Florin Tulba
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
