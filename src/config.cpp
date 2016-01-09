@@ -11,11 +11,9 @@
 #include "config.h"
 #include "misc.h"
 
-#include <fstream>
 #include <sstream>
 #include <set>
 
-#include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
@@ -24,21 +22,26 @@ using namespace boost::filesystem;
 using namespace boost::property_tree;
 
 Config::Config(const string &appLaunchPath) {
-	boost::filesystem::path executablePath(absolute(appLaunchPath));
-	current_path(executablePath.parent_path()); // Set as working directory the one where the currently launched exe resides
-	curDir = current_path().string();
-	ifstream ifs("res/defaultCfg.txt");
-	if(!ifs) {
-		cerr<<"There's no defaultCfg.txt"<<endl;
+	boost::filesystem::path origCfgPath,
+		executablePath(absolute(appLaunchPath));
+	cfgPath = origCfgPath = workDir =
+		executablePath.remove_filename();
+	cfgPath /= "cfg.txt";
+
+	if(!exists(origCfgPath.append("res").append("defaultCfg.txt"))) {
+		cerr<<"There's no "<<origCfgPath<<endl;
 		throw runtime_error("There's no defaultCfg.txt");
 	}
-	ofstream ofs("cfg.txt");
-	ofs<<ifs.rdbuf();
-	ofs.close();
-	ifs.close();
+
+	// Keeping a local copy (cfg.txt) of the original configuration file (res/defaultCfg.txt)
+	copy_file(origCfgPath, cfgPath, copy_option::overwrite_if_exists);
 
 	if(!parseCfg())
 		throw invalid_argument("Invalid Default Config!");
+}
+
+Config::~Config() {
+	remove(cfgPath); // Deletes the local configuration file cfg.txt
 }
 
 bool Config::parseCfg() {
@@ -47,7 +50,7 @@ bool Config::parseCfg() {
 	string prop;
 	try {
 		ptree theCfg;
-		read_info("cfg.txt", theCfg);
+		read_info(cfgPath.string(), theCfg);
 
 		newFontSz			= theCfg.get<unsigned>(prop = "FONT_HEIGHT");
 		newOutW				= theCfg.get<unsigned>(prop = "RESULT_WIDTH");
@@ -66,7 +69,7 @@ bool Config::parseCfg() {
 		}
 
 	} catch(info_parser_error&) {
-		cerr<<"Couldn't read cfg.txt"<<endl;
+		cerr<<"Couldn't read "<<cfgPath<<endl;
 	} catch(ptree_bad_path&) {
 		cerr<<"Property '"<<prop<<"' is missing from configuration file!"<<endl;
 	} catch(ptree_bad_data&) {
@@ -77,8 +80,6 @@ bool Config::parseCfg() {
 }
 
 void Config::update() {
-	current_path(curDir);
-	ifstream ifs("cfg.txt");
 	ostringstream oss;
 	oss<<endl<<"Current configuration is:"<<endl<<endl
 		<<"FONT_HEIGHT = "<<fontSz<<endl
@@ -91,8 +92,10 @@ void Config::update() {
 		unsigned oldFontSz = fontSz, oldOutW = outW, oldOutH = outH,
 			oldThreshold4Blank = threshold4Blank;
 
+		oss.str(""); oss.clear(); oss<<"notepad.exe "<<cfgPath;
+		const string openCfgWithNotepad(oss.str());
 		for(;;) {
-			system("notepad.exe cfg.txt");
+			system(openCfgWithNotepad.c_str());
 			if(parseCfg())
 				break;
 			cerr<<"Problems within cfg.txt, please correct them!"<<endl;
