@@ -149,11 +149,9 @@ void Transformer::run() {
 		// Reporting progress
 		printf("%6.2f%%  ", r*100./h); // simpler to format percents with printf
 
-		Mat row(gray, Range(r, r+sz)),
-			rowResult(result, Range(r, r+sz));
 		for(unsigned c = 0U, w = (unsigned)gray.cols; c<w; c += sz) {
-			Mat patch(row, Range::all(), Range(c, c+sz)), patchDouble,
-				patchResult(rowResult, Range::all(), Range(c, c+sz));
+			Mat patch(gray, Range(r, r+sz), Range(c, c+sz)), patchDouble,
+				patchResult(result, Range(r, r+sz), Range(c, c+sz));
 			patch.convertTo(patchDouble, CV_64FC1);
 
 			unsigned long pSum = (unsigned long)sum(patch)[0],
@@ -219,11 +217,9 @@ void Transformer::run() {
 
 					diffFgBg += abs(miuFg - miuBg);
 
-					match.convertTo(matchDouble, CV_64FC1,
+					match.convertTo(ch, CV_8UC1,
 									(miuFg - miuBg) / 255.,
 									miuBg);
-					matchDouble.convertTo(ch, CV_8UC1);
-					dotP = dotP;
 				}
 
 				if(diffFgBg < 3*cfg.getBlankThreshold())
@@ -234,10 +230,9 @@ void Transformer::run() {
 				if(abs(best.params.miuFg - best.params.miuBg) < cfg.getBlankThreshold())
 					patchResult = mean(patch);
 				else {
-					match.convertTo(matchDouble, CV_64FC1,
+					match.convertTo(patchResult, CV_8UC1,
 									(best.params.miuFg - best.params.miuBg) / 255.,
 									best.params.miuBg);
-					matchDouble.convertTo(patchResult, CV_8UC1);
 				}
 			}
 			cout<<'.';
