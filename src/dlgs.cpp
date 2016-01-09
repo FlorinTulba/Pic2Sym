@@ -11,11 +11,13 @@
 #include "dlgs.h"
 #include "misc.h"
 
-#include <fstream>
 #include <map>
 #include <regex>
 
+#include <boost/filesystem.hpp>
+
 using namespace std;
+using namespace boost::filesystem;
 
 FileOpen::FileOpen() {
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -159,19 +161,23 @@ class FontFinder {
 
 	// Ensures the obtained font file name represents a valid path
 	static string refineFontFileName(const wstring &wCurFontFileName) {
-		string curFontFileName(BOUNDS(wCurFontFileName));
-		if(curFontFileName.find('\\') == string::npos) {
+		path curFontFile(string(BOUNDS(wCurFontFileName)));
+		if(!curFontFile.has_parent_path()) {
 			// The fonts are typically installed within c:\Windows\Fonts
 #pragma warning(disable:4996) // getenv is safe (unless SystemRoot is really long)
-			static const string normalFolder = string(getenv("SystemRoot")) + "\\Fonts\\";
+			static const path typicalFontsDir =
+				path(string(getenv("SystemRoot"))).append("Fonts");
 #pragma warning(default:4996)
-			curFontFileName = normalFolder + curFontFileName; // If the curFontFileName isn't a path already, add normal folder
+			path temp(typicalFontsDir);
+			temp /= curFontFile;
+			// If the curFontFile isn't a path already, prefix it with typicalFontsDir
+			curFontFile = move(temp);
 		}
-		if(!ifstream(curFontFileName)) {
-			cerr<<"There's no such font file: "<<curFontFileName<<endl;
+		if(!exists(curFontFile)) {
+			cerr<<"There's no such font file: "<<curFontFile<<endl;
 			throw domain_error("Wrong assumption for locating the font files!");
 		}
-		return curFontFileName;
+		return curFontFile.string();
 	}
 
 	// When ambiguous results, lets the user select the correct one.

@@ -12,7 +12,6 @@
 
 #include <iostream>
 
-#include <boost/filesystem.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 using namespace std;
@@ -20,7 +19,8 @@ using namespace boost::filesystem;
 using namespace cv;
 
 bool Img::reset(const string &picName) {
-	if(imgPath.compare(picName) == 0)
+	path newPic(absolute(picName));
+	if(imgPath.compare(newPic) == 0)
 		return true; // image already in use
 
 	Mat source_ = imread(picName, ImreadModes::IMREAD_UNCHANGED);
@@ -30,11 +30,11 @@ bool Img::reset(const string &picName) {
 	}
 
 	source = source_;
-	imgPath = picName;
-	imgName = path((absolute(picName))).stem().string();
+	imgPath = move(newPic);
+	imgName = imgPath.stem().string();
 
 	rgb = source.channels() > 1;
-	cout<<"Processing "<<picName<<" (";
+	cout<<"Processing "<<imgPath<<" (";
 	if(rgb)
 		cout<<"RGB";
 	else

@@ -15,14 +15,15 @@
 
 #include <string>
 
+#include <boost/filesystem.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 // Img provides necessary API for manipulating the images to transform
 class Img {
-	std::string imgPath;	// path of current image
-	std::string imgName;	// stem part of the image file name
-	cv::Mat source;			// the original image
-	bool rgb;				// color / grayscale
+	boost::filesystem::path imgPath;	// path of current image
+	std::string imgName;				// stem part of the image file name
+	cv::Mat source;						// the original image
+	bool rgb;							// color / grayscale
 
 public:
 	Img() {}
