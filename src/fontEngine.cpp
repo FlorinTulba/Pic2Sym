@@ -23,6 +23,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace boost::filesystem;
 
 namespace {
 #ifdef _DEBUG
@@ -517,7 +518,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 #undef CHARSET_ALTERATION
 
-void FontEngine::generateCharmapCharts() const {
+void FontEngine::generateCharmapCharts(const path& destdir) const {
 	if(dirty || chars.empty()) {
 		cerr<<"No charts can be generated! Please do all the configurations first!"<<endl;
 		return;
@@ -566,7 +567,8 @@ void FontEngine::generateCharmapCharts() const {
 		if(encoding.length() > 0)
 			oss<<'_'<<encoding;
 		oss<<'_'<<idx++<<".pgm";
-		ofstream out_gray(oss.str(), ios::binary);
+		path temp(destdir); temp /= oss.str();
+		ofstream out_gray(temp.c_str(), ios::binary);
 		out_gray << "P5 " << COLS << " " << ROWS << " 255\n";
 		out_gray.write((const char *)bm.buffer, dataSz);
 	}

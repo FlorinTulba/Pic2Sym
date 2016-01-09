@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/filesystem.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -29,7 +30,7 @@ Fields 'left' and 'top' indicate the position of the top-left corner within the 
 */
 struct PixMapChar {
 	unsigned long chCode = 0UL;			// character code
-	unsigned long cachedSum = 0UL;		// sum of the pixel values
+	unsigned long cachedSum = 0UL;		// sum of the pixel values (used to detect Blanks)
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'data' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square
 	unsigned char *data = nullptr;	// 256-shades of gray rectangle describing the character
@@ -91,7 +92,10 @@ public:
 	void selectEncoding();				// Setting a different charmap if available
 
 	void setFontSz(unsigned fontSz_);	// Sets the desired font height in pixels
-	void generateCharmapCharts() const;	// Generate several charts with the glyphs from current charmap
+
+	// Generate several charts with the glyphs from current charmap
+	void generateCharmapCharts(const boost::filesystem::path& destdir) const;
+	
 	const std::vector<PixMapChar>& charset() const; // get the charset
 	
 	const std::string& fontId() const;	// current font id

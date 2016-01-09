@@ -61,8 +61,8 @@ namespace {
 
 		fe.selectEncoding();
 		fe.setFontSz(cfg.getFontSz());
-
-		//fe.generateCharmapCharts();
+		
+		//fe.generateCharmapCharts(cfg.getWorkDir());
 	}
 
 	// Conversion PixMapChar -> Mat using font size <sz>
