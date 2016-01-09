@@ -23,7 +23,7 @@ bool Img::reset(const string &picName) {
 	if(imgPath.compare(picName) == 0)
 		return true; // image already in use
 
-	Mat source_ = imread(picName);
+	Mat source_ = imread(picName, ImreadModes::IMREAD_UNCHANGED);
 	if(source_.data == nullptr) {
 		cerr<<"Couldn't read image "<<picName<<endl;
 		return false;
