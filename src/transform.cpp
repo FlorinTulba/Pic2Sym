@@ -22,6 +22,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace boost::filesystem;
 
 namespace {
 	// Let the user pick a new image to process or continue to use the existing one
@@ -99,7 +100,12 @@ namespace {
 	}
 } // anonymous namespace
 
-Transformer::Transformer(Config &cfg_) : cfg(cfg_) {}
+Transformer::Transformer(Config &cfg_) : cfg(cfg_) {
+	// Ensure there is an Output folder
+	path outputFolder = cfg.getWorkDir();
+	if(!exists(outputFolder.append("Output")))
+	   create_directory(outputFolder);
+}
 
 void Transformer::reconfig() {
 	string initCharsetId = fe.fontId(); // remember initial charset
@@ -118,12 +124,19 @@ void Transformer::reconfig() {
 }
 
 void Transformer::run() {
-#ifdef _DEBUG
-	ofstream ofs("data.csv");
-	ofs<<"#ChosenScore,\tmiuFg,\tmiuBg,\tsdevFg,\tsdevBg"<<endl;
-#endif
 
 	selectImage(img);
+
+	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId()<<"."; // no extension yet
+	const string studiedCase = oss.str(); // id included in the result & trace file names
+
+#ifdef _DEBUG
+	path traceFile(cfg.getWorkDir());
+	traceFile.append("data_").concat(studiedCase).
+		replace_extension("csv"); // generating a CSV trace file
+	ofstream ofs(traceFile.c_str());
+	ofs<<"#ChosenScore,\t#miuFg,\t#miuBg,\t#sdevFg,\t#sdevBg"<<endl;
+#endif
 
 	auto itFeBegin = fe.charset().cbegin();
 	unsigned sz = cfg.getFontSz();
@@ -231,9 +244,12 @@ void Transformer::run() {
 		}
 		cout<<endl;
 	}
-	cout<<"100%"<<endl<<endl;
+	cout<<"100.00%"<<endl<<endl;
 
-	ostringstream oss;
-	oss<<img.name()<<'_'<<cfg.getFontSz()<<".bmp";
-	imwrite(oss.str(), result);
+	path resultFile(cfg.getWorkDir());
+	resultFile.append("Output").append(studiedCase).
+		replace_extension("bmp"); // generating a BMP result file
+	
+	cout<<"Writing result to "<<resultFile<<endl<<endl;
+	imwrite(resultFile.string(), result);
 }
