@@ -35,7 +35,7 @@ namespace {
 			readNewImg = !boolPrompt(oss.str());
 		}
 		if(readNewImg) {
-			cout<<"Please select a new image ..."<<endl;
+			cout<<endl<<"Please select a new image ..."<<endl;
 			while(fo.canceled() || fo.selection().empty() ||
 				  !img.reset(fo.selection()))
 				  fo.reset();
@@ -66,11 +66,11 @@ namespace {
 		//fe.generateCharmapCharts(cfg.getWorkDir());
 	}
 
-	// Conversion PixMapChar -> Mat using font size <sz>
-	Mat toMat(const PixMapChar &pmc, unsigned sz) {
-		Mat result((int)sz, (int)sz, CV_8UC1, Scalar(0U));
+	// Conversion PixMapChar -> Mat of type double with range [0..1] instead of [0..255]
+	Mat toMat(const PixMapChar &pmc, unsigned fontSz) {
+		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
 
-		int firstRow = (int)sz-(int)pmc.top-1;
+		int firstRow = (int)fontSz-(int)pmc.top-1;
 		Mat region(result,
 				   Range(firstRow, firstRow+(int)pmc.rows),
 				   Range((int)pmc.left, (int)(pmc.left+pmc.cols)));
@@ -78,13 +78,57 @@ namespace {
 		Mat pmcData((int)pmc.rows, (int)pmc.cols, CV_8UC1, (void*)pmc.data);
 		pmcData.copyTo(region);
 
+		static const double INV_255 = 1./255;
+		result.convertTo(result, CV_64FC1, INV_255); // convert to double
+
 		return result;
 	}
 	
 	// Holds mean and standard deviation (grayscale matching) for foreground/background pixels
 	struct MatchParams {
 		double miuFg, miuBg;
-		double sdevFg, sdevBg;
+		double aseFg, aseBg;
+
+		/*
+		Returns a small positive value for better correlations.
+		Good correlation is a subjective matter.
+
+		Several considered factors are mentioned below.
+		* = mandatory;  + = nice to have
+
+		A) Separately, each patch needs to:
+		* 1. minimize the difference between the selected foreground glyph
+		and the covered part from the original patch
+
+		* 2. minimize the difference between the remaining background around the selected glyph
+		and the corresponding part from the original patch
+
+		* 3. have enough contrast between foreground selected glyph & background
+
+		+ 4. have the color of the largest part (foreground / background)
+		as close as possible to the mean of the entire original patch.
+		Gain: Smoothness;		Drawback: Less Contrast(A3)
+
+		B) Together, the patches should also preserve region's gradients:
+		+ 5. Prefer glyphs that respect the gradient of their corresponding patch.
+		Gain: More natural;	Drawback: More computations
+
+		+ 6. Consider the gradient within a slightly extended patch
+		Gain: Smoothness;		Drawback: Complexity
+
+
+		Point A3 just maximizes the difference between the means of the fg & bg.
+		Points A1&2 minimizes the standard deviation (or a similar measure) on each region.
+
+		The remaining points might be addressed in a future version.
+		*/
+		double score() const {
+			register const double divider = abs(miuBg - miuFg) + 1e-3;
+			// return (aseFg * aseBg)/divider;
+			// return (aseFg * aseBg)/(divider*divider);
+			// return (aseFg + aseBg)/divider;
+			return (sqrt(aseFg) + sqrt(aseBg))/divider; // preferred one so far
+		}
 	};
 
 	// Holds the best grayscale match found at a given time
@@ -93,11 +137,6 @@ namespace {
 		unsigned charIdx = UINT_MAX; // no best yet
 		MatchParams params;
 	};
-
-	// Returns a small positive value for better correlations
-	double evalFit(const MatchParams &bm) {
-		return (bm.sdevFg + bm.sdevBg)/(abs(bm.miuBg - bm.miuFg) + 1e-3);
-	}
 } // anonymous namespace
 
 Transformer::Transformer(Config &cfg_) : cfg(cfg_) {
@@ -118,8 +157,10 @@ void Transformer::reconfig() {
 		charset.clear();
 		charset.reserve(fe.charset().size());
 
-		for(auto &pmc : fe.charset())
-			charset.emplace_back(toMat(pmc, sz));
+		for(auto &pmc : fe.charset()) {
+			Mat glyph = toMat(pmc, sz), negGlyph = 1. - glyph;
+			charset.emplace_back(glyph, negGlyph);
+		}
 	}
 }
 
@@ -127,62 +168,70 @@ void Transformer::run() {
 
 	selectImage(img);
 
-	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId()<<"."; // no extension yet
+	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId(); // no extension yet
 	const string studiedCase = oss.str(); // id included in the result & trace file names
 
 #ifdef _DEBUG
 	path traceFile(cfg.getWorkDir());
 	traceFile.append("data_").concat(studiedCase).
-		replace_extension("csv"); // generating a CSV trace file
+		concat(".csv"); // generating a CSV trace file
 	ofstream ofs(traceFile.c_str());
-	ofs<<"#ChosenScore,\t#miuFg,\t#miuBg,\t#sdevFg,\t#sdevBg"<<endl;
+	ofs<<"#ChosenScore,\t#miuFg,\t#miuBg,\t#aseFg,\t#aseBg"<<endl;
 #endif
 
 	auto itFeBegin = fe.charset().cbegin();
 	unsigned sz = cfg.getFontSz();
-	const unsigned long sz2 = (unsigned long)sz*sz,
-		sz2_255 = sz2*255UL; // is less than ULONG_MAX for fontSz <= 50
-	Mat temp, gray, resized = img.resized(cfg, &gray);
+	const double sz2 = (double)sz*sz;
+	Mat temp, gray;
+	Mat resized = img.resized(cfg, &gray);
 	Mat result(resized.rows, resized.cols, resized.type());
+	gray.convertTo(gray, CV_64FC1);
 
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
 		// Reporting progress
-		printf("%6.2f%%  ", r*100./h); // simpler to format percents with printf
+		printf("%6.2f%%\r", r*100./h); // simpler to format percent values with printf
 
 		for(unsigned c = 0U, w = (unsigned)gray.cols; c<w; c += sz) {
-			Mat patch(gray, Range(r, r+sz), Range(c, c+sz)), patchDouble,
+			Mat patch(gray, Range(r, r+sz), Range(c, c+sz)),
 				patchResult(result, Range(r, r+sz), Range(c, c+sz));
-			patch.convertTo(patchDouble, CV_64FC1);
 
-			unsigned long pSum = (unsigned long)sum(patch)[0],
-				pSum_255 = pSum*255UL; // is less than ULONG_MAX for fontSz <= 50
+			double patchSum = *sum(patch).val;
 
 			BestMatch best; // holds the best grayscale match found at a given time
 
+			Mat glyph, negGlyph;
 			auto itFe = fe.charset().cbegin();
-			for(auto &cs : charset) {
-				Mat csDouble;
-				cs.convertTo(csDouble, CV_64FC1);
+			for(auto &glyphAndNegative : charset) {
+				tie(glyph, negGlyph) = glyphAndNegative;
 
-				unsigned long chSum = itFe->cachedSum,
-					chInvSum = sz2_255 - chSum;
-				assert(chSum != 0U && chInvSum != 0U); // Empty/Full chars were already discarded
-				double dotP = patch.dot(cs);
-				
 				MatchParams mp;
-				mp.miuFg = dotP/chSum;
-				mp.miuBg = (pSum_255 - dotP)/chInvSum;
-				assert(mp.miuBg >= 0.);
 
-				temp = (patchDouble-mp.miuFg).mul(csDouble); // Elem-wise multiply
-				mp.sdevFg = sqrt(temp.dot(temp)/(255.*chSum)); // not subtracting the 1 from denominator
+				// Computing foreground and background means plus the average of squared errors.
+				// 'mean' & 'meanStdDev' provided by OpenCV have binary masking.
+				// Our glyphs have gradual transitions between foreground & background.
+				// These transition need less than the full weighting provided by 'mean' & 'meanStdDev'.
+				// Implemented below edge weighting.
 
-				temp = (patchDouble-mp.miuBg).mul(255.-csDouble); // Elem-wise multiply
-				mp.sdevBg = sqrt(temp.dot(temp)/(255.*chInvSum)); // not subtracting the 1 from denominator
+				// First the means:
+				double glyphSum = itFe->cachedSum / 255.,
+					negGlyphSum = sz2 - glyphSum;
 
-				double ratio = evalFit(mp);
-				if(ratio < best.score) {
-					best.score = ratio;
+				double dotP = patch.dot(glyph);
+				mp.miuFg = dotP / glyphSum; // 'mean' would divide by more (countNonZero)
+				mp.miuBg = (patchSum - dotP) / negGlyphSum; // 'mean' would divide by more (countLessThan1)
+
+				// Now the average of squared errors (cheaper to compute than standard deviations):
+				// 'meanStdDev' would subtract from patch elements different means
+				// and divide by the larger values described above
+				temp = (patch-mp.miuFg).mul(glyph); // Elem-wise (mask only fg, weight contours)
+				mp.aseFg = temp.dot(temp) / glyphSum;
+
+				temp = (patch-mp.miuBg).mul(negGlyph); // Elem-wise (mask only bg, weight contours)
+				mp.aseBg = temp.dot(temp) / negGlyphSum;
+
+				double score = mp.score();
+				if(score < best.score) {
+					best.score = score;
 					best.charIdx = (unsigned)distance(itFeBegin, itFe);
 					best.params = mp;
 				}
@@ -193,16 +242,15 @@ void Transformer::run() {
 #ifdef _DEBUG
 			ofs<<best.score<<",\t"
 				<<best.params.miuFg<<",\t"<<best.params.miuBg<<",\t"
-				<<best.params.sdevFg<<",\t"<<best.params.sdevBg<<endl;
+				<<best.params.aseFg<<",\t"<<best.params.aseBg<<endl;
 #endif
 
 			// write match to patchResult
-			Mat match = *next(charset.begin(), best.charIdx),
-				matchDouble;
+			tie(glyph, negGlyph) = *next(charset.begin(), best.charIdx);
 			if(img.isRGB()) {
 				Mat patchRGB(resized, Range(r, r+sz), Range(c, c+sz));
-				unsigned long chSum = next(itFeBegin, best.charIdx)->cachedSum,
-					chInvSum = sz2_255 - chSum;
+				double chSum = next(itFeBegin, best.charIdx)->cachedSum / 255.,
+					chInvSum = sz2 - chSum;
 
 				vector<Mat> channels;
 				split(patchRGB, channels);
@@ -210,41 +258,41 @@ void Transformer::run() {
 
 				double diffFgBg = 0.;
 				for(auto &ch : channels) {
-					double dotP = ch.dot(match);
-					double miuFg = dotP/chSum,
-						miuBg = ch.dot((unsigned char)255 - match)/chInvSum;
-					assert(miuBg >= 0.);
+					ch.convertTo(ch, CV_64FC1); // processing double values
 
-					diffFgBg += abs(miuFg - miuBg);
+					double miuFg = ch.dot(glyph) / chSum,
+						miuBg = ch.dot(negGlyph) / chInvSum,
+						newDiff = miuFg - miuBg;
 
-					match.convertTo(ch, CV_8UC1,
-									(miuFg - miuBg) / 255.,
+					glyph.convertTo(ch, CV_8UC1,
+									newDiff,
 									miuBg);
+
+					diffFgBg += abs(newDiff);
 				}
 
-				if(diffFgBg < 3*cfg.getBlankThreshold())
+				if(diffFgBg < 3.*cfg.getBlankThreshold())
 					patchResult = mean(patchRGB);
 				else
 					merge(channels, patchResult);
+
 			} else { // grayscale result
 				if(abs(best.params.miuFg - best.params.miuBg) < cfg.getBlankThreshold())
 					patchResult = mean(patch);
 				else {
-					match.convertTo(patchResult, CV_8UC1,
-									(best.params.miuFg - best.params.miuBg) / 255.,
+					glyph.convertTo(patchResult, CV_8UC1,
+									best.params.miuFg - best.params.miuBg,
 									best.params.miuBg);
 				}
 			}
-			cout<<'.';
 		}
-		cout<<endl;
 	}
-	cout<<"100.00%"<<endl<<endl;
 
 	path resultFile(cfg.getWorkDir());
 	resultFile.append("Output").append(studiedCase).
-		replace_extension("bmp"); // generating a BMP result file
+		concat(".bmp"); // generating a BMP result file
 	
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
+	system(resultFile.string().c_str());
 }

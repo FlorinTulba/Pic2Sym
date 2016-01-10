@@ -25,8 +25,9 @@ Transformer allows images to be approximated as a table of colored symbols from 
 class Transformer {
 	Config &cfg;					// general configuration
 	FontEngine fe;					// charset manager
-	std::vector<cv::Mat> charset;	// current charset in Mat format
 	Img img;						// current image to process
+
+	std::vector<std::pair<cv::Mat, cv::Mat>> charset; // current charset & its inverse in Mat format
 
 public:
 	Transformer(Config &cfg_); // use initial configuration
