@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cassert>
 
-#include <opencv2/core.hpp>
 #include FT_TRUETYPE_IDS_H
 
 using namespace std;
@@ -185,6 +184,80 @@ namespace {
 			factorH, factorV,		// scaling factors to remember
 			count);					// count of glyphs within current charmap
 	}
+
+	// Computing center of gravity (cog)
+	const Point2d computeCog(unsigned sz, unsigned char *data,
+							 unsigned char rows, unsigned char cols,
+							 unsigned char left, unsigned char top,
+							 unsigned long cachedSum) {
+		// x : sum columns, weight each such sum by the column index => total sum
+		// Total sum has to be then divided by cachedSum => x cog
+		vector<unsigned long> sums((size_t)sz, 0UL);
+		for(unsigned r = 0U, idx = 0; r<sz; ++r)
+			for(unsigned c = 0U; c<sz; ++c)
+				sums[c] += data[idx++];
+
+		double totalX = 0.;
+		for(unsigned char c = left; c < left+cols; ++c)
+			totalX += (double)c * sums[c-left];
+
+		// y : sum rows, weight each such sum by the row index => total sum
+		// Total sum has to be then divided by cachedSum => y cog
+		sums.assign((size_t)sz, 0UL);
+		for(unsigned r = 0U, idx = 0; r<sz; ++r)
+			for(unsigned c = 0U; c<sz; ++c)
+				sums[r] += data[idx++];
+
+		double totalY = 0.;
+		for(unsigned char bottom = top+1-rows, r = bottom; r <= top; ++r)
+			totalY += (double)r * sums[r-bottom];
+
+		return Point2d(totalX, totalY) / (double)cachedSum;
+	}
+
+	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
+					   int leftBound, int topBound,
+					   int& sz, int& rows_, int& cols_, int& left_, int& top_,
+					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
+		sz = bb.yMax-bb.yMin+1;
+		assert(sz > 0 && bb.xMax-bb.xMin+1 == sz);
+
+		rows_ = (int)bm.rows; cols_ = (int)bm.width;
+		left_ = leftBound; top_ = topBound;
+
+		diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
+		if(diffLeft < 0) { // cropping left_ side?
+			if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffLeft);
+			left_ = bb.xMin;
+		}
+		diffLeft = 0;
+
+		if(diffRight < 0) { // cropping right side?
+			if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffRight);
+			left_ = bb.xMax - cols_ + 1;
+		}
+
+		diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
+		if(diffTop < 0) { // cropping top_ side?
+			if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffTop);
+			top_ = bb.yMax;
+		}
+		diffTop = 0;
+
+		if(diffBottom < 0) { // cropping bottom side?
+			if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffBottom);
+			top_ = bb.yMin + rows_ - 1;
+		}
+
+		assert(top_>=bb.yMin && top_<=bb.yMax);
+		assert(left_>=bb.xMin && left_<=bb.xMax);
+		assert(rows_>=0 && rows_<=sz);
+		assert(cols_>=0 && cols_<=sz);
+	}
 } // anonymous namespace
 
 PixMapChar::PixMapChar(unsigned long charCode,		// the character code
@@ -194,51 +267,16 @@ PixMapChar::PixMapChar(unsigned long charCode,		// the character code
 
 			chCode(charCode) {
 
-	int sz = bb.yMax-bb.yMin+1;
-	assert(sz > 0 && bb.xMax-bb.xMin+1 == sz);
-
-	int rows_ = (int)bm.rows, cols_ = (int)bm.width;
-	int left_ = leftBound, top_ = topBound;
-	
-	int diffLeft = left_ - bb.xMin, diffRight = bb.xMax - (left_ + cols_ - 1);
-	if(diffLeft < 0) { // cropping left_ side?
-		if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffLeft);
-		left_ = bb.xMin;
-	}
-	diffLeft = 0;
-
-	if(diffRight < 0) { // cropping right side?
-		if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffRight);
-		left_ = bb.xMax - cols_ + 1;
-	}
-
-	int diffTop = bb.yMax - top_, diffBottom = (top_ - rows_ + 1) - bb.yMin;
-	if(diffTop < 0) { // cropping top_ side?
-		if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffTop);
-		top_ = bb.yMax;
-	}
-	diffTop = 0;
-
-	if(diffBottom < 0) { // cropping bottom side?
-		if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffBottom);
-		top_ = bb.yMin + rows_ - 1;
-	}
-
-	assert(top_>=bb.yMin && top_<=bb.yMax);
-	assert(left_>=bb.xMin && left_<=bb.xMax);
-	assert(rows_>=0 && rows_<=sz);
-	assert(cols_>=0 && cols_<=sz);
+	int sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom;
+	fitGlyphToBox(bm, bb, leftBound, topBound, // input params
+				  sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
 	if(rows_ > 0 && cols_ > 0) {
 		data = new unsigned char[rows_ * cols_];
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
 			memcpy_s(data+r*cols_, (rows_-r)*cols_,
-			&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
-			cols_);
+						&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
+						cols_);
 		for(int i = 0, lim = rows_*cols_; i<lim; ++i)
 			cachedSum += (unsigned long)data[i];
 	}
@@ -252,10 +290,14 @@ PixMapChar::PixMapChar(unsigned long charCode,		// the character code
 	top = (unsigned char)top_;
 	rows = (unsigned char)rows_;
 	cols = (unsigned char)cols_;
+
+	cachedCog = computeCog((unsigned)sz, data, rows, cols, left, top, cachedSum);
 }
 
 PixMapChar::PixMapChar(PixMapChar &&other) : // required by some vector manipulations
-chCode(other.chCode), cachedSum(other.cachedSum), rows(other.rows), cols(other.cols), left(other.left), top(other.top), data(other.data) {
+		chCode(other.chCode), cachedSum(other.cachedSum), cachedCog(other.cachedCog),
+		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
+		data(other.data) {
 	other.data = nullptr;
 }
 

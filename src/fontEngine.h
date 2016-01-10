@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
+#include <opencv2/core.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -31,6 +32,8 @@ Fields 'left' and 'top' indicate the position of the top-left corner within the 
 struct PixMapChar {
 	unsigned long chCode = 0UL;			// character code
 	unsigned long cachedSum = 0UL;		// sum of the pixel values (used to detect Blanks)
+	cv::Point2d cachedCog;				// center of gravity of the glyph
+
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'data' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square
 	unsigned char *data = nullptr;	// 256-shades of gray rectangle describing the character

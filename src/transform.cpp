@@ -15,6 +15,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <numeric>
 
 #ifdef _DEBUG
 #include <fstream>
@@ -86,8 +87,20 @@ namespace {
 	
 	// Holds mean and standard deviation (grayscale matching) for foreground/background pixels
 	struct MatchParams {
-		double miuFg, miuBg;
+		Point2d centerPatch;		// center of the patch
+		Point2d cogPatch;			// center of gravity of patch
+		Point2d cogGlyph;			// center of gravity of glyph
+		double miuFg, miuBg;		// average color for fg / bg (range 0..255)
+
+		// average squared error for fg / bg
+		// subrange of 0..255^2; best when 0
 		double aseFg, aseBg;
+
+		MatchParams() = default; // required by unrefined structure BestMatch from below
+		MatchParams(unsigned fontSz) {
+			double center = fontSz / 2.;
+			centerPatch = Point2d(center, center);
+		}
 
 		/*
 		Returns a small positive value for better correlations.
@@ -123,20 +136,75 @@ namespace {
 		The remaining points might be addressed in a future version.
 		*/
 		double score() const {
-			register const double divider = abs(miuBg - miuFg) + 1e-3;
-			// return (aseFg * aseBg)/divider;
-			// return (aseFg * aseBg)/(divider*divider);
-			// return (aseFg + aseBg)/divider;
-			return (sqrt(aseFg) + sqrt(aseBg))/divider; // preferred one so far
+			const Point2d relCogPatch = cogPatch - centerPatch;
+			const Point2d relCogGlyph = cogGlyph - centerPatch;
+
+			const double fontSz = centerPatch.x * 2.;
+
+			// best gradient orientation when angle between cog-s is 0 => cos = 1
+			// -1..1 range, best when 1
+			register double cosAngleCogs = 0.;
+			if(relCogGlyph != Point2d() && relCogPatch != Point2d()) // avoid DivBy0
+				cosAngleCogs = relCogGlyph.dot(relCogPatch) /
+								(norm(relCogGlyph) * norm(relCogPatch));
+			
+			// best glyph location when cogs are near to each other
+			// range 0 .. 1.42*fontSz, best when 0
+			register const double cogOffset = norm(cogPatch - cogGlyph);
+
+			// range 0 .. 255, best when large; less important than the other factors
+			register const double contrast = abs(miuBg - miuFg);
+
+			// return (aseFg * aseBg)/contrast;
+			// return (aseFg * aseBg)/(contrast*contrast);
+			// return (aseFg + aseBg)/contrast;
+			// return aseFg + aseBg;
+			// return sqrt(aseFg) + sqrt(aseBg);
+			// return (sqrt(aseFg) + sqrt(aseBg))/contrast; // preferred one so far
+
+			static const double sqrt2 = sqrt(2), inv255 = 1./255,
+				kCosAngleCogs = 1.,
+				kCogOffset = 2.,
+				kContrast = 5.,
+				kAseFg = 3.,
+				kAseBg = 3.;
+
+			// 0..1 domain now for all params, 1 for Ideal
+			return kCosAngleCogs * (.5 * (1. + cosAngleCogs))
+				+ kCogOffset * (1. - cogOffset / (sqrt2 * fontSz))
+				+ kContrast * (contrast * inv255)
+				+ kAseFg * (1. - (sqrt(aseFg) * inv255))
+				+ kAseBg * (1. - (sqrt(aseBg) * inv255));
 		}
+
+#ifdef _DEBUG
+		friend ostream& operator<<(ostream &os, const MatchParams &mp) {
+			// ...
+			return os;
+		}
+#endif // _DEBUG
 	};
 
 	// Holds the best grayscale match found at a given time
 	struct BestMatch {
-		double score = numeric_limits<double>::infinity();
+		double score = numeric_limits<double>::lowest();
 		unsigned charIdx = UINT_MAX; // no best yet
 		MatchParams params;
+
+#ifdef _DEBUG
+		static const string HEADER;
+
+		friend ostream& operator<<(ostream &os, const BestMatch &bm) {
+			// score, charIdx
+			os<<bm.params;
+			return os;
+		}
+#endif // _DEBUG
 	};
+
+#ifdef _DEBUG
+	const string BestMatch::HEADER("#ChosenScore, \t#miuFg, \t#miuBg, \t#aseFg, \t#aseBg");
+#endif // _DEBUG
 } // anonymous namespace
 
 Transformer::Transformer(Config &cfg_) : cfg(cfg_) {
@@ -176,16 +244,21 @@ void Transformer::run() {
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 	ofstream ofs(traceFile.c_str());
-	ofs<<"#ChosenScore,\t#miuFg,\t#miuBg,\t#aseFg,\t#aseBg"<<endl;
+	ofs<<BestMatch::HEADER<<endl;
 #endif
 
 	auto itFeBegin = fe.charset().cbegin();
 	unsigned sz = cfg.getFontSz();
-	const double sz2 = (double)sz*sz;
-	Mat temp, gray;
+	const double sz2 = (double)sz*sz,
+		sumConsecToSz_1 = sz*(sz-1)/2.;
+	MatchParams mp(sz);
+	Mat temp, temp1, gray;
 	Mat resized = img.resized(cfg, &gray);
 	Mat result(resized.rows, resized.cols, resized.type());
 	gray.convertTo(gray, CV_64FC1);
+	Mat consec(1, sz, CV_64FC1);
+	iota(consec.begin<double>(), consec.end<double>(), 0.);
+	Point2d pointSumConsecToSz_1(sumConsecToSz_1, sumConsecToSz_1);
 
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
 		// Reporting progress
@@ -197,6 +270,11 @@ void Transformer::run() {
 
 			double patchSum = *sum(patch).val;
 
+			reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+			reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+			mp.cogPatch = Point2d(temp.dot(consec) / patchSum, // x center of gravity
+								  temp1.t().dot(consec) / patchSum); // y center of gravity
+
 			BestMatch best; // holds the best grayscale match found at a given time
 
 			Mat glyph, negGlyph;
@@ -204,7 +282,8 @@ void Transformer::run() {
 			for(auto &glyphAndNegative : charset) {
 				tie(glyph, negGlyph) = glyphAndNegative;
 
-				MatchParams mp;
+				double glyphSum = itFe->cachedSum / 255.,
+					negGlyphSum = sz2 - glyphSum;
 
 				// Computing foreground and background means plus the average of squared errors.
 				// 'mean' & 'meanStdDev' provided by OpenCV have binary masking.
@@ -213,9 +292,6 @@ void Transformer::run() {
 				// Implemented below edge weighting.
 
 				// First the means:
-				double glyphSum = itFe->cachedSum / 255.,
-					negGlyphSum = sz2 - glyphSum;
-
 				double dotP = patch.dot(glyph);
 				mp.miuFg = dotP / glyphSum; // 'mean' would divide by more (countNonZero)
 				mp.miuBg = (patchSum - dotP) / negGlyphSum; // 'mean' would divide by more (countLessThan1)
@@ -223,14 +299,19 @@ void Transformer::run() {
 				// Now the average of squared errors (cheaper to compute than standard deviations):
 				// 'meanStdDev' would subtract from patch elements different means
 				// and divide by the larger values described above
-				temp = (patch-mp.miuFg).mul(glyph); // Elem-wise (mask only fg, weight contours)
+				temp = (patch-mp.miuFg).mul(glyph); // Elem-wise (mask only fg, weigh contours)
 				mp.aseFg = temp.dot(temp) / glyphSum;
 
-				temp = (patch-mp.miuBg).mul(negGlyph); // Elem-wise (mask only bg, weight contours)
+				temp = (patch-mp.miuBg).mul(negGlyph); // Elem-wise (mask only bg, weigh contours)
 				mp.aseBg = temp.dot(temp) / negGlyphSum;
 
+				// Obtaining center of gravity for glyph
+				Point2d cogFg = itFe->cachedCog,
+					cogBg = (pointSumConsecToSz_1 - cogFg * glyphSum) / negGlyphSum;
+				mp.cogGlyph = (mp.miuFg*cogFg + mp.miuBg*cogBg) / (mp.miuFg + mp.miuBg);
+
 				double score = mp.score();
-				if(score < best.score) {
+				if(score > best.score) {
 					best.score = score;
 					best.charIdx = (unsigned)distance(itFeBegin, itFe);
 					best.params = mp;
@@ -240,9 +321,7 @@ void Transformer::run() {
 			}
 
 #ifdef _DEBUG
-			ofs<<best.score<<",\t"
-				<<best.params.miuFg<<",\t"<<best.params.miuBg<<",\t"
-				<<best.params.aseFg<<",\t"<<best.params.aseBg<<endl;
+			ofs<<best<<endl;
 #endif
 
 			// write match to patchResult
