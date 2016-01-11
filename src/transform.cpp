@@ -87,9 +87,18 @@ namespace {
 	
 	// Holds mean and standard deviation (grayscale matching) for foreground/background pixels
 	struct MatchParams {
+		// powers of used factors; set to 0 to ignore specific factor
+		double kSdevFg = 1., kSdevBg = 1.;
+		double kCosAngleCogs = 1., kCogOffset = 1.;
+		double kContrast = 1., kGlyphWeight = 1.;
+
+		double PREFERRED_RADIUS, MAX_COG_OFFSET;
+
+		unsigned fontSz_1;			// size of the font - 1
 		Point2d centerPatch;		// center of the patch
 		Point2d cogPatch;			// center of gravity of patch
 		Point2d cogGlyph;			// center of gravity of glyph
+		double glyphWeight;			// % of the box covered by the glyph (0..1)
 		double miuFg, miuBg;		// average color for fg / bg (range 0..255)
 
 		// average squared error for fg / bg
@@ -97,8 +106,10 @@ namespace {
 		double aseFg, aseBg;
 
 		MatchParams() = default; // required by unrefined structure BestMatch from below
-		MatchParams(unsigned fontSz) {
-			double center = fontSz / 2.;
+		MatchParams(unsigned fontSz) : fontSz_1(fontSz - 1U) {
+			PREFERRED_RADIUS = 3U * fontSz / 8.; // 3/8 * fontSz
+			MAX_COG_OFFSET = sqrt(2) * fontSz_1; // happens for the extremes of a diagonal
+			double center = fontSz_1 / 2.;
 			centerPatch = Point2d(center, center);
 		}
 
@@ -136,45 +147,77 @@ namespace {
 		The remaining points might be addressed in a future version.
 		*/
 		double score() const {
+			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
+			static const double SDEV_MAX = 255/2.;
+			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
+			static const double MIN_CONTRAST_BRIGHT = 2., MIN_CONTRAST_DARK = 5.;
+			static const Point2d ORIGIN;
+
+			/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
+			// range 0..1, acting just as penalty for bad standard deviations
+			register const double fSdevFg = 1. - sqrt(aseFg) / SDEV_MAX;
+			register const double fSdevBg = 1. - sqrt(aseBg) / SDEV_MAX;
+
+			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
 			const Point2d relCogPatch = cogPatch - centerPatch;
 			const Point2d relCogGlyph = cogGlyph - centerPatch;
 
-			const double fontSz = centerPatch.x * 2.;
-
 			// best gradient orientation when angle between cog-s is 0 => cos = 1
+			// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
 			// -1..1 range, best when 1
-			register double cosAngleCogs = 0.;
-			if(relCogGlyph != Point2d() && relCogPatch != Point2d()) // avoid DivBy0
+			double cosAngleCogs = 0.;
+			if(relCogGlyph != ORIGIN && relCogPatch != ORIGIN) // avoid DivBy0
 				cosAngleCogs = relCogGlyph.dot(relCogPatch) /
 								(norm(relCogGlyph) * norm(relCogPatch));
 			
-			// best glyph location when cogs are near to each other
-			// range 0 .. 1.42*fontSz, best when 0
-			register const double cogOffset = norm(cogPatch - cogGlyph);
+			// 0..1 for |cogAngle| >= 45;   >1 for |cogAngle| < 45
+			// max 1.17 for cogAngle == 0
+			register const double fCogAngleLessThan45 = (1. + cosAngleCogs) * TWO_SQRT2;
 
+			// best glyph location is when cog-s are near to each other
+			// range 0 .. 1.42*fontSz_1, best when 0
+			const double cogOffset = norm(cogPatch - cogGlyph);
+			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
+			register const double fMinimalCogOffset =
+				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
+
+			/////////////// FANCYNESS FACTORS (Larger glyphs & contrast) ///////////////
 			// range 0 .. 255, best when large; less important than the other factors
-			register const double contrast = abs(miuBg - miuFg);
+			const double contrast = abs(miuBg - miuFg);
+			// just penalize severely low contrast
+			double minimalContrast =
+				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) * (miuFg+miuBg) * .5;
+			register double fMinimalContrast = contrast;
+			if(contrast > minimalContrast)
+				fMinimalContrast = minimalContrast;
+			fMinimalContrast /= minimalContrast;
 
-			// return (aseFg * aseBg)/contrast;
-			// return (aseFg * aseBg)/(contrast*contrast);
-			// return (aseFg + aseBg)/contrast;
-			// return aseFg + aseBg;
-			// return sqrt(aseFg) + sqrt(aseBg);
-			// return (sqrt(aseFg) + sqrt(aseBg))/contrast; // preferred one so far
+			// 0.9 .. 1.9 (favor glyphs covering at least 10%)
+			register const double fGlyphWeight = glyphWeight + .9;
 
-			static const double sqrt2 = sqrt(2), inv255 = 1./255,
-				kCosAngleCogs = 1.,
-				kCogOffset = 2.,
-				kContrast = 5.,
-				kAseFg = 3.,
-				kAseBg = 3.;
+			double result = 
+				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
+				// closer to 1 for good sdev of fg;  tends to 0 otherwise
+				pow(fSdevFg, kSdevFg)
 
-			// 0..1 domain now for all params, 1 for Ideal
-			return kCosAngleCogs * (.5 * (1. + cosAngleCogs))
-				+ kCogOffset * (1. - cogOffset / (sqrt2 * fontSz))
-				+ kContrast * (contrast * inv255)
-				+ kAseFg * (1. - (sqrt(aseFg) * inv255))
-				+ kAseBg * (1. - (sqrt(aseBg) * inv255));
+				// closer to 1 for good sdev of bg;  tends to 0 otherwise
+				* pow(fSdevBg, kSdevBg)
+			
+				/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
+				// <=1 for |angleCogs| >= 45;  >1 otherwise
+				* pow(fCogAngleLessThan45, kCosAngleCogs)
+
+				// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
+				* pow(fMinimalCogOffset, kCogOffset)
+
+				/////////////// FANCYNESS FACTORS (Larger glyphs & contrast) ///////////////
+				// <1 for poor contrast; 1 otherwise
+				* pow(fMinimalContrast, kContrast)
+
+				// <=1 for glyphs covering <= 10%;  >1 otherwise
+				* pow(fGlyphWeight, kGlyphWeight);
+
+			return result;
 		}
 
 #ifdef _DEBUG
@@ -190,6 +233,11 @@ namespace {
 		double score = numeric_limits<double>::lowest();
 		unsigned charIdx = UINT_MAX; // no best yet
 		MatchParams params;
+
+		void reset() {
+			score = numeric_limits<double>::lowest();
+			charIdx = UINT_MAX; // no best yet
+		}
 
 #ifdef _DEBUG
 		static const string HEADER;
@@ -233,7 +281,6 @@ void Transformer::reconfig() {
 }
 
 void Transformer::run() {
-
 	selectImage(img);
 
 	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId(); // no extension yet
@@ -247,19 +294,22 @@ void Transformer::run() {
 	ofs<<BestMatch::HEADER<<endl;
 #endif
 
-	auto itFeBegin = fe.charset().cbegin();
 	unsigned sz = cfg.getFontSz();
 	const double sz2 = (double)sz*sz,
 		sumConsecToSz_1 = sz*(sz-1)/2.;
-	MatchParams mp(sz);
-	Mat temp, temp1, gray;
-	Mat resized = img.resized(cfg, &gray);
-	Mat result(resized.rows, resized.cols, resized.type());
-	gray.convertTo(gray, CV_64FC1);
+
+	const Point2d pointSumConsecToSz_1(sumConsecToSz_1, sumConsecToSz_1);
 	Mat consec(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
-	Point2d pointSumConsecToSz_1(sumConsecToSz_1, sumConsecToSz_1);
 
+	Mat temp, temp1, gray;
+	const Mat resized = img.resized(cfg, &gray);
+	gray.convertTo(gray, CV_64FC1);
+
+	MatchParams mp(sz);
+	BestMatch best; // holds the best grayscale match found at a given time
+	Mat result(resized.rows, resized.cols, resized.type());
+	auto itFeBegin = fe.charset().cbegin();
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
 		// Reporting progress
 		printf("%6.2f%%\r", r*100./h); // simpler to format percent values with printf
@@ -272,10 +322,9 @@ void Transformer::run() {
 
 			reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 			reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
-			mp.cogPatch = Point2d(temp.dot(consec) / patchSum, // x center of gravity
-								  temp1.t().dot(consec) / patchSum); // y center of gravity
+			mp.cogPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // center of gravity
 
-			BestMatch best; // holds the best grayscale match found at a given time
+			best.reset();
 
 			Mat glyph, negGlyph;
 			auto itFe = fe.charset().cbegin();
@@ -284,6 +333,8 @@ void Transformer::run() {
 
 				double glyphSum = itFe->cachedSum / 255.,
 					negGlyphSum = sz2 - glyphSum;
+
+				mp.glyphWeight = glyphSum / sz2;
 
 				// Computing foreground and background means plus the average of squared errors.
 				// 'mean' & 'meanStdDev' provided by OpenCV have binary masking.
