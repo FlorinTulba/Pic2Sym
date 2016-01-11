@@ -11,12 +11,13 @@
 #include "fontEngine.h"
 #include "misc.h"
 
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <set>
 #include <map>
 #include <algorithm>
-#include <cassert>
+#include <numeric>
 
 #include FT_TRUETYPE_IDS_H
 
@@ -190,29 +191,18 @@ namespace {
 							 unsigned char rows, unsigned char cols,
 							 unsigned char left, unsigned char top,
 							 unsigned long cachedSum) {
-		// x : sum columns, weight each such sum by the column index => total sum
-		// Total sum has to be then divided by cachedSum => x cog
-		vector<unsigned long> sums((size_t)sz, 0UL);
-		for(unsigned r = 0U, idx = 0; r<sz; ++r)
-			for(unsigned c = 0U; c<sz; ++c)
-				sums[c] += data[idx++];
+		const Mat glyph((int)rows, (int)cols, CV_8UC1, (void*)data);
 
-		double totalX = 0.;
-		for(unsigned char c = left; c < left+cols; ++c)
-			totalX += (double)c * sums[c-left];
+		Mat sumPerColumn, columnIndeces(1, cols, CV_64FC1); // just 1 row
+		iota(columnIndeces.begin<double>(), columnIndeces.end<double>(), (double)left);
+		reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
 
-		// y : sum rows, weight each such sum by the row index => total sum
-		// Total sum has to be then divided by cachedSum => y cog
-		sums.assign((size_t)sz, 0UL);
-		for(unsigned r = 0U, idx = 0; r<sz; ++r)
-			for(unsigned c = 0U; c<sz; ++c)
-				sums[r] += data[idx++];
+		Mat sumPerRow, rowIndeces(rows, 1, CV_64FC1); // just 1 column
+		iota(rowIndeces.begin<double>(), rowIndeces.end<double>(), (double)(top+1-rows));
+		reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
 
-		double totalY = 0.;
-		for(unsigned char bottom = top+1-rows, r = bottom; r <= top; ++r)
-			totalY += (double)r * sums[r-bottom];
-
-		return Point2d(totalX, totalY) / (double)cachedSum;
+		return Point2d(sumPerColumn.dot(columnIndeces), sumPerRow.dot(rowIndeces))
+						/ (double)cachedSum;
 	}
 
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
@@ -291,7 +281,8 @@ PixMapChar::PixMapChar(unsigned long charCode,		// the character code
 	rows = (unsigned char)rows_;
 	cols = (unsigned char)cols_;
 
-	cachedCog = computeCog((unsigned)sz, data, rows, cols, left, top, cachedSum);
+	if(rows_>0 && cols_>0)
+		cachedCog = computeCog((unsigned)sz, data, rows, cols, left, top, cachedSum);
 }
 
 PixMapChar::PixMapChar(PixMapChar &&other) : // required by some vector manipulations
