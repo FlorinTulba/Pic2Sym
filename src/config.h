@@ -40,7 +40,9 @@ public:
 	Config(const std::string &appLaunchPath); // Initial Parse of default cfg.txt
 	~Config(); // Cleanup
 
-	void update(); // Prompts for changing the existing config and validates the changes
+	// Prompts for changing the existing config and validates the changes
+	// Returns true if the settings have changed
+	bool update();
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 	unsigned getFontSz() const { return fontSz; }

@@ -71,7 +71,7 @@ bool Config::parseCfg() {
 		   newOutH < 3U || newOutH > 768 ||
 		   newThreshold4Blank > 50U ||
 		   new_kSdevFg < 0. || new_kSdevBg < 0. ||
-		   new_kCosAngleCogs < 0. || kCogOffset < 0. ||
+		   new_kCosAngleCogs < 0. || new_kCogOffset < 0. ||
 		   new_kContrast < 0. || new_kGlyphWeight < 0.)
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
@@ -80,7 +80,7 @@ bool Config::parseCfg() {
 			outW = newOutW; outH = newOutH;
 			kContrast = new_kContrast; kGlyphWeight = new_kGlyphWeight;
 			kSdevFg = new_kSdevFg; kSdevBg = new_kSdevBg;
-			kCosAngleCogs = new_kCosAngleCogs; kCogOffset = new_kCosAngleCogs;
+			kCosAngleCogs = new_kCosAngleCogs; kCogOffset = new_kCogOffset;
 		}
 
 	} catch(info_parser_error&) {
@@ -94,7 +94,7 @@ bool Config::parseCfg() {
 	return correct;
 }
 
-void Config::update() {
+bool Config::update() {
 	ostringstream oss;
 	oss<<endl<<"Current configuration is:"<<endl<<endl
 		<<"FONT_HEIGHT = "<<fontSz<<endl
@@ -109,6 +109,8 @@ void Config::update() {
 		<<"GRAVITATIONAL_SMOOTHNESS = "<<kCogOffset<<endl
 		<<endl;
 	oss<<"Keep these settings?";
+	bool someChanges = false;
+
 	if(!boolPrompt(oss.str())) {
 		unsigned oldFontSz = fontSz, oldOutW = outW, oldOutH = outH,
 			oldThreshold4Blank = threshold4Blank;
@@ -125,25 +127,47 @@ void Config::update() {
 			cerr<<"Problems within cfg.txt, please correct them!"<<endl;
 		}
 
-		if(oldFontSz != fontSz)
+		if(oldFontSz != fontSz) {
 			cout<<"New FONT_HEIGHT is "<<fontSz<<endl;
-		if(oldOutW != outW)
+			someChanges = true;
+		}
+		if(oldOutW != outW) {
 			cout<<"New RESULT_WIDTH is "<<outW<<endl;
-		if(oldOutH != outH)
+			someChanges = true;
+		}
+		if(oldOutH != outH) {
 			cout<<"New RESULT_HEIGHT is "<<outH<<endl;
-		if(oldThreshold4Blank != threshold4Blank)
+			someChanges = true;
+		}
+		if(oldThreshold4Blank != threshold4Blank) {
 			cout<<"New THRESHOLD_FOR_BLANK is "<<threshold4Blank<<endl;
-		if(old_kContrast != kContrast)
+			someChanges = true;
+		}
+		if(old_kContrast != kContrast) {
 			cout<<"New MORE_CONTRAST_PREF is "<<kContrast<<endl;
-		if(old_kGlyphWeight != kGlyphWeight)
+			someChanges = true;
+		}
+		if(old_kGlyphWeight != kGlyphWeight) {
 			cout<<"New LARGER_GLYPHS_PREF is "<<kGlyphWeight<<endl;
-		if(old_kSdevFg != kSdevFg)
+			someChanges = true;
+		}
+		if(old_kSdevFg != kSdevFg) {
 			cout<<"New UNDER_GLYPH_CORRECTNESS is "<<kSdevFg<<endl;
-		if(old_kSdevBg != kSdevBg)
+			someChanges = true;
+		}
+		if(old_kSdevBg != kSdevBg) {
 			cout<<"New ASIDE_GLYPH_CORRECTNESS is "<<kSdevBg<<endl;
-		if(old_kCosAngleCogs != kCosAngleCogs)
+			someChanges = true;
+		}
+		if(old_kCosAngleCogs != kCosAngleCogs) {
 			cout<<"New DIRECTIONAL_SMOOTHNESS is "<<kCosAngleCogs<<endl;
-		if(old_kCogOffset != kCogOffset)
+			someChanges = true;
+		}
+		if(old_kCogOffset != kCogOffset) {
 			cout<<"New GRAVITATIONAL_SMOOTHNESS is "<<kCogOffset<<endl;
+			someChanges = true;
+		}
 	}
+
+	return someChanges;
 }
