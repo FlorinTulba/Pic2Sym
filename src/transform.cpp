@@ -87,11 +87,6 @@ namespace {
 	
 	// Holds mean and standard deviation (grayscale matching) for foreground/background pixels
 	struct MatchParams {
-		// powers of used factors; set to 0 to ignore specific factor
-		double kSdevFg = 1., kSdevBg = 1.;
-		double kCosAngleCogs = 1., kCogOffset = 1.;
-		double kContrast = 1., kGlyphWeight = 1.;
-
 		double PREFERRED_RADIUS, MAX_COG_OFFSET;
 
 		unsigned fontSz_1;			// size of the font - 1
@@ -146,7 +141,7 @@ namespace {
 
 		The remaining points might be addressed in a future version.
 		*/
-		double score() const {
+		double score(const Config &cfg) const {
 			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
 			static const double SDEV_MAX = 255/2.;
 			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
@@ -181,7 +176,7 @@ namespace {
 			register const double fMinimalCogOffset =
 				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
 
-			/////////////// FANCYNESS FACTORS (Larger glyphs & contrast) ///////////////
+			/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 			// range 0 .. 255, best when large; less important than the other factors
 			const double contrast = abs(miuBg - miuFg);
 			// just penalize severely low contrast
@@ -198,24 +193,24 @@ namespace {
 			double result = 
 				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
 				// closer to 1 for good sdev of fg;  tends to 0 otherwise
-				pow(fSdevFg, kSdevFg)
+				pow(fSdevFg, cfg.get_kSdevFg())
 
 				// closer to 1 for good sdev of bg;  tends to 0 otherwise
-				* pow(fSdevBg, kSdevBg)
+				* pow(fSdevBg, cfg.get_kSdevBg())
 			
 				/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
 				// <=1 for |angleCogs| >= 45;  >1 otherwise
-				* pow(fCogAngleLessThan45, kCosAngleCogs)
+				* pow(fCogAngleLessThan45, cfg.get_kCosAngleCogs())
 
 				// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
-				* pow(fMinimalCogOffset, kCogOffset)
+				* pow(fMinimalCogOffset, cfg.get_kCogOffset())
 
-				/////////////// FANCYNESS FACTORS (Larger glyphs & contrast) ///////////////
+				/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 				// <1 for poor contrast; 1 otherwise
-				* pow(fMinimalContrast, kContrast)
+				* pow(fMinimalContrast, cfg.get_kContrast())
 
 				// <=1 for glyphs covering <= 10%;  >1 otherwise
-				* pow(fGlyphWeight, kGlyphWeight);
+				* pow(fGlyphWeight, cfg.get_kGlyphWeight());
 
 			return result;
 		}
@@ -295,10 +290,8 @@ void Transformer::run() {
 #endif
 
 	unsigned sz = cfg.getFontSz();
-	const double sz2 = (double)sz*sz,
-		sumConsecToSz_1 = sz*(sz-1)/2.;
+	const double sz2 = (double)sz*sz;
 
-	const Point2d pointSumConsecToSz_1(sumConsecToSz_1, sumConsecToSz_1);
 	Mat consec(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
 
@@ -331,16 +324,17 @@ void Transformer::run() {
 			for(auto &glyphAndNegative : charset) {
 				tie(glyph, negGlyph) = glyphAndNegative;
 
-				double glyphSum = itFe->cachedSum / 255.,
-					negGlyphSum = sz2 - glyphSum;
+				double glyphSum = itFe->glyphSum,
+					negGlyphSum = itFe->negGlyphSum;
 
 				mp.glyphWeight = glyphSum / sz2;
 
 				// Computing foreground and background means plus the average of squared errors.
-				// 'mean' & 'meanStdDev' provided by OpenCV have binary masking.
+				// 'mean' & 'meanStdDev' provided by OpenCV have unfortunately binary masking.
 				// Our glyphs have gradual transitions between foreground & background.
-				// These transition need less than the full weighting provided by 'mean' & 'meanStdDev'.
-				// Implemented below edge weighting.
+				// These transition need less than the full weighting provided by OpenCV.
+				
+				// Implemented below edge weighting:
 
 				// First the means:
 				double dotP = patch.dot(glyph);
@@ -357,11 +351,10 @@ void Transformer::run() {
 				mp.aseBg = temp.dot(temp) / negGlyphSum;
 
 				// Obtaining center of gravity for glyph
-				Point2d cogFg = itFe->cachedCog,
-					cogBg = (pointSumConsecToSz_1 - cogFg * glyphSum) / negGlyphSum;
-				mp.cogGlyph = (mp.miuFg*cogFg + mp.miuBg*cogBg) / (mp.miuFg + mp.miuBg);
+				mp.cogGlyph = (mp.miuFg * itFe->cogFg + mp.miuBg * itFe->cogBg) /
+								(mp.miuFg + mp.miuBg);
 
-				double score = mp.score();
+				double score = mp.score(cfg);
 				if(score > best.score) {
 					best.score = score;
 					best.charIdx = (unsigned)distance(itFeBegin, itFe);
@@ -379,8 +372,9 @@ void Transformer::run() {
 			tie(glyph, negGlyph) = *next(charset.begin(), best.charIdx);
 			if(img.isRGB()) {
 				Mat patchRGB(resized, Range(r, r+sz), Range(c, c+sz));
-				double chSum = next(itFeBegin, best.charIdx)->cachedSum / 255.,
-					chInvSum = sz2 - chSum;
+				auto itFeBest = next(itFeBegin, best.charIdx);
+				double glyphBestSum = itFeBest->glyphSum,
+					negGlyphBestSum = itFeBest->negGlyphSum;
 
 				vector<Mat> channels;
 				split(patchRGB, channels);
@@ -390,8 +384,8 @@ void Transformer::run() {
 				for(auto &ch : channels) {
 					ch.convertTo(ch, CV_64FC1); // processing double values
 
-					double miuFg = ch.dot(glyph) / chSum,
-						miuBg = ch.dot(negGlyph) / chInvSum,
+					double miuFg = ch.dot(glyph) / glyphBestSum,
+						miuBg = ch.dot(negGlyph) / negGlyphBestSum,
 						newDiff = miuFg - miuBg;
 
 					glyph.convertTo(ch, CV_8UC1,
@@ -409,11 +403,10 @@ void Transformer::run() {
 			} else { // grayscale result
 				if(abs(best.params.miuFg - best.params.miuBg) < cfg.getBlankThreshold())
 					patchResult = mean(patch);
-				else {
+				else
 					glyph.convertTo(patchResult, CV_8UC1,
 									best.params.miuFg - best.params.miuBg,
 									best.params.miuBg);
-				}
 			}
 		}
 	}

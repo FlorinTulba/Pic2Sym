@@ -30,13 +30,15 @@ The bitmap pitch is transformed into width, so 'data' is continuous.
 Fields 'left' and 'top' indicate the position of the top-left corner within the drawing square.
 */
 struct PixMapChar {
-	unsigned long chCode = 0UL;			// character code
-	unsigned long cachedSum = 0UL;		// sum of the pixel values (used to detect Blanks)
-	cv::Point2d cachedCog;				// center of gravity of the glyph
+	unsigned long chCode = 0UL;	// character code
+	double glyphSum = 0.;		// sum of the pixel values divided by 255
+	double negGlyphSum = 0.;	// sum of the pixel values divided by 255 for negated glyph
+	cv::Point2d cogFg;			// center of gravity of the glyph
+	cv::Point2d cogBg;			// center of gravity of the background of the glyph
 
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'data' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square
-	unsigned char *data = nullptr;	// 256-shades of gray rectangle describing the character
+	unsigned char *data = nullptr;		// 256-shades of gray rectangle describing the character
 	// (top-down, left-right traversal)
 
 	/*

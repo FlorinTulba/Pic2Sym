@@ -98,17 +98,13 @@ namespace {
 	so that most characters will widen enough to fill more of the drawing square,
 	while preserving the designer's placement.
 
-	The parameters:
-	- current face
-	- drawing square size
+	The parameters <bb> and <charsCount> return the estimated future bounding box and
+	respectively the count of glyphs within selected charmap.
 
-	The returned tuple will contain:
-	- the estimated future bounding box
-	- the scaling factors to remember
-	- the count of glyphs within current charmap
+	The returned pair will contain the scaling factors to remember.
 	*/
-	tuple<FT_BBox, double, double, unsigned>
-		adjustScaling(FT_Face face, unsigned sz) {
+	pair<double, double>
+				adjustScaling(FT_Face face, unsigned sz, FT_BBox &bb, unsigned &charsCount) {
 		vector<double> vTop, vBottom, vLeft, vRight, vHeight, vWidth;
 		FT_Size_RequestRec  req;
 		req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX, ...
@@ -120,11 +116,11 @@ namespace {
 			cerr<<"Couldn't set font size: "<<sz<<"  Error: "<<error<<endl;
 			throw invalid_argument("Couldn't set font size!");
 		}
-		unsigned count = 0U;
+		charsCount = 0U;
 		FT_UInt idx;
 		FT_ULong c = FT_Get_First_Char(face, &idx);
 		while(idx != 0) { // Assess all glyphs of this charmap
-			++count;
+			++charsCount;
 			FT_Load_Char(face, c, FT_LOAD_RENDER);
 			FT_GlyphSlot g = face->glyph;
 			FT_Bitmap b = g->bitmap;
@@ -140,12 +136,12 @@ namespace {
 
 		// Compute some means and standard deviations
 		Vec<double, 1> avgHeight, sdHeight, avgWidth, sdWidth, avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
-		meanStdDev(Mat_<double>(1, count, vHeight.data()), avgHeight, sdHeight);
-		meanStdDev(Mat_<double>(1, count, vWidth.data()), avgWidth, sdWidth);
-		meanStdDev(Mat_<double>(1, count, vTop.data()), avgTop, sdTop);
-		meanStdDev(Mat_<double>(1, count, vBottom.data()), avgBottom, sdBottom);
-		meanStdDev(Mat_<double>(1, count, vLeft.data()), avgLeft, sdLeft);
-		meanStdDev(Mat_<double>(1, count, vRight.data()), avgRight, sdRight);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+		meanStdDev(Mat(1, charsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
 
 		double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
 
@@ -172,39 +168,49 @@ namespace {
 		yMin += yDiff2; yMax -= yDiff2;
 		xMin += xDiff2; xMax -= xDiff2;
 
-		// ensure yMin <= 0
+		// ensure yMin <= 0 (should be at most the baseline y coord, which is 0)
 		if(yMin > 0) {
 			yMax -= yMin;
 			yMin = 0;
 		}
 
-		return make_tuple(
-			FT_BBox {				// estimated future bounding box
-			(FT_Pos)round(xMin), (FT_Pos)round(yMin),
-			(FT_Pos)round(xMax), (FT_Pos)round(yMax) },
-			factorH, factorV,		// scaling factors to remember
-			count);					// count of glyphs within current charmap
+		bb.xMin = (FT_Pos)round(xMin); bb.xMax = (FT_Pos)round(xMax);
+		bb.yMin = (FT_Pos)round(yMin); bb.yMax = (FT_Pos)round(yMax);
+
+		return make_pair(factorH, factorV);
 	}
 
-	// Computing center of gravity (cog)
-	const Point2d computeCog(unsigned sz, unsigned char *data,
-							 unsigned char rows, unsigned char cols,
-							 unsigned char left, unsigned char top,
-							 unsigned long cachedSum) {
+	/*
+	Computing the centers of gravity (cog) of a given glyph and its background.
+	*/	
+	pair<const Point2d, const Point2d>
+		computeCog(unsigned sz, unsigned char *data, 
+					unsigned char rows, unsigned char cols,
+					unsigned char left, unsigned char top,
+					double glyphSum, double negGlyphSum,
+					const Point2d &pointSumConsecToSz_1,
+					const Mat &consec) {
+		if(rows == 0U || cols == 0U) {
+			double centerCoord = (sz-1U)/2.;
+			Point2d center(centerCoord, centerCoord);
+			return make_pair(center, center);
+		}
+
 		const Mat glyph((int)rows, (int)cols, CV_8UC1, (void*)data);
+		Mat sumPerColumn, sumPerRow;
 
-		Mat sumPerColumn, columnIndeces(1, cols, CV_64FC1); // just 1 row
-		iota(columnIndeces.begin<double>(), columnIndeces.end<double>(), (double)left);
 		reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
-
-		Mat sumPerRow, rowIndeces(rows, 1, CV_64FC1); // just 1 column
-		iota(rowIndeces.begin<double>(), rowIndeces.end<double>(), (double)(top+1-rows));
 		reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
 
-		return Point2d(sumPerColumn.dot(columnIndeces), sumPerRow.dot(rowIndeces))
-						/ (double)cachedSum;
+		double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left, left+cols))),
+			sumY = sumPerRow.t().dot(Mat(consec, Range::all(), Range(top+1-rows, top+1)));
+		Point2d sumPoint = Point2d(sumX, sumY) / 255.;
+
+		return make_pair(sumPoint / glyphSum,
+						 (pointSumConsecToSz_1 - sumPoint) / negGlyphSum);
 	}
 
+	// Minimal glyph shifting and cropping or none to fit the bounding box
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 					   int leftBound, int topBound,
 					   int& sz, int& rows_, int& cols_, int& left_, int& top_,
@@ -248,28 +254,47 @@ namespace {
 		assert(rows_>=0 && rows_<=sz);
 		assert(cols_>=0 && cols_<=sz);
 	}
+
+	/*
+	appendChar puts valid glyphs into vector <chars>. Space (empty / full) glyphs are invalid.
+	Adds a new mapping between glyph's index and the position it entered <chars>.
+	Updates the count of Blanks.
+	*/
+	void appendChar(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb,
+					map<FT_ULong, size_t> &code2Pixmap, vector<PixMapChar> &chars,
+					unsigned &blanks, const double sz2) {
+		static const double EPS = 1e-6;
+
+		PixMapChar pmc(c, g->bitmap, g->bitmap_left, g->bitmap_top, bb);
+		if(abs(pmc.glyphSum) < EPS || abs(pmc.glyphSum - sz2) < EPS) // discard disguised Space chars
+			++blanks;
+		else {
+			code2Pixmap[c] = chars.size();
+			chars.emplace_back(move(pmc));
+		}
+	}
+
 } // anonymous namespace
 
-PixMapChar::PixMapChar(unsigned long charCode,		// the character code
-								   const FT_Bitmap &bm,			// the bitmap to process
-								   int leftBound, int topBound,	// initial position of the character
-								   const FT_BBox &bb) :			// the bounding box to fit
-
+PixMapChar::PixMapChar(unsigned long charCode,			// the character code
+						const FT_Bitmap &bm,			// the bitmap to process
+						int leftBound, int topBound,	// initial position of the character
+						const FT_BBox &bb) :			// the bounding box to fit
 			chCode(charCode) {
-
 	int sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom;
 	fitGlyphToBox(bm, bb, leftBound, topBound, // input params
 				  sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
 	if(rows_ > 0 && cols_ > 0) {
-		data = new unsigned char[rows_ * cols_];
+		int amount = rows_ * cols_;
+		data = new unsigned char[amount];
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
 			memcpy_s(data+r*cols_, (rows_-r)*cols_,
 						&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
 						cols_);
-		for(int i = 0, lim = rows_*cols_; i<lim; ++i)
-			cachedSum += (unsigned long)data[i];
+		glyphSum = *sum(Mat(1, amount, CV_8UC1, data)).val / 255.;
 	}
+	negGlyphSum = (double)sz*sz - glyphSum;
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
 	left_ -= bb.xMin;
@@ -281,12 +306,19 @@ PixMapChar::PixMapChar(unsigned long charCode,		// the character code
 	rows = (unsigned char)rows_;
 	cols = (unsigned char)cols_;
 
-	if(rows_>0 && cols_>0)
-		cachedCog = computeCog((unsigned)sz, data, rows, cols, left, top, cachedSum);
+	const double sumConsecToSz_1 = sz*(sz-1)/2.;
+	const Point2d pointSumConsecToSz_1(sumConsecToSz_1, sumConsecToSz_1);
+	Mat consec(1, sz, CV_64FC1);
+	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
+
+	tie(cogFg, cogBg) =
+		computeCog((unsigned)sz, data, rows, cols, left, top,
+					glyphSum, negGlyphSum, pointSumConsecToSz_1, consec);
 }
 
 PixMapChar::PixMapChar(PixMapChar &&other) : // required by some vector manipulations
-		chCode(other.chCode), cachedSum(other.cachedSum), cachedCog(other.cachedCog),
+		chCode(other.chCode), glyphSum(other.glyphSum), negGlyphSum(other.negGlyphSum),
+		cogFg(other.cogFg), cogBg(other.cogBg),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		data(other.data) {
 	other.data = nullptr;
@@ -444,25 +476,26 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		throw logic_error("FontEngine::setFontSz called before FontEngine::setFace!");
 	}
 
-	CHARSET_ALTERATION(SINGLE_ARG(
-		double sz = fontSz = fontSz_;
-		const unsigned long sz2_255 = (unsigned long)fontSz * fontSz * 255UL;
-		map<FT_ULong, size_t> code2Pixmap;
-		double factorH, factorV;
-		unsigned charsCount;
-		FT_BBox bb;
+	map<FT_ULong, size_t> code2Pixmap;
+	vector<tuple<FT_ULong, double, double>> toResize;
+	double sz = fontSz = fontSz_, factorH, factorV;
+	const double sz2 = (double)fontSz * fontSz;
+	unsigned charsCount, blanks = 0U;
+	FT_BBox bb;
+	FT_UInt idx;
+	FT_Size_RequestRec  req;
+	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
+	req.horiResolution = req.vertResolution = 72U;
 
+	CHARSET_ALTERATION(SINGLE_ARG(
 		chars.clear();
-		tie(bb, factorH, factorV, charsCount) = adjustScaling(face, fontSz);
+		tie(factorH, factorV) = adjustScaling(face, fontSz, bb, charsCount);
 		chars.reserve(charsCount);
 
 		cout<<"The current charmap contains "<<charsCount<<" characters"<<endl;
 
 		// Store the pixmaps of the characters that fit the bounding box already or by shifting.
 		// Preserve the characters that don't feet to resize them first, then add them too to pixmaps.
-		vector<tuple<FT_ULong, double, double>> toResize;
-		FT_UInt idx;
-		unsigned blanks = 0U;
 		for(FT_ULong c=FT_Get_First_Char(face, &idx);  idx != 0;  c=FT_Get_Next_Char(face, c, &idx)) {
 			FT_Load_Char(face, c, FT_LOAD_RENDER);
 			FT_GlyphSlot g = face->glyph;
@@ -472,26 +505,14 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 				++blanks;
 				continue;
 			}
-			FT_Pos leftBound = g->bitmap_left, rightBound = leftBound+(int)width-1,
-				topBound = g->bitmap_top, bottomBound = topBound-(int)height+1;
 
-			if(width > fontSz || height > fontSz) {
+			if(width > fontSz || height > fontSz)
 				toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
-			} else {
-				chars.emplace_back(c, b, leftBound, topBound, bb);
-				if(chars.back().cachedSum % sz2_255 != 0) // discard disguised Space chars
-					code2Pixmap[c] = chars.size()-1U;
-				else {
-					chars.pop_back();
-					++blanks;
-				}
-			}
+			else
+				appendChar(c, g, bb, code2Pixmap, chars, blanks, sz2);
 		}
 
 		// Resize characters which didn't fit initially
-		FT_Size_RequestRec  req;
-		req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX;
-		req.horiResolution = req.vertResolution = 72U;
 		for(auto &item : toResize) {
 			FT_ULong c;
 			double hRatio, vRatio;
@@ -500,15 +521,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			req.width = (FT_ULong)floor(factorH * (fontSz<<6) / hRatio);
 			FT_Error error = FT_Request_Size(face, &req);
 			FT_Load_Char(face, c, FT_LOAD_RENDER);
-			FT_GlyphSlot g = face->glyph;
-			FT_Bitmap b = g->bitmap;
-			chars.emplace_back(c, b, g->bitmap_left, g->bitmap_top, bb);
-			if(chars.back().cachedSum % sz2_255 != 0) // discard disguised Space chars
-				code2Pixmap[c] = chars.size()-1U;
-			else {
-				chars.pop_back();
-				++blanks;
-			}
+			appendChar(c, face->glyph, bb, code2Pixmap, chars, blanks, sz2);
 		}
 
 		if(blanks != 0U)
