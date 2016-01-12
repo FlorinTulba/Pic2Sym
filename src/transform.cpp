@@ -260,10 +260,12 @@ Transformer::Transformer(Config &cfg_) : cfg(cfg_) {
 void Transformer::reconfig() {
 	string initCharsetId = fe.fontId(); // remember initial charset
 
-	cfg.update(); // Allow setting new parameters for the transformation
+	newSettings = cfg.update(); // Allow setting new parameters for the transformation
 	selectFont(fe, cfg); // Configure font set
 
 	if(fe.fontId() != initCharsetId) {
+		newSettings = true;
+
 		unsigned sz = cfg.getFontSz();
 		charset.clear();
 		charset.reserve(fe.charset().size());
@@ -276,10 +278,21 @@ void Transformer::reconfig() {
 }
 
 void Transformer::run() {
+	auto oldImg = img.name();
 	selectImage(img);
 
 	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId(); // no extension yet
 	const string studiedCase = oss.str(); // id included in the result & trace file names
+
+	path resultFile(cfg.getWorkDir());
+	resultFile.append("Output").append(studiedCase).
+		concat(".bmp"); // generating a BMP result file
+
+	if(img.name().compare(oldImg) == 0 && !newSettings) {
+		cout<<"Image already processed under these settings."<<endl;
+		system(resultFile.string().c_str());
+		return;
+	}
 
 #ifdef _DEBUG
 	path traceFile(cfg.getWorkDir());
@@ -411,10 +424,8 @@ void Transformer::run() {
 		}
 	}
 
-	path resultFile(cfg.getWorkDir());
-	resultFile.append("Output").append(studiedCase).
-		concat(".bmp"); // generating a BMP result file
-	
+	newSettings = false;
+
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
 	system(resultFile.string().c_str());
