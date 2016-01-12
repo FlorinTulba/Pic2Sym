@@ -86,27 +86,48 @@ namespace {
 	}
 	
 	// Holds mean and standard deviation (grayscale matching) for foreground/background pixels
-	struct MatchParams {
-		double PREFERRED_RADIUS, MAX_COG_OFFSET;
 
-		unsigned fontSz_1;			// size of the font - 1
-		Point2d centerPatch;		// center of the patch
+	struct MatchParams {
 		Point2d cogPatch;			// center of gravity of patch
 		Point2d cogGlyph;			// center of gravity of glyph
 		double glyphWeight;			// % of the box covered by the glyph (0..1)
 		double miuFg, miuBg;		// average color for fg / bg (range 0..255)
 
 		// average squared error for fg / bg
-		// subrange of 0..255^2; best when 0
+		// subrange of 0..127.5^2; best when 0
 		double aseFg, aseBg;
 
-		MatchParams() = default; // required by unrefined structure BestMatch from below
-		MatchParams(unsigned fontSz) : fontSz_1(fontSz - 1U) {
-			PREFERRED_RADIUS = 3U * fontSz / 8.; // 3/8 * fontSz
-			MAX_COG_OFFSET = sqrt(2) * fontSz_1; // happens for the extremes of a diagonal
-			double center = fontSz_1 / 2.;
-			centerPatch = Point2d(center, center);
+#ifdef _DEBUG
+		static const string HEADER;
+
+		friend ostream& operator<<(ostream &os, const MatchParams &mp) {
+			os<<mp.cogGlyph.x<<",\t"<<mp.cogGlyph.y<<",\t"<<mp.cogPatch.x<<",\t"<<mp.cogPatch.y<<",\t"
+				<<mp.miuFg<<",\t"<<mp.miuBg<<",\t"<<mp.aseFg<<",\t"<<mp.aseBg<<",\t"<<mp.glyphWeight;
+			return os;
 		}
+#endif // _DEBUG
+	};
+
+#ifdef _DEBUG
+	const string MatchParams::HEADER("#cogFgX,\t#cogFgY,\t#cogBgX,\t#cogBgY,\t"
+								"#miuFg,\t#miuBg,\t#aseFg,\t#aseBg,\t#fg/all");
+#endif // _DEBUG
+
+	struct Matcher {
+		const unsigned fontSz_1;	// size of the font - 1
+		const double PREFERRED_RADIUS;	// allowed distance between the cog-s of patch & chosen glyph
+		const double MAX_COG_OFFSET;	// max distance possible between the cog-s of patch & chosen glyph
+		// happens for the extremes of a diagonal
+
+		const Point2d centerPatch;		// center of the patch
+
+		MatchParams *params = nullptr;
+
+		Matcher(unsigned fontSz, MatchParams &params_) : fontSz_1(fontSz - 1U),
+				PREFERRED_RADIUS(3U * fontSz / 8.),
+				MAX_COG_OFFSET(sqrt(2) * fontSz_1),
+				centerPatch(fontSz_1/2., fontSz_1/2.),
+				params(&params_) {}
 
 		/*
 		Returns a small positive value for better correlations.
@@ -142,6 +163,8 @@ namespace {
 		The remaining points might be addressed in a future version.
 		*/
 		double score(const Config &cfg) const {
+			assert(params != nullptr);
+
 			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
 			static const double SDEV_MAX = 255/2.;
 			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
@@ -150,12 +173,12 @@ namespace {
 
 			/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
 			// range 0..1, acting just as penalty for bad standard deviations
-			register const double fSdevFg = 1. - sqrt(aseFg) / SDEV_MAX;
-			register const double fSdevBg = 1. - sqrt(aseBg) / SDEV_MAX;
+			register const double fSdevFg = 1. - sqrt(params->aseFg) / SDEV_MAX;
+			register const double fSdevBg = 1. - sqrt(params->aseBg) / SDEV_MAX;
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
-			const Point2d relCogPatch = cogPatch - centerPatch;
-			const Point2d relCogGlyph = cogGlyph - centerPatch;
+			const Point2d relCogPatch = params->cogPatch - centerPatch;
+			const Point2d relCogGlyph = params->cogGlyph - centerPatch;
 
 			// best gradient orientation when angle between cog-s is 0 => cos = 1
 			// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
@@ -171,24 +194,25 @@ namespace {
 
 			// best glyph location is when cog-s are near to each other
 			// range 0 .. 1.42*fontSz_1, best when 0
-			const double cogOffset = norm(cogPatch - cogGlyph);
+			const double cogOffset = norm(params->cogPatch - params->cogGlyph);
 			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
 			register const double fMinimalCogOffset =
 				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
 
 			/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 			// range 0 .. 255, best when large; less important than the other factors
-			const double contrast = abs(miuBg - miuFg);
+			const double contrast = abs(params->miuBg - params->miuFg);
 			// just penalize severely low contrast
 			double minimalContrast =
-				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) * (miuFg+miuBg) * .5;
+				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
+						(params->miuFg + params->miuBg) * .5;
 			register double fMinimalContrast = contrast;
 			if(contrast > minimalContrast)
 				fMinimalContrast = minimalContrast;
 			fMinimalContrast /= minimalContrast;
 
 			// 0.9 .. 1.9 (favor glyphs covering at least 10%)
-			register const double fGlyphWeight = glyphWeight + .9;
+			register const double fGlyphWeight = params->glyphWeight + .9;
 
 			double result = 
 				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
@@ -214,20 +238,16 @@ namespace {
 
 			return result;
 		}
-
-#ifdef _DEBUG
-		friend ostream& operator<<(ostream &os, const MatchParams &mp) {
-			// ...
-			return os;
-		}
-#endif // _DEBUG
 	};
 
 	// Holds the best grayscale match found at a given time
 	struct BestMatch {
-		double score = numeric_limits<double>::lowest();
-		unsigned charIdx = UINT_MAX; // no best yet
-		MatchParams params;
+		double score;		// score of the best
+		unsigned charIdx;	// glyph index
+
+		MatchParams params;	// parameters of the match for the best glyph
+
+		BestMatch() { reset(); }
 
 		void reset() {
 			score = numeric_limits<double>::lowest();
@@ -238,15 +258,14 @@ namespace {
 		static const string HEADER;
 
 		friend ostream& operator<<(ostream &os, const BestMatch &bm) {
-			// score, charIdx
-			os<<bm.params;
+			os<<bm.charIdx<<",\t"<<bm.score<<",\t"<<bm.params;
 			return os;
 		}
 #endif // _DEBUG
 	};
 
 #ifdef _DEBUG
-	const string BestMatch::HEADER("#ChosenScore, \t#miuFg, \t#miuBg, \t#aseFg, \t#aseBg");
+	const string BestMatch::HEADER(string("#GlyphIdx,\t#ChosenScore,\t") + MatchParams::HEADER);
 #endif // _DEBUG
 } // anonymous namespace
 
@@ -312,7 +331,8 @@ void Transformer::run() {
 	const Mat resized = img.resized(cfg, &gray);
 	gray.convertTo(gray, CV_64FC1);
 
-	MatchParams mp(sz);
+	MatchParams mp;
+	Matcher matcher(sz, mp);
 	BestMatch best; // holds the best grayscale match found at a given time
 	Mat result(resized.rows, resized.cols, resized.type());
 	auto itFeBegin = fe.charset().cbegin();
@@ -367,7 +387,7 @@ void Transformer::run() {
 				mp.cogGlyph = (mp.miuFg * itFe->cogFg + mp.miuBg * itFe->cogBg) /
 								(mp.miuFg + mp.miuBg);
 
-				double score = mp.score(cfg);
+				double score = matcher.score(cfg);
 				if(score > best.score) {
 					best.score = score;
 					best.charIdx = (unsigned)distance(itFeBegin, itFe);
