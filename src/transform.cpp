@@ -61,13 +61,12 @@ namespace {
 
 		const Point2d centerPatch;		// center of the patch
 
-		MatchParams *params = nullptr;
+		MatchParams params;
 
-		Matcher(unsigned fontSz, MatchParams &params_) : fontSz_1(fontSz - 1U),
+		Matcher(unsigned fontSz) : fontSz_1(fontSz - 1U),
 			PREFERRED_RADIUS(3U * fontSz / 8.),
 			MAX_COG_OFFSET(sqrt(2) * fontSz_1),
-			centerPatch(fontSz_1/2., fontSz_1/2.),
-			params(&params_) {}
+			centerPatch(fontSz_1/2., fontSz_1/2.) {}
 
 		/*
 		Returns a small positive value for better correlations.
@@ -103,8 +102,6 @@ namespace {
 		The remaining points might be addressed in a future version.
 		*/
 		double score(const Config &cfg) const {
-			assert(params != nullptr);
-
 			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
 			static const double SDEV_MAX = 255/2.;
 			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
@@ -113,12 +110,12 @@ namespace {
 
 			/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
 			// range 0..1, acting just as penalty for bad standard deviations
-			register const double fSdevFg = 1. - sqrt(params->aseFg) / SDEV_MAX;
-			register const double fSdevBg = 1. - sqrt(params->aseBg) / SDEV_MAX;
+			register const double fSdevFg = 1. - sqrt(params.aseFg) / SDEV_MAX;
+			register const double fSdevBg = 1. - sqrt(params.aseBg) / SDEV_MAX;
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
-			const Point2d relCogPatch = params->cogPatch - centerPatch;
-			const Point2d relCogGlyph = params->cogGlyph - centerPatch;
+			const Point2d relCogPatch = params.cogPatch - centerPatch;
+			const Point2d relCogGlyph = params.cogGlyph - centerPatch;
 
 			// best gradient orientation when angle between cog-s is 0 => cos = 1
 			// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
@@ -134,25 +131,25 @@ namespace {
 
 			// best glyph location is when cog-s are near to each other
 			// range 0 .. 1.42*fontSz_1, best when 0
-			const double cogOffset = norm(params->cogPatch - params->cogGlyph);
+			const double cogOffset = norm(params.cogPatch - params.cogGlyph);
 			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
 			register const double fMinimalCogOffset =
 				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
 
 			/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 			// range 0 .. 255, best when large; less important than the other factors
-			const double contrast = abs(params->miuBg - params->miuFg);
+			const double contrast = abs(params.miuBg - params.miuFg);
 			// just penalize severely low contrast
 			double minimalContrast =
 				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
-				(params->miuFg + params->miuBg) * .5;
+				(params.miuFg + params.miuBg) * .5;
 			register double fMinimalContrast = contrast;
 			if(contrast > minimalContrast)
 				fMinimalContrast = minimalContrast;
 			fMinimalContrast /= minimalContrast;
 
 			// 0.9 .. 1.9 (favor glyphs covering at least 10%)
-			register const double fGlyphWeight = params->glyphWeight + .9;
+			register const double fGlyphWeight = params.glyphWeight + .9;
 
 			double result =
 				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
@@ -270,12 +267,12 @@ namespace {
 	void findBestMatch(const FontEngine &fe, const Config &cfg,
 					   const vector<pair<Mat, Mat>> &charset,
 					   const Mat &patch, double patchSum,
-					   const Matcher &matcher, BestMatch &best,
+					   Matcher &matcher, BestMatch &best,
 					   vector<PixMapChar>::const_iterator itFeBegin,
 					   const double sz2) {
 		best.reset();
 
-		MatchParams &mp = *matcher.params;
+		MatchParams &mp = matcher.params;
 		Mat glyph, negGlyph, temp;
 		auto itFe = fe.charset().cbegin();
 		for(auto &glyphAndNegative : charset) {
@@ -436,8 +433,8 @@ void Transformer::run() {
 	const Mat resized = img.resized(cfg, &gray);
 	gray.convertTo(gray, CV_64FC1);
 
-	MatchParams mp;
-	Matcher matcher(sz, mp);
+	Matcher matcher(sz);
+	MatchParams &mp = matcher.params;
 	BestMatch best; // holds the best grayscale match found at a given time
 	Mat result(resized.rows, resized.cols, resized.type());
 	auto itFeBegin = fe.charset().cbegin();
