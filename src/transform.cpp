@@ -408,9 +408,13 @@ void Transformer::run() {
 	resultFile.append("Output").append(studiedCase).
 		concat(".bmp"); // generating a BMP result file
 
+	oss.str(""); oss.clear();
+	oss<<resultFile; // contains also the double quotes needed when the path contains Spaces
+	string quotedResultFile(oss.str());
+
 	if(img.name().compare(oldImg) == 0 && !newSettings) {
 		cout<<"Image already processed under these settings."<<endl;
-		system(resultFile.string().c_str());
+		system(quotedResultFile.c_str());
 		return;
 	}
 
@@ -463,5 +467,5 @@ void Transformer::run() {
 
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
-	system(resultFile.string().c_str());
+	system(quotedResultFile.c_str());
 }
