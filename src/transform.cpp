@@ -111,10 +111,19 @@ namespace {
 								MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
 			static const Point2d ORIGIN;
 
-			/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
+			/////////////// CORRECTNESS FACTORS (Best Matching & Good Contrast) ///////////////
 			// range 0..1, acting just as penalty for bad standard deviations
 			register const double fSdevFg = 1. - sqrt(params.aseFg) / SDEV_MAX;
 			register const double fSdevBg = 1. - sqrt(params.aseBg) / SDEV_MAX;
+
+			double minimalContrast = // minimal contrast for the average brightness
+				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
+				(params.miuFg + params.miuBg) * .5;
+			// range 0 .. 255, best when large
+			const double contrast = abs(params.miuBg - params.miuFg);
+			// Moderate encouragements for contrasts larger than minimalContrast:
+			// <1 for low contrast;  ~1 for minimalContrast;  >1 otherwise
+			register double fMinimalContrast = log10(9. * contrast / minimalContrast + 1.00001);
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
 			// best glyph location is when cog-s are near to each other
@@ -139,18 +148,7 @@ namespace {
 			// max 1.17 for cogAngle == 0
 			register const double fCogAngleLessThan45 = (1. + cosAngleCogs) * TWO_SQRT2;
 
-			/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
-			// range 0 .. 255, best when large; less important than the other factors
-			const double contrast = abs(params.miuBg - params.miuFg);
-			// just penalize severely low contrast for the average glyph brightness
-			double minimalContrast =
-				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
-				(params.miuFg + params.miuBg) * .5;
-			register double fMinimalContrast = contrast;
-			if(contrast > minimalContrast)
-				fMinimalContrast = minimalContrast;
-			fMinimalContrast /= minimalContrast;
-
+			/////////////// FANCINESS FACTOR (Larger glyphs) ///////////////
 			// <=1 for glyphs considered small;   >1 otherwise
 			register const double fGlyphWeight = params.glyphWeight + 1. - smallGlyphsCoverage;
 
