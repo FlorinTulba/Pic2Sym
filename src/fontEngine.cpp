@@ -260,18 +260,15 @@ namespace {
 	Adds a new mapping between glyph's index and the position it entered <chars>.
 	Updates the count of Blanks.
 	*/
-	void appendChar(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb,
-					map<FT_ULong, size_t> &code2Pixmap, vector<PixMapChar> &chars,
+	void appendChar(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, vector<PixMapChar> &chars,
 					unsigned &blanks, const double sz2) {
 		static const double EPS = 1e-6;
 
 		PixMapChar pmc(c, g->bitmap, g->bitmap_left, g->bitmap_top, bb);
-		if(abs(pmc.glyphSum) < EPS || abs(pmc.glyphSum - sz2) < EPS) // discard disguised Space chars
+		if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) // discard disguised Space chars
 			++blanks;
-		else {
-			code2Pixmap[c] = chars.size();
+		else 
 			chars.emplace_back(move(pmc));
-		}
 	}
 
 } // anonymous namespace
@@ -324,7 +321,21 @@ PixMapChar::PixMapChar(PixMapChar &&other) : // required by some vector manipula
 	other.data = nullptr;
 }
 
+PixMapChar& PixMapChar::operator=(PixMapChar &&other) {
+	if(this != &other) {
+		chCode = other.chCode;
+		glyphSum = other.glyphSum; negGlyphSum = other.negGlyphSum;
+		cogFg = other.cogFg; cogBg = other.cogBg;
+		rows = other.rows; cols = other.cols;
+		left = other.left; top = other.top;
+		delete[] data; data = other.data; other.data = nullptr;
+	}
+	return *this;
+}
+
 PixMapChar::~PixMapChar() { delete[] data; }
+
+const double FontEngine::SMALL_GLYPHS_PERCENT = 0.1; // smallest 10% of glyphs are considered small
 
 FontEngine::FontEngine() : chars(), fontSz(0U), dirty(true) {
 	FT_Error error = FT_Init_FreeType(&library);
@@ -364,10 +375,11 @@ bool FontEngine::checkFontFile(const string &fName, FT_Face &face_) const {
 
 void FontEngine::ready() {
 	if(dirty && face != nullptr && fontSz != 0U && !chars.empty()) {
+		if(encoding.empty())
+			encoding = "UNICODE";
 		ostringstream oss;
 		oss<<face->family_name<<'_'<<face->style_name<<'_'<<fontSz;
-		if(encoding.length() > 0)
-			oss<<'_'<<encoding;
+		oss<<'_'<<encoding;
 		id = oss.str();
 		dirty = false;
 	}
@@ -476,7 +488,6 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		throw logic_error("FontEngine::setFontSz called before FontEngine::setFace!");
 	}
 
-	map<FT_ULong, size_t> code2Pixmap;
 	vector<tuple<FT_ULong, double, double>> toResize;
 	double sz = fontSz = fontSz_, factorH, factorV;
 	const double sz2 = (double)fontSz * fontSz;
@@ -509,7 +520,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			if(width > fontSz || height > fontSz)
 				toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
 			else
-				appendChar(c, g, bb, code2Pixmap, chars, blanks, sz2);
+				appendChar(c, g, bb, chars, blanks, sz2);
 		}
 
 		// Resize characters which didn't fit initially
@@ -521,11 +532,21 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			req.width = (FT_ULong)floor(factorH * (fontSz<<6) / hRatio);
 			FT_Error error = FT_Request_Size(face, &req);
 			FT_Load_Char(face, c, FT_LOAD_RENDER);
-			appendChar(c, face->glyph, bb, code2Pixmap, chars, blanks, sz2);
+			appendChar(c, face->glyph, bb, chars, blanks, sz2);
 		}
 
 		if(blanks != 0U)
 			cout<<"Removed "<<blanks<<" Space characters from charset!"<<endl;
+
+		// Determine below max box coverage for smallest glyphs from the kept charset.
+		// This will be used to favor using larger glyphs when this option is selected.
+		auto smallGlyphsQty = (long)round(chars.size() * SMALL_GLYPHS_PERCENT);
+		nth_element(chars.begin(), next(chars.begin(), smallGlyphsQty), chars.end(),
+					[] (const PixMapChar &first, const PixMapChar &second) -> bool {
+						return first.glyphSum < second.glyphSum;
+					}
+		);
+		coverageOfSmallGlyphs = next(chars.begin(), smallGlyphsQty)->glyphSum / sz2;
 	)); // CHARSET_ALTERATION(SINGLE_ARG(
 
 #ifdef _DEBUG
@@ -537,11 +558,19 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl<<endl;
 
+	printf("Characters considered small cover at most %.2f%% of the box\n\n", 100*coverageOfSmallGlyphs);
+
+	map<FT_ULong, size_t> code2Pixmap;
+	auto itChars = chars.begin();
+	for(size_t i = 0U, iLim = chars.size(); i<iLim; ++i)
+		code2Pixmap[(itChars++)->chCode] = i;
+
+	cout<<"You may now inspect the characters. Leave by entering the Space character followed by Enter."<<endl;
+
 	req.height = (FT_ULong)round(factorV * (fontSz<<6));
 	req.width = (FT_ULong)round(factorH * (fontSz<<6));
 	FT_Error error = FT_Request_Size(face, &req);
 
-	cout<<"You may now inspect the characters. Leave by entering the Space character followed by Enter."<<endl;
 	for(FT_ULong c = 0U; c!=32U;) {
 		c = inputChar();
 
@@ -609,10 +638,7 @@ void FontEngine::generateCharmapCharts(const path& destdir) const {
 
 		// write this chart page to file
 		ostringstream oss;
-		oss<<face->family_name<<'_'<<face->style_name;
-		if(encoding.length() > 0)
-			oss<<'_'<<encoding;
-		oss<<'_'<<idx++<<".pgm";
+		oss<<face->family_name<<'_'<<face->style_name<<'_'<<encoding<<'_'<<idx++<<".pgm";
 		path temp(destdir); temp /= oss.str();
 		ofstream out_gray(temp.c_str(), ios::binary);
 		out_gray << "P5 " << COLS << " " << ROWS << " 255\n";
@@ -630,10 +656,26 @@ const vector<PixMapChar>& FontEngine::charset() const {
 	return chars;
 }
 
+double FontEngine::smallGlyphsCoverage() const {
+	if(dirty) {
+		cerr<<"coverageOfSmallGlyphs not ready yet! Please do all the configurations first!"<<endl;
+		throw logic_error("smallGlyphsCoverage called before the completion of configuration.");
+	}
+	return coverageOfSmallGlyphs;
+}
+
 const string& FontEngine::fontId() const {
 	if(dirty && !id.empty()) {
 		cerr<<"Id not ready yet! Please do all the configurations first!"<<endl;
 		throw logic_error("fontId called before the completion of configuration.");
 	}
 	return id;
+}
+
+const string& FontEngine::getEncoding() const {
+	if(dirty) {
+		cerr<<"encoding not ready yet! Please do all the configurations first!"<<endl;
+		throw logic_error("getEncoding called before the completion of configuration.");
+	}
+	return encoding;
 }

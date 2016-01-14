@@ -64,21 +64,24 @@ struct PixMapChar {
 	~PixMapChar();
 
 	void operator=(const PixMapChar&) = delete;
-	void operator=(PixMapChar&&) = delete;
+
+	PixMapChar& operator=(PixMapChar &&other); // needed when nth_element applies to vector<PixMapChar>
 };
 
 /*
 FontEngine class wraps some necessary FreeType functionality.
 */
 class FontEngine final {
+	static const double SMALL_GLYPHS_PERCENT; // percentage of total glyphs considered small
 
-	FT_Library library	= nullptr;	// the FreeType lib
+	FT_Library library = nullptr;	// the FreeType lib
 	FT_Face face		= nullptr;	// a loaded font
 
 	std::string encoding;			// selected charmap (cmap)
 	std::string id;					// the id of the current font
 	std::vector<PixMapChar> chars;	// data for each character within current charmap
 	
+	double coverageOfSmallGlyphs;	// max ratio of glyph area / containing area for small chars
 	unsigned fontSz = 0U;			// bounding box size
 	bool dirty = true;				// flag raised for new face/encoding/size; lowered by ready
 
@@ -95,15 +98,15 @@ public:
 	bool checkFontFile(const std::string &fName, FT_Face &face_) const;
 	void setFace(FT_Face &face_);		// Installs a new font
 	void selectEncoding();				// Setting a different charmap if available
-
 	void setFontSz(unsigned fontSz_);	// Sets the desired font height in pixels
 
 	// Generate several charts with the glyphs from current charmap
 	void generateCharmapCharts(const boost::filesystem::path& destdir) const;
 	
-	const std::vector<PixMapChar>& charset() const; // get the charset
-	
-	const std::string& fontId() const;	// current font id
+	const std::vector<PixMapChar>& charset() const;	// get the charset
+	double smallGlyphsCoverage() const;				// get coverageOfSmallGlyphs
+	const std::string& fontId() const;				// current font id
+	const std::string& getEncoding() const;			// get encoding
 };
 
 #endif

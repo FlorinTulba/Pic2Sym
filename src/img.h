@@ -23,7 +23,7 @@ class Img {
 	boost::filesystem::path imgPath;	// path of current image
 	std::string imgName;				// stem part of the image file name
 	cv::Mat source;						// the original image
-	bool rgb;							// color / grayscale
+	bool color;							// color / grayscale
 
 public:
 	Img() {}
@@ -39,7 +39,7 @@ public:
 	*/
 	cv::Mat resized(const Config &cfg, cv::Mat *grayVersion = nullptr) const;
 
-	bool isRGB() const { return rgb; }	// color / grayscale image
+	bool isColor() const { return color; }	// color / grayscale image
 	const std::string& name() const { return imgName; } // return the stem of the image file name
 };
 

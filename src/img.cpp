@@ -33,10 +33,10 @@ bool Img::reset(const string &picName) {
 	imgPath = move(newPic);
 	imgName = imgPath.stem().string();
 
-	rgb = source.channels() > 1;
+	color = source.channels() > 1;
 	cout<<"Processing "<<imgPath<<" (";
-	if(rgb)
-		cout<<"RGB";
+	if(color)
+		cout<<"Color";
 	else
 		cout<<"Grayscale";
 	cout<<" w="<<source.cols<<"; h="<<source.rows<<')'<<endl<<endl;
@@ -75,7 +75,7 @@ Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) const {
 	cout<<"The result will be "<<w/patchSz<<" characters wide and "<<h/patchSz<<" characters high."<<endl<<endl;
 
 	if(grayVersion != nullptr) {
-		if(rgb)
+		if(color)
 			cvtColor(resized_, *grayVersion, COLOR_RGB2GRAY);
 		else
 			*grayVersion = resized_;

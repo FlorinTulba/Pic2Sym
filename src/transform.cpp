@@ -38,9 +38,9 @@ namespace {
 		double aseFg, aseBg;
 
 #ifdef _DEBUG
-		static const string HEADER;
+		static const wstring HEADER;
 
-		friend ostream& operator<<(ostream &os, const MatchParams &mp) {
+		friend wostream& operator<<(wostream &os, const MatchParams &mp) {
 			os<<mp.cogGlyph.x<<",\t"<<mp.cogGlyph.y<<",\t"<<mp.cogPatch.x<<",\t"<<mp.cogPatch.y<<",\t"
 				<<mp.miuFg<<",\t"<<mp.miuBg<<",\t"<<mp.aseFg<<",\t"<<mp.aseBg<<",\t"<<mp.glyphWeight;
 			return os;
@@ -49,27 +49,29 @@ namespace {
 	};
 
 #ifdef _DEBUG
-	const string MatchParams::HEADER("#cogFgX,\t#cogFgY,\t#cogBgX,\t#cogBgY,\t"
-									 "#miuFg,\t#miuBg,\t#aseFg,\t#aseBg,\t#fg/all");
+	const wstring MatchParams::HEADER(L"#cogFgX,\t#cogFgY,\t#cogBgX,\t#cogBgY,\t"
+									 L"#miuFg,\t#miuBg,\t#aseFg,\t#aseBg,\t#fg/all");
 #endif // _DEBUG
 
-	struct Matcher {
-		const unsigned fontSz_1;	// size of the font - 1
+	class Matcher {
+		const unsigned fontSz_1;		// size of the font - 1
+		const double smallGlyphsCoverage; // max ratio of glyph area / containing area for small chars
 		const double PREFERRED_RADIUS;	// allowed distance between the cog-s of patch & chosen glyph
 		const double MAX_COG_OFFSET;	// max distance possible between the cog-s of patch & chosen glyph
 		// happens for the extremes of a diagonal
 
 		const Point2d centerPatch;		// center of the patch
 
+	public:
 		MatchParams params;
 
-		Matcher(unsigned fontSz) : fontSz_1(fontSz - 1U),
-			PREFERRED_RADIUS(3U * fontSz / 8.),
-			MAX_COG_OFFSET(sqrt(2) * fontSz_1),
+		Matcher(unsigned fontSz, double smallGlyphsCoverage_) :
+			fontSz_1(fontSz - 1U), smallGlyphsCoverage(smallGlyphsCoverage_),
+			PREFERRED_RADIUS(3U * fontSz / 8.), MAX_COG_OFFSET(sqrt(2) * fontSz_1),
 			centerPatch(fontSz_1/2., fontSz_1/2.) {}
 
 		/*
-		Returns a small positive value for better correlations.
+		Returns a larger positive value for better correlations.
 		Good correlation is a subjective matter.
 
 		Several considered factors are mentioned below.
@@ -82,22 +84,22 @@ namespace {
 		* 2. minimize the difference between the remaining background around the selected glyph
 		and the corresponding part from the original patch
 
-		* 3. have enough contrast between foreground selected glyph & background
+		+ 3. have enough contrast between foreground & background of the selected glyph
 
-		+ 4. have the color of the largest part (foreground / background)
-		as close as possible to the mean of the entire original patch.
-		Gain: Smoothness;		Drawback: Less Contrast(A3)
+		+ 4. use largest possible matching glyph
 
 		B) Together, the patches should also preserve region's gradients:
-		+ 5. Prefer glyphs that respect the gradient of their corresponding patch.
-		Gain: More natural;	Drawback: More computations
+		* 1. Prefer glyphs that respect the gradient of their corresponding patch.
 
-		+ 6. Consider the gradient within a slightly extended patch
+		+ 2. Consider the gradient within a slightly extended patch
 		Gain: Smoothness;		Drawback: Complexity
 
 
-		Point A3 just maximizes the difference between the means of the fg & bg.
 		Points A1&2 minimizes the standard deviation (or a similar measure) on each region.
+		Point A3 just penalizes small differences between the means of the fg & bg.
+		Point A4 favors larger glyphs.
+		Point B1 ensures the weight centers of the glyph and patch are close to each other
+		as distance and as direction.
 
 		The remaining points might be addressed in a future version.
 		*/
@@ -105,7 +107,8 @@ namespace {
 			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
 			static const double SDEV_MAX = 255/2.;
 			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
-			static const double MIN_CONTRAST_BRIGHT = 2., MIN_CONTRAST_DARK = 5.;
+			static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
+								MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
 			static const Point2d ORIGIN;
 
 			/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
@@ -114,6 +117,13 @@ namespace {
 			register const double fSdevBg = 1. - sqrt(params.aseBg) / SDEV_MAX;
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
+			// best glyph location is when cog-s are near to each other
+			// range 0 .. 1.42*fontSz_1, best when 0
+			const double cogOffset = norm(params.cogPatch - params.cogGlyph);
+			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
+			register const double fMinimalCogOffset =
+				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
+
 			const Point2d relCogPatch = params.cogPatch - centerPatch;
 			const Point2d relCogGlyph = params.cogGlyph - centerPatch;
 
@@ -123,23 +133,16 @@ namespace {
 			double cosAngleCogs = 0.;
 			if(relCogGlyph != ORIGIN && relCogPatch != ORIGIN) // avoid DivBy0
 				cosAngleCogs = relCogGlyph.dot(relCogPatch) /
-				(norm(relCogGlyph) * norm(relCogPatch));
+								(norm(relCogGlyph) * norm(relCogPatch));
 
 			// 0..1 for |cogAngle| >= 45;   >1 for |cogAngle| < 45
 			// max 1.17 for cogAngle == 0
 			register const double fCogAngleLessThan45 = (1. + cosAngleCogs) * TWO_SQRT2;
 
-			// best glyph location is when cog-s are near to each other
-			// range 0 .. 1.42*fontSz_1, best when 0
-			const double cogOffset = norm(params.cogPatch - params.cogGlyph);
-			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
-			register const double fMinimalCogOffset =
-				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
-
 			/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 			// range 0 .. 255, best when large; less important than the other factors
 			const double contrast = abs(params.miuBg - params.miuFg);
-			// just penalize severely low contrast
+			// just penalize severely low contrast for the average glyph brightness
 			double minimalContrast =
 				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
 				(params.miuFg + params.miuBg) * .5;
@@ -148,8 +151,8 @@ namespace {
 				fMinimalContrast = minimalContrast;
 			fMinimalContrast /= minimalContrast;
 
-			// 0.9 .. 1.9 (favor glyphs covering at least 10%)
-			register const double fGlyphWeight = params.glyphWeight + .9;
+			// <=1 for glyphs considered small;   >1 otherwise
+			register const double fGlyphWeight = params.glyphWeight + 1. - smallGlyphsCoverage;
 
 			double result =
 				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
@@ -160,17 +163,21 @@ namespace {
 				* pow(fSdevBg, cfg.get_kSdevBg())
 
 				/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
-				// <=1 for |angleCogs| >= 45;  >1 otherwise
-				* pow(fCogAngleLessThan45, cfg.get_kCosAngleCogs())
-
 				// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
 				* pow(fMinimalCogOffset, cfg.get_kCogOffset())
+
+				// <=1 for |angleCogs| >= 45;  >1 otherwise
+				// lessen the importance for small cogOffset-s (< PREFERRED_RADIUS)
+				* pow(fCogAngleLessThan45,
+					cfg.get_kCosAngleCogs() *
+						min(cogOffset, PREFERRED_RADIUS)/
+							PREFERRED_RADIUS)
 
 				/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
 				// <1 for poor contrast; 1 otherwise
 				* pow(fMinimalContrast, cfg.get_kContrast())
 
-				// <=1 for glyphs covering <= 10%;  >1 otherwise
+				// <=1 for glyphs considered small;  >1 otherwise
 				* pow(fGlyphWeight, cfg.get_kGlyphWeight());
 
 			return result;
@@ -179,30 +186,50 @@ namespace {
 
 	// Holds the best grayscale match found at a given time
 	struct BestMatch {
-		double score;		// score of the best
-		unsigned charIdx;	// glyph index
+		double score;			// score of the best
+		unsigned charIdx;		// index within vector<PixMapChar>
+		unsigned long charCode;	// glyph code
+		const bool unicode;		// is the charmap in unicode
 
 		MatchParams params;	// parameters of the match for the best glyph
 
-		BestMatch() { reset(); }
+		BestMatch(bool isUnicode = true) : unicode(isUnicode) { reset(); }
 
 		void reset() {
 			score = numeric_limits<double>::lowest();
 			charIdx = UINT_MAX; // no best yet
+			charCode = 32; // Space
 		}
 
 #ifdef _DEBUG
-		static const string HEADER;
+		static const wstring HEADER;
 
-		friend ostream& operator<<(ostream &os, const BestMatch &bm) {
-			os<<bm.charIdx<<",\t"<<bm.score<<",\t"<<bm.params;
+		friend wostream& operator<<(wostream &os, const BestMatch &bm) {
+			unsigned long chCode = bm.charCode;
+			if(bm.unicode) {
+				if(chCode == (unsigned long)',')
+					os<<L"COMMA";
+				else if(chCode == (unsigned long)'(')
+					os<<L"OPEN_PAR";
+				else if(chCode == (unsigned long)')')
+					os<<L"CLOSE_PAR";
+				else if(os<<(wchar_t)chCode)
+					os<<'('<<chCode<<')';
+				else {
+					os.clear();
+					os<<chCode;
+				}
+			} else
+				os<<chCode;
+
+			os<<",\t"<<bm.score<<",\t"<<bm.params;
 			return os;
 		}
 #endif // _DEBUG
 	};
 
 #ifdef _DEBUG
-	const string BestMatch::HEADER(string("#GlyphIdx,\t#ChosenScore,\t") + MatchParams::HEADER);
+	const wstring BestMatch::HEADER(wstring(L"#GlyphCode,\t#ChosenScore,\t") + MatchParams::HEADER);
 #endif // _DEBUG
 
 	// Let the user pick a new image to process or continue to use the existing one
@@ -264,17 +291,21 @@ namespace {
 		return result;
 	}
 	
-	void findBestMatch(const FontEngine &fe, const Config &cfg,
-					   const vector<pair<Mat, Mat>> &charset,
-					   const Mat &patch, double patchSum,
-					   Matcher &matcher, BestMatch &best,
+	void findBestMatch(const Config &cfg, const vector<pair<Mat, Mat>> &charset,
+					   const Mat &patch, Matcher &matcher, BestMatch &best,
 					   vector<PixMapChar>::const_iterator itFeBegin,
-					   const double sz2) {
+					   const double sz2, const Mat &consec) {
 		best.reset();
 
+		double patchSum = *sum(patch).val;
+		Mat glyph, negGlyph, temp, temp1;
+		reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+		reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+
 		MatchParams &mp = matcher.params;
-		Mat glyph, negGlyph, temp;
-		auto itFe = fe.charset().cbegin();
+		mp.cogPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // center of gravity
+
+		auto itFe = itFeBegin;
 		for(auto &glyphAndNegative : charset) {
 			tie(glyph, negGlyph) = glyphAndNegative;
 
@@ -311,6 +342,7 @@ namespace {
 			double score = matcher.score(cfg);
 			if(score > best.score) {
 				best.score = score;
+				best.charCode = itFe->chCode;
 				best.charIdx = (unsigned)distance(itFeBegin, itFe);
 				best.params = mp;
 			}
@@ -322,18 +354,18 @@ namespace {
 	void commitMatch(const Config &cfg, const vector<pair<Mat, Mat>> &charset,
 					 const BestMatch &best, Mat &result,
 					 const Mat &resized, const Mat &patch, unsigned r, unsigned c,
-					 bool isRGB, vector<PixMapChar>::const_iterator itFeBegin) {
+					 bool isColor, vector<PixMapChar>::const_iterator itFeBegin) {
 		auto sz = cfg.getFontSz();
 		Mat patchResult(result, Range(r, r+sz), Range(c, c+sz)), glyph, negGlyph;
 		tie(glyph, negGlyph) = *next(charset.begin(), best.charIdx);
-		if(isRGB) {
-			Mat patchRGB(resized, Range(r, r+sz), Range(c, c+sz));
+		if(isColor) {
+			Mat patchColor(resized, Range(r, r+sz), Range(c, c+sz));
 			auto itFeBest = next(itFeBegin, best.charIdx);
 			double glyphBestSum = itFeBest->glyphSum,
 				negGlyphBestSum = itFeBest->negGlyphSum;
 
 			vector<Mat> channels;
-			split(patchRGB, channels);
+			split(patchColor, channels);
 			assert(channels.size() == 3);
 
 			double diffFgBg = 0.;
@@ -344,15 +376,13 @@ namespace {
 					miuBg = ch.dot(negGlyph) / negGlyphBestSum,
 					newDiff = miuFg - miuBg;
 
-				glyph.convertTo(ch, CV_8UC1,
-								newDiff,
-								miuBg);
+				glyph.convertTo(ch, CV_8UC1, newDiff, miuBg);
 
 				diffFgBg += abs(newDiff);
 			}
 
 			if(diffFgBg < 3.*cfg.getBlankThreshold())
-				patchResult = mean(patchRGB);
+				patchResult = mean(patchColor);
 			else
 				merge(channels, patchResult);
 
@@ -361,8 +391,8 @@ namespace {
 				patchResult = mean(patch);
 			else
 				glyph.convertTo(patchResult, CV_8UC1,
-				best.params.miuFg - best.params.miuBg,
-				best.params.miuBg);
+								best.params.miuFg - best.params.miuBg,
+								best.params.miuBg);
 		}
 	}
 } // anonymous namespace
@@ -419,8 +449,8 @@ void Transformer::run() {
 	path traceFile(cfg.getWorkDir());
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
-	ofstream ofs(traceFile.c_str());
-	ofs<<BestMatch::HEADER<<endl;
+	wofstream ofs(traceFile.c_str());
+	ofs<<"#Row,\t#Col,\t"<<BestMatch::HEADER<<endl;
 #endif
 
 	unsigned sz = cfg.getFontSz();
@@ -433,9 +463,9 @@ void Transformer::run() {
 	const Mat resized = img.resized(cfg, &gray);
 	gray.convertTo(gray, CV_64FC1);
 
-	Matcher matcher(sz);
+	Matcher matcher(sz, fe.smallGlyphsCoverage());
 	MatchParams &mp = matcher.params;
-	BestMatch best; // holds the best grayscale match found at a given time
+	BestMatch best(fe.getEncoding().compare("UNICODE") == 0); // holds the best grayscale match found at a given time
 	Mat result(resized.rows, resized.cols, resized.type());
 	auto itFeBegin = fe.charset().cbegin();
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
@@ -444,25 +474,25 @@ void Transformer::run() {
 
 		for(unsigned c = 0U, w = (unsigned)gray.cols; c<w; c += sz) {
 			Mat patch(gray, Range(r, r+sz), Range(c, c+sz));
-			double patchSum = *sum(patch).val;
 
-			reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
-			reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
-			mp.cogPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // center of gravity
-
-			findBestMatch(fe, cfg, charset, patch, patchSum, matcher, best, itFeBegin, sz2);
+			findBestMatch(cfg, charset, patch, matcher, best, itFeBegin, sz2, consec);
 
 #ifdef _DEBUG
-			ofs<<best<<endl;
+			ofs<<r/sz<<",\t"<<c/sz<<",\t"<<best<<endl;
 #endif
 
-			commitMatch(cfg, charset, best, result, resized, patch, r, c, img.isRGB(), itFeBegin);
+			commitMatch(cfg, charset, best, result, resized, patch, r, c, img.isColor(), itFeBegin);
 		}
 	}
+
+#ifdef _DEBUG
+	// Flushing and closing the trace file, to be also ready when inspecting the resulted image
+	ofs.close();
+#endif
 
 	newSettings = false;
 
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
-	system(quotedResultFile.c_str());
+	system(quotedResultFile.c_str()); // inspecting the resulted image
 }
