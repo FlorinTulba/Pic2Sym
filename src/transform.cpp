@@ -428,7 +428,7 @@ void Transformer::run() {
 	auto oldImg = img.name();
 	selectImage(img);
 
-	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId(); // no extension yet
+	ostringstream oss; oss<<img.name()<<'_'<<fe.fontId()<<'_'<<cfg.joined(); // no extension yet
 	const string studiedCase = oss.str(); // id included in the result & trace file names
 
 	path resultFile(cfg.getWorkDir());

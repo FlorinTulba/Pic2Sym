@@ -378,8 +378,7 @@ void FontEngine::ready() {
 		if(encoding.empty())
 			encoding = "UNICODE";
 		ostringstream oss;
-		oss<<face->family_name<<'_'<<face->style_name<<'_'<<fontSz;
-		oss<<'_'<<encoding;
+		oss<<face->family_name<<'_'<<face->style_name<<'_'<<encoding<<'_'<<fontSz;
 		id = oss.str();
 		dirty = false;
 	}

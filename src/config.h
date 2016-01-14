@@ -56,6 +56,8 @@ public:
 	double get_kCogOffset() const { return kCogOffset; }
 	double get_kContrast() const { return kContrast; }
 	double get_kGlyphWeight() const { return kGlyphWeight; }
+
+	const std::string joined() const; // returns the settings joined by underscores
 };
 
 #endif

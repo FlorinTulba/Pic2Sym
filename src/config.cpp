@@ -171,3 +171,11 @@ bool Config::update() {
 
 	return someChanges;
 }
+
+const string Config::joined() const {
+	// fontSz appears within fontId; outH & outW aren't necessary
+	ostringstream oss;
+	oss<<threshold4Blank<<'_'<<kContrast<<'_'<<kGlyphWeight<<'_'<<
+		kSdevFg<<'_'<<kSdevBg<<'_'<<kCosAngleCogs<<'_'<<kCogOffset;
+	return oss.str();
+}
