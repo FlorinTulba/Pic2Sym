@@ -112,32 +112,37 @@ namespace {
 		double score(const Config &cfg) const {
 			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
 			static const double SDEV_MAX = 255/2.;
-			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
+			static const double E_1 = expm1(1), SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
 			static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
 								MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
+			static const double CONTRAST_RATIO = (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) / (2.*255);
 			static const Point2d ORIGIN;
 
 			/////////////// CORRECTNESS FACTORS (Best Matching & Good Contrast) ///////////////
 			// range 0..1, acting just as penalty for bad standard deviations
-			register const double fSdevFg = 1. - sqrt(params.aseFg) / SDEV_MAX;
-			register const double fSdevBg = 1. - sqrt(params.aseBg) / SDEV_MAX;
+			// closer to 1 for good sdev of fg;  tends to 0 otherwise
+			register const double fSdevFg = pow(1. - sqrt(params.aseFg) / SDEV_MAX,
+												cfg.get_kSdevFg());
+			register const double fSdevBg = pow(1. - sqrt(params.aseBg) / SDEV_MAX,
+												cfg.get_kSdevBg());
 
-			double minimalContrast = // minimal contrast for the average brightness
-				MIN_CONTRAST_BRIGHT + (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) *
-				(params.miuFg + params.miuBg) * .5;
+			const double minimalContrast = // minimal contrast for the average brightness
+				MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (params.miuFg + params.miuBg);
 			// range 0 .. 255, best when large
 			const double contrast = abs(params.miuBg - params.miuFg);
 			// Moderate encouragements for contrasts larger than minimalContrast:
 			// <1 for low contrast;  ~1 for minimalContrast;  >1 otherwise
-			register double fMinimalContrast = log10(9. * contrast / minimalContrast + 1.00001);
+			register double fMinimalContrast = pow(log1p(E_1 * contrast / minimalContrast),
+												   cfg.get_kContrast());
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
 			// best glyph location is when cog-s are near to each other
 			// range 0 .. 1.42*fontSz_1, best when 0
 			const double cogOffset = norm(params.cogPatch - params.cogGlyph);
-			// 0.266 .. 1 for cogOffset >= PREFERRED_RADIUS;    1 .. 1.266 for less
+			// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
 			register const double fMinimalCogOffset =
-				1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET;
+				pow(1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET,
+					cfg.get_kCogOffset());
 
 			const Point2d relCogPatch = params.cogPatch - centerPatch;
 			const Point2d relCogGlyph = params.cogGlyph - centerPatch;
@@ -150,39 +155,18 @@ namespace {
 				cosAngleCogs = relCogGlyph.dot(relCogPatch) /
 								(norm(relCogGlyph) * norm(relCogPatch));
 
-			// 0..1 for |cogAngle| >= 45;   >1 for |cogAngle| < 45
-			// max 1.17 for cogAngle == 0
-			register const double fCogAngleLessThan45 = (1. + cosAngleCogs) * TWO_SQRT2;
+			// <=1 for |angleCogs| >= 45;  >1 otherwise
+			// lessen the importance for small cogOffset-s (< PREFERRED_RADIUS)
+			register const double fCogAngleLessThan45 = pow((1. + cosAngleCogs) * TWO_SQRT2,
+				cfg.get_kCosAngleCogs() * min(cogOffset, PREFERRED_RADIUS) / PREFERRED_RADIUS);
 
 			/////////////// FANCINESS FACTOR (Larger glyphs) ///////////////
 			// <=1 for glyphs considered small;   >1 otherwise
-			register const double fGlyphWeight = params.glyphWeight + 1. - smallGlyphsCoverage;
+			register const double fGlyphWeight = pow(params.glyphWeight + 1. - smallGlyphsCoverage,
+				cfg.get_kGlyphWeight());
 
-			double result =
-				/////////////// CORRECTNESS FACTORS (Best Matching) ///////////////
-				// closer to 1 for good sdev of fg;  tends to 0 otherwise
-				pow(fSdevFg, cfg.get_kSdevFg())
-
-				// closer to 1 for good sdev of bg;  tends to 0 otherwise
-				* pow(fSdevBg, cfg.get_kSdevBg())
-
-				/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
-				// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
-				* pow(fMinimalCogOffset, cfg.get_kCogOffset())
-
-				// <=1 for |angleCogs| >= 45;  >1 otherwise
-				// lessen the importance for small cogOffset-s (< PREFERRED_RADIUS)
-				* pow(fCogAngleLessThan45,
-					cfg.get_kCosAngleCogs() *
-						min(cogOffset, PREFERRED_RADIUS)/
-							PREFERRED_RADIUS)
-
-				/////////////// FANCINESS FACTORS (Larger glyphs & contrast) ///////////////
-				// <1 for poor contrast; 1 otherwise
-				* pow(fMinimalContrast, cfg.get_kContrast())
-
-				// <=1 for glyphs considered small;  >1 otherwise
-				* pow(fGlyphWeight, cfg.get_kGlyphWeight());
+			double result = fSdevFg * fSdevBg * fMinimalContrast *
+				fMinimalCogOffset * fCogAngleLessThan45 * fGlyphWeight;
 
 			return result;
 		}
@@ -437,7 +421,8 @@ void Transformer::run() {
 
 	path resultFile(cfg.getWorkDir());
 	resultFile.append("Output").append(studiedCase).
-		concat(".bmp"); // generating a BMP result file
+		concat(".jpg");
+	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
 
 	oss.str(""); oss.clear();
 	oss<<resultFile; // contains also the double quotes needed when the path contains Spaces
@@ -487,6 +472,9 @@ void Transformer::run() {
 
 			commitMatch(cfg, charset, best, result, resized, patch, r, c, img.isColor(), itFeBegin);
 		}
+#ifdef _DEBUG
+		ofs.flush(); // flush after processing a full row (of height sz) of the image
+#endif
 	}
 
 #ifdef _DEBUG
