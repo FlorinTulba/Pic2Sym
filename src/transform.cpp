@@ -130,9 +130,9 @@ namespace {
 				MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (params.miuFg + params.miuBg);
 			// range 0 .. 255, best when large
 			const double contrast = abs(params.miuBg - params.miuFg);
-			// Moderate encouragements for contrasts larger than minimalContrast:
-			// <1 for low contrast;  ~1 for minimalContrast;  >1 otherwise
-			register double fMinimalContrast = pow(log1p(E_1 * contrast / minimalContrast),
+			// Encourage contrasts larger than minimalContrast:
+			// <1 for low contrast;  1 for minimalContrast;  >1 otherwise
+			register double fMinimalContrast = pow(contrast / minimalContrast,
 												   cfg.get_kContrast());
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
