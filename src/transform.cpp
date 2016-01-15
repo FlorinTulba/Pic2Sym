@@ -84,9 +84,9 @@ namespace {
 		* 2. minimize the difference between the remaining background around the selected glyph
 		and the corresponding part from the original patch
 
-		+ 3. have enough contrast between foreground & background of the selected glyph
-
-		+ 4. use largest possible matching glyph
+		* 3. have enough contrast between foreground & background of the selected glyph.
+		Considered alone, this factor provides surprisingly good results,
+		despite it ignores the variance within each of the 2 regions (fg & bg).
 
 		B) Together, the patches should also preserve region's gradients:
 		* 1. Prefer glyphs that respect the gradient of their corresponding patch.
@@ -94,12 +94,18 @@ namespace {
 		+ 2. Consider the gradient within a slightly extended patch
 		Gain: Smoothness;		Drawback: Complexity
 
+		C) Balance the accuracy with more artistic aspects:
+		+ 1. use largest possible 'matching' glyph, not just dots, quotes, commas
 
-		Points A1&2 minimizes the standard deviation (or a similar measure) on each region.
-		Point A3 just penalizes small differences between the means of the fg & bg.
-		Point A4 favors larger glyphs.
+
+		Points A1&2 minimize the standard deviation (or a similar measure) on each region.
+
+		Point A3 encourages larger differences between the means of the fg & bg.
+
 		Point B1 ensures the weight centers of the glyph and patch are close to each other
 		as distance and as direction.
+
+		Point C1 favors larger glyphs.
 
 		The remaining points might be addressed in a future version.
 		*/
