@@ -48,7 +48,7 @@ bool Config::parseCfg() {
 	bool correct = false;
 	unsigned newFontSz = 0U, newOutW = 0U, newOutH = 0U, newThreshold4Blank = 0U;
 	double new_kSdevFg = 0., new_kSdevBg = 0.,
-		new_kCosAngleCogs = 0., new_kCogOffset = 0.,
+		new_kCosAngleMCs = 0., new_kMCsOffset = 0.,
 		new_kContrast = 0., new_kGlyphWeight = 0.;
 	string prop;
 	try {
@@ -63,15 +63,15 @@ bool Config::parseCfg() {
 		new_kGlyphWeight	= theCfg.get<double>(prop = "LARGER_GLYPHS_PREF");
 		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_GLYPH_CORRECTNESS");
 		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_GLYPH_CORRECTNESS");
-		new_kCosAngleCogs	= theCfg.get<double>(prop = "DIRECTIONAL_SMOOTHNESS");
-		new_kCogOffset		= theCfg.get<double>(prop = "GRAVITATIONAL_SMOOTHNESS");
+		new_kCosAngleMCs	= theCfg.get<double>(prop = "DIRECTIONAL_SMOOTHNESS");
+		new_kMCsOffset		= theCfg.get<double>(prop = "GRAVITATIONAL_SMOOTHNESS");
 
 		if(newFontSz < 7U || newFontSz > 50U ||
 		   newOutW < 3U || newOutW > 1024 ||
 		   newOutH < 3U || newOutH > 768 ||
 		   newThreshold4Blank > 50U ||
 		   new_kSdevFg < 0. || new_kSdevBg < 0. ||
-		   new_kCosAngleCogs < 0. || new_kCogOffset < 0. ||
+		   new_kCosAngleMCs < 0. || new_kMCsOffset < 0. ||
 		   new_kContrast < 0. || new_kGlyphWeight < 0.)
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
@@ -80,7 +80,7 @@ bool Config::parseCfg() {
 			outW = newOutW; outH = newOutH;
 			kContrast = new_kContrast; kGlyphWeight = new_kGlyphWeight;
 			kSdevFg = new_kSdevFg; kSdevBg = new_kSdevBg;
-			kCosAngleCogs = new_kCosAngleCogs; kCogOffset = new_kCogOffset;
+			kCosAngleMCs = new_kCosAngleMCs; kMCsOffset = new_kMCsOffset;
 		}
 
 	} catch(info_parser_error&) {
@@ -105,8 +105,8 @@ bool Config::update() {
 		<<"LARGER_GLYPHS_PREF = "<<kGlyphWeight<<endl
 		<<"UNDER_GLYPH_CORRECTNESS = "<<kSdevFg<<endl
 		<<"ASIDE_GLYPH_CORRECTNESS = "<<kSdevBg<<endl
-		<<"DIRECTIONAL_SMOOTHNESS = "<<kCosAngleCogs<<endl
-		<<"GRAVITATIONAL_SMOOTHNESS = "<<kCogOffset<<endl
+		<<"DIRECTIONAL_SMOOTHNESS = "<<kCosAngleMCs<<endl
+		<<"GRAVITATIONAL_SMOOTHNESS = "<<kMCsOffset<<endl
 		<<endl;
 	oss<<"Keep these settings?";
 	bool someChanges = false;
@@ -116,7 +116,7 @@ bool Config::update() {
 			oldThreshold4Blank = threshold4Blank;
 		double old_kContrast = kContrast, old_kGlyphWeight = kGlyphWeight,
 			old_kSdevFg = kSdevFg, old_kSdevBg = kSdevBg,
-			old_kCosAngleCogs = kCosAngleCogs, old_kCogOffset = kCogOffset;
+			old_kCosAngleMCs = kCosAngleMCs, old_kMCsOffset = kMCsOffset;
 
 		oss.str(""); oss.clear(); oss<<"notepad.exe "<<cfgPath;
 		const string openCfgWithNotepad(oss.str());
@@ -159,12 +159,12 @@ bool Config::update() {
 			cout<<"New ASIDE_GLYPH_CORRECTNESS is "<<kSdevBg<<endl;
 			someChanges = true;
 		}
-		if(old_kCosAngleCogs != kCosAngleCogs) {
-			cout<<"New DIRECTIONAL_SMOOTHNESS is "<<kCosAngleCogs<<endl;
+		if(old_kCosAngleMCs != kCosAngleMCs) {
+			cout<<"New DIRECTIONAL_SMOOTHNESS is "<<kCosAngleMCs<<endl;
 			someChanges = true;
 		}
-		if(old_kCogOffset != kCogOffset) {
-			cout<<"New GRAVITATIONAL_SMOOTHNESS is "<<kCogOffset<<endl;
+		if(old_kMCsOffset != kMCsOffset) {
+			cout<<"New GRAVITATIONAL_SMOOTHNESS is "<<kMCsOffset<<endl;
 			someChanges = true;
 		}
 	}
@@ -176,6 +176,6 @@ const string Config::joined() const {
 	// fontSz appears within fontId; outH & outW aren't necessary
 	ostringstream oss;
 	oss<<threshold4Blank<<'_'<<kContrast<<'_'<<kGlyphWeight<<'_'<<
-		kSdevFg<<'_'<<kSdevBg<<'_'<<kCosAngleCogs<<'_'<<kCogOffset;
+		kSdevFg<<'_'<<kSdevBg<<'_'<<kCosAngleMCs<<'_'<<kMCsOffset;
 	return oss.str();
 }

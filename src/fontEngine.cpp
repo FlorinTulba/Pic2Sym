@@ -181,10 +181,10 @@ namespace {
 	}
 
 	/*
-	Computing the centers of gravity (cog) of a given glyph and its background.
+	Computing the mass center (mc) of a given glyph and its background.
 	*/	
 	pair<const Point2d, const Point2d>
-		computeCog(unsigned sz, unsigned char *data, 
+		computeMc(unsigned sz, unsigned char *data, 
 					unsigned char rows, unsigned char cols,
 					unsigned char left, unsigned char top,
 					double glyphSum, double negGlyphSum,
@@ -308,14 +308,14 @@ PixMapChar::PixMapChar(unsigned long charCode,			// the character code
 	Mat consec(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
 
-	tie(cogFg, cogBg) =
-		computeCog((unsigned)sz, data, rows, cols, left, top,
+	tie(mcFg, mcBg) =
+		computeMc((unsigned)sz, data, rows, cols, left, top,
 					glyphSum, negGlyphSum, pointSumConsecToSz_1, consec);
 }
 
 PixMapChar::PixMapChar(PixMapChar &&other) : // required by some vector manipulations
 		chCode(other.chCode), glyphSum(other.glyphSum), negGlyphSum(other.negGlyphSum),
-		cogFg(other.cogFg), cogBg(other.cogBg),
+		mcFg(other.mcFg), mcBg(other.mcBg),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		data(other.data) {
 	other.data = nullptr;
@@ -325,7 +325,7 @@ PixMapChar& PixMapChar::operator=(PixMapChar &&other) {
 	if(this != &other) {
 		chCode = other.chCode;
 		glyphSum = other.glyphSum; negGlyphSum = other.negGlyphSum;
-		cogFg = other.cogFg; cogBg = other.cogBg;
+		mcFg = other.mcFg; mcBg = other.mcBg;
 		rows = other.rows; cols = other.cols;
 		left = other.left; top = other.top;
 		delete[] data; data = other.data; other.data = nullptr;

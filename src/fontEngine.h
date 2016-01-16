@@ -33,8 +33,8 @@ struct PixMapChar {
 	unsigned long chCode = 0UL;	// character code
 	double glyphSum = 0.;		// sum of the pixel values divided by 255
 	double negGlyphSum = 0.;	// sum of the pixel values divided by 255 for negated glyph
-	cv::Point2d cogFg;			// center of gravity of the glyph
-	cv::Point2d cogBg;			// center of gravity of the background of the glyph
+	cv::Point2d mcFg;			// glyph's mass center
+	cv::Point2d mcBg;			// mass center for the background of the glyph
 
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'data' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square

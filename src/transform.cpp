@@ -28,8 +28,8 @@ using namespace boost::filesystem;
 namespace {
 	// Holds relevant data during patch&glyph matching
 	struct MatchParams {
-		Point2d cogPatch;			// center of gravity of patch
-		Point2d cogGlyph;			// center of gravity of glyph
+		Point2d mcPatch;			// mass center for the patch
+		Point2d mcGlyph;			// glyph's mass center
 		double glyphWeight;			// % of the box covered by the glyph (0..1)
 		double miuFg, miuBg;		// average color for fg / bg (range 0..255)
 
@@ -41,7 +41,7 @@ namespace {
 		static const wstring HEADER;
 
 		friend wostream& operator<<(wostream &os, const MatchParams &mp) {
-			os<<mp.cogGlyph.x<<",\t"<<mp.cogGlyph.y<<",\t"<<mp.cogPatch.x<<",\t"<<mp.cogPatch.y<<",\t"
+			os<<mp.mcGlyph.x<<",\t"<<mp.mcGlyph.y<<",\t"<<mp.mcPatch.x<<",\t"<<mp.mcPatch.y<<",\t"
 				<<mp.miuFg<<",\t"<<mp.miuBg<<",\t"<<mp.aseFg<<",\t"<<mp.aseBg<<",\t"<<mp.glyphWeight;
 			return os;
 		}
@@ -49,15 +49,15 @@ namespace {
 	};
 
 #ifdef _DEBUG
-	const wstring MatchParams::HEADER(L"#cogFgX,\t#cogFgY,\t#cogBgX,\t#cogBgY,\t"
+	const wstring MatchParams::HEADER(L"#mcFgX,\t#mcFgY,\t#mcBgX,\t#mcBgY,\t"
 									 L"#miuFg,\t#miuBg,\t#aseFg,\t#aseBg,\t#fg/all");
 #endif // _DEBUG
 
 	class Matcher {
 		const unsigned fontSz_1;		// size of the font - 1
 		const double smallGlyphsCoverage; // max ratio of glyph area / containing area for small chars
-		const double PREFERRED_RADIUS;	// allowed distance between the cog-s of patch & chosen glyph
-		const double MAX_COG_OFFSET;	// max distance possible between the cog-s of patch & chosen glyph
+		const double PREFERRED_RADIUS;	// allowed distance between the mc-s of patch & chosen glyph
+		const double MAX_MCS_OFFSET;	// max distance possible between the mc-s of patch & chosen glyph
 		// happens for the extremes of a diagonal
 
 		const Point2d centerPatch;		// center of the patch
@@ -67,7 +67,7 @@ namespace {
 
 		Matcher(unsigned fontSz, double smallGlyphsCoverage_) :
 			fontSz_1(fontSz - 1U), smallGlyphsCoverage(smallGlyphsCoverage_),
-			PREFERRED_RADIUS(3U * fontSz / 8.), MAX_COG_OFFSET(sqrt(2) * fontSz_1),
+			PREFERRED_RADIUS(3U * fontSz / 8.), MAX_MCS_OFFSET(sqrt(2) * fontSz_1),
 			centerPatch(fontSz_1/2., fontSz_1/2.) {}
 
 		/*
@@ -136,29 +136,29 @@ namespace {
 												   cfg.get_kContrast());
 
 			/////////////// SMOOTHNESS FACTORS (Similar gradient) ///////////////
-			// best glyph location is when cog-s are near to each other
+			// best glyph location is when mc-s are near to each other
 			// range 0 .. 1.42*fontSz_1, best when 0
-			const double cogOffset = norm(params.cogPatch - params.cogGlyph);
-			// <=1 for cogOffset >= PREFERRED_RADIUS;  >1 otherwise
-			register const double fMinimalCogOffset =
-				pow(1. + (PREFERRED_RADIUS - cogOffset) / MAX_COG_OFFSET,
-					cfg.get_kCogOffset());
+			const double mcsOffset = norm(params.mcPatch - params.mcGlyph);
+			// <=1 for mcsOffset >= PREFERRED_RADIUS;  >1 otherwise
+			register const double fMinimalMCsOffset =
+				pow(1. + (PREFERRED_RADIUS - mcsOffset) / MAX_MCS_OFFSET,
+					cfg.get_kMCsOffset());
 
-			const Point2d relCogPatch = params.cogPatch - centerPatch;
-			const Point2d relCogGlyph = params.cogGlyph - centerPatch;
+			const Point2d relMcPatch = params.mcPatch - centerPatch;
+			const Point2d relMcGlyph = params.mcGlyph - centerPatch;
 
-			// best gradient orientation when angle between cog-s is 0 => cos = 1
+			// best gradient orientation when angle between mc-s is 0 => cos = 1
 			// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
 			// -1..1 range, best when 1
-			double cosAngleCogs = 0.;
-			if(relCogGlyph != ORIGIN && relCogPatch != ORIGIN) // avoid DivBy0
-				cosAngleCogs = relCogGlyph.dot(relCogPatch) /
-								(norm(relCogGlyph) * norm(relCogPatch));
+			double cosAngleMCs = 0.;
+			if(relMcGlyph != ORIGIN && relMcPatch != ORIGIN) // avoid DivBy0
+				cosAngleMCs = relMcGlyph.dot(relMcPatch) /
+								(norm(relMcGlyph) * norm(relMcPatch));
 
-			// <=1 for |angleCogs| >= 45;  >1 otherwise
-			// lessen the importance for small cogOffset-s (< PREFERRED_RADIUS)
-			register const double fCogAngleLessThan45 = pow((1. + cosAngleCogs) * TWO_SQRT2,
-				cfg.get_kCosAngleCogs() * min(cogOffset, PREFERRED_RADIUS) / PREFERRED_RADIUS);
+			// <=1 for |angleMCs| >= 45;  >1 otherwise
+			// lessen the importance for small mcsOffset-s (< PREFERRED_RADIUS)
+			register const double fMCsAngleLessThan45 = pow((1. + cosAngleMCs) * TWO_SQRT2,
+				cfg.get_kCosAngleMCs() * min(mcsOffset, PREFERRED_RADIUS) / PREFERRED_RADIUS);
 
 			/////////////// FANCINESS FACTOR (Larger glyphs) ///////////////
 			// <=1 for glyphs considered small;   >1 otherwise
@@ -166,7 +166,7 @@ namespace {
 				cfg.get_kGlyphWeight());
 
 			double result = fSdevFg * fSdevBg * fMinimalContrast *
-				fMinimalCogOffset * fCogAngleLessThan45 * fGlyphWeight;
+				fMinimalMCsOffset * fMCsAngleLessThan45 * fGlyphWeight;
 
 			return result;
 		}
@@ -291,7 +291,7 @@ namespace {
 		reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
 
 		MatchParams &mp = matcher.params;
-		mp.cogPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // center of gravity
+		mp.mcPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // mass center
 
 		auto itFe = itFeBegin;
 		for(auto &glyphAndNegative : charset) {
@@ -323,8 +323,8 @@ namespace {
 			temp = (patch-mp.miuBg).mul(negGlyph); // Elem-wise (mask only bg, weigh contours)
 			mp.aseBg = temp.dot(temp) / negGlyphSum;
 
-			// Obtaining center of gravity for glyph
-			mp.cogGlyph = (mp.miuFg * itFe->cogFg + mp.miuBg * itFe->cogBg) /
+			// Obtaining glyph's mass center
+			mp.mcGlyph = (mp.miuFg * itFe->mcFg + mp.miuBg * itFe->mcBg) /
 				(mp.miuFg + mp.miuBg);
 
 			double score = matcher.score(cfg);
