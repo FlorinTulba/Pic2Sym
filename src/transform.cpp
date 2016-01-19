@@ -13,7 +13,6 @@
 #include "misc.h"
 #include "dlgs.h"
 
-#include <cstdio>
 #include <sstream>
 #include <numeric>
 
@@ -458,8 +457,7 @@ void Transformer::run() {
 	Mat result(resized.rows, resized.cols, resized.type());
 	auto itFeBegin = fe.charset().cbegin();
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
-		// Reporting progress
-		printf("%6.2f%%\r", r*100./h); // simpler to format percent values with printf
+		cout<<setw(6)<<fixed<<setprecision(2)<<r*100./h<<"%\r"; // Reporting progress
 
 		for(unsigned c = 0U, w = (unsigned)gray.cols; c<w; c += sz) {
 			Mat patch(gray, Range(r, r+sz), Range(c, c+sz));

@@ -271,6 +271,30 @@ namespace {
 			chars.emplace_back(move(pmc));
 	}
 
+	// Holds the mapping between encodings codes and their corresponding names
+	// Returns non-const just to allow accessing the map with operator[].
+	map<FT_Encoding, string>& encodingsMap() {
+#define enc(encValue) {encValue, string(#encValue).substr(12)}
+		static map<FT_Encoding, string> encMap { // known encodings
+			enc(FT_ENCODING_NONE),
+			enc(FT_ENCODING_UNICODE),
+			enc(FT_ENCODING_MS_SYMBOL),
+			enc(FT_ENCODING_ADOBE_LATIN_1),
+			enc(FT_ENCODING_OLD_LATIN_2),
+			enc(FT_ENCODING_SJIS),
+			enc(FT_ENCODING_GB2312),
+			enc(FT_ENCODING_BIG5),
+			enc(FT_ENCODING_WANSUNG),
+			enc(FT_ENCODING_JOHAB),
+			enc(FT_ENCODING_ADOBE_STANDARD),
+			enc(FT_ENCODING_ADOBE_EXPERT),
+			enc(FT_ENCODING_ADOBE_CUSTOM),
+			enc(FT_ENCODING_APPLE_ROMAN)
+		};
+#undef enc
+		return encMap;
+	}
+
 } // anonymous namespace
 
 PixMapChar::PixMapChar(unsigned long charCode,			// the character code
@@ -335,7 +359,8 @@ PixMapChar& PixMapChar::operator=(PixMapChar &&other) {
 
 PixMapChar::~PixMapChar() { delete[] data; }
 
-const double FontEngine::SMALL_GLYPHS_PERCENT = 0.1; // smallest 10% of glyphs are considered small
+// Smallest 10% of all glyphs are considered small
+const double FontEngine::SMALL_GLYPHS_PERCENT = 0.1;
 
 FontEngine::FontEngine() : chars(), fontSz(0U), dirty(true) {
 	FT_Error error = FT_Init_FreeType(&library);
@@ -351,6 +376,10 @@ FontEngine::~FontEngine() {
 }
 
 bool FontEngine::checkFontFile(const string &fName, FT_Face &face_) const {
+	if(ifstream(fName).fail()) {
+		cerr<<"No such file: '"<<fName<<'\''<<endl;
+		return false;
+	}
 	FT_Error error = FT_New_Face(library, fName.c_str(), 0, &face_);
 	if(error != FT_Err_Ok) {
 		cerr<<"Invalid font file: "<<fName<<"  Error: "<<error<<endl;
@@ -390,6 +419,42 @@ void FontEngine::ready() {
 	block \
 	ready()
 
+#ifdef UNIT_TESTING
+bool FontEngine::setEncoding(const std::string &encName) {
+	if(face == nullptr) {
+		cerr<<"Please use FontEngine::setFace before calling FontEngine::setEncoding!"<<endl;
+		throw logic_error("FontEngine::setEncoding called before FontEngine::setFace!");
+	}
+
+	string currentEncoding = encoding.empty() ? "UNICODE" : encoding;
+	int charmapsCount = face->num_charmaps;
+	if(encName.compare(encoding) == 0 || charmapsCount == 1)
+		return false;
+
+	auto &encMap = encodingsMap();
+	int newEncIdx = 0;
+	for(; newEncIdx < charmapsCount; ++newEncIdx)
+		if(encMap[face->charmaps[newEncIdx]->encoding].compare(encName) == 0)
+			break;
+	if(newEncIdx == charmapsCount)
+		return false;
+	
+	FT_Error error = FT_Set_Charmap(face, face->charmaps[newEncIdx]);
+	if(error != FT_Err_Ok) {
+		cerr<<"Couldn't set new cmap! Error: "<<error<<endl;
+		throw runtime_error("Couldn't set new cmap!");
+	}
+
+	CHARSET_ALTERATION(
+		encoding = encMap[face->charmap->encoding];
+		fontSz = 0U;
+		chars.clear();
+	);
+
+	return true;
+}
+#endif
+
 void FontEngine::selectEncoding() {
 	if(face == nullptr) {
 		cerr<<"Please use FontEngine::setFace before calling FontEngine::selectEncoding!"<<endl;
@@ -397,24 +462,7 @@ void FontEngine::selectEncoding() {
 	}
 	int charmapsCount = face->num_charmaps;
 	if(charmapsCount > 1) {
-#define enc(encValue) {encValue, string(#encValue).substr(12)}
-		static map<FT_Encoding, string> encMap { // known encodings
-			enc(FT_ENCODING_NONE),
-			enc(FT_ENCODING_UNICODE),
-			enc(FT_ENCODING_MS_SYMBOL),
-			enc(FT_ENCODING_ADOBE_LATIN_1),
-			enc(FT_ENCODING_OLD_LATIN_2),
-			enc(FT_ENCODING_SJIS),
-			enc(FT_ENCODING_GB2312),
-			enc(FT_ENCODING_BIG5),
-			enc(FT_ENCODING_WANSUNG),
-			enc(FT_ENCODING_JOHAB),
-			enc(FT_ENCODING_ADOBE_STANDARD),
-			enc(FT_ENCODING_ADOBE_EXPERT),
-			enc(FT_ENCODING_ADOBE_CUSTOM),
-			enc(FT_ENCODING_APPLE_ROMAN)
-		};
-#undef enc
+		auto &encMap = encodingsMap();
 		auto selectedCmap = face->charmap;
 		set<FT_Encoding> encodings;
 		set<int> newCmaps;
@@ -464,6 +512,10 @@ void FontEngine::selectEncoding() {
 }
 
 void FontEngine::setFace(FT_Face &face_) {
+	if(face_ == nullptr) {
+		cerr<<"Trying to set a NULL face!"<<endl;
+		throw invalid_argument("Can't provide a NULL face as parameter!");
+	}
 	if(face != nullptr) {
 		if(strcmp(face->family_name, face_->family_name)==0 && strcmp(face->style_name, face_->style_name)==0)
 			return; // same face
@@ -472,8 +524,8 @@ void FontEngine::setFace(FT_Face &face_) {
 	}
 	CHARSET_ALTERATION(
 		face = face_;
-		encoding = "";
 		fontSz = 0U;
+		encoding = "UNICODE";
 		chars.clear();
 	);
 }
@@ -557,8 +609,10 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl<<endl;
 
-	printf("Characters considered small cover at most %.2f%% of the box\n\n", 100*coverageOfSmallGlyphs);
+	cout<<"Characters considered small cover at most "<<
+		fixed<<setprecision(2)<<100.*coverageOfSmallGlyphs<<"% of the box"<<endl<<endl;
 
+#ifndef UNIT_TESTING
 	map<FT_ULong, size_t> code2Pixmap;
 	auto itChars = chars.begin();
 	for(size_t i = 0U, iLim = chars.size(); i<iLim; ++i)
@@ -587,7 +641,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			displayChar(p.data, p.rows, p.cols, p.cols, p.left, p.top, fontSz);
 		}
 	}
-#endif
+#endif // UNIT_TESTING
+#endif // _DEBUG
 }
 
 #undef CHARSET_ALTERATION
@@ -672,7 +727,7 @@ const string& FontEngine::fontId() const {
 }
 
 const string& FontEngine::getEncoding() const {
-	if(dirty) {
+	if(dirty && face==nullptr) {
 		cerr<<"encoding not ready yet! Please do all the configurations first!"<<endl;
 		throw logic_error("getEncoding called before the completion of configuration.");
 	}

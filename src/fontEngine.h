@@ -74,7 +74,7 @@ FontEngine class wraps some necessary FreeType functionality.
 class FontEngine final {
 	static const double SMALL_GLYPHS_PERCENT; // percentage of total glyphs considered small
 
-	FT_Library library = nullptr;	// the FreeType lib
+	FT_Library library	= nullptr;	// the FreeType lib
 	FT_Face face		= nullptr;	// a loaded font
 
 	std::string encoding;			// selected charmap (cmap)
@@ -107,6 +107,10 @@ public:
 	double smallGlyphsCoverage() const;				// get coverageOfSmallGlyphs
 	const std::string& fontId() const;				// current font id
 	const std::string& getEncoding() const;			// get encoding
+
+#ifdef UNIT_TESTING
+	bool setEncoding(const std::string &encName);
+#endif
 };
 
 #endif
