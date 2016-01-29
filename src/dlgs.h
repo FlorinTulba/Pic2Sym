@@ -27,7 +27,7 @@ protected:
 public:
 	virtual ~Dlg() = 0 {}
 
-	virtual bool canceled() = 0; // Displays the dialog and stores the selection or returns true when canceled
+	virtual bool promptForUserChoice() = 0; // Displays the dialog and stores the selection or returns false when canceled
 	const std::string& selection() const { return result; }
 	virtual void reset() { result.clear(); }
 };
@@ -36,28 +36,28 @@ public:
 FileOpen class controls a FileOpenDialog.
 */
 class FileOpen final : public Dlg {
-	OPENFILENAME ofn; // structure used by the FileOpenDialog
+	OPENFILENAME ofn;		// structure used by the FileOpenDialog
 	TCHAR fNameBuf[500];	// buffer for the selected image file
 
 public:
 	FileOpen(); // Prepares the dialog
 
-	bool canceled() override;
+	bool promptForUserChoice() override;
 };
 
 /*
 SelectFont class controls a ChooseFont Dialog.
 */
 class SelectFont final : public Dlg {
-	CHOOSEFONT cf; // structure used by the ChooseFont Dialog
-	LOGFONT lf;
+	CHOOSEFONT cf;		// structure used by the ChooseFont Dialog
+	LOGFONT lf;			// structure filled with Font information
 	bool isBold = false;
 	bool isItalic = false;
 
 public:
 	SelectFont(); // Prepares the dialog
 
-	bool canceled() override;
+	bool promptForUserChoice() override;
 
 	void reset() override { Dlg::reset(); isBold = isItalic = false; }
 

@@ -3,25 +3,15 @@
  File:        main.cpp
 
  Author:      Florin Tulba
- Created on:  2015-12-20
+ Created on:  2016-1-8
  
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#include "misc.h"
-#include "config.h"
-#include "transform.h"
+#include "controller.h"
 
 using namespace std;
 
 void main(int, char* argv[]) {
-	Config cfg(argv[0]);
-	Transformer t(cfg);
-
-	do {
-		t.reconfig();
-		t.run();
-	} while(boolPrompt("Do you want to do more transformations?"));
-
-	cout<<"Leaving ..."<<endl;
+	Controller c(argv[0]);
 }

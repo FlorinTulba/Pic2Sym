@@ -8,19 +8,19 @@
 ;;  Copyright (c) 2016 Florin Tulba
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Height & width in pixels of each character
+; Height & width in pixels of each symbol
 ; Valid range: 7 .. 50
 FONT_HEIGHT		10
 
-; Maximum number of characters on each row of the resulted image
+; Maximum number of symbols on each row of the resulted image
 ; Valid range 3 .. 1024
 RESULT_WIDTH	500
 
-; Maximum number of characters on each column of the resulted image
+; Maximum number of symbols on each column of the resulted image
 ; Valid range 3 .. 768
 RESULT_HEIGHT	300
 
-; Threshold <x> below which to use Blank (Space) instead of a barely visible character.
+; Threshold <x> below which to use Blank (Space) instead of a barely visible symbol.
 ; If a certain region gets approximated by a poorly visible character,
 ; that is when its foreground and background colors are less than <x> units apart,
 ; then it makes sense to directly use the Blank character using as its background
@@ -36,7 +36,7 @@ THRESHOLD_FOR_BLANK	0
 ; Any other real positive value is allowed. 1 is ok.
 MORE_CONTRAST_PREF	3.0
 
-; Real coefficient that might enforce choosing larger characters, like an 'A' instead of 'i',
+; Real coefficient that might enforce choosing larger symbols, like an 'A' instead of 'i',
 ; even when they are less similar to the approximated area.
 ; Set it to 0 if correctness is more important than a fancy result.
 ; Any other real positive value is allowed. 1 is ok.

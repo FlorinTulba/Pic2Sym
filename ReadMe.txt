@@ -12,9 +12,9 @@ The application will generate a text representation of a provided image.
 
 Desired Features
 ----------------
-- choice of font type and size and character set
-- selecting the size of output (width and height expressed in characters)
-- optimal background & foreground for each character
+- choice of font type and size and symbols set
+- selecting the size of output (width and height expressed in symbols count)
+- optimal background & foreground for each symbol
 - the output presented as html / image / view
 
 

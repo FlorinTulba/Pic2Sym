@@ -37,14 +37,14 @@ FileOpen::FileOpen() {
 	ofn.lpstrTitle = _T("Please select an image to process");
 }
 
-bool FileOpen::canceled() {
+bool FileOpen::promptForUserChoice() {
 	if(!GetOpenFileName(&ofn)) {
-		result = "";
-		return true;
+		reset();
+		return false;
 	}
 	wstring wResult(ofn.lpstrFile);
 	result.assign(BOUNDS(wResult));
-	return false;
+	return true;
 }
 
 /*
@@ -237,10 +237,10 @@ SelectFont::SelectFont() {
 	cf.Flags = CF_FORCEFONTEXIST | CF_NOVERTFONTS | CF_FIXEDPITCHONLY | CF_SCALABLEONLY | CF_NOSIMULATIONS | CF_NOSCRIPTSEL;
 }
 
-bool SelectFont::canceled() {
+bool SelectFont::promptForUserChoice() {
 	if(!ChooseFont(&cf)) {
-		result = "";
-		return true;
+		reset();
+		return false;
 	}
 		
 	isBold = (cf.nFontType & 0x100) || (lf.lfWeight > FW_MEDIUM); // There are fonts with only a Medium style (no Regular one)
@@ -259,18 +259,5 @@ bool SelectFont::canceled() {
 
 	cout<<" ["<<result<<']'<<endl;
 
-	/*
-	cout<<boolalpha;
-	cout<<result<<":"<<endl;
-	PRINTLN(cf.iPointSize);
-	PRINTLN(cf.lpLogFont->lfHeight);
-	PRINTLN(cf.lpLogFont->lfWeight);
-	PRINTLN((bool)cf.lpLogFont->lfItalic);
-	PRINTLN_H(cf.nFontType);
-	PRINTLN_H((unsigned)cf.lpLogFont->lfQuality);
-	PRINTLN_H((unsigned)cf.lpLogFont->lfClipPrecision);
-	PRINTLN_H((unsigned)cf.lpLogFont->lfOutPrecision);
-	PRINTLN_H((unsigned)cf.lpLogFont->lfPitchAndFamily);
-	*/
-	return false;
+	return true;
 }

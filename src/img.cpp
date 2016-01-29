@@ -12,6 +12,7 @@
 
 #include <iostream>
 
+#include <boost/filesystem/operations.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 using namespace std;
@@ -43,7 +44,7 @@ bool Img::reset(const string &picName) {
 	return true;
 }
 
-Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) const {
+Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) {
 	if(source.data == nullptr) {
 		cerr<<"No image set yet"<<endl;
 		throw logic_error("No image set yet");
@@ -52,8 +53,8 @@ Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) const {
 	int initW = source.cols, initH = source.rows;
 	double initAr = initW / (double)initH;
 	unsigned patchSz = cfg.getFontSz(),
-		w = min(patchSz*cfg.getOutW(), (unsigned)initW),
-		h = min(patchSz*cfg.getOutH(), (unsigned)initH);
+		w = min(patchSz*cfg.getMaxHSyms(), (unsigned)initW),
+		h = min(patchSz*cfg.getMaxVSyms(), (unsigned)initH);
 	w -= w%patchSz;
 	h -= h%patchSz;
 	double ar = w / (double)h;
@@ -64,22 +65,21 @@ Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) const {
 		h = (unsigned)round(w/initAr);
 		h -= h%patchSz;
 	}
-	Mat resized_;
 	if(w==initW && h==initH)
-		resized_ = source;
+		res = source;
 	else {
-		resize(source, resized_, Size(w, h), 0, 0, CV_INTER_AREA);
+		resize(source, res, Size(w, h), 0, 0, CV_INTER_AREA);
 		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl<<endl;
 	}
 
-	cout<<"The result will be "<<w/patchSz<<" characters wide and "<<h/patchSz<<" characters high."<<endl<<endl;
+	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
 
 	if(grayVersion != nullptr) {
 		if(color)
-			cvtColor(resized_, *grayVersion, COLOR_RGB2GRAY);
+			cvtColor(res, *grayVersion, COLOR_RGB2GRAY);
 		else
-			*grayVersion = resized_;
+			*grayVersion = res;
 	}
 
-	return resized_;
+	return res;
 }

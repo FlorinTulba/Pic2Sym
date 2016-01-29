@@ -59,12 +59,12 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;misc.obj;config.obj;img.obj;dlgs.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;opencv_highgui$(OpenCvLibConfigSuffix).lib;config.obj;img.obj;dlgs.obj;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>"$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; "$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -80,12 +80,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;misc.obj;config.obj;img.obj;dlgs.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;opencv_highgui$(OpenCvLibConfigSuffix).lib;config.obj;img.obj;dlgs.obj;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>"$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; "$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

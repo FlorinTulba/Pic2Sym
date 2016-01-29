@@ -15,24 +15,30 @@
     <Text Include="res\defaultCfg.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\controller.h" />
     <ClInclude Include="src\dlgs.h" />
     <ClInclude Include="src\fontEngine.h" />
     <ClInclude Include="src\img.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\ui.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
     <ClCompile Include="src\img.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\config.cpp" />
-    <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\transform.cpp" />
+    <ClCompile Include="src\ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\NoImage.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{55EC7EFC-7D43-4724-ACBD-6CBE92946D6E}</ProjectGuid>
@@ -89,11 +95,11 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -114,11 +120,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

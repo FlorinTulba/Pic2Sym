@@ -19,22 +19,40 @@
 
 #include <opencv2/imgcodecs.hpp>
 
+class Controller; // data & views manager
+
 /*
 Transformer allows images to be approximated as a table of colored symbols from font files.
 */
-class Transformer {
-	Config &cfg;				// general configuration
-	FontEngine fe;				// charset manager
-	Img img;					// current image to process
-	bool newSettings = false;	// flag to signal the settings have changed
+class Transformer final {
+	Controller &ctrler;			// data & views manager
 
-	std::vector<std::pair<cv::Mat, cv::Mat>> charset; // current charset & its inverse in Mat format
+	Config cfg;					// general configuration
+	FontEngine fe;				// symbols set manager
+	Img img;					// current image to process
+
+	std::vector<const cv::Mat*> pNegatives;				// pointers to glyphs' inverses
+	std::vector<std::pair<cv::Mat, cv::Mat>> symsSet;	// current symbol set & its inverse in Mat format
+
+	cv::Mat result;				// the result of the transformation
+
+	std::string symsIdReady;	// type of symbols ready to use for transformation
+	std::string getIdForSymsToUse(); // type of the symbols determined by fe & cfg
 
 public:
-	Transformer(Config &cfg_); // use initial configuration
+	Transformer(Controller &ctrler_, const std::string &cmd); // use initial configuration
 
-	void reconfig();	// permits changing the configuration
-	void run();			// applies the configured transformation onto current/new image
+	void updateSymbols();	// using different charmap - also useful for displaying these changes
+	void run();				// applies the configured transformation onto current/new image
+
+	// Needed to display the cmap
+	const std::vector<const cv::Mat*>& getNegatives() const { return pNegatives; }
+
+	Config& getCfg() { return cfg; }
+	FontEngine& getFe() { return fe; }
+	Img& getImg() { return img; }
+
+	const cv::Mat& getResult() const { return result; }
 };
 
 #endif

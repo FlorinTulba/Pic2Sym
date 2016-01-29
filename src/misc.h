@@ -26,15 +26,4 @@
 #define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
 #define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
 
-// There are situations when a macro will receive parameters containing Comma (,)
-// Normally such parameters are split and the parameters count increases.
-// To prevent the undesired split, wrap the parameters containing Comma within SINGLE_ARG.
-// Example:
-//	PRINTLN(1,2,3)  - complains it got 3 parameters while expecting just one
-//	PRINTLN(SINGLE_ARG(1,2,3)) - works (displays 3)
-#define SINGLE_ARG(...) __VA_ARGS__
-
-// Displays a message and waits for a Yes/No answer from user
-bool boolPrompt(const std::string &msg);
-
 #endif
