@@ -139,8 +139,8 @@ namespace {
 
 	// Minimal glyph shifting and cropping or none to fit the bounding box
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
-					   int leftBound, int topBound,
-					   int& sz, int& rows_, int& cols_, int& left_, int& top_,
+					   int leftBound, int topBound, int sz,
+					   int& rows_, int& cols_, int& left_, int& top_,
 					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
 		sz = bb.yMax-bb.yMin+1;
 		assert(sz > 0 && bb.xMax-bb.xMin+1 == sz);
@@ -182,28 +182,6 @@ namespace {
 		assert(cols_>=0 && cols_<=sz);
 	}
 
-	/*
-	appendSym puts valid glyphs into vector <syms>. Space (empty / full) glyphs are invalid.
-	Adds a new mapping between glyph's index and the position it entered <syms>.
-	Updates the count of Blanks.
-	*/
-	void appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, vector<PixMapSym> &syms,
-					unsigned &blanks, unsigned &duplicates, const double sz2) {
-		static const double EPS = 1e-6;
-
-		PixMapSym pmc(c, g->bitmap, g->bitmap_left, g->bitmap_top, bb);
-		if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) // discard disguised Space characters
-			++blanks;
-		else {
-			for(auto &prevPmc : syms)
-				if(prevPmc == pmc) {
-					++duplicates;
-					return;
-				}
-			syms.emplace_back(move(pmc));
-		}
-	}
-
 	// Creates a bimap using initializer_list. Needed in 'encodingsMap' below
 	template <typename L, typename R>
 	bimap<L, R> make_bimap(initializer_list<typename bimap<L, R>::value_type> il) {
@@ -242,14 +220,17 @@ namespace {
 
 } // anonymous namespace
 
-PixMapSym::PixMapSym(unsigned long symCode_,				// the symbol code
-						const FT_Bitmap &bm,			// the bitmap to process
-						int leftBound, int topBound,	// initial position of the symbol
-						const FT_BBox &bb) :			// the bounding box to fit
+PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
+					const FT_Bitmap &bm,			// the bitmap to process
+					int leftBound, int topBound,	// initial position of the symbol
+					int sz, double sz2,				// font size and squared of it
+					const Mat &consec,				// vector of consecutive values 0 .. sz-1
+					const Mat &revConsec,			// vector of consecutive values sz-1 .. 0
+					const FT_BBox &bb) :			// the bounding box to fit
 			symCode(symCode_) {
-	int sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom;
-	fitGlyphToBox(bm, bb, leftBound, topBound, // input params
-				  sz, rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
+	int rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom;
+	fitGlyphToBox(bm, bb, leftBound, topBound, sz, // input params
+				  rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
 	if(rows_ > 0 && cols_ > 0) {
 		int amount = rows_ * cols_;
@@ -260,23 +241,29 @@ PixMapSym::PixMapSym(unsigned long symCode_,				// the symbol code
 						cols_);
 		glyphSum = *sum(Mat(1, amount, CV_8UC1, data)).val / 255.;
 	}
-	negGlyphSum = (double)sz*sz - glyphSum;
+	negGlyphSum = sz2 - glyphSum;
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
 	left_ -= bb.xMin;
 	top_ = (sz-1) - (bb.yMax-top_);
-	assert(top_>=0 && top_<sz);
 	
 	left = (unsigned char)left_;
 	top = (unsigned char)top_;
 	rows = (unsigned char)rows_;
 	cols = (unsigned char)cols_;
 
-	Mat consec(1, sz, CV_64FC1), revConsec;
-	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
-	flip(consec, revConsec, 1);
-
 	mc = computeMc((unsigned)sz, data, rows, cols, left, top, glyphSum, consec, revConsec);
+}
+
+PixMapSym::PixMapSym(const PixMapSym &other) :
+		symCode(other.symCode),
+		glyphSum(other.glyphSum), negGlyphSum(other.negGlyphSum),
+		mc(other.mc),
+		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
+		data(nullptr) {
+	int amount = rows*cols;
+	data = new unsigned char[amount];
+	memcpy_s(data, amount, other.data, amount);
 }
 
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
@@ -317,9 +304,122 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 }
 
 // Smallest 10% of all glyphs are considered small
-const double FontEngine::SMALL_GLYPHS_PERCENT = 0.1;
+const double PmsCont::SMALL_GLYPHS_PERCENT = 0.1;
 
-FontEngine::FontEngine(Controller &ctrler_) : ctrler(ctrler_), syms(), fontSz(0U) {
+unsigned PmsCont::getFontSz() const {
+	if(!ready) {
+		cerr<<"getFontSz cannot be called before setAsReady"<<endl;
+		throw logic_error("getFontSz cannot be called before setAsReady");
+	}
+
+	return fontSz;
+}
+
+unsigned PmsCont::getBlanksCount() const {
+	if(!ready) {
+		cerr<<"getBlanksCount cannot be called before setAsReady"<<endl;
+		throw logic_error("getBlanksCount cannot be called before setAsReady");
+	}
+
+	return blanks;
+}
+
+unsigned PmsCont::getDuplicatesCount() const {
+	if(!ready) {
+		cerr<<"getDuplicatesCount cannot be called before setAsReady"<<endl;
+		throw logic_error("getDuplicatesCount cannot be called before setAsReady");
+	}
+
+	return duplicates;
+}
+
+double PmsCont::getCoverageOfSmallGlyphs() const {
+	if(!ready) {
+		cerr<<"getCoverageOfSmallGlyphs cannot be called before setAsReady"<<endl;
+		throw logic_error("getCoverageOfSmallGlyphs cannot be called before setAsReady");
+	}
+
+	return coverageOfSmallGlyphs;
+}
+
+const vector<PixMapSym>& PmsCont::getSyms() const {
+	if(!ready) {
+		cerr<<"getSyms cannot be called before setAsReady"<<endl;
+		throw logic_error("getSyms cannot be called before setAsReady");
+	}
+
+	return syms;
+}
+
+void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
+	ready = false;
+	fontSz = fontSz_;
+	blanks = duplicates = 0U;
+	sz2 = (double)fontSz_ * fontSz_;
+	coverageOfSmallGlyphs = 0.;
+
+	syms.clear();
+	if(symsCount != 0U)
+		syms.reserve(symsCount);
+
+	consec = Mat(1, fontSz_, CV_64FC1);
+	revConsec.release();
+	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
+	flip(consec, revConsec, 1);
+
+}
+
+void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
+	if(ready) {
+		cerr<<"Cannot appendSym after setAsReady without reset-ing"<<endl;
+		throw logic_error("Cannot appendSym after setAsReady without reset-ing");
+	}
+
+	static const double EPS = 1e-6;
+
+	const FT_Bitmap b = g->bitmap;
+	const unsigned height = b.rows, width = b.width;
+	if(height==0U || width==0U) { // skip Space character
+		++blanks;
+		return;
+	}
+
+	const PixMapSym pmc(c, g->bitmap, g->bitmap_left, g->bitmap_top,
+						(int)fontSz, sz2, consec, revConsec, bb);
+	if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) // discard disguised Space characters
+		++blanks;
+	else {
+		for(auto &prevPmc : syms)
+			if(prevPmc == pmc) {
+				++duplicates;
+				return;
+			}
+		syms.emplace_back(move(pmc));
+	}
+}
+
+void PmsCont::setAsReady() {
+	if(ready)
+		return;
+
+	// Determine below max box coverage for smallest glyphs from the kept symsSet.
+	// This will be used to favor using larger glyphs when this option is selected.
+	auto smallGlyphsQty = (long)round(syms.size() * SMALL_GLYPHS_PERCENT);
+	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
+				[] (const PixMapSym &first, const PixMapSym &second) -> bool {
+		return first.glyphSum < second.glyphSum;
+	});
+	coverageOfSmallGlyphs = next(syms.begin(), smallGlyphsQty)->glyphSum / sz2;
+
+	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
+		 [] (const PixMapSym &first, const PixMapSym &second) -> bool {
+		return first.symCode < second.symCode;
+	});
+
+	ready = true;
+}
+
+FontEngine::FontEngine(Controller &ctrler_) : ctrler(ctrler_) {
 	FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
@@ -380,7 +480,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 
 	encodingIndex = idx;
 	encoding = encodingsMap().left.find(face->charmap->encoding)->second;
-	fontSz = 0;
+	symsCont.reset();
 
 	return true;
 }
@@ -424,8 +524,7 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 		FT_Done_Face(face);
 	}
 
-	fontSz = 0U;
-	syms.clear();
+	symsCont.reset();
 	uniqueEncs.clear();
 	face = face_;
 
@@ -451,7 +550,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 }
 
 void FontEngine::setFontSz(unsigned fontSz_) {
-	if(fontSz == fontSz_)
+	if(symsCont.isReady() && symsCont.getFontSz() == fontSz_)
 		return;
 
 	if(face == nullptr) {
@@ -465,21 +564,19 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	}
 
 	vector<tuple<FT_ULong, double, double>> toResize;
-	double sz = fontSz = fontSz_, factorH, factorV;
-	const double sz2 = (double)fontSz * fontSz;
-	unsigned symsCount, blanks = 0U, duplicates = 0U;
+	double sz = fontSz_, factorH, factorV;
+	unsigned symsCount;
 	FT_BBox bb;
 	FT_UInt idx;
 	FT_Size_RequestRec  req;
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
 	req.horiResolution = req.vertResolution = 72U;
 
-	syms.clear();
 	double progress = 0.;
 	ctrler.reportGlyphProgress(progress);
 	// 2% for this stage, no reports
-	tie(factorH, factorV) = adjustScaling(face, fontSz, bb, symsCount);
-	syms.reserve(symsCount);
+	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
+	symsCont.reset(fontSz_, symsCount);
 
 	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
 
@@ -496,15 +593,10 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		FT_GlyphSlot g = face->glyph;
 		FT_Bitmap b = g->bitmap;
 		unsigned height = b.rows, width = b.width;
-		if(height==0U || width==0U) { // skip Space character
-			++blanks;
-			continue;
-		}
-
-		if(width > fontSz || height > fontSz)
+		if(width > fontSz_ || height > fontSz_)
 			toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
 		else
-			appendSym(c, g, bb, syms, blanks, duplicates, sz2);
+			symsCont.appendSym(c, g, bb);
 	}
 
 	// 7% for this stage, report every 5% => report 95% at 3/7 from it
@@ -517,46 +609,37 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		FT_ULong c;
 		double hRatio, vRatio;
 		tie(c, vRatio, hRatio) = item;
-		req.height = (FT_ULong)floor(factorV * (fontSz<<6) / vRatio);
-		req.width = (FT_ULong)floor(factorH * (fontSz<<6) / hRatio);
+		req.height = (FT_ULong)floor(factorV * (fontSz_<<6) / vRatio);
+		req.width = (FT_ULong)floor(factorH * (fontSz_<<6) / hRatio);
 		FT_Error error = FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
-		appendSym(c, face->glyph, bb, syms, blanks, duplicates, sz2);
+		symsCont.appendSym(c, face->glyph, bb);
 	}
 
-	if(blanks != 0U)
-		cout<<"Removed "<<blanks<<" Space characters from symsSet!"<<endl;
-	if(duplicates != 0U)
-		cout<<"Removed "<<duplicates<<" duplicates from symsSet!"<<endl;
-
 	// 1% for this stage, no more reports
-	// Determine below max box coverage for smallest glyphs from the kept symsSet.
-	// This will be used to favor using larger glyphs when this option is selected.
-	auto smallGlyphsQty = (long)round(syms.size() * SMALL_GLYPHS_PERCENT);
-	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
-				[] (const PixMapSym &first, const PixMapSym &second) -> bool {
-					return first.glyphSum < second.glyphSum;
-				});
-	coverageOfSmallGlyphs = next(syms.begin(), smallGlyphsQty)->glyphSum / sz2;
-	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
-		 [] (const PixMapSym &first, const PixMapSym &second) -> bool {
-			return first.symCode < second.symCode;
-		});
+	symsCont.setAsReady();
 
 	ctrler.reportGlyphProgress(1.);
 
 #ifdef _DEBUG
-	cout<<toResize.size()<<" symbols were resized twice."<<endl<<endl;
+	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
-	for(auto &item : toResize)
-		cout<<get<0>(item)<<", ";
-	cout<<endl<<endl;
+	cout<<"Symbols considered small cover at most "<<
+		fixed<<setprecision(2)<<100.*symsCont.getCoverageOfSmallGlyphs()<<"% of the box"<<endl;
 
-	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl<<endl;
+	if(symsCont.getBlanksCount() != 0U)
+		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
+	if(symsCont.getDuplicatesCount() != 0U)
+		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
+	
+	if(!toResize.empty()) {
+		cout<<toResize.size()<<" symbols were resized twice: ";
+		for(auto &item : toResize)
+			cout<<get<0>(item)<<", ";
+		cout<<endl;
+	}
 
-	cout<<"Symbolrs considered small cover at most "<<
-		fixed<<setprecision(2)<<100.*coverageOfSmallGlyphs<<"% of the box"<<endl<<endl;
-
+	cout<<endl;
 #endif // _DEBUG
 }
 
@@ -580,19 +663,19 @@ unsigned FontEngine::uniqueEncodings() const {
 }
 
 const vector<PixMapSym>& FontEngine::symsSet() const {
-	if(face == nullptr || fontSz == 0U) {
+	if(face == nullptr || !symsCont.isReady()) {
 		cerr<<"symsSet not ready yet! Please do all the configurations first!"<<endl;
 		throw logic_error("symsSet called before selecting a font.");
 	}
-	return syms;
+	return symsCont.getSyms();
 }
 
 double FontEngine::smallGlyphsCoverage() const {
-	if(face == nullptr || fontSz == 0U) {
+	if(face == nullptr || !symsCont.isReady()) {
 		cerr<<"smallGlyphsCoverage not ready yet! Please do all the configurations first!"<<endl;
 		throw logic_error("smallGlyphsCoverage called before selecting a font.");
 	}
-	return coverageOfSmallGlyphs;
+	return symsCont.getCoverageOfSmallGlyphs();
 }
 
 const string& FontEngine::fontFileName() const {

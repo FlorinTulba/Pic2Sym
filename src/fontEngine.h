@@ -60,9 +60,12 @@ struct PixMapSym final {
 	PixMapSym(unsigned long symCode,		// the symbol code
 			   const FT_Bitmap &bm,			// the bitmap to process
 			   int leftBound, int topBound,	// initial position of the symbol
+			   int sz, double sz2,			// font size and squared of it
+			   const cv::Mat &consec,		// vector of consecutive values 0 .. sz-1
+			   const cv::Mat &revConsec,	// vector of consecutive values sz-1 .. 0
 			   const FT_BBox &bb);			// the bounding box to fit
-	PixMapSym(const PixMapSym&) = delete;
-	PixMapSym(PixMapSym &&other);			// required by some vector manipulations
+	PixMapSym(const PixMapSym&);
+	PixMapSym(PixMapSym&&);
 	~PixMapSym();
 
 	void operator=(const PixMapSym&) = delete;
@@ -72,22 +75,47 @@ struct PixMapSym final {
 	bool operator==(const PixMapSym &other) const;
 };
 
-class PmsVect {
+/*
+Convenience container to hold PixMapSym-s of same size
+*/
+class PmsCont {
 	static const double SMALL_GLYPHS_PERCENT; // percentage of total glyphs considered small
-	std::vector<PixMapSym> syms;	// data for each symbol within current charmap
 
-	double coverageOfSmallGlyphs;	// max ratio of glyph area / containing area for small syms
+	bool ready = false;				// is container ready to provide useful data?
 	unsigned fontSz = 0U;			// bounding box size
+	std::vector<PixMapSym> syms;	// data for each symbol within current charmap
+	unsigned blanks = 0U;			// how many Blank characters were within the charmap
+	unsigned duplicates = 0U;		// how many duplicate symbols were within the charmap
+	double coverageOfSmallGlyphs;	// max ratio of glyph area / containing area for small syms
+
+	// Precomputed entities within reset method
+	cv::Mat consec, revConsec;		// vectors of consecutive values 0..fontSz-1 and reversed
+	double sz2;						// fontSz^2
+
 public:
-	PmsVect(unsigned fontSz_) : fontSz(fontSz_) {}
+	bool isReady() const { return ready; }
+	unsigned getFontSz() const;
+	unsigned getBlanksCount() const;
+	unsigned getDuplicatesCount() const;
+	double getCoverageOfSmallGlyphs() const;
+	const std::vector<PixMapSym>& getSyms() const;
+
+	// clears & prepares container for new entries
+	void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U);
+
+	/*
+	appendSym puts valid glyphs into vector <syms>. Space (empty / full) glyphs are invalid.
+	Updates the count of blanks & duplicates.
+	*/
+	void appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb);
+
+	void setAsReady(); // No other symbols to append. Statistics can be now computed
 };
 
 /*
 FontEngine class wraps some necessary FreeType functionality.
 */
 class FontEngine final {
-	static const double SMALL_GLYPHS_PERCENT; // percentage of total glyphs considered small
-
 	Controller &ctrler;				// data & views manager
 
 	FT_Library library	= nullptr;	// the FreeType lib
@@ -98,10 +126,7 @@ class FontEngine final {
 	unsigned encodingIndex = 0U;	// the index of the selected cmap within face's charmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;	// indices for each unique Encoding within cmaps array
 
-	std::vector<PixMapSym> syms;	// data for each symbol within current charmap
-	
-	double coverageOfSmallGlyphs;	// max ratio of glyph area / containing area for small syms
-	unsigned fontSz = 0U;			// bounding box size
+	PmsCont symsCont;				// Container with the PixMapSym-s of current charmap
 
 	/*
 	checkFontFile Validates a new font file.
