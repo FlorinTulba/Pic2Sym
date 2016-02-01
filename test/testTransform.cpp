@@ -12,6 +12,7 @@
 #include <fstream>
 
 #include "transform.cpp" // including CPP, to recompile #if(n)def UNIT_TESTING regions
+#include "match.cpp" // including CPP, to recompile #if(n)def UNIT_TESTING regions
 #include "ui.cpp"
 
 BOOST_AUTO_TEST_SUITE(Transform_Tests)
