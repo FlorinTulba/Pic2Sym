@@ -34,34 +34,34 @@ THRESHOLD_FOR_BLANK	0
 ; favoring less accurate ones, but which will bring more contrast.
 ; Set it to 0 if correctness is more important than a fancy result.
 ; Any other real positive value is allowed. 1 is ok.
-MORE_CONTRAST_PREF	3.0
+MORE_CONTRAST_PREF	1.5
 
 ; Real coefficient that might enforce choosing larger symbols, like an 'A' instead of 'i',
 ; even when they are less similar to the approximated area.
 ; Set it to 0 if correctness is more important than a fancy result.
 ; Any other real positive value is allowed. 1 is ok.
-LARGER_GLYPHS_PREF	1.0
+LARGER_GLYPHS_PREF	0.5
 
 ; Real coefficient that penalizes poor glyph matches when compared
 ; strictly to the region covered by the glyph's pixels
 ; Set it to 0 if it doesn't matter what lies under glyph's contour.
 ; Any other real positive value is allowed. 1 is ok.
-UNDER_GLYPH_CORRECTNESS	1.0
+UNDER_GLYPH_CORRECTNESS	10.0
 
 ; Real coefficient that penalizes poor background glyph matches when compared
 ; strictly to the region falling aside the glyph.
 ; Set it to 0 if it doesn't matter what lies aside the glyph.
 ; Any other real positive value is allowed. 1 is ok.
-ASIDE_GLYPH_CORRECTNESS	1.0
+ASIDE_GLYPH_CORRECTNESS	10.0
 
 ; Real coefficient that favors glyphs naturally disposed in directions that
 ; simulate the color transition (gradient) from the original area to approximate.
 ; Set it to 0 if color transition directions don't matter.
 ; Any other real positive value is allowed. 1 is ok.
-DIRECTIONAL_SMOOTHNESS	0.3
+DIRECTIONAL_SMOOTHNESS	0.25
 
 ; Real coefficient that favors glyphs naturally disposed
 ; near the 'center of action' from the original area to approximate.
 ; Set it to 0 if chosen glyph can be far from the 'gravitational point' of the patch.
 ; Any other real positive value is allowed. 1 is ok.
-GRAVITATIONAL_SMOOTHNESS	0.3
+GRAVITATIONAL_SMOOTHNESS	0.5

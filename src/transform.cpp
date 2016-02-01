@@ -30,26 +30,26 @@ using namespace boost::filesystem;
 namespace {
 	// Holds relevant data during patch&glyph matching
 	struct MatchParams {
+		static const wstring HEADER; // table header when values are serialized
+
 		Point2d mcPatch;			// mass center for the patch
 		Point2d mcGlyph;			// glyph's mass center
 		double glyphWeight;			// % of the box covered by the glyph (0..1)
-		double miuFg, miuBg;		// average color for fg / bg (range 0..255)
+		double fg, bg;				// color for fg / bg (range 0..255)
 
 		// standard deviations for fg / bg
-		// subrange of 0..127.5; best when 0
+		// 0 .. 255^2/(2*sqrt(2)); best when 0
 		double sdevFg, sdevBg;
-
-		static const wstring HEADER;
 
 		friend wostream& operator<<(wostream &os, const MatchParams &mp) {
 			os<<mp.mcGlyph.x<<",\t"<<mp.mcGlyph.y<<",\t"<<mp.mcPatch.x<<",\t"<<mp.mcPatch.y<<",\t"
-				<<mp.miuFg<<",\t"<<mp.miuBg<<",\t"<<mp.sdevFg<<",\t"<<mp.sdevBg<<",\t"<<mp.glyphWeight;
+				<<mp.fg<<",\t"<<mp.bg<<",\t"<<mp.sdevFg<<",\t"<<mp.sdevBg<<",\t"<<mp.glyphWeight;
 			return os;
 		}
 	};
 
 	const wstring MatchParams::HEADER(L"#mcGlyphX,\t#mcGlyphY,\t#mcPatchX,\t#mcPatchY,\t"
-									 L"#miuFg,\t#miuBg,\t#sdevFg,\t#sdevBg,\t#fg/all");
+									 L"#fg,\t#bg,\t#sdevFg,\t#sdevBg,\t#fg/all");
 
 	/*
 	Class for assessing a match based on various criteria.
@@ -109,9 +109,11 @@ namespace {
 		The remaining points might be addressed in a future version.
 		*/
 		double score(const Config &cfg) const {
-			// for a histogram with just 2 equally large bins on 0 and 255 => mean = sdev = 127.5
-			static const double SDEV_MAX = 255/2.;
 			static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
+
+			// for a histogram with just 2 equally large bins on 0 and 255^2 =>
+			// mean = 255^2/2. = 32512.5; sdev = 255^2/(2*sqrt(2)) ~ 22989.81
+			static const double SDEV_MAX = 255*255/(2.*SQRT2);
 			static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
 								MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
 			static const double CONTRAST_RATIO = (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) / (2.*255);
@@ -126,9 +128,9 @@ namespace {
 												cfg.get_kSdevBg());
 
 			const double minimalContrast = // minimal contrast for the average brightness
-				MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (params.miuFg + params.miuBg);
+				MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (params.fg + params.bg);
 			// range 0 .. 255, best when large
-			const double contrast = abs(params.miuBg - params.miuFg);
+			const double contrast = abs(params.bg - params.fg);
 			// Encourage contrasts larger than minimalContrast:
 			// <1 for low contrast;  1 for minimalContrast;  >1 otherwise
 			register double fMinimalContrast = pow(contrast / minimalContrast,
@@ -164,7 +166,7 @@ namespace {
 			register const double fGlyphWeight = pow(params.glyphWeight + 1. - smallGlyphsCoverage,
 				cfg.get_kGlyphWeight());
 
-			double result = fSdevFg * fSdevBg * fMinimalContrast *
+			const double result = fSdevFg * fSdevBg * fMinimalContrast *
 				fMinimalMCsOffset * fMCsAngleLessThan45 * fGlyphWeight;
 
 			return result;
@@ -234,16 +236,16 @@ namespace {
 	const wstring BestMatch::HEADER(wstring(L"#GlyphCode,\t#ChosenScore,\t") + MatchParams::HEADER);
 
 	// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
-	Mat toMat(const PixMapSym &pmc, unsigned fontSz) {
+	Mat toMat(const PixMapSym &pms, unsigned fontSz) {
 		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
 
-		int firstRow = (int)fontSz-(int)pmc.top-1;
+		int firstRow = (int)fontSz-(int)pms.top-1;
 		Mat region(result,
-				   Range(firstRow, firstRow+(int)pmc.rows),
-				   Range((int)pmc.left, (int)(pmc.left+pmc.cols)));
+				   Range(firstRow, firstRow+(int)pms.rows),
+				   Range((int)pms.left, (int)(pms.left+pms.cols)));
 
-		Mat pmcData((int)pmc.rows, (int)pmc.cols, CV_8UC1, (void*)pmc.data);
-		pmcData.copyTo(region);
+		const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
+		pmsData.copyTo(region);
 
 		static const double INV_255 = 1./255;
 		result.convertTo(result, CV_64FC1, INV_255); // convert to double
@@ -251,62 +253,59 @@ namespace {
 		return result;
 	}
 	
+	pair<double, double> averageFgBg(const Mat &patch, const Mat &fgMask, const Mat &bgMask) {
+		const Scalar miuFg = mean(patch, fgMask),
+				miuBg = mean(patch, bgMask);
+		return make_pair(*miuFg.val, *miuBg.val);
+	}
+
 	double assessGlyphMatch(const Config &cfg,
-							const pair<Mat, Mat> &glyphAndNegative,
-							const Mat &patch, const double patchSum,
+							const vector<const Mat> &glyphAndMasks,
+							const Mat &patch, const Mat &negPatch,
 							Matcher &matcher,
 							vector<PixMapSym>::const_iterator itFe,
 							const double sz_1, const double sz2) {
-		Mat glyph, negGlyph, temp;
-		tie(glyph, negGlyph) = glyphAndNegative;
-
-		const double glyphSum = itFe->glyphSum,
-			negGlyphSum = itFe->negGlyphSum;
-
 		MatchParams &mp = matcher.params;
-		mp.glyphWeight = glyphSum / sz2;
 
-		// Computing foreground and background means and the standard deviations.
-		// 'mean' & 'meanStdDev' provided by OpenCV have unfortunately only binary masking.
-		// Our glyphs have gradual transitions between foreground & background.
-		// These transitions need less than the full weighting provided by OpenCV.
+		const Mat &glyph = glyphAndMasks[0], &negGlyph = glyphAndMasks[1],
+				&nonZero = glyphAndMasks[2], &nonOne = glyphAndMasks[3],
+				&fgMask = glyphAndMasks[4], &bgMask = glyphAndMasks[5];
+		Scalar miu, sdev;
+		Mat temp;
 
-		// Implemented below edge weighting:
+		divide(patch, glyph, temp);
+		meanStdDev(temp, miu, sdev, nonZero);
+		mp.sdevFg = *sdev.val;
 
-		// First the means:
-		const double dotP = patch.dot(glyph);
-		mp.miuFg = dotP / glyphSum; // 'mean' would divide by more (countNonZero)
-		mp.miuBg = (patchSum - dotP) / negGlyphSum; // 'mean' would divide by more (countLessThan1)
+		temp.release();
+		divide(negPatch, negGlyph, temp);
+		meanStdDev(temp, miu, sdev, nonOne);
+		mp.sdevBg = *sdev.val;
 
-		// Now the standard deviations:
-		// 'meanStdDev' would subtract from patch elements different means
-		// and divide by the larger values described above
-		temp = (patch-mp.miuFg).mul(glyph); // Elem-wise (mask only fg, weigh contours)
-		mp.sdevFg = sqrt(temp.dot(temp) / glyphSum);
+		tie(mp.fg, mp.bg) = averageFgBg(patch, fgMask, bgMask);
 
-		temp = (patch-mp.miuBg).mul(negGlyph); // Elem-wise (mask only bg, weigh contours)
-		mp.sdevBg = sqrt(temp.dot(temp) / negGlyphSum);
+		mp.glyphWeight = itFe->glyphSum / sz2;
 
 		// Obtaining glyph's mass center
-		const double k = mp.glyphWeight * (mp.miuFg-mp.miuBg),
-			delta = .5 * mp.miuBg * sz_1;
-		if(k+mp.miuBg == 0.)
+		const double k = mp.glyphWeight * (mp.fg-mp.bg),
+			delta = .5 * mp.bg * sz_1;
+		if(k+mp.bg == 0.)
 			mp.mcGlyph = Point2d(sz_1, sz_1) * .5;
 		else
-			mp.mcGlyph = (k * itFe->mc + Point2d(delta, delta)) / (k + mp.miuBg);
+			mp.mcGlyph = (k * itFe->mc + Point2d(delta, delta)) / (k + mp.bg);
 
 		return matcher.score(cfg);
 	}
 
 	// Determines best match of 'patch' compared to the elements from 'symsSet'
-	void findBestMatch(const Config &cfg, const vector<pair<Mat, Mat>> &symsSet,
+	void findBestMatch(const Config &cfg, const vector<vector<const Mat>> &symsSet,
 					   const Mat &patch, Matcher &matcher, BestMatch &best,
 					   vector<PixMapSym>::const_iterator itFeBegin,
 					   const double sz2, const Mat &consec) {
 		best.reset();
 
 		const double patchSum = *sum(patch).val,
-			sz_1 = (double)cfg.getFontSz() - 1.;
+				sz_1 = (double)cfg.getFontSz() - 1.;
 		Mat temp, temp1;
 		reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 		reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
@@ -314,10 +313,12 @@ namespace {
 		MatchParams &mp = matcher.params;
 		mp.mcPatch = Point2d(temp.dot(consec), temp1.t().dot(consec)) / patchSum; // mass center
 
+		const Mat negPatch = 255. - patch;
 		auto itFe = itFeBegin;
-		for(auto &glyphAndNegative : symsSet) {
+		for(const auto &glyphAndMasks : symsSet) {
 			const double score =
-				assessGlyphMatch(cfg, glyphAndNegative, patch, patchSum, matcher, itFe, sz_1, sz2);
+				assessGlyphMatch(cfg, glyphAndMasks,
+								patch, negPatch, matcher, itFe, sz_1, sz2);
 			if(score > best.score)
 				best.reset(score, (unsigned)distance(itFeBegin, itFe), itFe->symCode, mp);
 
@@ -326,30 +327,30 @@ namespace {
 	}
 
 	// Writes symsSet[best.symIdx] to the appropriate part (r,c) from result
-	void commitMatch(const Config &cfg, const vector<pair<Mat, Mat>> &symsSet,
+	void commitMatch(const Config &cfg, const vector<vector<const Mat>> &symsSet,
 					 const BestMatch &best, Mat &result,
 					 const Mat &resized, const Mat &patch, unsigned r, unsigned c,
-					 bool isColor, vector<PixMapSym>::const_iterator itFeBegin) {
-		auto sz = cfg.getFontSz();
-		Mat patchResult(result, Range(r, r+sz), Range(c, c+sz)), glyph, negGlyph;
-		tie(glyph, negGlyph) = *next(symsSet.begin(), best.symIdx);
+					 bool isColor) {
+		const auto sz = cfg.getFontSz();
+		const vector<const Mat> &glyphMatrices = symsSet[best.symIdx];
+		const Mat &glyph = glyphMatrices[0];
+		Mat patchResult(result, Range(r, r+sz), Range(c, c+sz));
+
 		if(isColor) {
+			const Mat &fgMask = glyphMatrices[4],
+					&bgMask = glyphMatrices[5];
 			Mat patchColor(resized, Range(r, r+sz), Range(c, c+sz));
-			auto itFeBest = next(itFeBegin, best.symIdx);
-			double glyphBestSum = itFeBest->glyphSum,
-				negGlyphBestSum = itFeBest->negGlyphSum;
 
 			vector<Mat> channels;
 			split(patchColor, channels);
 			assert(channels.size() == 3);
 
-			double diffFgBg = 0.;
+			double miuFg, miuBg, newDiff, diffFgBg = 0.;
 			for(auto &ch : channels) {
 				ch.convertTo(ch, CV_64FC1); // processing double values
 
-				double miuFg = ch.dot(glyph) / glyphBestSum,
-					miuBg = ch.dot(negGlyph) / negGlyphBestSum,
-					newDiff = miuFg - miuBg;
+				tie(miuFg, miuBg) = averageFgBg(ch, fgMask, bgMask);
+				newDiff = miuFg - miuBg;
 
 				glyph.convertTo(ch, CV_8UC1, newDiff, miuBg);
 
@@ -362,12 +363,12 @@ namespace {
 				merge(channels, patchResult);
 
 		} else { // grayscale result
-			if(abs(best.params.miuFg - best.params.miuBg) < cfg.getBlankThreshold())
+			if(abs(best.params.fg - best.params.bg) < cfg.getBlankThreshold())
 				patchResult = mean(patch);
 			else
 				glyph.convertTo(patchResult, CV_8UC1,
-								best.params.miuFg - best.params.miuBg,
-								best.params.miuBg);
+								best.params.fg - best.params.bg,
+								best.params.bg);
 		}
 	}
 } // anonymous namespace
@@ -380,7 +381,7 @@ Transformer::Transformer(Controller &ctrler_, const string &cmd) : ctrler(ctrler
 }
 
 string Transformer::getIdForSymsToUse() {
-	unsigned sz = cfg.getFontSz();
+	const unsigned sz = cfg.getFontSz();
 	if(!Config::isFontSizeOk(sz)) {
 		cerr<<"Invalid font size to use: "<<sz<<endl;
 		throw logic_error("Invalid font size for getIdForSymsToUse");
@@ -398,16 +399,30 @@ void Transformer::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
+	static const double STILL_BG = .025,			// darkest shades
+						STILL_FG = 1. - STILL_BG;	// brightest shades
 	symsSet.clear();
 	symsSet.reserve(fe.symsSet().size());
 	pNegatives.clear();
 	pNegatives.reserve(fe.symsSet().size());
 
-	unsigned sz = cfg.getFontSz();
-	for(auto &pmc : fe.symsSet()) {
-		Mat glyph = toMat(pmc, sz), negGlyph = 1. - glyph;
-		symsSet.emplace_back(glyph, negGlyph);
-		pNegatives.push_back(&symsSet.back().second);
+	double minVal, maxVal;
+	const unsigned sz = cfg.getFontSz();
+	const int szGlyph[] = {2, sz, sz},
+			szMasks[] = {4, sz, sz};
+	for(const auto &pms : fe.symsSet()) {
+		const Mat glyph = toMat(pms, sz), negGlyph = 1. - glyph;
+
+		// for very small fonts, minVal might be > 0 and maxVal might be < 255
+		minMaxIdx(glyph, &minVal, &maxVal);
+
+		const Mat nonZero = (glyph != 0.), nonOne = (glyph != 1.),
+				fgMask = (glyph > (minVal + STILL_FG * (maxVal-minVal))),
+				bgMask = (glyph < (minVal + STILL_BG * (maxVal-minVal)));
+
+		symsSet.emplace_back(vector<const Mat>
+				{ glyph, negGlyph, nonZero, nonOne, fgMask, bgMask });
+		pNegatives.push_back(&symsSet.back()[1]); // &negGlyph
 	}
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
@@ -456,7 +471,7 @@ void Transformer::run() {
 	ofs<<"#Row,\t#Col,\t"<<BestMatch::HEADER<<endl;
 #endif
 
-	unsigned sz = cfg.getFontSz();
+	const unsigned sz = cfg.getFontSz();
 	const double sz2 = (double)sz*sz;
 
 	Mat consec(1, sz, CV_64FC1);
@@ -469,12 +484,12 @@ void Transformer::run() {
 	result = Mat(resized.rows, resized.cols, resized.type());
 	gray.convertTo(gray, CV_64FC1);
 	
-	auto itFeBegin = fe.symsSet().cbegin();
+	const auto itFeBegin = fe.symsSet().cbegin();
 	for(unsigned r = 0U, h = (unsigned)gray.rows; r<h; r += sz) {
 		ctrler.reportTransformationProgress((double)r/h);
 
 		for(unsigned c = 0U, w = (unsigned)gray.cols; c<w; c += sz) {
-			Mat patch(gray, Range(r, r+sz), Range(c, c+sz));
+			const Mat patch(gray, Range(r, r+sz), Range(c, c+sz));
 
 			findBestMatch(cfg, symsSet, patch, matcher, best, itFeBegin, sz2, consec);
 
@@ -482,7 +497,7 @@ void Transformer::run() {
 			ofs<<r/sz<<",\t"<<c/sz<<",\t"<<best<<endl;
 #endif
 
-			commitMatch(cfg, symsSet, best, result, resized, patch, r, c, img.isColor(), itFeBegin);
+			commitMatch(cfg, symsSet, best, result, resized, patch, r, c, img.isColor());
 		}
 #ifdef _DEBUG
 		ofs.flush(); // flush after processing a full row (of height sz) of the image

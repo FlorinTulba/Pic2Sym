@@ -42,8 +42,8 @@ bool FileOpen::promptForUserChoice() {
 		reset();
 		return false;
 	}
-	wstring wResult(ofn.lpstrFile);
-	result.assign(BOUNDS(wResult));
+	const wstring wResult(ofn.lpstrFile);
+	result.assign(CBOUNDS(wResult));
 	return true;
 }
 
@@ -59,8 +59,8 @@ class FontFinder {
 	class RegistryHelper {
 		HKEY fontsKey = nullptr;
 		DWORD longestNameLen = 0, longestDataLen = 0;
-		LPTSTR fontNameBuf = nullptr;
-		LPBYTE fontFileBuf = nullptr;
+		vector<TCHAR> fontNameBuf;
+		vector<BYTE> fontFileBuf;
 		DWORD idx = 0;
 
 	public:
@@ -70,36 +70,34 @@ class FontFinder {
 			// Computer->HKEY_LOCAL_MACHINE->Software->Microsoft->Windows NT->CurrentVersion->Fonts
 			static const LPTSTR fontRegistryPath = _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts");
 
-			if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, // predefined key
-				fontRegistryPath, // subkey
-				0U, // ulOptions - not an symbolic link
-				KEY_READ, // rights to query, enumerate
-				&fontsKey // returns the necessary key
-				) != ERROR_SUCCESS)
+			if(RegOpenKeyEx(HKEY_LOCAL_MACHINE,	// predefined key
+							fontRegistryPath,	// subkey
+							0U,					// ulOptions - not an symbolic link
+							KEY_READ,			// rights to query, enumerate
+							&fontsKey			// returns the necessary key
+							) != ERROR_SUCCESS)
 				throw invalid_argument("Couldn't find the Fonts mapping within Registry!");
 
 			// Get the required buffer size for font names and the names of the corresponding font files		
 			if(RegQueryInfoKey(fontsKey,
-				nullptr, // lpClass
-				nullptr, // lpcClass
-				nullptr, // lpReserved
-				nullptr, // lpcSubKeys (There are no subkeys)
-				nullptr, // lpcMaxSubKeyLen
-				nullptr, // lpcMaxClassLen
-				nullptr, // lpcValues (We just enumerate the values, no need to know their count)
-				&longestNameLen, // returns required buffer size for font names
-				&longestDataLen, // returns required buffer size for corresponding names of the font files
-				nullptr, // lpcbSecurityDescriptor (Not necessary)
-				nullptr // lpftLastWriteTime (Not interested in this)
-				) != ERROR_SUCCESS)
+					nullptr, // lpClass
+					nullptr, // lpcClass
+					nullptr, // lpReserved
+					nullptr, // lpcSubKeys (There are no subkeys)
+					nullptr, // lpcMaxSubKeyLen
+					nullptr, // lpcMaxClassLen
+					nullptr, // lpcValues (We just enumerate the values, no need to know their count)
+					&longestNameLen, // returns required buffer size for font names
+					&longestDataLen, // returns required buffer size for corresponding names of the font files
+					nullptr, // lpcbSecurityDescriptor (Not necessary)
+					nullptr // lpftLastWriteTime (Not interested in this)
+					) != ERROR_SUCCESS)
 				throw invalid_argument("Couldn't interrogate the Fonts key!");
 
-			fontNameBuf = new TCHAR[longestNameLen+1]; // reserve also for \0
-			fontFileBuf = new BYTE[longestDataLen+2]; // reserve also for \0(wchar)
+			fontNameBuf.resize(longestNameLen+1); // reserve also for '\0'
+			fontFileBuf.resize(longestDataLen+2); // reserve also for '\0'(wchar_t as BYTE)
 		}
 		~RegistryHelper() {
-			delete[] fontFileBuf;
-			delete[] fontNameBuf;
 			RegCloseKey(fontsKey);
 		}
 
@@ -109,13 +107,13 @@ class FontFinder {
 		*/
 		bool extractNextFont(wstring &fontName, wstring &fontFileName) {
 			DWORD lenFontName = longestNameLen+1, lenFontFileName = longestDataLen+2;
-			LONG ret = RegEnumValue(fontsKey,
+			const LONG ret = RegEnumValue(fontsKey,
 									idx++, // which font index
-									fontNameBuf, // storage for the font names
+									fontNameBuf.data(), // storage for the font names
 									&lenFontName, // length of the returned font name
 									nullptr, // lpReserved
 									nullptr, // lpType (All are REG_SZ)
-									fontFileBuf, // storage for the font file names
+									fontFileBuf.data(), // storage for the font file names
 									&lenFontFileName); // length of the returned font file name
 			if(ERROR_NO_MORE_ITEMS == ret)
 				return false;
@@ -127,8 +125,8 @@ class FontFinder {
 			if(ERROR_SUCCESS != ret)
 				throw invalid_argument("Couldn't enumerate the Fonts!");
 
-			fontName.assign(fontNameBuf);
-			fontFileName.assign((TCHAR*)fontFileBuf);
+			fontName.assign(fontNameBuf.data());
+			fontFileName.assign((TCHAR*)fontFileBuf.data());
 
 			return true;
 		}
@@ -140,19 +138,22 @@ class FontFinder {
 	*/
 	static bool relevantFontName(const wstring &wCurFontName,
 								 const wstring &wFontName, bool isBold, bool isItalic) {
-		wstring::size_type at = wCurFontName.find(wFontName); // fontName won't be necessary a prefix!!
+		const auto at = wCurFontName.find(wFontName); // fontName won't be necessary a prefix!!
 		if(at == wstring::npos)
 			return false; // current font doesn't contain the desired prefix
 
 		// Bold and Italic fonts typically append such terms to their key name.
-		wstring wSuffixCurFontName = wCurFontName.substr(at+wFontName.length()); // extract the suffix
+		static const wregex rexBold(L"Bold|Heavy|Black", regex_constants::icase);
+		static const wregex rexItalic(L"Italic|Oblique", regex_constants::icase);
 
 		static match_results<wstring::const_iterator> match;
-		static const wregex rexBold(L"Bold|Heavy|Black", regex_constants::icase);
+
+		const wstring wSuffixCurFontName =
+			wCurFontName.substr(at+wFontName.length()); // extract the suffix
+
 		if(isBold != regex_search(wSuffixCurFontName, match, rexBold))
 			return false; // current font has different Bold status than expected
 
-		static const wregex rexItalic(L"Italic|Oblique", regex_constants::icase);
 		if(isItalic != regex_search(wSuffixCurFontName, match, rexItalic))
 			return false; // current font has different Italic status than expected
 
@@ -182,7 +183,7 @@ class FontFinder {
 
 	// When ambiguous results, lets the user select the correct one.
 	static string extractResult(map<string, string> &choices) {
-		size_t choicesCount = choices.size();
+		const size_t choicesCount = choices.size();
 		if(0U == choicesCount) {
 			cerr<<"Couldn't find this font within registry!"<<endl;
 			throw runtime_error("Couldn't locate font within registry!");
@@ -194,7 +195,7 @@ class FontFinder {
 		// More than 1 file suits the selected font and the user should choose the appropriate one
 		cout<<endl<<"More fonts within Registry suit the selected Font type. Please select the appropriate one:"<<endl;
 		size_t idx = 0U;
-		for(auto choice : choices)
+		for(const auto choice : choices)
 			cout<<idx++<<" : "<<choice.first<<" -> "<<choice.second<<endl;
 
 		//idx is here choicesCount
@@ -215,15 +216,13 @@ public:
 	static string pathFor(const string &fontName, bool isBold, bool isItalic) {
 		wstring wCurFontName, wCurFontFileName;
 		map<string, string> choices;
-		wstring wFontName(BOUNDS(fontName));
+		wstring wFontName(CBOUNDS(fontName));
 
 		RegistryHelper rh;
-		while(rh.extractNextFont(wCurFontName, wCurFontFileName)) {
-			if(!relevantFontName(wCurFontName, wFontName, isBold, isItalic))
-				continue;
-
-			choices[string(BOUNDS(wCurFontName))] = refineFontFileName(wCurFontFileName);
-		}
+		while(rh.extractNextFont(wCurFontName, wCurFontFileName))
+			if(relevantFontName(wCurFontName, wFontName, isBold, isItalic))
+				choices[string(CBOUNDS(wCurFontName))] =
+							refineFontFileName(wCurFontFileName);
 
 		return extractResult(choices);
 	}
@@ -245,8 +244,8 @@ bool SelectFont::promptForUserChoice() {
 		
 	isBold = (cf.nFontType & 0x100) || (lf.lfWeight > FW_MEDIUM); // There are fonts with only a Medium style (no Regular one)
 	isItalic = (cf.nFontType & 0x200) || (lf.lfItalic != (BYTE)0);
-	wstring wResult(lf.lfFaceName);
-	result.assign(BOUNDS(wResult));
+	const wstring wResult(lf.lfFaceName);
+	result.assign(CBOUNDS(wResult));
 
 	cout<<"Selected ";
 	if(isBold)

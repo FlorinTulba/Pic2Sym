@@ -21,9 +21,7 @@
 
 class Controller; // data & views manager
 
-/*
-Transformer allows images to be approximated as a table of colored symbols from font files.
-*/
+// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer final {
 	Controller &ctrler;			// data & views manager
 
@@ -32,7 +30,7 @@ class Transformer final {
 	Img img;					// current image to process
 
 	std::vector<const cv::Mat*> pNegatives;				// pointers to glyphs' inverses
-	std::vector<std::pair<cv::Mat, cv::Mat>> symsSet;	// current symbol set & its inverse in Mat format
+	std::vector<std::vector<const cv::Mat>> symsSet;	// set of symbols&inverses + 4 masks
 
 	cv::Mat result;				// the result of the transformation
 

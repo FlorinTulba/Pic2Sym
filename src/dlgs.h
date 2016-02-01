@@ -16,9 +16,7 @@
 
 #include <string>
 
-/*
-Dlg is the base class for the standard Windows dialogs from below
-*/
+// Dlg is the base class for the standard Windows dialogs from below
 class Dlg abstract {
 protected:
 	std::string result = ""; // the result to be returned
@@ -32,12 +30,10 @@ public:
 	virtual void reset() { result.clear(); }
 };
 
-/*
-FileOpen class controls a FileOpenDialog.
-*/
+// FileOpen class controls a FileOpenDialog.
 class FileOpen final : public Dlg {
 	OPENFILENAME ofn;		// structure used by the FileOpenDialog
-	TCHAR fNameBuf[500];	// buffer for the selected image file
+	TCHAR fNameBuf[1024];	// buffer for the selected image file
 
 public:
 	FileOpen(); // Prepares the dialog
@@ -45,9 +41,7 @@ public:
 	bool promptForUserChoice() override;
 };
 
-/*
-SelectFont class controls a ChooseFont Dialog.
-*/
+// SelectFont class controls a ChooseFont Dialog.
 class SelectFont final : public Dlg {
 	CHOOSEFONT cf;		// structure used by the ChooseFont Dialog
 	LOGFONT lf;			// structure filled with Font information

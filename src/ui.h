@@ -68,7 +68,7 @@ public:
 	void setResult(const cv::Mat &result_);
 };
 
-#ifndef UNIT_TESTING
+#ifndef UNIT_TESTING // Following classes are not needed during Unit Testing
 /*
 Class for displaying the symbols from the current charmap (cmap).
 When there are lots of symbols, they are divided into pages which
@@ -92,12 +92,12 @@ private:
 	// 'updatingPageMax' is used for this hack
 	bool updatingPageMax = false;
 
-	cv::Mat createGrid() const;
+	cv::Mat createGrid() const;				// generates the grid that separates the glyphs
 
 	// content = grid + glyphs for current page specified by a pair of iterators
 	void populateGrid(const CmapInspect::PairItVectPtrConstMat &itPair);
 
-	unsigned computeSymsPerPage() const;
+	unsigned computeSymsPerPage() const;	// determines how many symbols fit on a single page
 
 public:
 	CmapInspect(Controller &ctrler_);
@@ -107,7 +107,7 @@ public:
 	void updatePagesCount(unsigned cmapSize);	// puts also the slider on 0
 	void updateGrid();							// Changing font size must update also the grid
 
-	void showPage(unsigned pageIdx);
+	void showPage(unsigned pageIdx);			// displays page <pageIdx>
 };
 
 /*
@@ -124,11 +124,14 @@ class ControlPanel {
 	/*
 	Helper to convert settings from actual ranges to the ones used by the sliders.
 	For now, flexibility in choosing the conversion rules is more important than design,
-	so lots of redundancy below.
+	so lots of redundancies appear below.
 	*/
 	struct Converter {
-		// One possible conversion function:
-		// x in 0..xMax;  y in 0..yMax  => y = x*yMax/xMax
+		/*
+		One possible conversion function 'proportionRule':
+			x in 0..xMax;  y in 0..yMax  =>
+			y = x*yMax/xMax
+		*/
 		static double proportionRule(double x, double xMax, double yMax);
 
 		// used for the slider controlling the contrast
@@ -193,8 +196,8 @@ class ControlPanel {
 public:
 	ControlPanel(Controller &ctrler_);
 
-	void updateEncodingsCount(unsigned uniqueEncodings);			// puts also the slider on 0
-	bool updatesEncodingCount() const { return updatingEncMax; }	// used for the hack above
+	void updateEncodingsCount(unsigned uniqueEncodings);	// puts also the slider on 0
+	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above
 };
 #endif // UNIT_TESTING not defined
 

@@ -44,27 +44,27 @@ namespace {
 		req.height = sz<<6; // 26.6 format
 		req.width = req.height; // initial check for square drawing board
 		req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
-		FT_Error error = FT_Request_Size(face, &req);
+		const FT_Error error = FT_Request_Size(face, &req);
 		if(error != FT_Err_Ok) {
 			cerr<<"Couldn't set font size: "<<sz<<"  Error: "<<error<<endl;
 			throw invalid_argument("Couldn't set font size!");
 		}
 		symsCount = 0U;
 		FT_UInt idx;
-		FT_ULong c = FT_Get_First_Char(face, &idx);
-		while(idx != 0) { // Assess all glyphs of this charmap
-			++symsCount;
+		for(FT_ULong c = FT_Get_First_Char(face, &idx);
+				idx != 0;
+				c = FT_Get_Next_Char(face, c, &idx), ++symsCount) {
 			FT_Load_Char(face, c, FT_LOAD_RENDER);
-			FT_GlyphSlot g = face->glyph;
-			FT_Bitmap b = g->bitmap;
+			const FT_GlyphSlot g = face->glyph;
+			const FT_Bitmap b = g->bitmap;
 
-			unsigned height = b.rows, width = b.width;
+			const unsigned height = b.rows, width = b.width;
 			vHeight.push_back(height); vWidth.push_back(width);
-			int left = g->bitmap_left, right = g->bitmap_left+width - 1,
-				top = g->bitmap_top, bottom = top - (int)height + 1;
+			
+			const int left = g->bitmap_left, right = g->bitmap_left+width - 1,
+					top = g->bitmap_top, bottom = top - (int)height + 1;
 			vLeft.push_back(left); vRight.push_back(right);
 			vTop.push_back(top); vBottom.push_back(bottom);
-			c = FT_Get_Next_Char(face, c, &idx);
 		}
 
 		// Compute some means and standard deviations
@@ -76,12 +76,12 @@ namespace {
 		meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
 		meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
 
-		double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
+		const double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
 
 		// Enlarge factors, forcing the average width + lateral std. devs
 		// to fit the width of the drawing square.
-		double factorH = sz / ( *avgWidth.val + kh*( *sdLeft.val + *sdRight.val)),
-			factorV = sz / ( *avgHeight.val + kv*( *sdTop.val + *sdBottom.val)); // Similar story vertically
+		const double factorH = sz / ( *avgWidth.val + kh*( *sdLeft.val + *sdRight.val)),
+					factorV = sz / ( *avgHeight.val + kv*( *sdTop.val + *sdBottom.val));
 
 		// Computing new height & width
 		req.height = (FT_ULong)floor(factorV * req.height);
@@ -90,12 +90,12 @@ namespace {
 		FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
 
 		// Positioning the Bounding box to best cover the estimated future position & size of the symbols
-		double yMin = factorV * ( *avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
-			yMax = factorV * ( *avgTop.val + *sdTop.val),			// top
+		double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
+			yMax = factorV * (*avgTop.val + *sdTop.val),			// top
 			yDiff2 = (yMax-yMin+1-sz)/2.,	// the difference to divide equally between top & bottom
-			xMin = factorH * ( *avgLeft.val - *sdLeft.val),		// current left scaled by factorH
-			xMax = factorH * ( *avgRight.val + *sdRight.val),		// right
-			xDiff2 = (xMax-xMin+1-sz)/2.;	// the difference to divide equally between left & right
+			xMin = factorH * (*avgLeft.val - *sdLeft.val),		// current left scaled by factorH
+			xMax = factorH * (*avgRight.val + *sdRight.val);		// right
+		const double xDiff2 = (xMax-xMin+1-sz)/2.;	// the difference to divide equally between left & right
 
 		// distributing the differences
 		yMin += yDiff2; yMax -= yDiff2;
@@ -113,26 +113,24 @@ namespace {
 		return make_pair(factorH, factorV);
 	}
 
-	/*
-	Computing the mass center (mc) of a given glyph and its background.
-	*/	
-	const Point2d computeMc(unsigned sz, unsigned char *data, 
+	// Computing the mass center (mc) of a given glyph and its background.
+	const Point2d computeMc(unsigned sz, const vector<unsigned char> &data, 
 					unsigned char rows, unsigned char cols,
 					unsigned char left, unsigned char top,
 					double glyphSum, const Mat &consec, const Mat &revConsec) {
 		if(rows == 0U || cols == 0U) {
-			double centerCoord = (sz-1U)/2.;
+			const double centerCoord = (sz-1U)/2.;
 			return Point2d(centerCoord, centerCoord);
 		}
 
-		const Mat glyph((int)rows, (int)cols, CV_8UC1, (void*)data);
+		const Mat glyph((int)rows, (int)cols, CV_8UC1, (void*)data.data());
 		Mat sumPerColumn, sumPerRow;
 
 		reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
 		reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
 
-		double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left, left+cols))),
-			sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top+1-rows, top+1)));
+		const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left, left+cols))),
+				sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top+1-rows, top+1)));
 
 		return Point2d(sumX, sumY) / (255. * glyphSum);
 	}
@@ -142,9 +140,6 @@ namespace {
 					   int leftBound, int topBound, int sz,
 					   int& rows_, int& cols_, int& left_, int& top_,
 					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
-		sz = bb.yMax-bb.yMin+1;
-		assert(sz > 0 && bb.xMax-bb.xMin+1 == sz);
-
 		rows_ = (int)bm.rows; cols_ = (int)bm.width;
 		left_ = leftBound; top_ = topBound;
 
@@ -185,17 +180,17 @@ namespace {
 	// Creates a bimap using initializer_list. Needed in 'encodingsMap' below
 	template <typename L, typename R>
 	bimap<L, R> make_bimap(initializer_list<typename bimap<L, R>::value_type> il) {
-		return bimap<L, R>(BOUNDS(il));
+		return bimap<L, R>(CBOUNDS(il));
 	}
 
 	// Holds the mapping between encodings codes and their corresponding names
 	// Returns non-const just to allow accessing the map with operator[].
-	bimap<FT_Encoding, string>& encodingsMap() {
+	const bimap<FT_Encoding, string>& encodingsMap() {
 
 		// Defines pairs like { FT_ENCODING_ADOBE_STANDARD, "ADOBE_STANDARD" }
 		#define enc(encValue) { encValue, string(#encValue).substr(12) }
 
-		static bimap<FT_Encoding, string> encMap(
+		static const bimap<FT_Encoding, string> encMap(
 			make_bimap<FT_Encoding, string>({ // known encodings
 				enc(FT_ENCODING_NONE),
 				enc(FT_ENCODING_UNICODE),
@@ -217,7 +212,6 @@ namespace {
 
 		return encMap;
 	}
-
 } // anonymous namespace
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
@@ -233,15 +227,14 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 				  rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
 	if(rows_ > 0 && cols_ > 0) {
-		int amount = rows_ * cols_;
-		data = new unsigned char[amount];
+		const int amount = rows_ * cols_;
+		pixels.resize(amount);
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
-			memcpy_s(data+r*cols_, (rows_-r)*cols_,
+			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
 						&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
 						cols_);
-		glyphSum = *sum(Mat(1, amount, CV_8UC1, data)).val / 255.;
+		glyphSum = *sum(Mat(1, amount, CV_8UC1, pixels.data())).val / 255.;
 	}
-	negGlyphSum = sz2 - glyphSum;
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
 	left_ -= bb.xMin;
@@ -252,43 +245,35 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	rows = (unsigned char)rows_;
 	cols = (unsigned char)cols_;
 
-	mc = computeMc((unsigned)sz, data, rows, cols, left, top, glyphSum, consec, revConsec);
+	mc = computeMc((unsigned)sz, pixels, rows, cols, left, top, glyphSum, consec, revConsec);
 }
 
 PixMapSym::PixMapSym(const PixMapSym &other) :
 		symCode(other.symCode),
-		glyphSum(other.glyphSum), negGlyphSum(other.negGlyphSum),
+		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
-		data(nullptr) {
-	int amount = rows*cols;
-	data = new unsigned char[amount];
-	memcpy_s(data, amount, other.data, amount);
+		pixels(other.pixels) {
 }
 
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
 		symCode(other.symCode),
-		glyphSum(other.glyphSum), negGlyphSum(other.negGlyphSum),
+		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
-		data(other.data) {
-	other.data = nullptr;
+		pixels(move(other.pixels)) {
 }
 
 PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 	if(this != &other) {
 		symCode = other.symCode;
-		glyphSum = other.glyphSum; negGlyphSum = other.negGlyphSum;
+		glyphSum = other.glyphSum;
 		mc = other.mc;
 		rows = other.rows; cols = other.cols;
 		left = other.left; top = other.top;
-		delete[] data; data = other.data; other.data = nullptr;
+		pixels = move(other.pixels);
 	}
 	return *this;
-}
-
-PixMapSym::~PixMapSym() {
-	delete[] data;
 }
 
 bool PixMapSym::operator==(const PixMapSym &other) const {
@@ -300,7 +285,7 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		left == other.left && top == other.top &&
 		rows == other.rows && cols == other.cols &&
 		mc == other.mc &&
-		memcmp(data, other.data, rows*cols*sizeof(decltype(*data))) == 0;
+		equal(CBOUNDS(pixels), cbegin(other.pixels));
 }
 
 // Smallest 10% of all glyphs are considered small
@@ -342,7 +327,7 @@ double PmsCont::getCoverageOfSmallGlyphs() const {
 	return coverageOfSmallGlyphs;
 }
 
-const vector<PixMapSym>& PmsCont::getSyms() const {
+const vector<const PixMapSym>& PmsCont::getSyms() const {
 	if(!ready) {
 		cerr<<"getSyms cannot be called before setAsReady"<<endl;
 		throw logic_error("getSyms cannot be called before setAsReady");
@@ -364,9 +349,9 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 
 	consec = Mat(1, fontSz_, CV_64FC1);
 	revConsec.release();
+
 	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
 	flip(consec, revConsec, 1);
-
 }
 
 void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
@@ -389,7 +374,7 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 	if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) // discard disguised Space characters
 		++blanks;
 	else {
-		for(auto &prevPmc : syms)
+		for(const auto &prevPmc : syms)
 			if(prevPmc == pmc) {
 				++duplicates;
 				return;
@@ -404,15 +389,15 @@ void PmsCont::setAsReady() {
 
 	// Determine below max box coverage for smallest glyphs from the kept symsSet.
 	// This will be used to favor using larger glyphs when this option is selected.
-	auto smallGlyphsQty = (long)round(syms.size() * SMALL_GLYPHS_PERCENT);
+	const auto smallGlyphsQty = (long)round(syms.size() * SMALL_GLYPHS_PERCENT);
 	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
-				[] (const PixMapSym &first, const PixMapSym &second) -> bool {
+			[] (const PixMapSym &first, const PixMapSym &second) -> bool {
 		return first.glyphSum < second.glyphSum;
 	});
 	coverageOfSmallGlyphs = next(syms.begin(), smallGlyphsQty)->glyphSum / sz2;
 
 	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
-		 [] (const PixMapSym &first, const PixMapSym &second) -> bool {
+			[] (const PixMapSym &first, const PixMapSym &second) -> bool {
 		return first.symCode < second.symCode;
 	});
 
@@ -420,7 +405,7 @@ void PmsCont::setAsReady() {
 }
 
 FontEngine::FontEngine(Controller &ctrler_) : ctrler(ctrler_) {
-	FT_Error error = FT_Init_FreeType(&library);
+	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
 		throw runtime_error("Couldn't initialize FreeType!");
@@ -437,7 +422,7 @@ bool FontEngine::checkFontFile(const path &fontPath, FT_Face &face_) const {
 		cerr<<"No such file: "<<fontPath<<endl;
 		return false;
 	}
-	FT_Error error = FT_New_Face(library, fontPath.string().c_str(), 0, &face_);
+	const FT_Error error = FT_New_Face(library, fontPath.string().c_str(), 0, &face_);
 	if(error != FT_Err_Ok) {
 		cerr<<"Invalid font file: "<<fontPath<<"  Error: "<<error<<endl;
 		return false;
@@ -471,7 +456,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	if(idx >= uniqueEncodings())
 		return false;
 
-	FT_Error error =
+	const FT_Error error =
 		FT_Set_Charmap(face, face->charmaps[next(uniqueEncs.right.begin(), idx)->first]);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't set new cmap! Error: "<<error<<endl;
@@ -494,15 +479,16 @@ bool FontEngine::setEncoding(const string &encName) {
 	if(encName.compare(encoding) == 0)
 		return true; // same encoding
 
-	auto &encMap = encodingsMap().right; // encodingName->FT_Encoding
-	auto itEncName = encMap.find(encName);
-	if(encMap.end() == itEncName) {
+	const auto &encMapR = encodingsMap().right; // encodingName->FT_Encoding
+	const auto itEncName = encMapR.find(encName);
+	if(encMapR.end() == itEncName) {
 		cerr<<"Unknown encoding "<<encName<<endl;
 		return false;
 	}
 
-	auto itEnc = uniqueEncs.left.find(itEncName->second); // FT_Encoding->uniqueIndices
-	if(uniqueEncs.left.end() == itEnc) {
+	const auto &uniqueEncsL = uniqueEncs.left;
+	const auto itEnc = uniqueEncsL.find(itEncName->second); // FT_Encoding->uniqueIndices
+	if(uniqueEncsL.end() == itEnc) {
 		cerr<<"Current font doesn't contain encoding "<<encName<<endl;
 		return false;
 	}
@@ -541,7 +527,7 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 
 bool FontEngine::newFont(const string &fontFile_) {
 	FT_Face face_;
-	path fontPath(absolute(fontFile_));
+	const path fontPath(absolute(fontFile_));
 	if(!checkFontFile(fontPath, face_))
 		return false;
 	
@@ -563,8 +549,9 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		throw invalid_argument("Invalid font size for FontEngine::setFontSz!");
 	}
 
+	const double sz = fontSz_;
 	vector<tuple<FT_ULong, double, double>> toResize;
-	double sz = fontSz_, factorH, factorV;
+	double factorH, factorV;
 	unsigned symsCount;
 	FT_BBox bb;
 	FT_UInt idx;
@@ -581,7 +568,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
 
 	// 90% for this stage, report every 5%
-	FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
+	const FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
 
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't feet to resize them first, then add them too to pixmaps.
@@ -590,9 +577,9 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		if(i % tick == 0)
 			ctrler.reportGlyphProgress(progress+=.05);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
-		FT_GlyphSlot g = face->glyph;
-		FT_Bitmap b = g->bitmap;
-		unsigned height = b.rows, width = b.width;
+		const FT_GlyphSlot g = face->glyph;
+		const FT_Bitmap b = g->bitmap;
+		const unsigned height = b.rows, width = b.width;
 		if(width > fontSz_ || height > fontSz_)
 			toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
 		else
@@ -601,8 +588,9 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	// 7% for this stage, report every 5% => report 95% at 3/7 from it
 	// Resize symbols which didn't fit initially
-	int i = 0, reportI = (int)(3*toResize.size()/7);
-	for(auto &item : toResize) {
+	const int reportI = (int)(3*toResize.size()/7);
+	int i = 0;
+	for(const auto &item : toResize) {
 		if(i++ == reportI)
 			ctrler.reportGlyphProgress(.95);
 
@@ -611,7 +599,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		tie(c, vRatio, hRatio) = item;
 		req.height = (FT_ULong)floor(factorV * (fontSz_<<6) / vRatio);
 		req.width = (FT_ULong)floor(factorH * (fontSz_<<6) / hRatio);
-		FT_Error error = FT_Request_Size(face, &req);
+		FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		symsCont.appendSym(c, face->glyph, bb);
 	}
@@ -634,7 +622,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	
 	if(!toResize.empty()) {
 		cout<<toResize.size()<<" symbols were resized twice: ";
-		for(auto &item : toResize)
+		for(const auto &item : toResize)
 			cout<<get<0>(item)<<", ";
 		cout<<endl;
 	}
@@ -662,7 +650,7 @@ unsigned FontEngine::uniqueEncodings() const {
 	return (unsigned)uniqueEncs.size();
 }
 
-const vector<PixMapSym>& FontEngine::symsSet() const {
+const vector<const PixMapSym>& FontEngine::symsSet() const {
 	if(face == nullptr || !symsCont.isReady()) {
 		cerr<<"symsSet not ready yet! Please do all the configurations first!"<<endl;
 		throw logic_error("symsSet called before selecting a font.");

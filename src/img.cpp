@@ -24,7 +24,7 @@ bool Img::reset(const string &picName) {
 	if(imgPath.compare(newPic) == 0)
 		return true; // image already in use
 
-	Mat source_ = imread(picName, ImreadModes::IMREAD_UNCHANGED);
+	const Mat source_ = imread(picName, ImreadModes::IMREAD_UNCHANGED);
 	if(source_.data == nullptr) {
 		cerr<<"Couldn't read image "<<picName<<endl;
 		return false;
@@ -50,21 +50,22 @@ Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) {
 		throw logic_error("No image set yet");
 	}
 
-	int initW = source.cols, initH = source.rows;
-	double initAr = initW / (double)initH;
-	unsigned patchSz = cfg.getFontSz(),
-		w = min(patchSz*cfg.getMaxHSyms(), (unsigned)initW),
-		h = min(patchSz*cfg.getMaxVSyms(), (unsigned)initH);
+	const int initW = source.cols, initH = source.rows;
+	const double initAr = initW / (double)initH;
+	const unsigned patchSz = cfg.getFontSz();
+	unsigned w = min(patchSz*cfg.getMaxHSyms(), (unsigned)initW),
+			h = min(patchSz*cfg.getMaxVSyms(), (unsigned)initH);
 	w -= w%patchSz;
 	h -= h%patchSz;
-	double ar = w / (double)h;
-	if(ar > initAr) {
+
+	if(w / (double)h > initAr) {
 		w = (unsigned)round(h*initAr);
 		w -= w%patchSz;
 	} else {
 		h = (unsigned)round(w/initAr);
 		h -= h%patchSz;
 	}
+
 	if(w==initW && h==initH)
 		res = source;
 	else {

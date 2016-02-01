@@ -38,10 +38,10 @@ class Config final {
 	double kCosAngleMCs = 1., kMCsOffset = 1.;		// powers of factors targeting smoothness
 	double kGlyphWeight = 1.;			// power of factor aiming fanciness, not correctness
 
-	bool parseCfg(); // Parse the defaultCfg.txt
+	bool parseCfg(); // Parse res/defaultCfg.txt
 
 public:
-	static const unsigned
+	static const unsigned // Limits
 		MIN_FONT_SIZE = 7U, MAX_FONT_SIZE = 50U,
 		MIN_H_SYMS = 3U, MAX_H_SYMS = 1024U,
 		MIN_V_SYMS = 3U, MAX_V_SYMS = 768U,
@@ -87,6 +87,7 @@ public:
 	void set_kGlyphWeight(double kGlyphWeight_) { kGlyphWeight = kGlyphWeight_; }
 
 #ifdef UNIT_TESTING
+	// Constructors used during Unit Testing
 	Config(Controller &ctrler_,
 			   unsigned fontSz_, unsigned hMaxSyms_, unsigned vMaxSyms_, unsigned threshold4Blank_,
 			   double kSdevFg_, double kSdevBg_, double kContrast_,
@@ -96,7 +97,6 @@ public:
 		   threshold4Blank(threshold4Blank_),
 		   kSdevFg(kSdevFg_), kSdevBg(kSdevBg_), kContrast(kContrast_),
 		   kCosAngleMCs(kCosAngleMCs_), kMCsOffset(kMCsOffset_), kGlyphWeight(kGlyphWeight_) {}
-	Config(Controller &ctrler_) : ctrler(ctrler_) {}
 #endif
 };
 

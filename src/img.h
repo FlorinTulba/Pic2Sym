@@ -20,9 +20,7 @@
 
 class Controller; // data & views manager
 
-/*
-Img provides necessary API for manipulating the images to transform
-*/
+// Img provides necessary API for manipulating the images to transform
 class Img final {
 	Controller &ctrler;					// data & views manager
 

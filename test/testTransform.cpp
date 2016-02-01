@@ -18,43 +18,54 @@ BOOST_AUTO_TEST_SUITE(Transform_Tests)
 BOOST_AUTO_TEST_CASE(Check_symbols_set) {
 	Controller c;
 	bool correct = false;
-// 	Config cfg(c, 10U, 500U, 300U, 0U, .4, .9, 0., 0., 0., 0.);
-	//Config cfg(c, 10U, 500U, 300U, 0U, 1., 2.25, 0., 0.0001, 0., 0.);
-	Config cfg(c, 10U, 500U, 300U, 0U, 1., 1.41, 0., 0., 0., 0.);
+	Config cfg(c, 10U, 500U, 300U, 0U, 1., 1., 0., 0., 0., 0.);
 	const unsigned sz = cfg.getFontSz();
 	const double sz2 = (double)sz*sz, sz_1 = sz - 1.;
 	FontEngine fe(c);
-	//BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf"));
-	BOOST_REQUIRE_NO_THROW(correct = fe.newFont("C:\\Windows\\Fonts\\courbd.ttf"));
+	BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf"));
+	//BOOST_REQUIRE_NO_THROW(correct = fe.newFont("C:\\Windows\\Fonts\\courbd.ttf"));
 	BOOST_REQUIRE(correct);
 
-// 	BOOST_REQUIRE_NO_THROW(correct = fe.setEncoding("APPLE_ROMAN"));
-// 	BOOST_REQUIRE(correct);
+	BOOST_REQUIRE_NO_THROW(correct = fe.setEncoding("APPLE_ROMAN"));
+	BOOST_REQUIRE(correct);
 
 	BOOST_REQUIRE_NO_THROW(fe.setFontSz(sz));
 
 	Matcher matcher(sz, fe.smallGlyphsCoverage()), expectedMatcher(matcher);
 	Mat consec(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
-	vector<pair<Mat, Mat>> symsSet;
-	for(auto &pmc : fe.symsSet()) {
-		Mat glyph = toMat(pmc, sz), negGlyph = 1. - glyph;
-		symsSet.emplace_back(glyph, negGlyph);
+	vector<vector<const Mat>> symsSet;
+	double minVal, maxVal;
+	static const double STILL_BG = .025,
+		STILL_FG = 1. - STILL_BG;
+	for(const auto &pmc : fe.symsSet()) {
+		const Mat glyph = toMat(pmc, sz), negGlyph = 1. - glyph;
+
+		// for very small fonts, minVal might be > 0 and maxVal might be < 255
+		minMaxIdx(glyph, &minVal, &maxVal);
+
+		const Mat nonZero = (glyph != 0.), nonOne = (glyph != 1.),
+			fgMask = (glyph > (minVal + STILL_FG * (maxVal-minVal))),
+			bgMask = (glyph < (minVal + STILL_BG * (maxVal-minVal)));
+
+		;
+		symsSet.emplace_back(vector<const Mat> { glyph, negGlyph, nonZero, nonOne, fgMask, bgMask });
 	}
 
-	auto itFeBegin = fe.symsSet().cbegin(), itFe = itFeBegin;
+	const auto itFeBegin = fe.symsSet().cbegin();
+	auto itFe = itFeBegin;
 	BestMatch best(fe.getEncoding().compare("UNICODE") == 0), // holds the best grayscale match
 		expectedBest(best);
-	Mat glyph;
 	
 	vector<tuple<Mat, BestMatch, BestMatch>> errors;
 	for(size_t i = 0UL, len = symsSet.size(); i<len; ++i, ++itFe) {
-		glyph = symsSet[i].first;
+		const Mat glyph = 255.*symsSet[i][0], negGlyph = 255.-glyph;
 		
 		findBestMatch(cfg, symsSet, glyph, matcher, best, itFeBegin, sz2, consec);
 		if(i != (size_t)best.symIdx) {
 			const double score =
-				assessGlyphMatch(cfg, symsSet[i], glyph, *sum(glyph).val, expectedMatcher, itFe, sz_1, sz2);
+				assessGlyphMatch(cfg, symsSet[i], glyph, negGlyph,
+								expectedMatcher, itFe, sz_1, sz2);
 			expectedBest.reset(score, (unsigned)i, itFe->symCode, expectedMatcher.params);
 			errors.emplace_back(glyph, best, expectedBest);
 		}
@@ -75,13 +86,13 @@ BOOST_AUTO_TEST_CASE(Check_symbols_set) {
 			for(int c = 0; i<errCount && c<itemsPerSide; ++c, ++i) {
 				Range colRange(c*sz, (c+1)*sz);
 				
-				get<0>(errors[i]).convertTo(Mat(expected, rowRange, colRange), CV_8UC1, 255.);
+				get<0>(errors[i]).convertTo(Mat(expected, rowRange, colRange), CV_8UC1);
 
 				best = get<1>(errors[i]);
-				Mat &reportedMatch = symsSet[best.symIdx].first;
+				Mat &reportedMatch = symsSet[best.symIdx][0];
 				reportedMatch.convertTo(Mat(resulted, rowRange, colRange), CV_8UC1,
-										255.*(best.params.miuFg - best.params.miuBg),
-										255.*best.params.miuBg);
+										(best.params.fg - best.params.bg),
+										best.params.bg);
 				ofs<<best<<endl;
 				best = get<2>(errors[i]);
 				ofs<<best<<endl;

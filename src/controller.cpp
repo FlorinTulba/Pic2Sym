@@ -35,6 +35,10 @@ Controller::Controller(const string &cmd) :
 }
 
 Controller::~Controller() {
+	destroyAllWindows();
+}
+
+void Controller::handleRequests() const {
 	for(;;) {
 		// When pressing ESC, prompt the user if he wants to exit
 		if(27 == waitKey() &&
@@ -42,7 +46,6 @@ Controller::~Controller() {
 		   MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND))
 		   break;
 	}
-	destroyAllWindows();
 }
 
 bool Controller::validState(bool imageReguired/* = true*/) const {
@@ -100,10 +103,10 @@ void Controller::newImage(const string &imgPath) {
 
 	// Resize window to preserve the aspect ratio of the loaded image,
 	// while not enlarging it, nor exceeding 1024 x 768
-	int height = orig.rows, width = orig.cols;
-	double k = min(1., min(H_NUMERATOR/height, W_NUMERATOR/width));
-	int winHeight = (int)round(k*height+HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS),
-		winWidth = (int)round(k*width+WIDTH_LATERAL_BORDERS);
+	const int height = orig.rows, width = orig.cols;
+	const double k = min(1., min(H_NUMERATOR/height, W_NUMERATOR/width));
+	const int winHeight = (int)round(k*height+HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS),
+			winWidth = (int)round(k*width+WIDTH_LATERAL_BORDERS);
 	
 	comp.resize(winWidth, winHeight);
 }
@@ -151,7 +154,7 @@ void Controller::newFontFamily(const string &fontFile) {
 void Controller::newFontEncoding(int encodingIdx) {
 	// Ignore call if no font yet, or just 1 encoding,
 	// or if the required hack (mentioned in 'ui.h') provoked this call
-	if(!fontFamilyOk || fe.uniqueEncodings() == 1U || cp.updatesEncodingCount())
+	if(!fontFamilyOk || fe.uniqueEncodings() == 1U || cp.encMaxHack())
 		return;
 	
 	unsigned currEncIdx;
@@ -263,8 +266,8 @@ CmapInspect::PairItVectPtrConstMat Controller::getFontFaces(
 		unsigned from, unsigned maxCount) const {
 	static const vector<const Mat*> EMPTY;
 
-	auto &glyphs = t.getNegatives();
-	auto count = glyphs.size();
+	const auto &glyphs = t.getNegatives();
+	const auto count = glyphs.size();
 
 	if(!validState(false) || from >= count)
 		return make_pair(CBOUNDS(EMPTY));

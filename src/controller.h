@@ -43,7 +43,7 @@ class Controller final {
 	bool hMaxSymsOk, vMaxSymsOk;
 	bool fontSzOk;
 
-	// Reports uncorrected settings when visualizing the cmap or issuing a transform command.
+	// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageReguired = true) const;
 
@@ -51,14 +51,17 @@ class Controller final {
 	void symbolsChanged();				// triggered by new font family / encoding / size
 	
 	/*
-	Shows a window titled 'Please wait' and reports the progress (0..1) as %.
+	Shows a 'Please wait' window and reports the progress (0..1) as %.
 	Details about the ongoing operation can be added to the title.
 	*/
 	void hourGlass(double progress, const std::string &title = "");
 
 public:
 	Controller(const std::string &cmd); // get the application path as parameter
-	~Controller();	// Waits for the user to press ESC and confirm he wants to leave
+	~Controller();						// destroys the windows
+
+	// Waits for the user to press ESC and confirm he wants to leave
+	void handleRequests() const;
 
 	// Settings from view passed to model
 	void newImage(const std::string &imgPath);

@@ -23,24 +23,23 @@
 class Controller; // data & views manager
 
 /*
-PixMapSym holds the representation('data') of symbol 'symCode'.
+PixMapSym holds the representation('pixels') of symbol 'symCode'.
 Expects symbols that mostly fit the Bounding Box provided to the constructor.
 That is the symbols are either already within the BBox,
 or their size needs to be at most a few pixels more than the BBox (they'll get trimmed).
 
 The height('rows'), width('cols') are also recorded.
-The bitmap pitch is transformed into width, so 'data' is continuous.
+The bitmap pitch is transformed into width, so 'pixels' is continuous.
 Fields 'left' and 'top' indicate the position of the top-left corner within the drawing square.
 */
 struct PixMapSym final {
 	unsigned long symCode = 0UL;	// symbol code
-	double glyphSum = 0.;		// sum of the pixel values divided by 255
-	double negGlyphSum = 0.;	// sum of the pixel values divided by 255 for negated glyph
-	cv::Point2d mc;				// glyph's mass center
+	double glyphSum = 0.;			// sum of the pixel values divided by 255
+	cv::Point2d mc;					// glyph's mass center
 
-	unsigned char rows = 0U, cols = 0U;	// dimensions of 'data' rectangle from below 
+	unsigned char rows = 0U, cols = 0U;	// dimensions of 'pixels' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square
-	unsigned char *data = nullptr;		// 256-shades of gray rectangle describing the character
+	std::vector<unsigned char> pixels;	// 256-shades of gray rectangle describing the character
 	// (top-down, left-right traversal)
 
 	/*
@@ -55,7 +54,7 @@ struct PixMapSym final {
 
 	After shifting the symbol inside, the regions still lying outside are trimmed.
 
-	Any bitmap pitch is removed => storing data without gaps.
+	Any bitmap pitch is removed => storing pixels without gaps.
 	*/
 	PixMapSym(unsigned long symCode,		// the symbol code
 			   const FT_Bitmap &bm,			// the bitmap to process
@@ -66,29 +65,25 @@ struct PixMapSym final {
 			   const FT_BBox &bb);			// the bounding box to fit
 	PixMapSym(const PixMapSym&);
 	PixMapSym(PixMapSym&&);
-	~PixMapSym();
+	PixMapSym& operator=(PixMapSym &&other); // needed when nth_element applies to vector<PixMapSym>
 
 	void operator=(const PixMapSym&) = delete;
 
-	PixMapSym& operator=(PixMapSym &&other); // needed when nth_element applies to vector<PixMapSym>
-
-	bool operator==(const PixMapSym &other) const;
+	bool operator==(const PixMapSym &other) const; // useful to detect duplicates
 };
 
-/*
-Convenience container to hold PixMapSym-s of same size
-*/
-class PmsCont {
+// Convenience container to hold PixMapSym-s of same size
+class PmsCont final {
 	static const double SMALL_GLYPHS_PERCENT; // percentage of total glyphs considered small
 
 	bool ready = false;				// is container ready to provide useful data?
 	unsigned fontSz = 0U;			// bounding box size
-	std::vector<PixMapSym> syms;	// data for each symbol within current charmap
+	std::vector<const PixMapSym> syms;	// data for each symbol within current charmap
 	unsigned blanks = 0U;			// how many Blank characters were within the charmap
 	unsigned duplicates = 0U;		// how many duplicate symbols were within the charmap
-	double coverageOfSmallGlyphs;	// max ratio of glyph area / containing area for small syms
+	double coverageOfSmallGlyphs;	// max ratio for small symbols of glyph area / containing area
 
-	// Precomputed entities within reset method
+	// Precomputed entities during reset
 	cv::Mat consec, revConsec;		// vectors of consecutive values 0..fontSz-1 and reversed
 	double sz2;						// fontSz^2
 
@@ -98,7 +93,7 @@ public:
 	unsigned getBlanksCount() const;
 	unsigned getDuplicatesCount() const;
 	double getCoverageOfSmallGlyphs() const;
-	const std::vector<PixMapSym>& getSyms() const;
+	const std::vector<const PixMapSym>& getSyms() const;
 
 	// clears & prepares container for new entries
 	void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U);
@@ -112,9 +107,7 @@ public:
 	void setAsReady(); // No other symbols to append. Statistics can be now computed
 };
 
-/*
-FontEngine class wraps some necessary FreeType functionality.
-*/
+// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine final {
 	Controller &ctrler;				// data & views manager
 
@@ -139,12 +132,12 @@ public:
 	FontEngine(Controller &ctrler_);
 	~FontEngine();
 
-	bool newFont(const std::string &fontFile_);
+	bool newFont(const std::string &fontFile_);		// Tries to use the font from <fontFile_>
 	void setFontSz(unsigned fontSz_);				// Sets the desired font height in pixels
 	bool setEncoding(const std::string &encName);	// Sets an encoding by name
 	bool setNthUniqueEncoding(unsigned idx);		// Switches to nth unique encoding
 
-	const std::vector<PixMapSym>& symsSet() const;	// get the symsSet
+	const std::vector<const PixMapSym>& symsSet() const;	// get the symsSet
 	double smallGlyphsCoverage() const;				// get coverageOfSmallGlyphs
 
 	const std::string& fontFileName() const;		// font name provided by Font Dialog
