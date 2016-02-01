@@ -179,8 +179,8 @@ void CmapInspect::showPage(unsigned pageIdx) {
 	imshow(winName, content);
 }
 
-void CmapInspect::populateGrid(const CmapInspect::PairItVectPtrConstMat &itPair) {
-	CmapInspect::ItVectPtrConstMat it = itPair.first, itEnd = itPair.second;
+void CmapInspect::populateGrid(const Transformer::VVMatCItPair &itPair) {
+	Transformer::VVMatCIt it = itPair.first, itEnd = itPair.second;
 	content = grid.clone();
 	const int fontSz = ctrler.getFontSize(),
 		fontSzM1 = fontSz - 1,
@@ -192,7 +192,7 @@ void CmapInspect::populateGrid(const CmapInspect::PairItVectPtrConstMat &itPair)
 	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide)
 		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
 			Mat region(content, Range(r - fontSzM1, r + 1), Range(c - fontSzM1, c + 1));
-			(*it)->convertTo(region, CV_8UC1, 255.);
+			(*it)[1].convertTo(region, CV_8UC1, 255.);
 		}
 }
 

@@ -23,14 +23,19 @@ class Controller; // data & views manager
 
 // Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer final {
+public:
+	typedef std::vector<std::vector<const cv::Mat>> VVMat;
+	typedef VVMat::const_iterator VVMatCIt;
+	typedef std::pair<VVMatCIt, VVMatCIt> VVMatCItPair;
+
+private:
 	Controller &ctrler;			// data & views manager
 
 	Config cfg;					// general configuration
 	FontEngine fe;				// symbols set manager
 	Img img;					// current image to process
 
-	std::vector<const cv::Mat*> pNegatives;				// pointers to glyphs' inverses
-	std::vector<std::vector<const cv::Mat>> symsSet;	// set of symbols&inverses + 4 masks
+	VVMat symsSet;	// set of symbols&inverses + 4 masks
 
 	cv::Mat result;				// the result of the transformation
 
@@ -43,8 +48,8 @@ public:
 	void updateSymbols();	// using different charmap - also useful for displaying these changes
 	void run();				// applies the configured transformation onto current/new image
 
-	// Needed to display the cmap
-	const std::vector<const cv::Mat*>& getNegatives() const { return pNegatives; }
+	// Needed to display the cmap - returns a pair of symsSet iterators
+	VVMatCItPair getSymsRange(unsigned from, unsigned count) const;
 
 	Config& getCfg() { return cfg; }
 	FontEngine& getFe() { return fe; }

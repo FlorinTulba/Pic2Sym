@@ -13,6 +13,7 @@
 
 #include "config.h"
 #include "dlgs.h"
+#include "transform.h"
 
 #include <memory>
 #include <opencv2/core.hpp>
@@ -74,12 +75,7 @@ Class for displaying the symbols from the current charmap (cmap).
 When there are lots of symbols, they are divided into pages which
 can be browsed using the page slider.
 */
-struct CmapInspect : public CvWin {
-	// typedefs for iterators marking the first & last symbols from current page
-	typedef std::vector<const cv::Mat*>::const_iterator ItVectPtrConstMat;
-	typedef std::pair<ItVectPtrConstMat, ItVectPtrConstMat> PairItVectPtrConstMat;
-
-private:
+class CmapInspect : public CvWin {
 	static const cv::String pageTrackName;	// page slider handle
 	static const cv::Size pageSz;			// 640x480
 
@@ -95,7 +91,7 @@ private:
 	cv::Mat createGrid() const;				// generates the grid that separates the glyphs
 
 	// content = grid + glyphs for current page specified by a pair of iterators
-	void populateGrid(const CmapInspect::PairItVectPtrConstMat &itPair);
+	void populateGrid(const Transformer::VVMatCItPair &itPair);
 
 	unsigned computeSymsPerPage() const;	// determines how many symbols fit on a single page
 

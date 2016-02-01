@@ -89,7 +89,7 @@ public:
 	double getDirectionalSmoothnessFactor() const { return cfg.get_kCosAngleMCs(); }
 	double getGravitationalSmoothnessFactor() const { return cfg.get_kMCsOffset(); }
 	double getGlyphWeightFactor() const { return cfg.get_kGlyphWeight(); }
-	CmapInspect::PairItVectPtrConstMat getFontFaces(unsigned from, unsigned maxCount) const;
+	Transformer::VVMatCItPair getFontFaces(unsigned from, unsigned maxCount) const;
 
 	// Progress about loading, adapting glyphs
 	void reportGlyphProgress(double progress);

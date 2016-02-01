@@ -60,12 +60,20 @@ BOOST_AUTO_TEST_CASE(Check_symbols_set) {
 	vector<tuple<Mat, BestMatch, BestMatch>> errors;
 	for(size_t i = 0UL, len = symsSet.size(); i<len; ++i, ++itFe) {
  		const Mat glyph = 255.*symsSet[i][0], negGlyph = 255.-glyph;
-		//const Mat glyph = 255.*symsSet[i][1], negGlyph = 255.-glyph;
 
 		findBestMatch(cfg, symsSet, glyph, matcher, best, itFeBegin, sz2, consec);
 		if(i != (size_t)best.symIdx) {
 			const double score =
 				assessGlyphMatch(cfg, symsSet[i], glyph, negGlyph,
+								expectedMatcher, itFe, sz_1, sz2);
+			expectedBest.reset(score, (unsigned)i, itFe->symCode, expectedMatcher.params);
+			errors.emplace_back(glyph, best, expectedBest);
+		}
+
+		findBestMatch(cfg, symsSet, negGlyph, matcher, best, itFeBegin, sz2, consec);
+		if(i != (size_t)best.symIdx) {
+			const double score =
+				assessGlyphMatch(cfg, symsSet[i], negGlyph, glyph,
 								expectedMatcher, itFe, sz_1, sz2);
 			expectedBest.reset(score, (unsigned)i, itFe->symCode, expectedMatcher.params);
 			errors.emplace_back(glyph, best, expectedBest);

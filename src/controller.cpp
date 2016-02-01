@@ -262,24 +262,8 @@ void Controller::newGlyphWeightFactor(double k) {
 		cfg.set_kGlyphWeight(k);
 }
 
-CmapInspect::PairItVectPtrConstMat Controller::getFontFaces(
-		unsigned from, unsigned maxCount) const {
-	static const vector<const Mat*> EMPTY;
-
-	const auto &glyphs = t.getNegatives();
-	const auto count = glyphs.size();
-
-	if(!validState(false) || from >= count)
-		return make_pair(CBOUNDS(EMPTY));
-
-	CmapInspect::ItVectPtrConstMat
-		it = next(glyphs.cbegin(), from),
-		itEnd = glyphs.cend();
-	
-	if(from + maxCount < count)
-		itEnd = next(it, maxCount);
-
-	return make_pair(it, itEnd);
+Transformer::VVMatCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
+	return t.getSymsRange(from, maxCount);
 }
 
 void Controller::hourGlass(double progress, const string &title/* = ""*/) {

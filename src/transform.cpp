@@ -405,6 +405,19 @@ string Transformer::getIdForSymsToUse() {
 	return oss.str();
 }
 
+Transformer::VVMatCItPair Transformer::getSymsRange(unsigned from, unsigned count) const {
+	const unsigned sz = (unsigned)symsSet.size();
+	const VVMatCIt itEnd = symsSet.cend();
+	if(from >= sz)
+		return make_pair(itEnd, itEnd);
+
+	const VVMatCIt itStart = next(symsSet.cbegin(), from);
+	if(from + count >= sz)
+		return make_pair(itStart, itEnd);
+
+	return make_pair(itStart, next(itStart, count));
+}
+
 void Transformer::updateSymbols() {
 	const string idForSymsToUse = getIdForSymsToUse(); // throws for invalid cmap/size
 	if(symsIdReady.compare(idForSymsToUse) == 0)
@@ -414,8 +427,6 @@ void Transformer::updateSymbols() {
 						STILL_FG = 1. - STILL_BG;	// brightest shades
 	symsSet.clear();
 	symsSet.reserve(fe.symsSet().size());
-	pNegatives.clear();
-	pNegatives.reserve(fe.symsSet().size());
 
 	double minVal, maxVal;
 	const unsigned sz = cfg.getFontSz();
@@ -433,7 +444,6 @@ void Transformer::updateSymbols() {
 
 		symsSet.emplace_back(vector<const Mat>
 				{ glyph, negGlyph, nonZero, nonOne, fgMask, bgMask });
-		pNegatives.push_back(&symsSet.back()[1]); // &negGlyph
 	}
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
