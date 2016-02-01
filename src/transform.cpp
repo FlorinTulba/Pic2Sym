@@ -273,16 +273,27 @@ namespace {
 		Scalar miu, sdev;
 		Mat temp;
 
-		divide(patch, glyph, temp);
-		meanStdDev(temp, miu, sdev, nonZero);
-		mp.sdevFg = *sdev.val;
-
-		temp.release();
-		divide(negPatch, negGlyph, temp);
-		meanStdDev(temp, miu, sdev, nonOne);
-		mp.sdevBg = *sdev.val;
-
 		tie(mp.fg, mp.bg) = averageFgBg(patch, fgMask, bgMask);
+
+		if(mp.fg > mp.bg) {
+			divide(patch, glyph, temp);
+			meanStdDev(temp, miu, sdev, nonZero);
+			mp.sdevFg = *sdev.val;
+
+			temp.release();
+			divide(negPatch, negGlyph, temp);
+			meanStdDev(temp, miu, sdev, nonOne);
+			mp.sdevBg = *sdev.val;
+		} else {
+			divide(negPatch, glyph, temp);
+			meanStdDev(temp, miu, sdev, nonZero);
+			mp.sdevFg = *sdev.val;
+
+			temp.release();
+			divide(patch, negGlyph, temp);
+			meanStdDev(temp, miu, sdev, nonOne);
+			mp.sdevBg = *sdev.val;
+		}
 
 		mp.glyphWeight = itFe->glyphSum / sz2;
 
