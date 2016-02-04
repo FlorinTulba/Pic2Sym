@@ -23,20 +23,19 @@ public:
 #include "ui.h"
 #include "transform.h"
 
-/*
-Manager of the views and data.
-*/
+// Manager of the views and data.
 class Controller final {
 	// Data
-	Transformer t;		// the model; KEEP IT BEFORE cp !!!
-	Config &cfg;		// extracted from t (keep it after t)
-	FontEngine &fe;		// extracted from t (keep it after t)
-	Img &img;			// extracted from t (keep it after t)
+	Img img;			// image to process
+	FontEngine fe;		// font engine
+	Config cfg;			// most settings for the transformations
+	MatchEngine me;		// matching engine
+	Transformer t;		// transforming engine
 
 	// Views
 	Comparator comp;	// view for comparing original & result
 	std::shared_ptr<CmapInspect> pCmi;	// view for inspecting the used cmap
-	ControlPanel cp;	// the configuration view (keep it after t)
+	ControlPanel cp;	// the configuration view
 
 	// Validation flags
 	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
@@ -66,30 +65,32 @@ public:
 	// Settings from view passed to model
 	void newImage(const std::string &imgPath);
 	void newFontFamily(const std::string &fontFile);
-	void newHmaxSyms(int maxSyms);
-	void newVmaxSyms(int maxSyms);
 	void newFontEncoding(int encodingIdx);
 	void newFontSize(int fontSz);
-	void newThreshold4BlanksFactor(unsigned t);
-	void newContrastFactor(double k);
 	void newUnderGlyphCorrectnessFactor(double k);
+	void newGlyphEdgeCorrectnessFactor(double k);
 	void newAsideGlyphCorrectnessFactor(double k);
-	void newDirectionalSmoothnessFactor(double k);
+	void newContrastFactor(double k);
 	void newGravitationalSmoothnessFactor(double k);
+	void newDirectionalSmoothnessFactor(double k);
 	void newGlyphWeightFactor(double k);
+	void newThreshold4BlanksFactor(unsigned t);
+	void newHmaxSyms(int maxSyms);
+	void newVmaxSyms(int maxSyms);
 
 	// Settings passed from model to view
+	unsigned getFontSize() const { return cfg.getFontSz(); }
+	double getUnderGlyphCorrectnessFactor() const { return cfg.get_kSdevFg(); }
+	double getGlyphEdgeCorrectnessFactor() const { return cfg.get_kSdevEdge(); }
+	double getAsideGlyphCorrectnessFactor() const { return cfg.get_kSdevBg(); }
+	double getContrastFactor() const { return cfg.get_kContrast(); }
+	double getGravitationalSmoothnessFactor() const { return cfg.get_kMCsOffset(); }
+	double getDirectionalSmoothnessFactor() const { return cfg.get_kCosAngleMCs(); }
+	double getGlyphWeightFactor() const { return cfg.get_kGlyphWeight(); }
+	unsigned getThreshold4BlanksFactor() const { return cfg.getBlankThreshold(); }
 	unsigned getHmaxSyms() const { return cfg.getMaxHSyms(); }
 	unsigned getVmaxSyms() const { return cfg.getMaxVSyms(); }
-	unsigned getFontSize() const { return cfg.getFontSz(); }
-	unsigned getThreshold4BlanksFactor() const { return cfg.getBlankThreshold(); }
-	double getContrastFactor() const { return cfg.get_kContrast(); }
-	double getUnderGlyphCorrectnessFactor() const { return cfg.get_kSdevFg(); }
-	double getAsideGlyphCorrectnessFactor() const { return cfg.get_kSdevBg(); }
-	double getDirectionalSmoothnessFactor() const { return cfg.get_kCosAngleMCs(); }
-	double getGravitationalSmoothnessFactor() const { return cfg.get_kMCsOffset(); }
-	double getGlyphWeightFactor() const { return cfg.get_kGlyphWeight(); }
-	Transformer::VVMatCItPair getFontFaces(unsigned from, unsigned maxCount) const;
+	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const;
 
 	// Progress about loading, adapting glyphs
 	void reportGlyphProgress(double progress);

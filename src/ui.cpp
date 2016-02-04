@@ -9,6 +9,7 @@
  **********************************************************/
 
 #include "ui.h"
+#include "dlgs.h"
 #include "controller.h"
 
 #include <opencv2/highgui.hpp>
@@ -32,15 +33,16 @@ const double ControlPanel::Converter::LargerSym::maxReal = 10.;
 
 const String ControlPanel::fontSzTrName = "Font size:";
 const String ControlPanel::encodingTrName = "Encoding:";
+const String ControlPanel::underGlyphCorrectnessTrName = "Fit under:";
+const String ControlPanel::glyphEdgeCorrectnessTrName = "Fit edge:";
+const String ControlPanel::asideGlyphCorrectnessTrName = "Fit aside:";
+const String ControlPanel::moreContrastTrName = "Contrast:";
+const String ControlPanel::gravityTrName = "Mass Center:";
+const String ControlPanel::directionTrName = "Direction:";
+const String ControlPanel::largerSymTrName = "Larger Symbols:";
+const String ControlPanel::thresh4BlanksTrName = "Blanks below:";
 const String ControlPanel::outWTrName = "Max horizontally:";
 const String ControlPanel::outHTrName = "Max vertically:";
-const String ControlPanel::thresh4BlanksTrName = "Blanks below:";
-const String ControlPanel::moreContrastTrName = "Contrast:";
-const String ControlPanel::underGlyphCorrectnessTrName = "Fit under:";
-const String ControlPanel::asideGlyphCorrectnessTrName = "Fit aside:";
-const String ControlPanel::directionTrName = "Direction:";
-const String ControlPanel::gravityTrName = "Mass Center:";
-const String ControlPanel::largerSymTrName = "Larger Symbols:";
 #endif // UNIT_TESTING not defined
 
 CvWin::CvWin(Controller &ctrler_, const String &winName_) :
@@ -179,8 +181,8 @@ void CmapInspect::showPage(unsigned pageIdx) {
 	imshow(winName, content);
 }
 
-void CmapInspect::populateGrid(const Transformer::VVMatCItPair &itPair) {
-	Transformer::VVMatCIt it = itPair.first, itEnd = itPair.second;
+void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
+	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	content = grid.clone();
 	const int fontSz = ctrler.getFontSize(),
 		fontSzM1 = fontSz - 1,
@@ -189,11 +191,13 @@ void CmapInspect::populateGrid(const Transformer::VVMatCItPair &itPair) {
 		width = pageSz.width;
 
 	// Convert each 'negative' glyph to 0..255 and place it within the grid
-	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide)
+	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
+		Range rowRange(r - fontSzM1, r + 1);
 		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
-			Mat region(content, Range(r - fontSzM1, r + 1), Range(c - fontSzM1, c + 1));
-			(*it)[1].convertTo(region, CV_8UC1, 255.);
+			Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
+			it->symAndMasks[SymData::NEG_GLYPH_IDX].copyTo(region);
 		}
+	}
 }
 
 void CmapInspect::updatePageIdx(int newPage, void *userdata) {
@@ -249,13 +253,14 @@ ControlPanel::ControlPanel(Controller &ctrler_) :
 		ctrler(ctrler_),
 		maxHSyms(ctrler_.getHmaxSyms()), maxVSyms(ctrler_.getVmaxSyms()),
 		encoding(0U), fontSz(ctrler_.getFontSize()),
-		thresh4Blanks(ctrler_.getThreshold4BlanksFactor()),
-		moreContrast(Converter::Contrast::toSlider(ctrler_.getContrastFactor())),
 		underGlyphCorrectness(Converter::Correctness::toSlider(ctrler_.getUnderGlyphCorrectnessFactor())),
+		glyphEdgeCorrectness(Converter::Correctness::toSlider(ctrler_.getGlyphEdgeCorrectnessFactor())),
 		asideGlyphCorrectness(Converter::Correctness::toSlider(ctrler_.getAsideGlyphCorrectnessFactor())),
-		direction(Converter::Direction::toSlider(ctrler_.getDirectionalSmoothnessFactor())),
+		moreContrast(Converter::Contrast::toSlider(ctrler_.getContrastFactor())),
 		gravity(Converter::Gravity::toSlider(ctrler_.getGravitationalSmoothnessFactor())),
-		largerSym(Converter::LargerSym::toSlider(ctrler_.getGlyphWeightFactor())) {
+		direction(Converter::Direction::toSlider(ctrler_.getDirectionalSmoothnessFactor())),
+		largerSym(Converter::LargerSym::toSlider(ctrler_.getGlyphWeightFactor())),
+		thresh4Blanks(ctrler_.getThreshold4BlanksFactor()) {
 
 	createButton("Select an Image to Transform",
 				 [] (int, void *userdata) {
@@ -301,21 +306,15 @@ ControlPanel::ControlPanel(Controller &ctrler_) :
 		pCtrler->performTransformation();
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createTrackbar(thresh4BlanksTrName, nullptr, &thresh4Blanks, Config::MAX_THRESHOLD_FOR_BLANKS,
-				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newThreshold4BlanksFactor(val);
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(moreContrastTrName, nullptr, &moreContrast, Converter::Contrast::maxSlider,
-				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newContrastFactor(Converter::Contrast::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
-
 	createTrackbar(underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, Converter::Correctness::maxSlider,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newUnderGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
+	}, reinterpret_cast<void*>(&ctrler));
+	createTrackbar(glyphEdgeCorrectnessTrName, nullptr, &glyphEdgeCorrectness, Converter::Correctness::maxSlider,
+				   [] (int val, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->newGlyphEdgeCorrectnessFactor(Converter::Correctness::fromSlider(val));
 	}, reinterpret_cast<void*>(&ctrler));
 	createTrackbar(asideGlyphCorrectnessTrName, nullptr, &asideGlyphCorrectness, Converter::Correctness::maxSlider,
 				   [] (int val, void *userdata) {
@@ -323,21 +322,33 @@ ControlPanel::ControlPanel(Controller &ctrler_) :
 		pCtrler->newAsideGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createTrackbar(directionTrName, nullptr, &direction, Converter::Direction::maxSlider,
+	createTrackbar(moreContrastTrName, nullptr, &moreContrast, Converter::Contrast::maxSlider,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newDirectionalSmoothnessFactor(Converter::Direction::fromSlider(val));
+		pCtrler->newContrastFactor(Converter::Contrast::fromSlider(val));
 	}, reinterpret_cast<void*>(&ctrler));
+
 	createTrackbar(gravityTrName, nullptr, &gravity, Converter::Gravity::maxSlider,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newGravitationalSmoothnessFactor(Converter::Gravity::fromSlider(val));
+	}, reinterpret_cast<void*>(&ctrler));
+	createTrackbar(directionTrName, nullptr, &direction, Converter::Direction::maxSlider,
+				   [] (int val, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->newDirectionalSmoothnessFactor(Converter::Direction::fromSlider(val));
 	}, reinterpret_cast<void*>(&ctrler));
 
 	createTrackbar(largerSymTrName, nullptr, &largerSym, Converter::LargerSym::maxSlider,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newGlyphWeightFactor(Converter::LargerSym::fromSlider(val));
+	}, reinterpret_cast<void*>(&ctrler));
+
+	createTrackbar(thresh4BlanksTrName, nullptr, &thresh4Blanks, Config::MAX_THRESHOLD_FOR_BLANKS,
+				   [] (int val, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->newThreshold4BlanksFactor(val);
 	}, reinterpret_cast<void*>(&ctrler));
 
 	createButton("Instructions for using the Control Panel", [] (int, void*) {

@@ -11,8 +11,6 @@
 #ifndef H_UI
 #define H_UI
 
-#include "config.h"
-#include "dlgs.h"
 #include "transform.h"
 
 #include <memory>
@@ -91,7 +89,7 @@ class CmapInspect : public CvWin {
 	cv::Mat createGrid() const;				// generates the grid that separates the glyphs
 
 	// content = grid + glyphs for current page specified by a pair of iterators
-	void populateGrid(const Transformer::VVMatCItPair &itPair);
+	void populateGrid(const MatchEngine::VSymDataCItPair &itPair);
 
 	unsigned computeSymsPerPage() const;	// determines how many symbols fit on a single page
 
@@ -130,6 +128,14 @@ class ControlPanel {
 		*/
 		static double proportionRule(double x, double xMax, double yMax);
 
+		// used for the 3 sliders controlling the correctness
+		struct Correctness {
+			static const int maxSlider = 100;
+			static const double maxReal;
+			static int toSlider(double correctness);
+			static double fromSlider(int correctness);
+		};
+
 		// used for the slider controlling the contrast
 		struct Contrast {
 			static const int maxSlider = 100;
@@ -138,12 +144,12 @@ class ControlPanel {
 			static double fromSlider(int contrast);
 		};
 
-		// used for the 2 sliders controlling the correctness
-		struct Correctness {
+		// used for the slider controlling the 'gravitational' smoothness
+		struct Gravity {
 			static const int maxSlider = 100;
 			static const double maxReal;
-			static int toSlider(double correctness);
-			static double fromSlider(int correctness);
+			static int toSlider(double gravity);
+			static double fromSlider(int gravity);
 		};
 
 		// used for the slider controlling the directional smoothness
@@ -152,14 +158,6 @@ class ControlPanel {
 			static const double maxReal;
 			static int toSlider(double direction);
 			static double fromSlider(int direction);
-		};
-
-		// used for the slider controlling the 'gravitational' smoothness
-		struct Gravity {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double gravity);
-			static double fromSlider(int gravity);
 		};
 
 		// used for the slider controlling the preference for larger symbols
@@ -172,17 +170,17 @@ class ControlPanel {
 	};
 
 	// Configuration sliders' handles
-	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName, thresh4BlanksTrName;
-	static const cv::String moreContrastTrName, underGlyphCorrectnessTrName, asideGlyphCorrectnessTrName;
-	static const cv::String directionTrName, gravityTrName, largerSymTrName;
+	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName;
+	static const cv::String underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName, moreContrastTrName;
+	static const cv::String gravityTrName, directionTrName, largerSymTrName, thresh4BlanksTrName;
 
 	Controller &ctrler;	// window manager
 
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
 	int encoding, fontSz;
-	int moreContrast, underGlyphCorrectness, asideGlyphCorrectness;
-	int direction, gravity, largerSym, thresh4Blanks;
+	int underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
+	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
 
 	// The max of the encodings slider won't update unless
 	// issuing an additional slider move, which has to be ignored.

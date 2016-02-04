@@ -44,7 +44,7 @@ bool Img::reset(const string &picName) {
 	return true;
 }
 
-Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) {
+Mat Img::resized(const Config &cfg) {
 	if(source.data == nullptr) {
 		cerr<<"No image set yet"<<endl;
 		throw logic_error("No image set yet");
@@ -74,13 +74,6 @@ Mat Img::resized(const Config &cfg, cv::Mat *grayVersion/* = nullptr*/) {
 	}
 
 	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
-
-	if(grayVersion != nullptr) {
-		if(color)
-			cvtColor(res, *grayVersion, COLOR_RGB2GRAY);
-		else
-			*grayVersion = res;
-	}
 
 	return res;
 }

@@ -13,6 +13,7 @@
 #include "controller.h"
 #include "misc.h"
 
+#include <Windows.h>
 #include <sstream>
 
 #include <boost/filesystem/operations.hpp>
@@ -23,7 +24,8 @@ using namespace boost::filesystem;
 using namespace cv;
 
 Controller::Controller(const string &cmd) :
-		t(*this, cmd), cfg(t.getCfg()), fe(t.getFe()), img(t.getImg()),
+		img(*this), fe(*this), cfg(*this, cmd),
+		me(*this, cfg, fe), t(*this, cfg, me, img),
 		comp(*this), cp(*this),
 		hMaxSymsOk(Config::isHmaxSymsOk(cfg.getMaxHSyms())),
 		vMaxSymsOk(Config::isVmaxSymsOk(cfg.getMaxVSyms())),
@@ -53,7 +55,7 @@ bool Controller::validState(bool imageReguired/* = true*/) const {
 	   fontFamilyOk && fontSzOk)
 		return true;
 
-	wostringstream oss;
+	ostringstream oss;
 	oss<<"The problems are:"<<endl<<endl;
 	if(imageReguired && !imageOk)
 		oss<<"- no image to transform"<<endl;
@@ -65,8 +67,7 @@ bool Controller::validState(bool imageReguired/* = true*/) const {
 		oss<<"- no font family to use during transformation"<<endl;
 	if(!fontSzOk)
 		oss<<"- selected font size is too small"<<endl;
-	MessageBox(nullptr, oss.str().c_str(), L"Please Correct these errors first!",
-			   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+	errMsg(oss.str(), "Please Correct these errors first!");
 	return false;
 }
 
@@ -75,10 +76,9 @@ void Controller::newImage(const string &imgPath) {
 		return; // same image
 
 	if(!img.reset(imgPath)) {
-		wostringstream oss;
-		oss<<"Invalid image file: '"<<wstring(BOUNDS(imgPath))<<'\'';
-		MessageBox(nullptr, oss.str().c_str(), L"Error",
-				   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+		ostringstream oss;
+		oss<<"Invalid image file: '"<<imgPath<<'\'';
+		errMsg(oss.str());
 		return;
 	}
 
@@ -120,7 +120,7 @@ void Controller::updateCmapStatusBar() const {
 
 void Controller::symbolsChanged() {
 	fe.setFontSz(cfg.getFontSz());
-	t.updateSymbols();
+	me.updateSymbols();
 
 	updateCmapStatusBar();
 	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
@@ -132,10 +132,9 @@ void Controller::newFontFamily(const string &fontFile) {
 		return; // same font
 
 	if(!fe.newFont(fontFile)) {
-		wostringstream oss;
-		oss<<"Invalid font file: '"<<wstring(BOUNDS(fontFile))<<'\'';
-		MessageBox(nullptr, oss.str().c_str(), L"Error",
-				   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+		ostringstream oss;
+		oss<<"Invalid font file: '"<<fontFile<<'\'';
+		errMsg(oss.str());
 		return;
 	}
 
@@ -170,10 +169,9 @@ void Controller::newFontEncoding(int encodingIdx) {
 void Controller::newFontSize(int fontSz) {
 	if(!Config::isFontSizeOk(fontSz)) {
 		fontSzOk = false;
-		wostringstream oss;
+		ostringstream oss;
 		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Config::MIN_FONT_SIZE<<'.';
-		MessageBox(nullptr, oss.str().c_str(), L"Error",
-				   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+		errMsg(oss.str());
 		return;
 	}
 
@@ -192,10 +190,9 @@ void Controller::newFontSize(int fontSz) {
 void Controller::newHmaxSyms(int maxSymbols) {
 	if(!Config::isHmaxSymsOk(maxSymbols)) {
 		hMaxSymsOk = false;
-		wostringstream oss;
+		ostringstream oss;
 		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Config::MIN_H_SYMS<<'.';
-		MessageBox(nullptr, oss.str().c_str(), L"Error",
-				   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+		errMsg(oss.str());
 		return;
 	}
 
@@ -211,10 +208,9 @@ void Controller::newHmaxSyms(int maxSymbols) {
 void Controller::newVmaxSyms(int maxSymbols) {
 	if(!Config::isVmaxSymsOk(maxSymbols)) {
 		vMaxSymsOk = false;
-		wostringstream oss;
+		ostringstream oss;
 		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Config::MIN_V_SYMS<<'.';
-		MessageBox(nullptr, oss.str().c_str(), L"Error",
-				   MB_ICONERROR | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+		errMsg(oss.str());
 		return;
 	}
 
@@ -247,6 +243,11 @@ void Controller::newAsideGlyphCorrectnessFactor(double k) {
 		cfg.set_kSdevBg(k);
 }
 
+void Controller::newGlyphEdgeCorrectnessFactor(double k) {
+	if(k != cfg.get_kSdevEdge())
+		cfg.set_kSdevEdge(k);
+}
+
 void Controller::newDirectionalSmoothnessFactor(double k) {
 	if(k != cfg.get_kCosAngleMCs())
 		cfg.set_kCosAngleMCs(k);
@@ -262,8 +263,8 @@ void Controller::newGlyphWeightFactor(double k) {
 		cfg.set_kGlyphWeight(k);
 }
 
-Transformer::VVMatCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
-	return t.getSymsRange(from, maxCount);
+MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
+	return me.getSymsRange(from, maxCount);
 }
 
 void Controller::hourGlass(double progress, const string &title/* = ""*/) {

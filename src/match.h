@@ -12,105 +12,289 @@
 #define H_MATCH
 
 #include "config.h"
+#include "fontEngine.h"
 
+#include <vector>
+#include <array>
 #include <string>
 #include <iostream>
 
+#include <boost/optional/optional.hpp>
 #include <opencv2/core/core.hpp>
 
-// Holds relevant data during patch&glyph matching
-struct MatchParams {
-	static const std::wstring HEADER;	// table header when values are serialized
+// Most symbol information
+struct SymData final {
+	const unsigned long code;		// the code of the symbol
+	const double pixelSum;			// sum of the values of the pixels, each in 0..1
+	const cv::Point2d &mc;			// mass center of the symbol given original fg & bg
 
-	cv::Point2d mcPatch;				// mass center for the patch
-	cv::Point2d mcGlyph;				// glyph's mass center
-	double glyphWeight;					// % of the box covered by the glyph (0..1)
-	double fg, bg;						// color for fg / bg (range 0..255)
+	enum { // indices of each matrix type within a MatArray object
+		GLYPH_IDX, FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX,
+		MATRICES_COUNT // keep this last and don't use it as index in MatArray objects
+	};
 
-	// standard deviations for fg / bg
-	// 0 .. 255^2/(2*sqrt(2)); best when 0
-	double sdevFg, sdevBg;
+	// For each symbol from cmap, there'll be several additional helpful matrices to store
+	// along with the one for the given glyph. The enum from above should be used for selection.
+	typedef std::array< const cv::Mat, MATRICES_COUNT > MatArray;
 
-	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
+	const MatArray symAndMasks;		// symbol + other matrices & masks
+
+	SymData(const unsigned long code_, const double pixelSum_,
+			const cv::Point2d &mc_, const MatArray &symAndMasks_);
 };
 
-/*
-Class for assessing a match based on various criteria.
-*/
-class Matcher {
-	const unsigned fontSz_1;		// size of the font - 1
-	const double smallGlyphsCoverage; // max ratio of glyph area / containing area for small symbols
-	const double PREFERRED_RADIUS;	// allowed distance between the mc-s of patch & chosen glyph
-	const double MAX_MCS_OFFSET;	// max distance possible between the mc-s of patch & chosen glyph
-	// happens for the extremes of a diagonal
+struct CachedData; // forward declaration
 
-	const cv::Point2d centerPatch;		// center of the patch
+// Holds relevant data during patch&glyph matching
+struct MatchParams final {
+	// This param is computed only once, if necessary, when approximating the patch
+	boost::optional<cv::Point2d> mcPatch;	// mass center for the patch
 
-public:
-	MatchParams params;
+	// These params are evaluated for each symbol compared to the patch
+	boost::optional<cv::Point2d> mcGlyph;	// glyph's mass center
+	boost::optional<double> glyphWeight;	// % of the box covered by the glyph (0..1)
+	boost::optional<double> fg, bg;			// color for fg / bg (range 0..255)
 
-	Matcher(unsigned fontSz, double smallGlyphsCoverage_);
+	// standard deviations for fg / bg / contour
+	// 0 .. 127.5/sqrt(2) = 90.156; best when 0
+	boost::optional<double> sdevFg, sdevBg, sdevEdge;
 
-	/*
-	Returns a larger positive value for better correlations.
-	Good correlation is a subjective matter.
+	// Prepare for next symbol to match against patch
+	void resetSymData(); // reset everything except mcPatch
 
-	Several considered factors are mentioned below.
-	* = mandatory;  + = nice to have
+	// Methods for computing each field
+	void computeFg(const cv::Mat &patch, const SymData &symData);
+	void computeBg(const cv::Mat &patch, const SymData &symData);
+	void computeSdevFg(const cv::Mat &patch, const SymData &symData);
+	void computeSdevBg(const cv::Mat &patch, const SymData &symData);
+	void computeSdevEdge(const cv::Mat &patch, const SymData &symData);
+	void computeRhoApproxSym(const SymData &symData, const CachedData &cachedData);
+	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData);
+	void computeMcApproxSym(const cv::Mat &patch, const SymData &symData,
+							const CachedData &cachedData);
 
-	A) Separately, each patch needs to:
-	* 1. minimize the difference between the selected foreground glyph
-	and the covered part from the original patch
+#ifdef _DEBUG // Next members are necessary for logging
+	static const std::wstring HEADER; // table header when values are serialized
+	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
+#endif
 
-	* 2. minimize the difference between the remaining background around the selected glyph
-	and the corresponding part from the original patch
-
-	* 3. have enough contrast between foreground & background of the selected glyph.
-
-	B) Together, the patches should also preserve region's gradients:
-	* 1. Prefer glyphs that respect the gradient of their corresponding patch.
-
-	+ 2. Consider the gradient within a slightly extended patch
-	Gain: Smoothness;		Drawback: Complexity
-
-	C) Balance the accuracy with more artistic aspects:
-	+ 1. use largest possible 'matching' glyph, not just dots, quotes, commas
-
-
-	Points A1&2 minimize the standard deviation (or a similar measure) on each region.
-
-	Point A3 encourages larger differences between the means of the fg & bg.
-
-	Point B1 ensures the weight centers of the glyph and patch are close to each other
-	as distance and as direction.
-
-	Point C1 favors larger glyphs.
-
-	The remaining points might be addressed in a future version.
-	*/
-	double score(const Config &cfg) const;
+private:
+	// Both computeSdevFg and computeSdevBg simply call this
+	void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
+					 boost::optional<double> &miu, boost::optional<double> &sdev);
 };
 
 // Holds the best grayscale match found at a given time
-struct BestMatch {
-	double score;			// score of the best
-	unsigned symIdx;		// index within vector<PixMapSym>
-	unsigned long symCode;	// glyph code
-	const bool unicode;		// is the charmap in Unicode?
+struct BestMatch final {
+	unsigned symIdx = UINT_MAX;			// index within vector<PixMapSym>
+	unsigned long symCode = ULONG_MAX;	// glyph code
 
-	MatchParams params;		// parameters of the match for the best glyph
+	double score = std::numeric_limits<double>::lowest(); // score of the best match
+
+	MatchParams params;		// parameters of the match for the best approximating glyph
+
+	// called when finding a better match
+	void update(double score_, unsigned symIdx_, unsigned long symCode_,
+				const MatchParams &params_);
+
+#ifdef _DEBUG // Next members are necessary for logging
+	static const std::wstring HEADER;
+	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
+
+	// Unicode symbols are logged in symbol format, while other encodings log their code
+	const bool unicode;					// is the charmap in Unicode?
 
 	BestMatch(bool isUnicode = true);
 	BestMatch(const BestMatch&) = default;
 	BestMatch& operator=(const BestMatch &other);
+#endif
+};
 
-	void reset();
+// Base class for all considered aspects of matching.
+class MatchAspect abstract {
+protected:
+	const CachedData &cachedData; // cached information from matching engine
+	const double &k; // cached coefficient from cfg, corresponding to current aspect
 
-	void reset(double score_, unsigned symIdx_, unsigned long symCode_, const MatchParams &params_);
+public:
+	MatchAspect(const CachedData &cachedData_, const double &k_) :
+		cachedData(cachedData_), k(k_) {}
+	virtual ~MatchAspect() = 0 {}
 
-	static const std::wstring HEADER;
+	// all aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
+	bool enabled() const { return k > 0.; }
+	
+	// scores the match between a gray patch and a symbol based on current aspect
+	virtual double assessMatch(const cv::Mat &patch,
+							   const SymData &symData,
+							   MatchParams &mp) const {
+		return 1.;
+	}
+};
 
-	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
+// Selecting a symbol with the scene underneath it as uniform as possible
+class FgMatch final : public MatchAspect {
+public:
+	FgMatch(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kSdevFg()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Aspect ensuring more uniform background scene around the selected symbol
+class BgMatch final : public MatchAspect {
+public:
+	BgMatch(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kSdevBg()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Aspect ensuring the edges of the selected symbol seem to appear also on the patch
+class EdgeMatch final : public MatchAspect {
+public:
+	EdgeMatch(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kSdevEdge()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Discouraging barely visible symbols
+class BetterContrast final : public MatchAspect {
+public:
+	BetterContrast(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kContrast()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Aspect concentrating on where's the center of gravity of the patch & its approximation
+class GravitationalSmoothness final : public MatchAspect {
+public:
+	GravitationalSmoothness(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kMCsOffset()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Aspect encouraging more accuracy while approximating the direction of the patch
+class DirectionalSmoothness final : public MatchAspect {
+public:
+	DirectionalSmoothness(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kCosAngleMCs()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+// Match aspect concerning user's preference for larger symbols as approximations
+class LargerSym final : public MatchAspect {
+public:
+	LargerSym(const CachedData &cachedData_, const Config &cfg) :
+		MatchAspect(cachedData_, cfg.get_kGlyphWeight()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override;
+};
+
+class MatchEngine; // forward declaration
+
+// cached data for computing match parameters and evaluating match aspects
+struct CachedData final {
+	/*
+	Max possible std dev = 127.5.
+	Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
+	In that case, the mean is 127.5 and the std dev is:
+	sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
+	*/
+	static const double sdevMax;
+
+	unsigned sz;				// symbol size
+	unsigned sz_1;				// sz - 1
+	double sz2;					// sz^2
+	double smallGlyphsCoverage;	// max density for symbols considered small
+	double preferredMaxMcDist;	// acceptable distance between mass centers (3/8*sz)
+	double mcDistMax;			// max possible distance between mass centers (sz_1*sqrt(2))
+	cv::Point2d patchCenter;	// position of the center of the patch (sz_1/2, sz_1/2)
+	cv::Mat consec;				// row matrix with consecutive elements: 0..sz-1
+
+private:
+	friend class MatchEngine;
+	void update(unsigned sz_, const FontEngine &fe_);
+};
+
+// MatchEngine finds best match for a patch based on current settings and symbols set.
+class MatchEngine final {
+public:
+	// VSymData - vector with most information about each symbol
+	typedef std::vector<SymData> VSymData;
+
+	// Displaying the symbols requires dividing them into pages (ranges using iterators)
+	typedef VSymData::const_iterator VSymDataCIt;
+	typedef std::pair< VSymDataCIt, VSymDataCIt > VSymDataCItPair;
+
+private:
+	const Config &cfg;			// settings for the engine
+	FontEngine &fe;				// symbols set manager
+	std::string symsIdReady;	// type of symbols ready to use for transformation
+	VSymData symsSet;			// set of most information on each symbol
+
+	// matching aspects
+	FgMatch fgMatch;
+	BgMatch bgMatch;
+	EdgeMatch edgeMatch;
+	BetterContrast conMatch;
+	GravitationalSmoothness grMatch;
+	DirectionalSmoothness dirMatch;
+	LargerSym lsMatch;
+
+	std::vector<MatchAspect*> aspects;	// enabled aspects
+
+#ifdef UNIT_TESTING
+public:
+#endif // letting 'cachedData' & 'findBestMatch' public for UNIT_TESTING
+
+	CachedData cachedData;	// data precomputed by getReady before performing the matching series
+
+	// Determines best match of 'patch' compared to the elements from 'symsSet'
+	void findBestMatch(const cv::Mat &patch, BestMatch &best);
+
+public:
+	MatchEngine(Controller &ctrler_, const Config &cfg_, FontEngine &fe_);
+
+	std::string getIdForSymsToUse(); // type of the symbols determined by fe & cfg
+
+	// Needed to display the cmap - returns a pair of symsSet iterators
+	VSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
+
+	void updateSymbols();	// using different charmap - also useful for displaying these changes
+	void getReady();		// called before a series of approxPatch
+
+	// returns the approximation of 'patch_' plus other details in 'best'
+	cv::Mat approxPatch(const cv::Mat &patch_, BestMatch &best);
+
+#ifdef _DEBUG
+	bool usesUnicode() const; // Unicode glyphs are logged as symbols, the rest as their code
+#endif // _DEBUG
 };
 
 #endif

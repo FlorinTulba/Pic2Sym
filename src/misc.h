@@ -26,4 +26,9 @@
 #define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
 #define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
 
+// Notifying the user
+void infoMsg(const std::string &text, const std::string &title = "");
+void warnMsg(const std::string &text, const std::string &title = "");
+void errMsg(const std::string &text, const std::string &title = "");
+
 #endif

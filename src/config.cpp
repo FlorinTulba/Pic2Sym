@@ -40,8 +40,8 @@ Config::Config(Controller &ctrler_, const string &appLaunchPath) : ctrler(ctrler
 bool Config::parseCfg() {
 	bool correct = false;
 	unsigned newFontSz = 0U, newHmaxSyms = 0U, newVmaxSyms = 0U, newThreshold4Blank = 0U;
-	double new_kSdevFg = 0., new_kSdevBg = 0.,
-		new_kCosAngleMCs = 0., new_kMCsOffset = 0.,
+	double new_kSdevFg = 0., new_kSdevEdge = 0., new_kSdevBg = 0.,
+		new_kMCsOffset = 0., new_kCosAngleMCs = 0.,
 		new_kContrast = 0., new_kGlyphWeight = 0.;
 	string prop;
 	try {
@@ -49,31 +49,33 @@ bool Config::parseCfg() {
 		read_info(cfgPath.string(), theCfg);
 
 		newFontSz			= theCfg.get<unsigned>(prop = "FONT_HEIGHT");
+		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_GLYPH_CORRECTNESS");
+		new_kSdevEdge		= theCfg.get<double>(prop = "GLYPH_EDGE_CORRECTNESS");
+		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_GLYPH_CORRECTNESS");
+		new_kContrast		= theCfg.get<double>(prop = "MORE_CONTRAST_PREF");
+		new_kMCsOffset		= theCfg.get<double>(prop = "GRAVITATIONAL_SMOOTHNESS");
+		new_kCosAngleMCs	= theCfg.get<double>(prop = "DIRECTIONAL_SMOOTHNESS");
+		new_kGlyphWeight	= theCfg.get<double>(prop = "LARGER_GLYPHS_PREF");
+		newThreshold4Blank	= theCfg.get<unsigned>(prop = "THRESHOLD_FOR_BLANK");
 		newHmaxSyms			= theCfg.get<unsigned>(prop = "RESULT_WIDTH");
 		newVmaxSyms			= theCfg.get<unsigned>(prop = "RESULT_HEIGHT");
-		newThreshold4Blank	= theCfg.get<unsigned>(prop = "THRESHOLD_FOR_BLANK");
-		new_kContrast		= theCfg.get<double>(prop = "MORE_CONTRAST_PREF");
-		new_kGlyphWeight	= theCfg.get<double>(prop = "LARGER_GLYPHS_PREF");
-		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_GLYPH_CORRECTNESS");
-		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_GLYPH_CORRECTNESS");
-		new_kCosAngleMCs	= theCfg.get<double>(prop = "DIRECTIONAL_SMOOTHNESS");
-		new_kMCsOffset		= theCfg.get<double>(prop = "GRAVITATIONAL_SMOOTHNESS");
 
 		if(!isFontSizeOk(newFontSz) ||
 		   !isHmaxSymsOk(newHmaxSyms) ||
 		   !isVmaxSymsOk(newVmaxSyms) ||
 		   !isBlanksThresholdOk(newThreshold4Blank) ||
-		   new_kSdevFg < 0. || new_kSdevBg < 0. ||
-		   new_kCosAngleMCs < 0. || new_kMCsOffset < 0. ||
-		   new_kContrast < 0. || new_kGlyphWeight < 0.)
+		   new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. || new_kContrast < 0. ||
+		   new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
+		   new_kGlyphWeight < 0.)
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
 			correct = true;
-			fontSz = newFontSz; threshold4Blank = newThreshold4Blank;
+			fontSz = newFontSz;
+			kSdevFg = new_kSdevFg;  kSdevEdge = new_kSdevEdge; kSdevBg = new_kSdevBg;
+			kContrast = new_kContrast; 
+			kMCsOffset = new_kMCsOffset; kCosAngleMCs = new_kCosAngleMCs;
+			kGlyphWeight = new_kGlyphWeight; threshold4Blank = newThreshold4Blank;
 			hMaxSyms = newHmaxSyms; vMaxSyms = newVmaxSyms;
-			kContrast = new_kContrast; kGlyphWeight = new_kGlyphWeight;
-			kSdevFg = new_kSdevFg; kSdevBg = new_kSdevBg;
-			kCosAngleMCs = new_kCosAngleMCs; kMCsOffset = new_kMCsOffset;
 		}
 
 	} catch(info_parser_error&) {

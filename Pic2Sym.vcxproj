@@ -33,6 +33,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\match.cpp" />
+    <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\ui.cpp" />
   </ItemGroup>

@@ -77,6 +77,9 @@
     <ClCompile Include="src\match.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\misc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />

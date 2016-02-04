@@ -11,8 +11,6 @@
 #ifndef H_CONFIG
 #define H_CONFIG
 
-#include "fontEngine.h"
-
 #include <string>
 
 #include <boost/filesystem/path.hpp>
@@ -34,9 +32,9 @@ class Config final {
 	unsigned threshold4Blank	= 0U;	// Using Blank character replacement under this threshold
 
 	// powers of used factors; set to 0 to ignore specific factor
-	double kSdevFg = 1, kSdevBg = 1, kContrast=1;	// powers of factors for glyph correlation
-	double kCosAngleMCs = 1., kMCsOffset = 1.;		// powers of factors targeting smoothness
-	double kGlyphWeight = 1.;			// power of factor aiming fanciness, not correctness
+	double kSdevFg = 1, kSdevEdge = 1, kSdevBg = 1, kContrast = 1; // powers of factors for glyph correlation
+	double kCosAngleMCs = 1., kMCsOffset = 1.; // powers of factors targeting smoothness
+	double kGlyphWeight = 1.; // power of factor aiming fanciness, not correctness
 
 	bool parseCfg(); // Parse res/defaultCfg.txt
 
@@ -68,34 +66,37 @@ public:
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	void setBlankThreshold(unsigned threshold4Blank_) { threshold4Blank = threshold4Blank_; }
 
-	double get_kSdevFg() const { return kSdevFg; }
+	const double& get_kSdevFg() const { return kSdevFg; }
 	void set_kSdevFg(double kSdevFg_) { kSdevFg = kSdevFg_; }
 
-	double get_kSdevBg() const { return kSdevBg; }
+	const double& get_kSdevEdge() const { return kSdevEdge; }
+	void set_kSdevEdge(double kSdevEdge_) { kSdevEdge = kSdevEdge_; }
+
+	const double& get_kSdevBg() const { return kSdevBg; }
 	void set_kSdevBg(double kSdevBg_) { kSdevBg = kSdevBg_; }
 
-	double get_kContrast() const { return kContrast; }
+	const double& get_kContrast() const { return kContrast; }
 	void set_kContrast(double kContrast_) { kContrast = kContrast_; }
 
-	double get_kCosAngleMCs() const { return kCosAngleMCs; }
+	const double& get_kCosAngleMCs() const { return kCosAngleMCs; }
 	void set_kCosAngleMCs(double kCosAngleMCs_) { kCosAngleMCs = kCosAngleMCs_; }
 
-	double get_kMCsOffset() const { return kMCsOffset; }
+	const double& get_kMCsOffset() const { return kMCsOffset; }
 	void set_kMCsOffset(double kMCsOffset_) { kMCsOffset = kMCsOffset_; }
 
-	double get_kGlyphWeight() const { return kGlyphWeight; }
+	const double& get_kGlyphWeight() const { return kGlyphWeight; }
 	void set_kGlyphWeight(double kGlyphWeight_) { kGlyphWeight = kGlyphWeight_; }
 
 #ifdef UNIT_TESTING
 	// Constructors used during Unit Testing
 	Config(Controller &ctrler_,
 			   unsigned fontSz_, unsigned hMaxSyms_, unsigned vMaxSyms_, unsigned threshold4Blank_,
-			   double kSdevFg_, double kSdevBg_, double kContrast_,
+			   double kSdevFg_, double kSdevEdge_, double kSdevBg_, double kContrast_,
 			   double kCosAngleMCs_, double kMCsOffset_, double kGlyphWeight_) :
 		   ctrler(ctrler_),
 		   fontSz(fontSz_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_),
 		   threshold4Blank(threshold4Blank_),
-		   kSdevFg(kSdevFg_), kSdevBg(kSdevBg_), kContrast(kContrast_),
+		   kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
 		   kCosAngleMCs(kCosAngleMCs_), kMCsOffset(kMCsOffset_), kGlyphWeight(kGlyphWeight_) {}
 #endif
 };

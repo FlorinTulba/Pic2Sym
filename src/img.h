@@ -40,10 +40,8 @@ public:
 	If possible, 'resized' method adapts the original image to the parameters of the transformation:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
-
-	It also returns a grayscale version of the resized image if grayVersion isn't NULL.
 	*/
-	cv::Mat resized(const Config &cfg, cv::Mat *grayVersion = nullptr);
+	cv::Mat resized(const Config &cfg);
 
 	bool isColor() const { return color; }	// color / grayscale image
 	const std::string& name() const { return imgName; } // return the stem of the image file name
