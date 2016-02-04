@@ -16,7 +16,7 @@ using namespace std;
 
 namespace {
 
-	class MsgCateg {
+	class MsgCateg final {
 		const string categName;
 		const long categVal;
 

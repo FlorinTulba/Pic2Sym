@@ -341,7 +341,7 @@ void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 }
 
 
-MatchEngine::MatchEngine(Controller &ctrler_, const Config &cfg_, FontEngine &fe_) :
+MatchEngine::MatchEngine(const Config &cfg_, FontEngine &fe_) :
 	cfg(cfg_), fe(fe_),
 	fgMatch(cachedData, cfg_), bgMatch(cachedData, cfg_), edgeMatch(cachedData, cfg_),
 	conMatch(cachedData, cfg_), grMatch(cachedData, cfg_), dirMatch(cachedData, cfg_),

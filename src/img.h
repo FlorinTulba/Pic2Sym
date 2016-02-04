@@ -18,20 +18,14 @@
 #include <boost/filesystem/path.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-class Controller; // data & views manager
-
 // Img provides necessary API for manipulating the images to transform
 class Img final {
-	Controller &ctrler;					// data & views manager
-
 	boost::filesystem::path imgPath;	// path of current image
 	std::string imgName;				// stem part of the image file name
 	cv::Mat source, res;				// the original & resized image
 	bool color;							// color / grayscale
 
 public:
-	Img(Controller &ctrler_) : ctrler(ctrler_) {}
-
 	bool reset(const std::string &picName); // setting a new source image. Returns false for invalid images
 
 	const cv::Mat& original() const { return source; }

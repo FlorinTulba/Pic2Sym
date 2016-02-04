@@ -24,13 +24,13 @@ Allows setting title, overlay, status, location, size and resizing properties.
 */
 class CvWin abstract {
 protected:
-	Controller &ctrler;			// window manager
+	const Controller &ctrler;			// window manager
 
 	const cv::String winName;	// window's handle
 	cv::Mat content;			// what to display 
 
 public:
-	CvWin(Controller &ctrler_, const cv::String &winName_);
+	CvWin(const Controller &ctrler_, const cv::String &winName_);
 	virtual ~CvWin() = 0 {}
 
 	void setTitle(const std::string &title) const;
@@ -59,7 +59,7 @@ class Comparator : public CvWin {
 	void setTransparency(double transparency);	// called from updateTransparency
 
 public:
-	Comparator(Controller &ctrler_);
+	Comparator(const Controller &ctrler_);
 
 	static void updateTransparency(int newTransp, void *userdata); // slider's callback
 
@@ -94,7 +94,7 @@ class CmapInspect : public CvWin {
 	unsigned computeSymsPerPage() const;	// determines how many symbols fit on a single page
 
 public:
-	CmapInspect(Controller &ctrler_);
+	CmapInspect(const Controller &ctrler_);
 
 	static void updatePageIdx(int newPage, void *userdata); // slider's callback
 
@@ -188,7 +188,7 @@ class ControlPanel {
 	bool updatingEncMax = false;
 
 public:
-	ControlPanel(Controller &ctrler_);
+	ControlPanel(Controller &ctrler_, const Config &cfg);
 
 	void updateEncodingsCount(unsigned uniqueEncodings);	// puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above

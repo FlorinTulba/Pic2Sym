@@ -15,14 +15,10 @@
 
 #include <boost/filesystem/path.hpp>
 
-class Controller;
-
 /*
 Config class controls the parameters for transforming one or more images.
 */
 class Config final {
-	Controller &ctrler;					// data & views manager
-
 	boost::filesystem::path workDir;	// Folder where the application was launched
 	boost::filesystem::path cfgPath;	// Path of the configuration file
 
@@ -50,7 +46,7 @@ public:
 	static bool isVmaxSymsOk(unsigned syms) { return syms>=MIN_V_SYMS && syms<=MAX_V_SYMS; }
 	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
 
-	Config(Controller &ctrler_, const std::string &appLaunchPath); // using defaultCfg.txt
+	Config(const std::string &appLaunchPath); // using defaultCfg.txt
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
@@ -89,15 +85,13 @@ public:
 
 #ifdef UNIT_TESTING
 	// Constructors used during Unit Testing
-	Config(Controller &ctrler_,
-			   unsigned fontSz_, unsigned hMaxSyms_, unsigned vMaxSyms_, unsigned threshold4Blank_,
-			   double kSdevFg_, double kSdevEdge_, double kSdevBg_, double kContrast_,
-			   double kCosAngleMCs_, double kMCsOffset_, double kGlyphWeight_) :
-		   ctrler(ctrler_),
-		   fontSz(fontSz_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_),
-		   threshold4Blank(threshold4Blank_),
-		   kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-		   kCosAngleMCs(kCosAngleMCs_), kMCsOffset(kMCsOffset_), kGlyphWeight(kGlyphWeight_) {}
+	Config(unsigned fontSz_, unsigned hMaxSyms_, unsigned vMaxSyms_, unsigned threshold4Blank_,
+		   double kSdevFg_, double kSdevEdge_, double kSdevBg_, double kContrast_,
+		   double kCosAngleMCs_, double kMCsOffset_, double kGlyphWeight_) :
+		fontSz(fontSz_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_),
+		threshold4Blank(threshold4Blank_),
+		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
+		kCosAngleMCs(kCosAngleMCs_), kMCsOffset(kMCsOffset_), kGlyphWeight(kGlyphWeight_) {}
 #endif
 };
 

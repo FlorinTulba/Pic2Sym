@@ -22,7 +22,7 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace boost::property_tree;
 
-Config::Config(Controller &ctrler_, const string &appLaunchPath) : ctrler(ctrler_) {
+Config::Config(const string &appLaunchPath) {
 	boost::filesystem::path executablePath(absolute(appLaunchPath));
 	cfgPath = workDir =
 		executablePath.remove_filename();

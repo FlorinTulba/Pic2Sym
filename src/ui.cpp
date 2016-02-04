@@ -45,7 +45,7 @@ const String ControlPanel::outWTrName = "Max horizontally:";
 const String ControlPanel::outHTrName = "Max vertically:";
 #endif // UNIT_TESTING not defined
 
-CvWin::CvWin(Controller &ctrler_, const String &winName_) :
+CvWin::CvWin(const Controller &ctrler_, const String &winName_) :
 		ctrler(ctrler_), winName(winName_) {
 	namedWindow(winName);
 }
@@ -80,7 +80,7 @@ void CvWin::resize(int w, int h) const {
 	resizeWindow(winName, w, h);
 }
 
-Comparator::Comparator(Controller &ctrler_) : CvWin(ctrler_, "Pic2Sym") {
+Comparator::Comparator(const Controller &ctrler_) : CvWin(ctrler_, "Pic2Sym") {
 	content = noImage;
 	createTrackbar(transpTrackName, winName,
 				   &trackPos, trackMax,
@@ -127,7 +127,7 @@ void Comparator::updateTransparency(int newTransp, void *userdata) {
 }
 
 #ifndef UNIT_TESTING
-CmapInspect::CmapInspect(Controller &ctrler_) : CvWin(ctrler_, "Charmap View"),
+CmapInspect::CmapInspect(const Controller &ctrler_) : CvWin(ctrler_, "Charmap View"),
 		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
 	createTrackbar(pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
@@ -249,18 +249,18 @@ double ControlPanel::Converter::LargerSym::fromSlider(int largerSym) {
 	return proportionRule(largerSym, maxSlider, maxReal);
 }
 
-ControlPanel::ControlPanel(Controller &ctrler_) :
+ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 		ctrler(ctrler_),
-		maxHSyms(ctrler_.getHmaxSyms()), maxVSyms(ctrler_.getVmaxSyms()),
-		encoding(0U), fontSz(ctrler_.getFontSize()),
-		underGlyphCorrectness(Converter::Correctness::toSlider(ctrler_.getUnderGlyphCorrectnessFactor())),
-		glyphEdgeCorrectness(Converter::Correctness::toSlider(ctrler_.getGlyphEdgeCorrectnessFactor())),
-		asideGlyphCorrectness(Converter::Correctness::toSlider(ctrler_.getAsideGlyphCorrectnessFactor())),
-		moreContrast(Converter::Contrast::toSlider(ctrler_.getContrastFactor())),
-		gravity(Converter::Gravity::toSlider(ctrler_.getGravitationalSmoothnessFactor())),
-		direction(Converter::Direction::toSlider(ctrler_.getDirectionalSmoothnessFactor())),
-		largerSym(Converter::LargerSym::toSlider(ctrler_.getGlyphWeightFactor())),
-		thresh4Blanks(ctrler_.getThreshold4BlanksFactor()) {
+		maxHSyms(cfg.getMaxHSyms()), maxVSyms(cfg.getMaxVSyms()),
+		encoding(0U), fontSz(cfg.getFontSz()),
+		underGlyphCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevFg())),
+		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevEdge())),
+		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevBg())),
+		moreContrast(Converter::Contrast::toSlider(cfg.get_kContrast())),
+		gravity(Converter::Gravity::toSlider(cfg.get_kMCsOffset())),
+		direction(Converter::Direction::toSlider(cfg.get_kCosAngleMCs())),
+		largerSym(Converter::LargerSym::toSlider(cfg.get_kGlyphWeight())),
+		thresh4Blanks(cfg.getBlankThreshold()) {
 
 	createButton("Select an Image to Transform",
 				 [] (int, void *userdata) {

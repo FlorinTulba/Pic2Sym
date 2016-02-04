@@ -23,17 +23,46 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
-Controller::Controller(const string &cmd) :
-		img(*this), fe(*this), cfg(*this, cmd),
-		me(*this, cfg, fe), t(*this, cfg, me, img),
-		comp(*this), cp(*this),
-		hMaxSymsOk(Config::isHmaxSymsOk(cfg.getMaxHSyms())),
-		vMaxSymsOk(Config::isVmaxSymsOk(cfg.getMaxVSyms())),
-		fontSzOk(Config::isFontSizeOk(cfg.getFontSz())) {
+Controller::Controller(Config &cfg_) :
+		img(getImg()), fe(getFontEngine()), cfg(cfg_),
+		me(getMatchEngine(cfg_)), t(getTransformer(cfg_)),
+		comp(getComparator()), cp(getControlPanel(cfg_)),
+		hMaxSymsOk(Config::isHmaxSymsOk(cfg_.getMaxHSyms())),
+		vMaxSymsOk(Config::isVmaxSymsOk(cfg_.getMaxVSyms())),
+		fontSzOk(Config::isFontSizeOk(cfg_.getFontSz())) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
 	comp.setTitle("Pic2Sym - (c) 2016 Florin Tulba");
 	comp.setStatus("Press Ctrl+P for Control Panel; ESC to Exit");
+}
+
+Img& Controller::getImg() {
+	static Img _img; return _img;
+}
+
+FontEngine& Controller::getFontEngine() const {
+	static FontEngine _fe(*this);
+	return _fe;
+}
+
+MatchEngine& Controller::getMatchEngine(Config &cfg_) const {
+	static MatchEngine _me(cfg_, getFontEngine());
+	return _me;
+}
+
+Transformer& Controller::getTransformer(Config &cfg_) const {
+	static Transformer _t(*this, cfg_, getMatchEngine(cfg_), getImg());
+	return _t;
+}
+
+Comparator& Controller::getComparator() const {
+	static Comparator _c(*this);
+	return _c;
+}
+
+ControlPanel& Controller::getControlPanel(Config &cfg_) {
+	static ControlPanel _cp(*this, cfg_);
+	return _cp;
 }
 
 Controller::~Controller() {
@@ -267,7 +296,7 @@ MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned ma
 	return me.getSymsRange(from, maxCount);
 }
 
-void Controller::hourGlass(double progress, const string &title/* = ""*/) {
+void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
 		namedWindow(waitWin);
@@ -286,11 +315,11 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) {
 	}
 }
 
-void Controller::reportGlyphProgress(double progress) {
+void Controller::reportGlyphProgress(double progress) const {
 	hourGlass(progress, "Processing glyphs. Please wait");
 }
 
-void Controller::reportTransformationProgress(double progress) {
+void Controller::reportTransformationProgress(double progress) const {
 	hourGlass(progress, "Transforming image. Please wait");
 	if(progress == 0.)
 		comp.setReference(img.getResized()); // display 'original' when starting transformation

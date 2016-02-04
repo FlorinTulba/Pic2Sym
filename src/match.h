@@ -279,7 +279,7 @@ public:
 	void findBestMatch(const cv::Mat &patch, BestMatch &best);
 
 public:
-	MatchEngine(Controller &ctrler_, const Config &cfg_, FontEngine &fe_);
+	MatchEngine(const Config &cfg_, FontEngine &fe_);
 
 	std::string getIdForSymsToUse(); // type of the symbols determined by fe & cfg
 

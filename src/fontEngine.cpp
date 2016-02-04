@@ -404,7 +404,7 @@ void PmsCont::setAsReady() {
 	ready = true;
 }
 
-FontEngine::FontEngine(Controller &ctrler_) : ctrler(ctrler_) {
+FontEngine::FontEngine(const Controller &ctrler_) : ctrler(ctrler_) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;

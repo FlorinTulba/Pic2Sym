@@ -27,7 +27,7 @@ using namespace std;
 using namespace cv;
 using namespace boost::filesystem;
 
-Transformer::Transformer(Controller &ctrler_, Config &cfg_, MatchEngine &me_, Img &img_) :
+Transformer::Transformer(const Controller &ctrler_, Config &cfg_, MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
 	// Ensure there is an Output folder
 	path outputFolder = cfg.getWorkDir();

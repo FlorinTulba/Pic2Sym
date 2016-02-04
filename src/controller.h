@@ -14,8 +14,8 @@
 #ifdef UNIT_TESTING
 class Controller final {
 public:
-	void reportGlyphProgress(double progress) {}
-	void reportTransformationProgress(double progress) {}
+	void reportGlyphProgress(double progress) const {}
+	void reportTransformationProgress(double progress) const {}
 };
 
 #else // UNIT_TESTING not defined
@@ -26,21 +26,29 @@ public:
 // Manager of the views and data.
 class Controller final {
 	// Data
-	Img img;			// image to process
-	FontEngine fe;		// font engine
-	Config cfg;			// most settings for the transformations
-	MatchEngine me;		// matching engine
-	Transformer t;		// transforming engine
+	Img &img;			// image to process
+	FontEngine &fe;		// font engine
+	Config &cfg;		// most settings for the transformations
+	MatchEngine &me;	// matching engine
+	Transformer &t;		// transforming engine
 
 	// Views
-	Comparator comp;	// view for comparing original & result
+	Comparator &comp;					// view for comparing original & result
 	std::shared_ptr<CmapInspect> pCmi;	// view for inspecting the used cmap
-	ControlPanel cp;	// the configuration view
+	ControlPanel &cp;					// the configuration view
 
 	// Validation flags
 	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
 	bool hMaxSymsOk, vMaxSymsOk;
 	bool fontSzOk;
+
+	// Methods for initialization
+	static Img& getImg();
+	FontEngine& getFontEngine() const;
+	MatchEngine& getMatchEngine(Config &cfg_) const;
+	Transformer& getTransformer(Config &cfg_) const;
+	Comparator& getComparator() const;
+	ControlPanel& getControlPanel(Config &cfg_);
 
 	// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
@@ -53,11 +61,11 @@ class Controller final {
 	Shows a 'Please wait' window and reports the progress (0..1) as %.
 	Details about the ongoing operation can be added to the title.
 	*/
-	void hourGlass(double progress, const std::string &title = "");
+	void hourGlass(double progress, const std::string &title = "") const;
 
 public:
-	Controller(const std::string &cmd); // get the application path as parameter
-	~Controller();						// destroys the windows
+	Controller(Config &cfg_);	// get the application path as parameter
+	~Controller();				// destroys the windows
 
 	// Waits for the user to press ESC and confirm he wants to leave
 	void handleRequests() const;
@@ -80,24 +88,14 @@ public:
 
 	// Settings passed from model to view
 	unsigned getFontSize() const { return cfg.getFontSz(); }
-	double getUnderGlyphCorrectnessFactor() const { return cfg.get_kSdevFg(); }
-	double getGlyphEdgeCorrectnessFactor() const { return cfg.get_kSdevEdge(); }
-	double getAsideGlyphCorrectnessFactor() const { return cfg.get_kSdevBg(); }
-	double getContrastFactor() const { return cfg.get_kContrast(); }
-	double getGravitationalSmoothnessFactor() const { return cfg.get_kMCsOffset(); }
-	double getDirectionalSmoothnessFactor() const { return cfg.get_kCosAngleMCs(); }
-	double getGlyphWeightFactor() const { return cfg.get_kGlyphWeight(); }
-	unsigned getThreshold4BlanksFactor() const { return cfg.getBlankThreshold(); }
-	unsigned getHmaxSyms() const { return cfg.getMaxHSyms(); }
-	unsigned getVmaxSyms() const { return cfg.getMaxVSyms(); }
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const;
 
 	// Progress about loading, adapting glyphs
-	void reportGlyphProgress(double progress);
+	void reportGlyphProgress(double progress) const;
 
 	// Transformer
 	void performTransformation();
-	void reportTransformationProgress(double progress);
+	void reportTransformationProgress(double progress) const;
 };
 #endif // UNIT_TESTING not defined
 

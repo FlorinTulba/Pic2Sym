@@ -18,11 +18,11 @@
 
 BOOST_AUTO_TEST_SUITE(Transform_Tests)
 BOOST_AUTO_TEST_CASE(Check_symbols_set) {
+	Config cfg(10U, 500U, 300U, 0U, 1., 1., 1., 0., 0., 0., 0.);
+	Img img;
 	Controller c;
-	Img img(c);
 	FontEngine fe(c);
-	Config cfg(c, 10U, 500U, 300U, 0U, 1., 1., 1., 0., 0., 0., 0.);
-	MatchEngine me(c, cfg, fe);
+	MatchEngine me(cfg, fe);
 	Transformer t(c, cfg, me, img);
 
 	bool correct = false;

@@ -13,6 +13,7 @@
 using namespace std;
 
 void main(int, char* argv[]) {
-	Controller c(argv[0]);
+	Config cfg(argv[0]);
+	Controller c(cfg);
 	c.handleRequests();
 }

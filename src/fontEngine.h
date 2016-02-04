@@ -109,7 +109,7 @@ public:
 
 // FontEngine class wraps some necessary FreeType functionality.
 class FontEngine final {
-	Controller &ctrler;				// data & views manager
+	const Controller &ctrler;				// data & views manager
 
 	FT_Library library	= nullptr;	// the FreeType lib
 	FT_Face face		= nullptr;	// a loaded font
@@ -129,7 +129,7 @@ class FontEngine final {
 	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/);	// Installs a new font
 
 public:
-	FontEngine(Controller &ctrler_);
+	FontEngine(const Controller &ctrler_);
 	~FontEngine();
 
 	bool newFont(const std::string &fontFile_);		// Tries to use the font from <fontFile_>
