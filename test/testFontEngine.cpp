@@ -17,10 +17,11 @@
 
 using namespace std;
 using namespace boost;
+using namespace ut;
 
-BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
+BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile) {
-		ut::Fixt f;
+		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile ...");
 		try {
 			Config cfg;
 			Controller c(cfg);
@@ -45,7 +46,7 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(CorrectFontFile) {
-		ut::Fixt f;
+		BOOST_TEST_MESSAGE("Running CorrectFontFile ...");
 		try {
 			Config cfg;
 			Controller c(cfg);
@@ -66,7 +67,7 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontSize) {
-		ut::Fixt f;
+		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontSize ...");
 		try {
 			Config cfg;
 			Controller c(cfg);
@@ -118,7 +119,7 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(CompleteFontConfig) {
-		ut::Fixt f;
+		BOOST_TEST_MESSAGE("Running CompleteFontConfig ...");
 		try {
 			Config cfg;
 			Controller c(cfg);

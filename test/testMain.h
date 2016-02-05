@@ -15,11 +15,24 @@
 
 #define UNIT_TESTING
 
-namespace ut {
-	extern bool initImg, initFe, initMe, initTr, initComp, initCp;
+namespace ut { // unit testing namespace
 
+	// Used for a global fixture to reinitialize Controller's fields for each test
+	struct InitController {
+
+		/*
+		Which Controller's fields to reinitialize.
+		The global fixture sets them to true.
+		After initialization each is set to false.
+		*/
+		static bool initImg, initFontEngine, initMatchEngine,
+			initTransformer, initComparator, initControlPanel;
+	};
+
+	// Fixture to be used before every test
 	struct Fixt {
-		Fixt() { initImg = initFe = initMe = initTr = initComp = initCp = true; }
+		Fixt();		// set up
+		~Fixt();	// tear down
 	};
 }
 

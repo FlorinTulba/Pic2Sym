@@ -23,9 +23,23 @@ class Img final {
 	boost::filesystem::path imgPath;	// path of current image
 	std::string imgName;				// stem part of the image file name
 	cv::Mat source, res;				// the original & resized image
-	bool color;							// color / grayscale
+	bool color = false;					// color / grayscale
 
 public:
+	/*
+	Creates an Img object with default fields.
+	
+	The parameter just supports a macro mechanism that creates several object types
+	with variable number of parameters.
+	
+	For Img, instead of 'Img field;', it would generate 'Img field();'   
+	which is interpreted as a function declaration.
+
+	Adding this extra param generates no harm in the rest of the project,
+	but allows the macro to see it as object 'Img field(nullptr);', not function.
+	*/
+	Img(void** /*hackParam*/ = nullptr) {} 
+
 	bool reset(const std::string &picName); // setting a new source image. Returns false for invalid images
 
 	const cv::Mat& original() const { return source; }

@@ -19,6 +19,20 @@
 #include "controller.cpp"
 
 namespace ut {
-	bool initImg = false, initFe = false, initMe = false,
-		initTr = false, initComp = false, initCp = false;
+	bool InitController::initImg = false;
+	bool InitController::initFontEngine = false;
+	bool InitController::initMatchEngine = false;
+	bool InitController::initTransformer = false;
+	bool InitController::initComparator = false;
+	bool InitController::initControlPanel = false;
+
+	Fixt::Fixt() {
+		// reinitialize all these fields
+		InitController::initImg = InitController::initFontEngine = InitController::initMatchEngine =
+		InitController::initTransformer = InitController::initComparator = InitController::initControlPanel =
+			true;
+	}
+
+	Fixt::~Fixt() {
+	}
 }
