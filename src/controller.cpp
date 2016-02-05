@@ -8,10 +8,12 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#ifndef UNIT_TESTING
-
 #include "controller.h"
 #include "misc.h"
+
+#ifdef UNIT_TESTING
+#include "../test/testMain.h"
+#endif
 
 #include <Windows.h>
 #include <sstream>
@@ -37,32 +39,93 @@ Controller::Controller(Config &cfg_) :
 }
 
 Img& Controller::getImg() {
-	static Img _img; return _img;
+#ifndef UNIT_TESTING
+	static Img _img;
+	return _img;
+
+#else
+	static std::shared_ptr<Img> pImg;
+	if(ut::initImg || !pImg) {
+		pImg = std::make_shared<Img>();
+		ut::initImg = false;
+	}
+	return *pImg;
+#endif
 }
 
 FontEngine& Controller::getFontEngine() const {
+#ifndef UNIT_TESTING
 	static FontEngine _fe(*this);
 	return _fe;
+
+#else
+	static std::shared_ptr<FontEngine> pFe;
+	if(ut::initFe || !pFe) {
+		pFe = std::make_shared<FontEngine>(*this);
+		ut::initFe = false;
+	}
+	return *pFe;
+#endif
 }
 
-MatchEngine& Controller::getMatchEngine(Config &cfg_) const {
+MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
+#ifndef UNIT_TESTING
 	static MatchEngine _me(cfg_, getFontEngine());
 	return _me;
+
+#else
+	static std::shared_ptr<MatchEngine> pMe;
+	if(ut::initMe || !pMe) {
+		pMe = std::make_shared<MatchEngine>(cfg_, getFontEngine());
+		ut::initMe = false;
+	}
+	return *pMe;
+#endif
 }
 
-Transformer& Controller::getTransformer(Config &cfg_) const {
+Transformer& Controller::getTransformer(const Config &cfg_) const {
+#ifndef UNIT_TESTING
 	static Transformer _t(*this, cfg_, getMatchEngine(cfg_), getImg());
 	return _t;
+
+#else
+	static std::shared_ptr<Transformer> pTr;
+	if(ut::initTr || !pTr) {
+		pTr = std::make_shared<Transformer>(*this, cfg_, getMatchEngine(cfg_), getImg());
+		ut::initTr = false;
+	}
+	return *pTr;
+#endif
 }
 
 Comparator& Controller::getComparator() const {
+#ifndef UNIT_TESTING
 	static Comparator _c(*this);
 	return _c;
+
+#else
+	static std::shared_ptr<Comparator> pComp;
+	if(ut::initComp || !pComp) {
+		pComp = std::make_shared<Comparator>(*this);
+		ut::initComp = false;
+	}
+	return *pComp;
+#endif
 }
 
 ControlPanel& Controller::getControlPanel(Config &cfg_) {
+#ifndef UNIT_TESTING
 	static ControlPanel _cp(*this, cfg_);
 	return _cp;
+
+#else
+	static std::shared_ptr<ControlPanel> pCp;
+	if(ut::initCp || !pCp) {
+		pCp = std::make_shared<ControlPanel>(*this, cfg_);
+		ut::initCp = false;
+	}
+	return *pCp;
+#endif
 }
 
 Controller::~Controller() {
@@ -297,6 +360,7 @@ MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned ma
 }
 
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
+#ifndef UNIT_TESTING
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
 		namedWindow(waitWin);
@@ -313,18 +377,23 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 		oss<<" ("<<fixed<<setprecision(0)<<progress*100.<<"%)";
 		setWindowTitle(waitWin, oss.str());
 	}
+#endif // UNIT_TESTING
 }
 
 void Controller::reportGlyphProgress(double progress) const {
+#ifndef UNIT_TESTING
 	hourGlass(progress, "Processing glyphs. Please wait");
+#endif
 }
 
 void Controller::reportTransformationProgress(double progress) const {
+#ifndef UNIT_TESTING
 	hourGlass(progress, "Transforming image. Please wait");
 	if(progress == 0.)
 		comp.setReference(img.getResized()); // display 'original' when starting transformation
 	else if(progress == 1.)
 		comp.setResult(t.getResult()); // display the result at the end of the transformation
+#endif
 }
 
 void Controller::performTransformation() {
@@ -333,4 +402,3 @@ void Controller::performTransformation() {
 
 	t.run();
 }
-#endif // UNIT_TESTING not defined

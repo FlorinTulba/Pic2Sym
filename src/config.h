@@ -22,15 +22,14 @@ class Config final {
 	boost::filesystem::path workDir;	// Folder where the application was launched
 	boost::filesystem::path cfgPath;	// Path of the configuration file
 
-	unsigned fontSz				= 0U;	// Using font height fontSz
-	unsigned hMaxSyms			= 0U;	// Count of resulted horizontal symbols
-	unsigned vMaxSyms			= 0U;	// Count of resulted vertical symbols
-	unsigned threshold4Blank	= 0U;	// Using Blank character replacement under this threshold
-
-	// powers of used factors; set to 0 to ignore specific factor
-	double kSdevFg = 1, kSdevEdge = 1, kSdevBg = 1, kContrast = 1; // powers of factors for glyph correlation
-	double kCosAngleMCs = 1., kMCsOffset = 1.; // powers of factors targeting smoothness
-	double kGlyphWeight = 1.; // power of factor aiming fanciness, not correctness
+	unsigned fontSz = 0U;			// Using font height fontSz
+	double kSdevFg = 1, kSdevEdge = 1, kSdevBg = 1,
+		kContrast = 1;				// powers of factors for glyph correlation
+	double kMCsOffset = 1., kCosAngleMCs = 1.; // powers of factors targeting smoothness
+	double kGlyphWeight = 1.;		// power of factor aiming fanciness, not correctness
+	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
+	unsigned hMaxSyms = 0U;			// Count of resulted horizontal symbols
+	unsigned vMaxSyms = 0U;			// Count of resulted vertical symbols
 
 	bool parseCfg(); // Parse res/defaultCfg.txt
 
@@ -85,13 +84,15 @@ public:
 
 #ifdef UNIT_TESTING
 	// Constructors used during Unit Testing
-	Config(unsigned fontSz_, unsigned hMaxSyms_, unsigned vMaxSyms_, unsigned threshold4Blank_,
-		   double kSdevFg_, double kSdevEdge_, double kSdevBg_, double kContrast_,
-		   double kCosAngleMCs_, double kMCsOffset_, double kGlyphWeight_) :
-		fontSz(fontSz_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_),
-		threshold4Blank(threshold4Blank_),
+	Config(unsigned fontSz_ = 0U,
+		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
+		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
+		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
+		   unsigned hMaxSyms_ = 0U, unsigned vMaxSyms_ = 0U) :
+		fontSz(fontSz_),
 		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-		kCosAngleMCs(kCosAngleMCs_), kMCsOffset(kMCsOffset_), kGlyphWeight(kGlyphWeight_) {}
+		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
+		threshold4Blank(threshold4Blank_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
 #endif
 };
 

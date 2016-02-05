@@ -11,7 +11,7 @@
 #include "testMain.h"
 #include "controller.h"
 #include "config.h"
-#include "fontEngine.cpp" // including CPP, to recompile #if(n)def UNIT_TESTING regions
+#include "fontEngine.h"
 
 #include <iostream>
 
@@ -20,8 +20,10 @@ using namespace boost;
 
 BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile) {
+		ut::Fixt f;
 		try {
-			Controller c;
+			Config cfg;
+			Controller c(cfg);
 			string name;
 			FontEngine fe(c); // might throw runtime_error
 
@@ -43,8 +45,10 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(CorrectFontFile) {
+		ut::Fixt f;
 		try {
-			Controller c;
+			Config cfg;
+			Controller c(cfg);
 			FontEngine fe(c); // might throw runtime_error
 
 			bool correct = false;
@@ -62,8 +66,10 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontSize) {
+		ut::Fixt f;
 		try {
-			Controller c;
+			Config cfg;
+			Controller c(cfg);
 			bool correct = false;
 			unsigned unEncs = 0U, encIdx = 0U;
 			string enc, fname;
@@ -112,8 +118,10 @@ BOOST_AUTO_TEST_SUITE(FontEngine_Tests)
 	}
 
 	BOOST_AUTO_TEST_CASE(CompleteFontConfig) {
+		ut::Fixt f;
 		try {
-			Controller c;
+			Config cfg;
+			Controller c(cfg);
 			FontEngine fe(c); // might throw runtime_error
 
 			BOOST_REQUIRE_NO_THROW(fe.newFont("res\\BPmonoBold.ttf")); // UNICODE

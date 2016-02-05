@@ -11,15 +11,6 @@
 #ifndef H_CONTROLLER
 #define H_CONTROLLER
 
-#ifdef UNIT_TESTING
-class Controller final {
-public:
-	void reportGlyphProgress(double progress) const {}
-	void reportTransformationProgress(double progress) const {}
-};
-
-#else // UNIT_TESTING not defined
-
 #include "ui.h"
 #include "transform.h"
 
@@ -45,8 +36,8 @@ class Controller final {
 	// Methods for initialization
 	static Img& getImg();
 	FontEngine& getFontEngine() const;
-	MatchEngine& getMatchEngine(Config &cfg_) const;
-	Transformer& getTransformer(Config &cfg_) const;
+	MatchEngine& getMatchEngine(const Config &cfg_) const;
+	Transformer& getTransformer(const Config &cfg_) const;
 	Comparator& getComparator() const;
 	ControlPanel& getControlPanel(Config &cfg_);
 
@@ -97,6 +88,5 @@ public:
 	void performTransformation();
 	void reportTransformationProgress(double progress) const;
 };
-#endif // UNIT_TESTING not defined
 
 #endif

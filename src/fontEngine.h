@@ -109,7 +109,7 @@ public:
 
 // FontEngine class wraps some necessary FreeType functionality.
 class FontEngine final {
-	const Controller &ctrler;				// data & views manager
+	const Controller &ctrler;		// data & views manager
 
 	FT_Library library	= nullptr;	// the FreeType lib
 	FT_Face face		= nullptr;	// a loaded font

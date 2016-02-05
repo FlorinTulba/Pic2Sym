@@ -26,14 +26,14 @@ class Controller; // data & views manager
 class Transformer final {
 	const Controller &ctrler;			// data & views manager
 
-	Config &cfg;				// general configuration; keep it before me
+	const Config &cfg;				// general configuration; keep it before me
 	MatchEngine &me;			// approximating patches; keep it after cfg
 	Img &img;					// current image to process
 
 	cv::Mat result;				// the result of the transformation
 
 public:
-	Transformer(const Controller &ctrler_, Config &cfg_, MatchEngine &me_, Img &img_); // use initial configuration
+	Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_); // use initial configuration
 
 	void run();				// applies the configured transformation onto current/new image
 

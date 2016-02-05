@@ -8,6 +8,8 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "ui.h"
 #include "dlgs.h"
 #include "controller.h"
@@ -21,7 +23,6 @@ const String Comparator::transpTrackName = "Transparency %";
 const double Comparator::defaultTransparency = .25;
 const Mat Comparator::noImage = imread("res/NoImage.jpg");
 
-#ifndef UNIT_TESTING
 const String CmapInspect::pageTrackName = "Cmap Page:";
 const Size CmapInspect::pageSz(640, 480);
 
@@ -43,7 +44,6 @@ const String ControlPanel::largerSymTrName = "Larger Symbols:";
 const String ControlPanel::thresh4BlanksTrName = "Blanks below:";
 const String ControlPanel::outWTrName = "Max horizontally:";
 const String ControlPanel::outHTrName = "Max vertically:";
-#endif // UNIT_TESTING not defined
 
 CvWin::CvWin(const Controller &ctrler_, const String &winName_) :
 		ctrler(ctrler_), winName(winName_) {
@@ -126,7 +126,6 @@ void Comparator::updateTransparency(int newTransp, void *userdata) {
 	pComp->setTransparency((double)newTransp/trackMax);
 }
 
-#ifndef UNIT_TESTING
 CmapInspect::CmapInspect(const Controller &ctrler_) : CvWin(ctrler_, "Charmap View"),
 		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
 	createTrackbar(pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,

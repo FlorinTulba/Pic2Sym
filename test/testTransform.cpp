@@ -11,32 +11,29 @@
 #include "testMain.h"
 #include <fstream>
 
-#include "transform.cpp" // including CPP, to recompile #if(n)def UNIT_TESTING regions
-#include "match.cpp" // including CPP, to recompile #if(n)def UNIT_TESTING regions
-#include "ui.cpp"
-#include "misc.cpp"
+#include "transform.h"
+#include "match.h"
+#include "ui.h"
+#include "misc.h"
+#include "controller.h"
 
 BOOST_AUTO_TEST_SUITE(Transform_Tests)
 BOOST_AUTO_TEST_CASE(Check_symbols_set) {
-	Config cfg(10U, 500U, 300U, 0U, 1., 1., 1., 0., 0., 0., 0.);
-	Img img;
-	Controller c;
-	FontEngine fe(c);
-	MatchEngine me(cfg, fe);
-	Transformer t(c, cfg, me, img);
+	ut::Fixt f;
+	Config cfg(10U, 1., 1., 1., 0., 0., 0., 0., 0U, 500U, 300U);
+	Controller c(cfg);
+// 	FontEngine fe(c);
+// 	MatchEngine me(cfg, fe);
+// 	Img img;
+// 	Transformer t(c, cfg, me, img);
 
 	bool correct = false;
 	const unsigned sz = cfg.getFontSz();
 	const double sz2 = (double)sz*sz, sz_1 = sz - 1.;
 
-	BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf"));
-	//BOOST_REQUIRE_NO_THROW(correct = fe.newFont("C:\\Windows\\Fonts\\courbd.ttf"));
-	BOOST_REQUIRE(correct);
-
-	BOOST_REQUIRE_NO_THROW(correct = fe.setEncoding("APPLE_ROMAN"));
-	BOOST_REQUIRE(correct);
-
-	BOOST_REQUIRE_NO_THROW(fe.setFontSz(sz));
+	BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
+	BOOST_REQUIRE_NO_THROW(c.newFontEncoding(1)); // APPLE_ROMAN
+	BOOST_REQUIRE_NO_THROW(c.newFontSize(sz));
 
 // 	me.updateSymbols();
 // 

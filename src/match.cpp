@@ -16,20 +16,19 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
-using namespace cv;
 using namespace boost;
 
 namespace {
-	// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
-	Mat toMat(const PixMapSym &pms, unsigned fontSz) {
-		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
+	// Conversion PixMapSym -> cv::Mat of type double with range [0..1] instead of [0..255]
+	cv::Mat toMat(const PixMapSym &pms, unsigned fontSz) {
+		cv::Mat result((int)fontSz, (int)fontSz, CV_8UC1, cv::Scalar(0U));
 
 		int firstRow = (int)fontSz-(int)pms.top-1;
-		Mat region(result,
-				   Range(firstRow, firstRow+(int)pms.rows),
-				   Range((int)pms.left, (int)(pms.left+pms.cols)));
+		cv::Mat region(result,
+				   cv::Range(firstRow, firstRow+(int)pms.rows),
+				   cv::Range((int)pms.left, (int)(pms.left+pms.cols)));
 
-		const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
+		const cv::Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
 		pmsData.copyTo(region);
 
 		static const double INV_255 = 1./255;
@@ -38,9 +37,9 @@ namespace {
 		return result;
 	}
 
-	pair<double, double> averageFgBg(const Mat &patch, const Mat &fgMask, const Mat &bgMask) {
-		const Scalar miuFg = mean(patch, fgMask),
-			miuBg = mean(patch, bgMask);
+	pair<double, double> averageFgBg(const cv::Mat &patch, const cv::Mat &fgMask, const cv::Mat &bgMask) {
+		const cv::Scalar miuFg = cv::mean(patch, fgMask),
+			miuBg = cv::mean(patch, bgMask);
 		return make_pair(*miuFg.val, *miuBg.val);
 	}
 
@@ -116,7 +115,7 @@ BestMatch& BestMatch::operator=(const BestMatch &other) {
 #endif // _DEBUG
 
 SymData::SymData(const unsigned long code_, const double pixelSum_,
-				 const Point2d &mc_, const MatArray &symAndMasks_) :
+				 const cv::Point2d &mc_, const MatArray &symAndMasks_) :
 		code(code_), pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {
 }
 
@@ -125,42 +124,42 @@ void MatchParams::resetSymData() {
 	glyphWeight = fg = bg = sdevFg = sdevBg = sdevEdge = none;
 }
 
-void MatchParams::computeFg(const Mat &patch, const SymData &symData) {
+void MatchParams::computeFg(const cv::Mat &patch, const SymData &symData) {
 	if(fg)
 		return;
-	fg = *mean(patch, symData.symAndMasks[SymData::FG_MASK_IDX]).val;
+	fg = *cv::mean(patch, symData.symAndMasks[SymData::FG_MASK_IDX]).val;
 }
 
-void MatchParams::computeBg(const Mat &patch, const SymData &symData) {
+void MatchParams::computeBg(const cv::Mat &patch, const SymData &symData) {
 	if(bg)
 		return;
-	bg = *mean(patch, symData.symAndMasks[SymData::BG_MASK_IDX]).val;
+	bg = *cv::mean(patch, symData.symAndMasks[SymData::BG_MASK_IDX]).val;
 }
 
-void MatchParams::computeSdev(const Mat &patch, const Mat &mask,
+void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
 					 optional<double> &miu, optional<double> &sdev) {
 	if(sdev)
 		return;
 
 	if(miu) {
-		sdev = norm(patch - miu.value(), NORM_L2, mask) / sqrt(countNonZero(mask));
+		sdev = cv::norm(patch - miu.value(), cv::NORM_L2, mask) / sqrt(countNonZero(mask));
 	} else {
-		Scalar miu_, sdev_;
+		cv::Scalar miu_, sdev_;
 		meanStdDev(patch, miu_, sdev_, mask);
 		miu = *miu_.val;
 		sdev = *sdev_.val;
 	}
 }
 
-void MatchParams::computeSdevFg(const Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevFg(const cv::Mat &patch, const SymData &symData) {
 	computeSdev(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg, sdevFg);
 }
 
-void MatchParams::computeSdevBg(const Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevBg(const cv::Mat &patch, const SymData &symData) {
 	computeSdev(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg, sdevBg);
 }
 
-void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) {
 	if(sdevEdge)
 		return;
 
@@ -176,14 +175,14 @@ void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 
 	const double diffFgBg = fg.value() - bg.value();
 	if(diffFgBg == 0.) {
-		sdevEdge = norm(patch - bg.value(), NORM_L2, edgeMask) / sqrt(cnz);
+		sdevEdge = cv::norm(patch - bg.value(), cv::NORM_L2, edgeMask) / sqrt(cnz);
 		return;
 	}
 
-	const Mat approximationOfPatch =
+	const cv::Mat approximationOfPatch =
 		symData.symAndMasks[SymData::GLYPH_IDX] * diffFgBg + bg.value();
 
-	sdevEdge = norm(patch, approximationOfPatch, NORM_L2, edgeMask) / sqrt(cnz);
+	sdevEdge = cv::norm(patch, approximationOfPatch, cv::NORM_L2, edgeMask) / sqrt(cnz);
 }
 
 void MatchParams::computeRhoApproxSym(const SymData &symData, const CachedData &cachedData) {
@@ -193,19 +192,19 @@ void MatchParams::computeRhoApproxSym(const SymData &symData, const CachedData &
 	glyphWeight = symData.pixelSum / cachedData.sz2;
 }
 
-void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData) {
+void MatchParams::computeMcPatch(const cv::Mat &patch, const CachedData &cachedData) {
 	if(mcPatch)
 		return;
 
 	const double patchSum = *sum(patch).val;
-	Mat temp, temp1;
+	cv::Mat temp, temp1;
 	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 	reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
 
-	mcPatch = Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec)) / patchSum;
+	mcPatch = cv::Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec)) / patchSum;
 }
 
-void MatchParams::computeMcApproxSym(const Mat &patch, const SymData &symData,
+void MatchParams::computeMcApproxSym(const cv::Mat &patch, const SymData &symData,
 									 const CachedData &cachedData) {
 	if(mcGlyph)
 		return;
@@ -221,7 +220,7 @@ void MatchParams::computeMcApproxSym(const Mat &patch, const SymData &symData,
 	if(denominator == 0.)
 		mcGlyph = cachedData.patchCenter;
 	else
-		mcGlyph = (k * symData.mc + Point2d(delta, delta)) / denominator;
+		mcGlyph = (k * symData.mc + cv::Point2d(delta, delta)) / denominator;
 }
 
 void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
@@ -232,28 +231,28 @@ void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
 	params = params_;
 }
 
-double FgMatch::assessMatch(const Mat &patch,
+double FgMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevFg(patch, symData);
 	return pow(1. - mp.sdevFg.value()/CachedData::sdevMax, k);
 }
 
-double BgMatch::assessMatch(const Mat &patch,
+double BgMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevBg(patch, symData);
 	return pow(1. - mp.sdevBg.value()/CachedData::sdevMax, k);
 }
 
-double EdgeMatch::assessMatch(const Mat &patch,
+double EdgeMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevEdge(patch, symData);
 	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMax, k);
 }
 
-double BetterContrast::assessMatch(const Mat &patch,
+double BetterContrast::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
@@ -272,7 +271,7 @@ double BetterContrast::assessMatch(const Mat &patch,
 	return pow(contrast / minimalContrast, k);
 }
 
-double GravitationalSmoothness::assessMatch(const Mat &patch,
+double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeMcPatch(patch, cachedData);
@@ -280,35 +279,35 @@ double GravitationalSmoothness::assessMatch(const Mat &patch,
 
 	// best glyph location is when mc-s are near to each other
 	// range 0 .. mcDistMax = 1.42*fontSz_1, best when 0
-	const double mcsOffset = norm(mp.mcPatch.value() - mp.mcGlyph.value());
+	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
 	// <=1 for mcsOffset >= preferredMaxMcDist;  >1 otherwise
 	
 	return pow(1. + (cachedData.preferredMaxMcDist - mcsOffset)/cachedData.mcDistMax, k);
 }
 
-double DirectionalSmoothness::assessMatch(const Mat &patch,
+double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
-	static const Point2d ORIGIN; // (0, 0)
+	static const cv::Point2d ORIGIN; // (0, 0)
 
 	mp.computeMcPatch(patch, cachedData);
 	mp.computeMcApproxSym(patch, symData, cachedData);
 
 	// best glyph location is when mc-s are near to each other
 	// range 0 .. mcDistMax = 1.42*fontSz_1, best when 0
-	const double mcsOffset = norm(mp.mcPatch.value() - mp.mcGlyph.value());
+	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
 	// <=1 for mcsOffset >= preferredMaxMcDist;  >1 otherwise
 
-	const Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
-	const Point2d relMcGlyph = mp.mcGlyph.value() - cachedData.patchCenter;
+	const cv::Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
+	const cv::Point2d relMcGlyph = mp.mcGlyph.value() - cachedData.patchCenter;
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1
 	// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
 	// -1..1 range, best when 1
 	double cosAngleMCs = 0.;
 	if(relMcGlyph != ORIGIN && relMcPatch != ORIGIN) // avoid DivBy0
-		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (norm(relMcGlyph) * norm(relMcPatch));
+		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (cv::norm(relMcGlyph) * cv::norm(relMcPatch));
 
 	// <=1 for |angleMCs| >= 45;  >1 otherwise
 	// lessen the importance for small mcsOffset-s (< preferredMaxMcDist)
@@ -316,7 +315,7 @@ double DirectionalSmoothness::assessMatch(const Mat &patch,
 			   k * min(mcsOffset, cachedData.preferredMaxMcDist) / cachedData.preferredMaxMcDist);
 }
 
-double LargerSym::assessMatch(const Mat &patch,
+double LargerSym::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeRhoApproxSym(symData, cachedData);
@@ -332,9 +331,9 @@ void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 
 	preferredMaxMcDist = 3.*sz/8;
 	mcDistMax = sz_1*sqrt(2);
-	patchCenter = Point2d(sz_1, sz_1) / 2;
+	patchCenter = cv::Point2d(sz_1, sz_1) / 2;
 
-	consec = Mat(1, sz, CV_64FC1);
+	consec = cv::Mat(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
 
 	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
@@ -384,13 +383,13 @@ void MatchEngine::updateSymbols() {
 	const int szGlyph[] = { 2, sz, sz },
 		szMasks[] = { 4, sz, sz };
 	for(const auto &pms : fe.symsSet()) {
-		Mat negGlyph, edgeMask;
-		const Mat glyph = toMat(pms, sz);
+		cv::Mat negGlyph, edgeMask;
+		const cv::Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
 		minMaxIdx(glyph, &minVal, &maxVal);
-		const Mat fgMask = (glyph > (minVal + STILL_FG * (maxVal-minVal))),
+		const cv::Mat fgMask = (glyph > (minVal + STILL_FG * (maxVal-minVal))),
 				bgMask = (glyph < (minVal + STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
@@ -434,26 +433,26 @@ void MatchEngine::getReady() {
 			aspects.push_back(pAspect);
 }
 
-Mat MatchEngine::approxPatch(const Mat &patch_, BestMatch &best) {
+cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 	const bool isColor = (patch_.channels() > 1);
-	Mat patchColor, patch, patchResult;
+	cv::Mat patchColor, patch, patchResult;
 	if(isColor) {
 		patchColor = patch_;
-		cvtColor(patchColor, patch, COLOR_RGB2GRAY);
+		cv::cvtColor(patchColor, patch, cv::COLOR_RGB2GRAY);
 	} else patch = patch_;
 	patch.convertTo(patch, CV_64FC1);
 
 	findBestMatch(patch, best);
 
 	const auto &matricesForBest = symsSet[best.symIdx].symAndMasks;
-	const Mat &bestGlyph = matricesForBest[SymData::GLYPH_IDX];
+	const cv::Mat &bestGlyph = matricesForBest[SymData::GLYPH_IDX];
 
 	if(isColor) {
-		const Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
+		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
 				&bgMask = matricesForBest[SymData::BG_MASK_IDX];
 
-		vector<Mat> channels;
-		split(patchColor, channels);
+		vector<cv::Mat> channels;
+		cv::split(patchColor, channels);
 
 		double miuFg, miuBg, newDiff, diffFgBg = 0.;
 		for(auto &ch : channels) {
@@ -468,13 +467,13 @@ Mat MatchEngine::approxPatch(const Mat &patch_, BestMatch &best) {
 		}
 
 		if(diffFgBg < 3.*cfg.getBlankThreshold())
-			patchResult = mean(patchColor);
+			patchResult = cv::mean(patchColor);
 		else
-			merge(channels, patchResult);
+			cv::merge(channels, patchResult);
 
 	} else { // grayscale result
 		if(abs(*best.params.fg - *best.params.bg) < cfg.getBlankThreshold())
-			patchResult = mean(patch);
+			patchResult = cv::mean(patch);
 		else
 			bestGlyph.convertTo(patchResult, CV_8UC1,
 							*best.params.fg - *best.params.bg,
@@ -483,7 +482,7 @@ Mat MatchEngine::approxPatch(const Mat &patch_, BestMatch &best) {
 	return patchResult;
 }
 
-void MatchEngine::findBestMatch(const Mat &patch, BestMatch &best) {
+void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 	MatchParams mp;
 	unsigned idx = 0U;
 	for(const auto &symData : symsSet) {

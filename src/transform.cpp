@@ -11,7 +11,6 @@
 #include "transform.h"
 
 #include "misc.h"
-#include "dlgs.h"
 #include "controller.h"
 
 #include <sstream>
@@ -24,10 +23,9 @@
 #include <boost/filesystem/operations.hpp>
 
 using namespace std;
-using namespace cv;
 using namespace boost::filesystem;
 
-Transformer::Transformer(const Controller &ctrler_, Config &cfg_, MatchEngine &me_, Img &img_) :
+Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
 	// Ensure there is an Output folder
 	path outputFolder = cfg.getWorkDir();
@@ -38,7 +36,7 @@ Transformer::Transformer(const Controller &ctrler_, Config &cfg_, MatchEngine &m
 void Transformer::run() {
 	me.updateSymbols(); // throws for invalid cmap/size
 
-	const Mat resized = img.resized(cfg); // throws when no image
+	const cv::Mat resized = img.resized(cfg); // throws when no image
 	ctrler.reportTransformationProgress(0.); // keep it after img.resized, to display updated resized version as comparing image
 
 	ostringstream oss;
@@ -56,7 +54,7 @@ void Transformer::run() {
 	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
 
 	if(exists(resultFile)) {
-		result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
+		result = cv::imread(resultFile.string(), cv::ImreadModes::IMREAD_UNCHANGED);
 		ctrler.reportTransformationProgress(1.);
 
 		infoMsg("This image has already been transformed under these settings.\n"
@@ -83,21 +81,21 @@ void Transformer::run() {
 #endif
 	
 	const unsigned sz = cfg.getFontSz();
-	result = Mat(resized.rows, resized.cols, resized.type());
+	result = cv::Mat(resized.rows, resized.cols, resized.type());
 
 	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
 		ctrler.reportTransformationProgress((double)r/h);
 
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
-			const Mat patch(resized, Range(r, r+sz), Range(c, c+sz));
+			const cv::Mat patch(resized, cv::Range(r, r+sz), cv::Range(c, c+sz));
 
 #ifdef _DEBUG
 			BestMatch best(isUnicode);
 #else
 			BestMatch best;
 #endif
-			const Mat approximation = me.approxPatch(patch, best);
-			approximation.copyTo(Mat(result, Range(r, r+sz), Range(c, c+sz)));
+			const cv::Mat approximation = me.approxPatch(patch, best);
+			approximation.copyTo(cv::Mat(result, cv::Range(r, r+sz), cv::Range(c, c+sz)));
 
 #ifdef _DEBUG
 			ofs<<r/sz<<COMMA<<c/sz<<COMMA<<best<<endl;

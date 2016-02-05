@@ -8,6 +8,8 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "dlgs.h"
 #include "misc.h"
 
@@ -260,3 +262,5 @@ bool SelectFont::promptForUserChoice() {
 
 	return true;
 }
+
+#endif // UNIT_TESTING not defined

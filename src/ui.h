@@ -18,6 +18,45 @@
 
 class Controller; // The views defined below interact with this class
 
+#ifdef UNIT_TESTING
+class Comparator {
+public:
+	Comparator(const Controller&) {}
+	void setTitle(const std::string&) const {}
+	void setOverlay(const std::string&, int = 0) const {}
+	void setStatus(const std::string&, int = 0) const {}
+	void setPos(int, int) const {}
+	virtual void permitResize(bool = true) const {}
+	void resize(int, int) const {}
+	static void updateTransparency(int, void*) {}
+	void setReference(const cv::Mat&) {}
+	void setResult(const cv::Mat&) {}
+};
+
+class CmapInspect {
+public:
+	CmapInspect(const Controller&) {}
+	void setTitle(const std::string&) const {}
+	void setOverlay(const std::string&, int = 0) const {}
+	void setStatus(const std::string&, int = 0) const {}
+	void setPos(int, int) const {}
+	virtual void permitResize(bool = true) const {}
+	void resize(int, int) const {}
+	static void updatePageIdx(int, void*) {}
+	void updatePagesCount(unsigned) {}
+	void updateGrid() {}
+	void showPage(unsigned) {}
+};
+
+class ControlPanel {
+public:
+	ControlPanel(Controller&, const Config&) {}
+	void updateEncodingsCount(unsigned) {}
+	bool encMaxHack() const { return false; }
+};
+
+#else // UNIT_TESTING not defined
+
 /*
 CvWin - base class for Comparator & CmapInspect from below.
 Allows setting title, overlay, status, location, size and resizing properties.
@@ -67,7 +106,6 @@ public:
 	void setResult(const cv::Mat &result_);
 };
 
-#ifndef UNIT_TESTING // Following classes are not needed during Unit Testing
 /*
 Class for displaying the symbols from the current charmap (cmap).
 When there are lots of symbols, they are divided into pages which
@@ -193,6 +231,7 @@ public:
 	void updateEncodingsCount(unsigned uniqueEncodings);	// puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above
 };
-#endif // UNIT_TESTING not defined
+
+#endif // UNIT_TESTING
 
 #endif

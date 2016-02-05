@@ -269,10 +269,6 @@ private:
 
 	std::vector<MatchAspect*> aspects;	// enabled aspects
 
-#ifdef UNIT_TESTING
-public:
-#endif // letting 'cachedData' & 'findBestMatch' public for UNIT_TESTING
-
 	CachedData cachedData;	// data precomputed by getReady before performing the matching series
 
 	// Determines best match of 'patch' compared to the elements from 'symsSet'
