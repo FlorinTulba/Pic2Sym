@@ -8,8 +8,6 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#ifndef UNIT_TESTING
-
 #include "ui.h"
 #include "dlgs.h"
 #include "controller.h"
@@ -384,4 +382,3 @@ void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
 	updatingEncMax = false;
 	setTrackbarPos(encodingTrName, nullptr, 0);
 }
-#endif // UNIT_TESTING not defined

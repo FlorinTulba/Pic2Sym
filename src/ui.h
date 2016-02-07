@@ -8,54 +8,18 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
+#ifdef UNIT_TESTING
+#	include "../test/mockUi.h"
+
+#else // UNIT_TESTING not defined
+
 #ifndef H_UI
 #define H_UI
 
 #include "transform.h"
-
-#include <memory>
 #include <opencv2/core.hpp>
 
 class Controller; // The views defined below interact with this class
-
-#ifdef UNIT_TESTING
-class Comparator {
-public:
-	Comparator(const Controller&) {}
-	void setTitle(const std::string&) const {}
-	void setOverlay(const std::string&, int = 0) const {}
-	void setStatus(const std::string&, int = 0) const {}
-	void setPos(int, int) const {}
-	virtual void permitResize(bool = true) const {}
-	void resize(int, int) const {}
-	static void updateTransparency(int, void*) {}
-	void setReference(const cv::Mat&) {}
-	void setResult(const cv::Mat&) {}
-};
-
-class CmapInspect {
-public:
-	CmapInspect(const Controller&) {}
-	void setTitle(const std::string&) const {}
-	void setOverlay(const std::string&, int = 0) const {}
-	void setStatus(const std::string&, int = 0) const {}
-	void setPos(int, int) const {}
-	virtual void permitResize(bool = true) const {}
-	void resize(int, int) const {}
-	static void updatePageIdx(int, void*) {}
-	void updatePagesCount(unsigned) {}
-	void updateGrid() {}
-	void showPage(unsigned) {}
-};
-
-class ControlPanel {
-public:
-	ControlPanel(Controller&, const Config&) {}
-	void updateEncodingsCount(unsigned) {}
-	bool encMaxHack() const { return false; }
-};
-
-#else // UNIT_TESTING not defined
 
 /*
 CvWin - base class for Comparator & CmapInspect from below.
@@ -68,8 +32,9 @@ protected:
 	const cv::String winName;	// window's handle
 	cv::Mat content;			// what to display 
 
-public:
 	CvWin(const Controller &ctrler_, const cv::String &winName_);
+
+public:
 	virtual ~CvWin() = 0 {}
 
 	void setTitle(const std::string &title) const;
@@ -86,7 +51,7 @@ View which permits comparing the original image with the transformed one.
 A slider adjusts the transparency of the resulted image,
 so that the original can be more or less visible.
 */
-class Comparator : public CvWin {
+class Comparator final : public CvWin {
 	static const cv::String transpTrackName;	// slider's handle
 	static const double defaultTransparency;	// used transparency when the result appears
 	static const int trackMax = 100;			// transparency range 0..100
@@ -111,7 +76,7 @@ Class for displaying the symbols from the current charmap (cmap).
 When there are lots of symbols, they are divided into pages which
 can be browsed using the page slider.
 */
-class CmapInspect : public CvWin {
+class CmapInspect final : public CvWin {
 	static const cv::String pageTrackName;	// page slider handle
 	static const cv::Size pageSz;			// 640x480
 
@@ -152,7 +117,7 @@ Thus, range 0..1 could also mean there's only one value (0) and the 1 will be ig
 Furthermore, range 0..x can be invalid if the actual range is [x+1 .. y].
 In this latter case an error message will report the problem and the user needs to correct it.
 */
-class ControlPanel {
+class ControlPanel final {
 	/*
 	Helper to convert settings from actual ranges to the ones used by the sliders.
 	For now, flexibility in choosing the conversion rules is more important than design,
@@ -232,6 +197,6 @@ public:
 	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above
 };
 
-#endif // UNIT_TESTING
+#endif // H_UI
 
-#endif
+#endif // UNIT_TESTING not defined

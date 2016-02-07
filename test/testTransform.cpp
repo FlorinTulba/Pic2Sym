@@ -24,10 +24,8 @@ BOOST_FIXTURE_TEST_SUITE(Transform_Tests, Fixt)
 		BOOST_TEST_MESSAGE("Running Check_symbols_set ...");
 		Config cfg(10U, 1., 1., 1., 0., 0., 0., 0., 0U, 500U, 300U);
 		Controller c(cfg);
-		const unsigned sz = cfg.getFontSz();
 
 		BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
 		BOOST_REQUIRE_NO_THROW(c.newFontEncoding(1)); // APPLE_ROMAN
-		BOOST_REQUIRE_NO_THROW(c.newFontSize(sz));
 	}
 BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests

@@ -13,8 +13,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#define UNIT_TESTING
-
 namespace ut { // unit testing namespace
 
 	// Used for a global fixture to reinitialize Controller's fields for each test

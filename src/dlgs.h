@@ -8,34 +8,17 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#ifndef H_DLGS
-#define H_DLGS
-
-#include <string>
-
 #ifdef UNIT_TESTING
-class FileOpen final {
-public:
-	FileOpen() {}
-	bool promptForUserChoice() { return true; }
-	const std::string& selection() const { static std::string result; return result; }
-	void reset() {}
-};
-
-class SelectFont final {
-public:
-	SelectFont() {}
-	bool promptForUserChoice() { return true; }
-	const std::string& selection() const { static std::string result; return result; }
-	void reset() {}
-	bool bold() const { return false; }
-	bool italic() const { return false; }
-};
+#	include "../test/mockDlgs.h"
 
 #else // UNIT_TESTING not defined
 
+#ifndef H_DLGS
+#define H_DLGS
+
 #include <Windows.h>
 #include <tchar.h>
+#include <string>
 
 // Dlg is the base class for the standard Windows dialogs from below
 class Dlg abstract {
@@ -80,6 +63,6 @@ public:
 	bool italic() const { return isItalic; }
 };
 
-#endif // UNIT_TESTING not defined
-
 #endif // H_DLGS
+
+#endif // UNIT_TESTING not defined

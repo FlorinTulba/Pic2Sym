@@ -46,6 +46,13 @@ public:
 	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
 
 	Config(const std::string &appLaunchPath); // using defaultCfg.txt
+	
+	// Constructor defined only within UnitTesting project
+	Config(unsigned fontSz_ = 0U,
+		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
+		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
+		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
+		   unsigned hMaxSyms_ = 0U, unsigned vMaxSyms_ = 0U);
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
@@ -81,19 +88,6 @@ public:
 
 	const double& get_kGlyphWeight() const { return kGlyphWeight; }
 	void set_kGlyphWeight(double kGlyphWeight_) { kGlyphWeight = kGlyphWeight_; }
-
-#ifdef UNIT_TESTING
-	// Constructors used during Unit Testing
-	Config(unsigned fontSz_ = 0U,
-		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
-		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
-		   unsigned hMaxSyms_ = 0U, unsigned vMaxSyms_ = 0U) :
-		fontSz(fontSz_),
-		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
-		threshold4Blank(threshold4Blank_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
-#endif
 };
 
 #endif

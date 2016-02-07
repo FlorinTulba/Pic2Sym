@@ -11,26 +11,6 @@
 #include "controller.h"
 #include "misc.h"
 
-#ifdef UNIT_TESTING
-
-#include "../test/testMain.h"
-
-#define GET_FIELD(FieldType, ...) \
-	static std::shared_ptr<FieldType> pField; \
-	if(ut::InitController::init##FieldType || !pField) { \
-		pField = std::make_shared<FieldType>(__VA_ARGS__); \
-		ut::InitController::init##FieldType = false; \
-		} \
-	return *pField;
-
-#else // UNIT_TESTING not defined
-
-#define GET_FIELD(FieldType, ...) \
-	static FieldType field(__VA_ARGS__); \
-	return field;
-
-#endif // UNIT_TESTING
-
 #include <Windows.h>
 #include <sstream>
 
@@ -40,30 +20,6 @@
 using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
-
-Img& Controller::getImg() {
-	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
-}
-
-FontEngine& Controller::getFontEngine() const {
-	GET_FIELD(FontEngine, *this);
-}
-
-MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine());
-}
-
-Transformer& Controller::getTransformer(const Config &cfg_) const {
-	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
-}
-
-Comparator& Controller::getComparator() const {
-	GET_FIELD(Comparator, *this);
-}
-
-ControlPanel& Controller::getControlPanel(Config &cfg_) {
-	GET_FIELD(ControlPanel, *this, cfg_);
-}
 
 Controller::Controller(Config &cfg_) :
 		img(getImg()), fe(getFontEngine()), cfg(cfg_),
@@ -328,25 +284,56 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 	}
 }
 
-void Controller::reportGlyphProgress(double progress) const {
-#ifndef UNIT_TESTING
-	hourGlass(progress, "Processing glyphs. Please wait");
-#endif
-}
-
-void Controller::reportTransformationProgress(double progress) const {
-#ifndef UNIT_TESTING
-	hourGlass(progress, "Transforming image. Please wait");
-	if(progress == 0.)
-		comp.setReference(img.getResized()); // display 'original' when starting transformation
-	else if(progress == 1.)
-		comp.setResult(t.getResult()); // display the result at the end of the transformation
-#endif
-}
-
 void Controller::performTransformation() {
 	if(!validState())
 		return;
 
 	t.run();
 }
+
+// Methods from below have different definitions for UnitTesting project
+#ifndef UNIT_TESTING
+
+void Controller::reportGlyphProgress(double progress) const {
+	hourGlass(progress, "Processing glyphs. Please wait");
+}
+
+void Controller::reportTransformationProgress(double progress) const {
+	hourGlass(progress, "Transforming image. Please wait");
+	if(progress == 0.)
+		comp.setReference(img.getResized()); // display 'original' when starting transformation
+	else if(progress == 1.)
+		comp.setResult(t.getResult()); // display the result at the end of the transformation
+}
+
+#define GET_FIELD(FieldType, ...) \
+	static FieldType field(__VA_ARGS__); \
+	return field;
+
+Img& Controller::getImg() {
+	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
+}
+
+FontEngine& Controller::getFontEngine() const {
+	GET_FIELD(FontEngine, *this);
+}
+
+MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine());
+}
+
+Transformer& Controller::getTransformer(const Config &cfg_) const {
+	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
+}
+
+Comparator& Controller::getComparator() const {
+	GET_FIELD(Comparator, *this);
+}
+
+ControlPanel& Controller::getControlPanel(Config &cfg_) {
+	GET_FIELD(ControlPanel, *this, cfg_);
+}
+
+#undef GET_FIELD
+
+#endif // UNIT_TESTING not defined
