@@ -25,6 +25,12 @@ class Img final {
 	cv::Mat source, res;				// the original & resized image
 	bool color = false;					// color / grayscale
 
+
+#ifdef UNIT_TESTING
+public: // Providing reset(Mat) as public for Unit Testing
+#endif
+	bool reset(const cv::Mat &source_);
+
 public:
 	/*
 	Creates an Img object with default fields.

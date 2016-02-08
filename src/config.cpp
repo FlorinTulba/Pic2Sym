@@ -35,6 +35,8 @@ Config::Config(const string &appLaunchPath) {
 
 	if(!parseCfg())
 		throw invalid_argument("Invalid Default Config!");
+
+	cout<<"Initial config values:"<<endl<<*this<<endl;
 }
 
 bool Config::parseCfg() {
@@ -87,4 +89,74 @@ bool Config::parseCfg() {
 	}
 
 	return correct;
+}
+
+void Config::setFontSz(unsigned fontSz_) {
+	cout<<"fontSz"<<" : "<<fontSz<<" -> "<<fontSz_<<endl;
+	fontSz = fontSz_;
+}
+
+void Config::setMaxHSyms(unsigned syms) {
+	cout<<"hMaxSyms"<<" : "<<hMaxSyms<<" -> "<<syms<<endl;
+	hMaxSyms = syms;
+}
+
+void Config::setMaxVSyms(unsigned syms) {
+	cout<<"vMaxSyms"<<" : "<<vMaxSyms<<" -> "<<syms<<endl;
+	vMaxSyms = syms;
+}
+
+void Config::setBlankThreshold(unsigned threshold4Blank_) {
+	cout<<"threshold4Blank"<<" : "<<threshold4Blank<<" -> "<<threshold4Blank_<<endl;
+	threshold4Blank = threshold4Blank_;
+}
+
+void Config::set_kSdevFg(double kSdevFg_) {
+	cout<<"kSdevFg"<<" : "<<kSdevFg<<" -> "<<kSdevFg_<<endl;
+	kSdevFg = kSdevFg_;
+}
+
+void Config::set_kSdevEdge(double kSdevEdge_) {
+	cout<<"kSdevEdge"<<" : "<<kSdevEdge<<" -> "<<kSdevEdge_<<endl;
+	kSdevEdge = kSdevEdge_;
+}
+
+void Config::set_kSdevBg(double kSdevBg_) {
+	cout<<"kSdevBg"<<" : "<<kSdevBg<<" -> "<<kSdevBg_<<endl;
+	kSdevBg = kSdevBg_;
+}
+
+void Config::set_kContrast(double kContrast_) {
+	cout<<"kContrast"<<" : "<<kContrast<<" -> "<<kContrast_<<endl;
+	kContrast = kContrast_;
+}
+
+void Config::set_kCosAngleMCs(double kCosAngleMCs_) {
+	cout<<"kCosAngleMCs"<<" : "<<kCosAngleMCs<<" -> "<<kCosAngleMCs_<<endl;
+	kCosAngleMCs = kCosAngleMCs_;
+}
+
+void Config::set_kMCsOffset(double kMCsOffset_) {
+	cout<<"kMCsOffset"<<" : "<<kMCsOffset<<" -> "<<kMCsOffset_<<endl;
+	kMCsOffset = kMCsOffset_;
+}
+
+void Config::set_kGlyphWeight(double kGlyphWeight_) {
+	cout<<"kGlyphWeight"<<" : "<<kGlyphWeight<<" -> "<<kGlyphWeight_<<endl;
+	kGlyphWeight = kGlyphWeight_;
+}
+
+ostream& operator<<(ostream &os, const Config &c) {
+	os<<"fontSz"<<" : "<<c.fontSz<<endl;
+	os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
+	os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;
+	os<<"kSdevBg"<<" : "<<c.kSdevBg<<endl;
+	os<<"kContrast"<<" : "<<c.kContrast<<endl;
+	os<<"kMCsOffset"<<" : "<<c.kMCsOffset<<endl;
+	os<<"kCosAngleMCs"<<" : "<<c.kCosAngleMCs<<endl;
+	os<<"kGlyphWeight"<<" : "<<c.kGlyphWeight<<endl;
+	os<<"threshold4Blank"<<" : "<<c.threshold4Blank<<endl;
+	os<<"hMaxSyms"<<" : "<<c.hMaxSyms<<endl;
+	os<<"vMaxSyms"<<" : "<<c.vMaxSyms<<endl;
+	return os;
 }

@@ -46,48 +46,51 @@ public:
 	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
 
 	Config(const std::string &appLaunchPath); // using defaultCfg.txt
-	
-	// Constructor defined only within UnitTesting project
-	Config(unsigned fontSz_ = 0U,
-		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
-		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
-		   unsigned hMaxSyms_ = 0U, unsigned vMaxSyms_ = 0U);
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
 	unsigned getFontSz() const { return fontSz; }
-	void setFontSz(unsigned fontSz_) { fontSz = fontSz_; }
+	void setFontSz(unsigned fontSz_);
 
 	unsigned getMaxHSyms() const { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms) { hMaxSyms = syms; }
+	void setMaxHSyms(unsigned syms);
 
 	unsigned getMaxVSyms() const { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms) { vMaxSyms = syms; }
+	void setMaxVSyms(unsigned syms);
 
 	unsigned getBlankThreshold() const { return threshold4Blank; }
-	void setBlankThreshold(unsigned threshold4Blank_) { threshold4Blank = threshold4Blank_; }
+	void setBlankThreshold(unsigned threshold4Blank_);
 
 	const double& get_kSdevFg() const { return kSdevFg; }
-	void set_kSdevFg(double kSdevFg_) { kSdevFg = kSdevFg_; }
+	void set_kSdevFg(double kSdevFg_);
 
 	const double& get_kSdevEdge() const { return kSdevEdge; }
-	void set_kSdevEdge(double kSdevEdge_) { kSdevEdge = kSdevEdge_; }
+	void set_kSdevEdge(double kSdevEdge_);
 
 	const double& get_kSdevBg() const { return kSdevBg; }
-	void set_kSdevBg(double kSdevBg_) { kSdevBg = kSdevBg_; }
+	void set_kSdevBg(double kSdevBg_);
 
 	const double& get_kContrast() const { return kContrast; }
-	void set_kContrast(double kContrast_) { kContrast = kContrast_; }
+	void set_kContrast(double kContrast_);
 
 	const double& get_kCosAngleMCs() const { return kCosAngleMCs; }
-	void set_kCosAngleMCs(double kCosAngleMCs_) { kCosAngleMCs = kCosAngleMCs_; }
+	void set_kCosAngleMCs(double kCosAngleMCs_);
 
 	const double& get_kMCsOffset() const { return kMCsOffset; }
-	void set_kMCsOffset(double kMCsOffset_) { kMCsOffset = kMCsOffset_; }
+	void set_kMCsOffset(double kMCsOffset_);
 
 	const double& get_kGlyphWeight() const { return kGlyphWeight; }
-	void set_kGlyphWeight(double kGlyphWeight_) { kGlyphWeight = kGlyphWeight_; }
+	void set_kGlyphWeight(double kGlyphWeight_);
+
+	friend std::ostream& operator<<(std::ostream &os, const Config &c);
+#ifdef UNIT_TESTING
+	// Constructor available only within UnitTesting project
+	Config(unsigned fontSz_ = MIN_FONT_SIZE,
+		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
+		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
+		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
+		   unsigned hMaxSyms_ = MAX_H_SYMS, unsigned vMaxSyms_ = MAX_V_SYMS);
+#endif
 };
 
 #endif

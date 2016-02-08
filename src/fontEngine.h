@@ -70,6 +70,22 @@ struct PixMapSym final {
 	void operator=(const PixMapSym&) = delete;
 
 	bool operator==(const PixMapSym &other) const; // useful to detect duplicates
+
+	/*
+	Computes the sum of the pixel values divided by 255.
+	Static to Unit Test it easier.
+	*/
+	static double computeGlyphSum(unsigned char rows_, unsigned char cols_,
+								  const std::vector<unsigned char> &pixels_);
+
+	/*
+	Computing the mass center (mc) of a given glyph and its background.
+	Static to Unit Test it easier.
+	*/
+	static const cv::Point2d computeMc(unsigned sz, const std::vector<unsigned char> &data,
+								unsigned char rows, unsigned char cols,
+								unsigned char left, unsigned char top,
+								double glyphSum, const cv::Mat &consec, const cv::Mat &revConsec);
 };
 
 // Convenience container to hold PixMapSym-s of same size

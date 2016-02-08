@@ -33,14 +33,6 @@ class Controller final {
 	bool hMaxSymsOk, vMaxSymsOk;
 	bool fontSzOk;
 
-	// Methods for initialization
-	static Img& getImg();
-	FontEngine& getFontEngine() const;
-	MatchEngine& getMatchEngine(const Config &cfg_) const;
-	Transformer& getTransformer(const Config &cfg_) const;
-	Comparator& getComparator() const;
-	ControlPanel& getControlPanel(Config &cfg_);
-
 	// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageReguired = true) const;
@@ -53,6 +45,17 @@ class Controller final {
 	Details about the ongoing operation can be added to the title.
 	*/
 	void hourGlass(double progress, const std::string &title = "") const;
+
+#ifdef UNIT_TESTING
+public: // Providing get<field> as public for Unit Testing
+#endif
+	// Methods for initialization
+	static Img& getImg();
+	FontEngine& getFontEngine() const;
+	MatchEngine& getMatchEngine(const Config &cfg_) const;
+	Transformer& getTransformer(const Config &cfg_) const;
+	Comparator& getComparator() const;
+	ControlPanel& getControlPanel(Config &cfg_);
 
 public:
 	Controller(Config &cfg_);	// get the application path as parameter
@@ -85,8 +88,14 @@ public:
 	void reportGlyphProgress(double progress) const;
 
 	// Transformer
-	void performTransformation();
+	bool performTransformation();
 	void reportTransformationProgress(double progress) const;
+
+#ifdef UNIT_TESTING
+	// Methods available only in Unit Testing mode
+	bool newImage(const cv::Mat &imgMat);	// Provide directly a matrix instead of an image
+	bool newFontEncoding(const std::string &encName); // Use an Encoding name
+#endif
 };
 
 #endif

@@ -18,10 +18,13 @@
     <ClCompile Include="test\testFontEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test\testTransform.cpp">
+    <ClCompile Include="test\testMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test\testMain.cpp">
+    <ClCompile Include="test\testController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test\testMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

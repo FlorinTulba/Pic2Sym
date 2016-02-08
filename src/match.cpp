@@ -36,13 +36,6 @@ namespace {
 
 		return result;
 	}
-
-	pair<double, double> averageFgBg(const cv::Mat &patch, const cv::Mat &fgMask, const cv::Mat &bgMask) {
-		const cv::Scalar miuFg = cv::mean(patch, fgMask),
-			miuBg = cv::mean(patch, bgMask);
-		return make_pair(*miuFg.val, *miuBg.val);
-	}
-
 }
 
 const double CachedData::sdevMax = 127.5;
@@ -124,16 +117,18 @@ void MatchParams::resetSymData() {
 	glyphWeight = fg = bg = sdevFg = sdevBg = sdevEdge = none;
 }
 
-void MatchParams::computeFg(const cv::Mat &patch, const SymData &symData) {
-	if(fg)
+void MatchParams::computeMean(const cv::Mat &patch, const cv::Mat &mask, optional<double> &miu) {
+	if(miu)
 		return;
-	fg = *cv::mean(patch, symData.symAndMasks[SymData::FG_MASK_IDX]).val;
+	miu = *cv::mean(patch, mask).val;
+}
+
+void MatchParams::computeFg(const cv::Mat &patch, const SymData &symData) {
+	computeMean(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg);
 }
 
 void MatchParams::computeBg(const cv::Mat &patch, const SymData &symData) {
-	if(bg)
-		return;
-	bg = *cv::mean(patch, symData.symAndMasks[SymData::BG_MASK_IDX]).val;
+	computeMean(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg);
 }
 
 void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
@@ -347,12 +342,6 @@ MatchEngine::MatchEngine(const Config &cfg_, FontEngine &fe_) :
 	lsMatch(cachedData, cfg_) {
 }
 
-#ifdef _DEBUG
-bool MatchEngine::usesUnicode() const {
-	return fe.getEncoding().compare("UNICODE") == 0;
-}
-#endif // _DEBUG
-
 string MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.getFontSz();
 	if(!Config::isFontSizeOk(sz)) {
@@ -419,16 +408,12 @@ MatchEngine::VSymDataCItPair MatchEngine::getSymsRange(unsigned from, unsigned c
 }
 
 void MatchEngine::getReady() {
-	static const vector<MatchAspect*> availAspects {
-		&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
-	};
-	
 	updateSymbols();
 
 	cachedData.update(cfg.getFontSz(), fe);
 
 	aspects.clear();
-	for(auto pAspect : availAspects)
+	for(auto pAspect : getAvailAspects())
 		if(pAspect->enabled())
 			aspects.push_back(pAspect);
 }
@@ -449,7 +434,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 
 	if(isColor) {
 		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
-				&bgMask = matricesForBest[SymData::BG_MASK_IDX];
+					&bgMask = matricesForBest[SymData::BG_MASK_IDX];
 
 		vector<cv::Mat> channels;
 		cv::split(patchColor, channels);
@@ -458,7 +443,8 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
-			tie(miuFg, miuBg) = averageFgBg(ch, fgMask, bgMask);
+			miuFg = *cv::mean(patch, fgMask).val;
+			miuBg = *cv::mean(patch, bgMask).val;
 			newDiff = miuFg - miuBg;
 
 			bestGlyph.convertTo(ch, CV_8UC1, newDiff, miuBg);
@@ -472,12 +458,17 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 			cv::merge(channels, patchResult);
 
 	} else { // grayscale result
-		if(abs(*best.params.fg - *best.params.bg) < cfg.getBlankThreshold())
+		auto &params = best.params;
+		if(!params.fg)
+			params.computeFg(patch, symsSet[best.symIdx]);
+		if(!params.bg)
+			params.computeBg(patch, symsSet[best.symIdx]);
+		double diff = *params.fg - *params.bg;
+
+		if(abs(diff) < cfg.getBlankThreshold())
 			patchResult = cv::mean(patch);
 		else
-			bestGlyph.convertTo(patchResult, CV_8UC1,
-							*best.params.fg - *best.params.bg,
-							*best.params.bg);
+			bestGlyph.convertTo(patchResult, CV_8UC1, diff, *params.bg);
 	}
 	return patchResult;
 }
@@ -497,3 +488,18 @@ void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 		++idx;
 	}
 }
+
+#ifndef UNIT_TESTING // UnitTesting project has a different implementation for this method
+const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
+	static const vector<MatchAspect*> availAspects {
+		&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
+	};
+	return availAspects;
+}
+#endif // UNIT_TESTING
+
+#ifdef _DEBUG
+bool MatchEngine::usesUnicode() const {
+	return fe.getEncoding().compare("UNICODE") == 0;
+}
+#endif // _DEBUG

@@ -14,19 +14,137 @@
 #include "fontEngine.h"
 
 #include <iostream>
+#include <numeric>
+#include <random>
 
 using namespace std;
+using namespace cv;
 using namespace boost;
-using namespace ut;
 
-BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, Fixt)
+BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum ...");
+
+		// Glyph data has ASCENDING vertical axis,
+		// while the mass-center is considered on a DESCENDING vertical axis
+
+		random_device rd;
+		mt19937 gen(rd());
+		uniform_int_distribution<unsigned> uid;
+
+		unsigned sz = 10U; // patches of 10x10
+		Mat consec(1, sz, CV_64FC1), // 0..9
+			revConsec;	// 9..0
+		iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..9
+		flip(consec, revConsec, 1);	// 9..0
+
+		// Test EMPTY PATCH => glyphSum = 0, massCenter = (4.5, 4.5)
+		vector<unsigned char> pixels; // uses ASCENDING vertical axis
+		unsigned char rows = 0U, cols = 5U, left = 0U, top = sz-1U;
+		double gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_REQUIRE(gs == 0.);
+		Point2d mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec); // measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+
+		// Empty patch, as well
+		rows = 4U; cols = 0U;
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_REQUIRE(gs == 0.);
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+
+		// Empty patch, although pixels not empty this time
+		rows = 5U; cols = 5U; pixels.assign(rows*cols, 0U);
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == 0., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+
+		// FULL PATCH => glyphSum = 0, massCenter = (4.5, 4.5)
+		unsigned char uc = (unsigned char)uid(gen)&0xFFU; // random value 0..255
+		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
+		rows = sz; cols = sz; pixels.assign(rows*cols, uc); // all pixels are 'uc'
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == sz*sz*uc/255., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+
+		// Single non-zero pixel => glyphSum = pixelValue/255; massCenter = pixelPosition
+		rows = 1U; cols = 1U; pixels.assign(rows*cols, uc); // the pixel has value 'uc'
+		left = (unsigned char)uid(gen)%sz; // random value 0..sz-1
+		top = (unsigned char)uid(gen)%sz; // random value 0..sz-1
+		cout<<"Checking patch with a single non-zero pixel at: top="
+			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == left, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (sz - 1U - top), test_tools::tolerance(1e-4));
+
+		// 3x3 subarea of pixels='uc' => glyphSum = 9*uc/255; massCenter = subArea's center
+		rows = 3U; cols = 3U; pixels.assign(rows*cols, uc); // all the pixel have the value 'uc'
+		left = (unsigned char)uid(gen)%(sz-2U); // random value 0..sz-3
+		top = (unsigned char)(2U + uid(gen)%(sz-2U)); // random value 2..sz-1
+		cout<<"Checking patch with a 3x3 uniform non-zero subarea at: top="
+			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == left+1U, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (sz - 1U - (top - 1U)), test_tools::tolerance(1e-4));
+
+		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
+		//		glyphSum = 255/255 = 1
+		//		massCenter = (4, sz-1),
+		// 4 is at one third the distance 2..8
+		// 170 = 85*2, and 170 + 85 = 255
+		rows = 1; cols = 7; left = 2U; top = 0U; pixels.assign(rows*cols, 0U);
+		pixels[0] = 170; pixels[cols-1] = 85;
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == sz-1U, test_tools::tolerance(1e-4));
+
+		// random 2 points: p1(x1, y1) and p2(x2, y2) => glyphSum = (p1+p2)/255 and
+		// massCenter = ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) )
+		rows = sz; cols = sz; left = 0U; top = sz-1U; pixels.assign(rows*cols, 0U);
+		unsigned char p1 = 1U+(unsigned char)uid(gen)%255U, // random value 1..255
+					p2 = 1U+(unsigned char)uid(gen)%255U, // random value 1..255
+			x1 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
+			x2 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
+			y1 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
+			y2 = (unsigned char)uid(gen)%sz; // random value 0..sz-1
+		pixels[x1+y1*cols] = p1; pixels[x2+y2*cols] = p2;
+		cout<<"Checking mass-center for 2 pixels: "
+			<<(unsigned)p1<<'('<<(unsigned)x1<<','<<(unsigned)y1<<"); "
+			<<(unsigned)p2<<'('<<(unsigned)x2<<','<<(unsigned)y2<<')'<<endl;
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == sz-1U-((double)y1*p1+y2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
+	}
+
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile) {
 		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile ...");
 		try {
 			Config cfg;
 			Controller c(cfg);
 			string name;
-			FontEngine fe(c); // might throw runtime_error
+
+			FontEngine &fe = c.getFontEngine();
 
 			BOOST_CHECK_THROW(fe.setFontSz(10U), logic_error);
 			BOOST_CHECK_THROW(fe.setEncoding("UNICODE"), logic_error);

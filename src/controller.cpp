@@ -284,11 +284,12 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 	}
 }
 
-void Controller::performTransformation() {
+bool Controller::performTransformation() {
 	if(!validState())
-		return;
+		return false;
 
 	t.run();
+	return true;
 }
 
 // Methods from below have different definitions for UnitTesting project

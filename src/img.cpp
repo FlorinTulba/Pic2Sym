@@ -19,23 +19,30 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
+bool Img::reset(const cv::Mat &source_) {
+	if(source_.data == nullptr)
+		return false;
+
+	source = source_;
+	color = source.channels() > 1;
+	return true;
+}
+
 bool Img::reset(const string &picName) {
 	path newPic(absolute(picName));
 	if(imgPath.compare(newPic) == 0)
 		return true; // image already in use
 
 	const Mat source_ = imread(picName, ImreadModes::IMREAD_UNCHANGED);
-	if(source_.data == nullptr) {
+	if(!reset(source_)) {
 		cerr<<"Couldn't read image "<<picName<<endl;
 		return false;
 	}
 
-	source = source_;
-	imgPath = move(newPic);
+	imgPath = std::move(newPic);
 	imgName = imgPath.stem().string();
 
-	color = source.channels() > 1;
-	cout<<"Processing "<<imgPath<<" (";
+	cout<<"The image to process is "<<imgPath<<" (";
 	if(color)
 		cout<<"Color";
 	else
@@ -70,7 +77,7 @@ Mat Img::resized(const Config &cfg) {
 		res = source;
 	else {
 		resize(source, res, Size(w, h), 0, 0, CV_INTER_AREA);
-		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl<<endl;
+		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl;
 	}
 
 	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;

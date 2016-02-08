@@ -16,8 +16,8 @@
 #include <sstream>
 #include <numeric>
 
-#ifdef _DEBUG
-#include <fstream>
+#if defined _DEBUG && !defined UNIT_TESTING
+#	include <fstream>
 #endif
 
 #include <boost/filesystem/operations.hpp>
@@ -27,10 +27,7 @@ using namespace boost::filesystem;
 
 Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
-	// Ensure there is an Output folder
-	path outputFolder = cfg.getWorkDir();
-	if(!exists(outputFolder.append("Output")))
-	   create_directory(outputFolder);
+	createOutputFolder();
 }
 
 void Transformer::run() {
@@ -62,13 +59,9 @@ void Transformer::run() {
 		return;
 	}
 
-	oss.str(""); oss.clear();
-	oss<<resultFile; // contains also the double quotes needed when the path contains Spaces
-	string quotedResultFile(oss.str());
-
 	me.getReady();
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 	static const wstring COMMA(L",\t");
 	path traceFile(cfg.getWorkDir());
 	traceFile.append("data_").concat(studiedCase).
@@ -89,7 +82,7 @@ void Transformer::run() {
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
 			const cv::Mat patch(resized, cv::Range(r, r+sz), cv::Range(c, c+sz));
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 			BestMatch best(isUnicode);
 #else
 			BestMatch best;
@@ -97,22 +90,33 @@ void Transformer::run() {
 			const cv::Mat approximation = me.approxPatch(patch, best);
 			approximation.copyTo(cv::Mat(result, cv::Range(r, r+sz), cv::Range(c, c+sz)));
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 			ofs<<r/sz<<COMMA<<c/sz<<COMMA<<best<<endl;
 #endif
 		}
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 		ofs.flush(); // flush after processing a full row (of height sz) of the image
 #endif
 	}
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 	// Flushing and closing the trace file, to be also ready when inspecting the resulted image
 	ofs.close();
 #endif
 
+#ifndef UNIT_TESTING
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
-	
+#endif
+
 	ctrler.reportTransformationProgress(1.);
 }
+
+#ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods
+void Transformer::createOutputFolder() {
+	// Ensure there is an Output folder
+	path outputFolder = cfg.getWorkDir();
+	if(!exists(outputFolder.append("Output")))
+		create_directory(outputFolder);
+}
+#endif

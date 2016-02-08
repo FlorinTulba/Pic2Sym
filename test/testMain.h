@@ -16,7 +16,7 @@
 namespace ut { // unit testing namespace
 
 	// Used for a global fixture to reinitialize Controller's fields for each test
-	struct InitController {
+	struct Controller {
 
 		/*
 		Which Controller's fields to reinitialize.
@@ -25,6 +25,11 @@ namespace ut { // unit testing namespace
 		*/
 		static bool initImg, initFontEngine, initMatchEngine,
 			initTransformer, initComparator, initControlPanel;
+	};
+
+	// Used for a global fixture to reinitialize MatchEngine's availAspects in getReady()
+	struct MatchEngine {
+		static bool initAvailAspects;
 	};
 
 	// Fixture to be used before every test

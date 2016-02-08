@@ -113,28 +113,6 @@ namespace {
 		return make_pair(factorH, factorV);
 	}
 
-	// Computing the mass center (mc) of a given glyph and its background.
-	const Point2d computeMc(unsigned sz, const vector<unsigned char> &data, 
-					unsigned char rows, unsigned char cols,
-					unsigned char left, unsigned char top,
-					double glyphSum, const Mat &consec, const Mat &revConsec) {
-		if(rows == 0U || cols == 0U) {
-			const double centerCoord = (sz-1U)/2.;
-			return Point2d(centerCoord, centerCoord);
-		}
-
-		const Mat glyph((int)rows, (int)cols, CV_8UC1, (void*)data.data());
-		Mat sumPerColumn, sumPerRow;
-
-		reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
-		reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
-
-		const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left, left+cols))),
-				sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top+1-rows, top+1)));
-
-		return Point2d(sumX, sumY) / (255. * glyphSum);
-	}
-
 	// Minimal glyph shifting and cropping or none to fit the bounding box
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 					   int leftBound, int topBound, int sz,
@@ -226,14 +204,15 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	fitGlyphToBox(bm, bb, leftBound, topBound, sz, // input params
 				  rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
+	rows = (unsigned char)rows_;
+	cols = (unsigned char)cols_;
+
 	if(rows_ > 0 && cols_ > 0) {
-		const int amount = rows_ * cols_;
-		pixels.resize(amount);
+		pixels.resize(rows_ * cols_);
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
 			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
 						&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
 						cols_);
-		glyphSum = *sum(Mat(1, amount, CV_8UC1, pixels.data())).val / 255.;
 	}
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
@@ -242,9 +221,8 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	
 	left = (unsigned char)left_;
 	top = (unsigned char)top_;
-	rows = (unsigned char)rows_;
-	cols = (unsigned char)cols_;
 
+	glyphSum = computeGlyphSum(rows, cols, pixels);
 	mc = computeMc((unsigned)sz, pixels, rows, cols, left, top, glyphSum, consec, revConsec);
 }
 
@@ -286,6 +264,35 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		rows == other.rows && cols == other.cols &&
 		mc == other.mc &&
 		equal(CBOUNDS(pixels), cbegin(other.pixels));
+}
+
+double PixMapSym::computeGlyphSum(unsigned char rows_, unsigned char cols_,
+								  const vector<unsigned char> &pixels_) {
+	if(rows_ == 0U || cols_ == 0U)
+		return 0.;
+
+	return  *sum(Mat(1, (int)rows_*cols_, CV_8UC1, (void*)pixels_.data())).val / 255.;
+}
+
+const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pixels_,
+								   unsigned char rows_, unsigned char cols_,
+								   unsigned char left_, unsigned char top_,
+								   double glyphSum_, const Mat &consec, const Mat &revConsec) {
+	if(rows_ == 0U || cols_ == 0U || glyphSum_ < .9/(255U*sz*sz)) {
+		const double centerCoord = (sz-1U)/2.;
+		return Point2d(centerCoord, centerCoord);
+	}
+
+	const Mat glyph((int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data());
+	Mat sumPerColumn, sumPerRow;
+
+	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
+	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
+
+	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left_, left_+cols_))),
+		sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top_+1-rows_, top_+1)));
+
+	return Point2d(sumX, sumY) / (255. * glyphSum_);
 }
 
 // Smallest 10% of all glyphs are considered small
@@ -465,6 +472,9 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 
 	encodingIndex = idx;
 	encoding = encodingsMap().left.find(face->charmap->encoding)->second;
+
+	cout<<"Using encoding "<<encoding<<" (index "<<encodingIndex<<')'<<endl;
+
 	symsCont.reset();
 
 	return true;
@@ -514,9 +524,16 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 	uniqueEncs.clear();
 	face = face_;
 
+	cout<<"Using "<<face->family_name<<' '<<face->style_name<<endl;
+
 	for(int i = 0, charmapsCount = face->num_charmaps; i<charmapsCount; ++i)
 		uniqueEncs.insert(
 			bimap<FT_Encoding, unsigned>::value_type(face->charmaps[i]->encoding, i));
+
+	cout<<"The available encodings are:";
+	for(const auto &enc : uniqueEncs.right)
+		cout<<' '<<encodingsMap().left.find(enc.second)->second;
+	cout<<endl;
 
 	encodingIndex = UINT_MAX;
 	setNthUniqueEncoding(0U);
@@ -548,6 +565,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		cerr<<"Invalid font size ("<<fontSz_<<") for FontEngine::setFontSz!"<<endl;
 		throw invalid_argument("Invalid font size for FontEngine::setFontSz!");
 	}
+
+	cout<<"Setting font size "<<fontSz_<<endl;
 
 	const double sz = fontSz_;
 	vector<tuple<FT_ULong, double, double>> toResize;

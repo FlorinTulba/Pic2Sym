@@ -56,7 +56,7 @@ struct MatchParams final {
 	boost::optional<double> fg, bg;			// color for fg / bg (range 0..255)
 
 	// standard deviations for fg / bg / contour
-	// 0 .. 127.5/sqrt(2) = 90.156; best when 0
+	// 0 .. 127.5; best when 0
 	boost::optional<double> sdevFg, sdevBg, sdevEdge;
 
 	// Prepare for next symbol to match against patch
@@ -78,9 +78,14 @@ struct MatchParams final {
 	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
 #endif
 
+#ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
 private:
+#endif
+	// Both computeFg and computeBg simply call this
+	static void computeMean(const cv::Mat &patch, const cv::Mat &mask, boost::optional<double> &miu);
+
 	// Both computeSdevFg and computeSdevBg simply call this
-	void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
+	static void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
 					 boost::optional<double> &miu, boost::optional<double> &sdev);
 };
 
@@ -266,6 +271,9 @@ private:
 	GravitationalSmoothness grMatch;
 	DirectionalSmoothness dirMatch;
 	LargerSym lsMatch;
+
+	// Returns a vector with the addresses of the matching aspects from above
+	const std::vector<MatchAspect*>& getAvailAspects();
 
 	std::vector<MatchAspect*> aspects;	// enabled aspects
 
