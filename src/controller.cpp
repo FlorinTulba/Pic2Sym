@@ -15,7 +15,10 @@
 #include <sstream>
 
 #include <boost/filesystem/operations.hpp>
-#include <opencv2/highgui.hpp>
+
+#ifndef UNIT_TESTING
+#	include <opencv2/highgui.hpp>
+#endif
 
 using namespace std;
 using namespace boost::filesystem;
@@ -32,20 +35,6 @@ Controller::Controller(Config &cfg_) :
 	comp.permitResize(false);
 	comp.setTitle("Pic2Sym - (c) 2016 Florin Tulba");
 	comp.setStatus("Press Ctrl+P for Control Panel; ESC to Exit");
-}
-
-Controller::~Controller() {
-	destroyAllWindows();
-}
-
-void Controller::handleRequests() const {
-	for(;;) {
-		// When pressing ESC, prompt the user if he wants to exit
-		if(27 == waitKey() &&
-		   IDYES == MessageBox(nullptr, L"Do you want to leave the application?", L"Question",
-		   MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND))
-		   break;
-	}
 }
 
 bool Controller::validState(bool imageReguired/* = true*/) const {
@@ -265,6 +254,31 @@ MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned ma
 	return me.getSymsRange(from, maxCount);
 }
 
+bool Controller::performTransformation() {
+	if(!validState())
+		return false;
+
+	t.run();
+	return true;
+}
+
+// Methods from below have different definitions for UnitTesting project
+#ifndef UNIT_TESTING
+
+Controller::~Controller() {
+	destroyAllWindows();
+}
+
+void Controller::handleRequests() const {
+	for(;;) {
+		// When pressing ESC, prompt the user if he wants to exit
+		if(27 == waitKey() &&
+		   IDYES == MessageBox(nullptr, L"Do you want to leave the application?", L"Question",
+		   MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND))
+		   break;
+	}
+}
+
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
@@ -283,17 +297,6 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 		setWindowTitle(waitWin, oss.str());
 	}
 }
-
-bool Controller::performTransformation() {
-	if(!validState())
-		return false;
-
-	t.run();
-	return true;
-}
-
-// Methods from below have different definitions for UnitTesting project
-#ifndef UNIT_TESTING
 
 void Controller::reportGlyphProgress(double progress) const {
 	hourGlass(progress, "Processing glyphs. Please wait");

@@ -188,12 +188,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		Mat szBands = emptyD.clone();
 		for(unsigned i = 0U; i<sz; ++i)
 			szBands.row(i) = i;
-		double expectedFg = (sz-2)/4., expectedSdevFgBg = 0.;
+		double expectedFgAndSdevHorEdge = (sz-2)/4., expectedSdev = 0.;
 		for(unsigned i = 0U; i<sz/2; ++i) {
-			double diff = i - expectedFg;
-			expectedSdevFgBg += diff*diff;
+			double diff = i - expectedFgAndSdevHorEdge;
+			expectedSdev += diff*diff;
 		}
-		expectedSdevFgBg = sqrt(expectedSdevFgBg / (sz/2));
+		expectedSdev = sqrt(expectedSdev / (sz/2));
 		mp.resetSymData(); mp.mcPatch = none;
 		mp.computeMcPatch(szBands, cd);
 		BOOST_REQUIRE(mp.mcPatch);
@@ -201,32 +201,33 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		BOOST_TEST(mp.mcPatch->y == (2*sz-1)/3., test_tools::tolerance(1e-4));
 		mp.computeFg(szBands, sdHorizEdgeMask);
 		BOOST_REQUIRE(mp.fg);
-		BOOST_TEST(*mp.fg == expectedFg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.fg == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
 		mp.computeBg(szBands, sdHorizEdgeMask);
 		BOOST_REQUIRE(mp.bg);
 		BOOST_TEST(*mp.bg == (3*sz-2)/4., test_tools::tolerance(1e-4));
 		mp.computeSdevFg(szBands, sdHorizEdgeMask);
 		BOOST_REQUIRE(mp.sdevFg);
-		BOOST_TEST(*mp.sdevFg == expectedSdevFgBg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.sdevFg == expectedSdev, test_tools::tolerance(1e-4));
 		mp.computeSdevBg(szBands, sdHorizEdgeMask);
 		BOOST_REQUIRE(mp.sdevBg);
-		BOOST_TEST(*mp.sdevBg == expectedSdevFgBg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.sdevBg == expectedSdev, test_tools::tolerance(1e-4));
 		mp.computeMcApproxSym(szBands, sdHorizEdgeMask, cd);
 		BOOST_REQUIRE(mp.mcGlyph);
 		BOOST_TEST(mp.mcGlyph->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcGlyph->y == (*mp.fg * *mp.fg + *mp.bg * *mp.bg)/(sz-1.), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(szBands, sdHorizEdgeMask);
 		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == expectedFg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.sdevEdge == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
 		mp.resetSymData();
 		mp.computeSdevEdge(szBands, sdVertEdgeMask);
 		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == expectedSdevFgBg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.sdevEdge == expectedSdev, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(MatchEngine_Check) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_Check ...");
 		Config cfg(10U, 1., 1., 1.);
+		const unsigned sz = cfg.getFontSz();
 		Controller c(cfg);
 		FontEngine &fe = c.getFontEngine();
 		MatchEngine &me = c.getMatchEngine(cfg);
@@ -238,8 +239,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 
 		BOOST_REQUIRE(!c.newImage(Mat())); // wrong image
 
-		Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127)),
-			testColorPatch(c.getFontSize(), c.getFontSize(), CV_8UC3, Scalar::all(127));
+		Mat testPatch(sz, sz, CV_8UC1, Scalar(127)),
+			testColorPatch(sz, sz, CV_8UC3, Scalar::all(127));
 
 		BOOST_REQUIRE(c.newImage(testPatch)); // image ok
 		BOOST_REQUIRE(c.performTransformation()); // ok

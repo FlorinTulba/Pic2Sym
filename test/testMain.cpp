@@ -11,12 +11,16 @@
 #define BOOST_TEST_MODULE Tests for Pic2Sym project
 
 #include "testMain.h"
+
+// Including the CPP files allows parsing UNIT_TESTING guarded regions.
+// Disadvantage: namespace pollution
 #include "misc.cpp"
 #include "fontEngine.cpp"
 #include "match.cpp"
 #include "transform.cpp"
 #include "controller.cpp"
 #include "img.cpp"
+#include "config.cpp"
 
 namespace ut {
 	bool Controller::initImg = false;
@@ -96,6 +100,12 @@ ControlPanel& Controller::getControlPanel(Config &cfg_) {
 }
 
 #undef GET_FIELD
+
+Controller::~Controller() {}
+
+void Controller::handleRequests() const {}
+
+void Controller::hourGlass(double progress, const string &title/* = ""*/) const {}
 
 void Controller::reportGlyphProgress(double progress) const {}
 
