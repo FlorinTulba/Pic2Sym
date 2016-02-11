@@ -269,7 +269,7 @@ Controller::~Controller() {
 	destroyAllWindows();
 }
 
-void Controller::handleRequests() const {
+void Controller::handleRequests() {
 	for(;;) {
 		// When pressing ESC, prompt the user if he wants to exit
 		if(27 == waitKey() &&
@@ -318,6 +318,10 @@ Img& Controller::getImg() {
 	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
 }
 
+Comparator& Controller::getComparator() {
+	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
+}
+
 FontEngine& Controller::getFontEngine() const {
 	GET_FIELD(FontEngine, *this);
 }
@@ -328,10 +332,6 @@ MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
 
 Transformer& Controller::getTransformer(const Config &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
-}
-
-Comparator& Controller::getComparator() const {
-	GET_FIELD(Comparator, *this);
 }
 
 ControlPanel& Controller::getControlPanel(Config &cfg_) {

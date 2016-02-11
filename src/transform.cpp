@@ -15,6 +15,7 @@
 
 #include <sstream>
 #include <numeric>
+#include <chrono>
 
 #if defined _DEBUG && !defined UNIT_TESTING
 #	include <fstream>
@@ -23,6 +24,7 @@
 #include <boost/filesystem/operations.hpp>
 
 using namespace std;
+using namespace std::chrono;
 using namespace boost::filesystem;
 
 Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_) :
@@ -31,6 +33,8 @@ Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEng
 }
 
 void Transformer::run() {
+	time_point<high_resolution_clock> start = high_resolution_clock::now();
+
 	me.updateSymbols(); // throws for invalid cmap/size
 
 	const cv::Mat resized = img.resized(cfg); // throws when no image
@@ -110,6 +114,9 @@ void Transformer::run() {
 #endif
 
 	ctrler.reportTransformationProgress(1.);
+
+	duration<double> elapsedS = high_resolution_clock::now() - start;
+	cout<<"The transformation required "<<elapsedS.count()<<" s!"<<endl<<endl;
 }
 
 #ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods

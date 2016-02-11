@@ -23,7 +23,7 @@ class Controller; // The views defined below interact with this class
 
 class CvWin abstract {
 protected:
-	CvWin(const Controller &ctrler_, const cv::String&) {}
+	CvWin(const cv::String&) {}
 
 public:
 	void setTitle(const std::string&) const {}
@@ -36,15 +36,15 @@ public:
 
 class Comparator final : public CvWin {
 public:
-	Comparator(const Controller &c) : CvWin(c, "") {}
+	Comparator(void** /*hackParam*/ = nullptr) : CvWin("") {}
 	static void updateTransparency(int, void*) {}
 	void setReference(const cv::Mat&) {}
-	void setResult(const cv::Mat&) {}
+	void setResult(const cv::Mat&,int=0) {}
 };
 
 class CmapInspect final : public CvWin {
 public:
-	CmapInspect(const Controller &c) : CvWin(c, "") {}
+	CmapInspect(const Controller &c) : CvWin("") {}
 	static void updatePageIdx(int, void*) {}
 	void updatePagesCount(unsigned) {}
 	void updateGrid() {}

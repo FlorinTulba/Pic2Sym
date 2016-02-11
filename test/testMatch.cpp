@@ -9,18 +9,68 @@
  **********************************************************/
 
 #include "testMain.h"
+#include "misc.h"
 #include "controller.h"
 
 #include <random>
 #include <algorithm>
 #include <numeric>
 #include <iterator>
+#include <set>
 
 #include <boost/optional/optional.hpp>
 
 using namespace cv;
 using namespace std;
 using namespace boost;
+
+namespace ut {
+	unsigned randUnifUint() {
+		static random_device rd;
+		static mt19937 gen(rd());
+		static uniform_int_distribution<unsigned> uid;
+		return uid(gen);
+	}
+
+	void alterFgBg(Mat &patchUc, double minVal01, double diffMinMax01) {
+		const unsigned char newFg = (unsigned char)randUnifUint()&0xFFU;
+		unsigned char newBg;
+		int newDiff;
+		do {
+			newBg = (unsigned char)(randUnifUint() & 0xFFU);
+			newDiff = (int)newFg - (int)newBg;
+		} while(abs(newDiff) < 30); // keep fg & bg at least 30 brightness units apart
+		
+		patchUc = (patchUc - (minVal01*255)) * (newDiff/(255*diffMinMax01)) + newBg;
+	}
+
+	void addWhiteNoise(Mat &patchUc, double affectedPercentage01, unsigned char maxAmplitude0255) {
+		const int side = patchUc.rows, area = side*side, affectedCount = (int)(affectedPercentage01 * area);
+
+		int noise;
+		const unsigned twiceMaxAmplitude = ((unsigned)maxAmplitude0255)<<1;
+		int prevVal, below, above;
+		set<unsigned> affected;
+		unsigned linearized;
+		div_t pos; // coordinate inside the Mat, expressed as quotient and remainder of linearized
+		for(int i = 0; i<affectedCount; ++i) {
+			do {
+				linearized = randUnifUint() % (unsigned)area;
+			} while(affected.find(linearized) != affected.cend());
+			affected.insert(linearized);
+			pos = div((int)linearized, side);
+
+			prevVal = (int)round(patchUc.at<double>(pos.quot, pos.rem));
+			below = max(0, min((int)maxAmplitude0255, prevVal));
+			above = max(0, min((int)maxAmplitude0255, 255 - prevVal));
+			do {
+				noise = (int)(randUnifUint() % (above+below+1)) - below;
+			} while(noise == 0);
+
+			patchUc.at<double>(pos.quot, pos.rem) = prevVal + noise;
+		}
+	}
+}
 
 BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckParams) {
@@ -30,12 +80,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		// Glyphs have pixels with double values 0..1.
 		// Masks have pixels with byte values 0..255.
 
-		random_device rd;
-		mt19937 gen(rd());
-		uniform_int_distribution<unsigned> uid;
-
 		const unsigned sz = 50U; // Select an even sz, as the tests need to set exactly half fixels
-		const unsigned char valRand = (unsigned char)uid(gen)&0xFFU;
+		const unsigned char valRand = (unsigned char)(ut::randUnifUint() & 0xFFU);
 		const Mat
 			// completely empty
 			emptyUc(sz, sz, CV_8UC1, Scalar(0U)), emptyD(sz, sz, CV_64FC1, Scalar(0.)),
@@ -60,8 +106,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		Mat invHalfD255 = 255. - halfD255;
 
 		vector<unsigned char> randV;
-		generate_n(back_inserter(randV), sz*sz, [&gen, &uid] {
-			return (unsigned char)uid(gen)&0xFFU;
+		generate_n(back_inserter(randV), sz*sz, [] {
+			return (unsigned char)(ut::randUnifUint() & 0xFFU);
 		});
 		Mat randUc(sz, sz, CV_8UC1, (void*)randV.data()), randD1, randD255;
 		randUc.convertTo(randD1, CV_64FC1, 1./255);
@@ -116,6 +162,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		
 		// Testing a glyph half 0, half 255
 		SymData sdHorizEdgeMask(ULONG_MAX,	// glyph code doesn't matter
+					0., // min glyph value (0..1 range)
+					1.,	// difference between min and max glyph (0..1 range)
 				   sz*sz/2.,	// pixelSum = 255*(sz^2/2)/255 = sz^2/2
 				   Point2d(cd.patchCenter.x, (sz/2.-1U)/2.), // glyph's mass center
 				   SymData::MatArray { {
@@ -123,7 +171,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 						   halfUc,			// fg byte mask (0 or 255)
 						   invHalfUc,		// bg byte mask (0 or 255)
 						   horBeltUc,		// edge byte mask (0 or 255)
-						   invHalfUc } });	// glyph inverse in 0..255 byte range
+						   invHalfUc,		// glyph inverse in 0..255 byte range
+						   halfD1 } });		// grounded glyph is same as glyph (min is already 0)
 		SymData sdVertEdgeMask(sdHorizEdgeMask);
 		*(const_cast<Mat*>(&sdVertEdgeMask.symAndMasks[SymData::EDGE_MASK_IDX])) = verBeltUc;
 
@@ -232,6 +281,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 		FontEngine &fe = c.getFontEngine();
 		MatchEngine &me = c.getMatchEngine(cfg);
 
+		// Courier Bold Unicode > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
+		// Can't identify them exactly using std. dev. for fg, bg and edges, which all appear 0.
+		// In both cases, the scores are 1.00000000000000000 (17 decimals!!) 
+//  	BOOST_REQUIRE_NO_THROW(c.newFontFamily("C:\\Windows\\Fonts\\courbd.ttf"));
+
+		// Envy Code R > 600 glyphs
+// 		BOOST_REQUIRE_NO_THROW(c.newFontFamily("C:\\Windows\\Fonts\\Envy Code R Bold.ttf"));
+// 		BOOST_REQUIRE_NO_THROW(c.newFontEncoding("UNICODE"));
+
+		// Bp Mono Bold - 210 glyphs for Unicode, 134 for Apple Roman
 		BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
 		BOOST_REQUIRE_NO_THROW(c.newFontEncoding("APPLE_ROMAN"));
 
@@ -239,13 +298,54 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, ut::Fixt)
 
 		BOOST_REQUIRE(!c.newImage(Mat())); // wrong image
 
-		Mat testPatch(sz, sz, CV_8UC1, Scalar(127)),
-			testColorPatch(sz, sz, CV_8UC3, Scalar::all(127));
-
+		// Ensuring single patch images provided as Mat can be tackled
+		Mat testPatch(sz, sz, CV_8UC1, Scalar(127));
 		BOOST_REQUIRE(c.newImage(testPatch)); // image ok
 		BOOST_REQUIRE(c.performTransformation()); // ok
 
+		Mat testColorPatch(sz, sz, CV_8UC3, Scalar::all(127));
 		BOOST_REQUIRE(c.newImage(testColorPatch)); // image ok
 		BOOST_REQUIRE(c.performTransformation()); // ok
+
+		// Recognizing the glyphs from current cmap
+		vector<std::tuple<const Mat, const Mat, const BestMatch>> mismatches;
+		MatchEngine::VSymDataCIt it, itEnd;
+		tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
+		const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
+		for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
+			if(idx % step == 0U)
+				cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
+
+			const Mat &negGlyph = it->symAndMasks[SymData::NEG_GLYPH_IDX]; // byte 0..255
+			Mat patchD255;
+			negGlyph.convertTo(patchD255, CV_64FC1);
+			ut::alterFgBg(patchD255, it->minVal, it->diffMinMax);
+ 			ut::addWhiteNoise(patchD255, .2, 10U); // affected % and amplitude
+
+			BestMatch best;
+			const Mat approximated = me.approxPatch(patchD255, best);
+
+			if(best.symIdx != idx) {
+				mismatches.emplace_back(patchD255, approximated, best);
+				MatchParams mp;
+				cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
+				cerr<<"Approximation achieved score="
+					<<fixed<<setprecision(17)<<best.score
+					<<" while the score for the expected symbol is "
+					<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
+				wcerr<<"Params from approximated symbol: "<<best.params<<endl;
+				wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
+			}
+		}
+
+		if(!mismatches.empty()) {
+			wcerr<<"The parameters were displayed in this order:"<<endl;
+			wcerr<<MatchParams::HEADER<<endl<<endl;
+
+			ut::showMismatches("MatchEngine_Check", mismatches);
+
+			// Normally, less than 3% of the altered symbols are not identified correctly.
+			BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
+		}
 	}
 BOOST_AUTO_TEST_SUITE_END() // MatchEngine_Tests

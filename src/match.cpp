@@ -40,15 +40,33 @@ namespace {
 
 const double CachedData::sdevMax = 127.5;
 
-#ifdef _DEBUG
+#if defined _DEBUG || defined UNIT_TESTING
 
-#define comma L",\t"
+#	define comma L",\t"
 
 const wstring MatchParams::HEADER(L"#mcGlyphX" comma L"#mcGlyphY" comma
 								  L"#mcPatchX" comma L"#mcPatchY" comma
 								  L"#fg" comma L"#bg" comma
 								  L"#sdevFg" comma L"#sdevEdge" comma L"#sdevBg" comma
 								  L"#rho");
+
+wostream& operator<<(wostream &os, const MatchParams &mp) {
+	if(mp.mcGlyph)
+		os<<mp.mcGlyph->x<<comma<<mp.mcGlyph->y<<comma;
+	else
+		os<<none<<comma<<none<<comma;
+
+	if(mp.mcPatch)
+		os<<mp.mcPatch->x<<comma<<mp.mcPatch->y<<comma;
+	else
+		os<<none<<comma<<none<<comma;
+
+	os<<mp.fg<<comma<<mp.bg<<comma
+		<<mp.sdevFg<<comma<<mp.sdevEdge<<comma<<mp.sdevBg<<comma
+		<<mp.glyphWeight;
+	return os;
+}
+
 const wstring BestMatch::HEADER(wstring(L"#GlyphCode" comma L"#ChosenScore" comma) +
 								MatchParams::HEADER);
 
@@ -74,24 +92,7 @@ wostream& operator<<(wostream &os, const BestMatch &bm) {
 	return os;
 }
 
-wostream& operator<<(wostream &os, const MatchParams &mp) {
-	if(mp.mcGlyph)
-		os<<mp.mcGlyph->x<<comma<<mp.mcGlyph->y<<comma;
-	else
-		os<<none<<comma<<none<<comma;
-
-	if(mp.mcPatch)
-		os<<mp.mcPatch->x<<comma<<mp.mcPatch->y<<comma;
-	else
-		os<<none<<comma<<none<<comma;
-
-	os<<mp.fg<<comma<<mp.bg<<comma
-		<<mp.sdevFg<<comma<<mp.sdevEdge<<comma<<mp.sdevBg<<comma
-		<<mp.glyphWeight;
-	return os;
-}
-
-#undef comma
+#	undef comma
 
 BestMatch::BestMatch(bool isUnicode/* = true*/) : unicode(isUnicode) {}
 
@@ -105,11 +106,13 @@ BestMatch& BestMatch::operator=(const BestMatch &other) {
 	}
 	return *this;
 }
+
 #endif // _DEBUG
 
-SymData::SymData(const unsigned long code_, const double pixelSum_,
+SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 				 const cv::Point2d &mc_, const MatArray &symAndMasks_) :
-		code(code_), pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {
+		code(code_), minVal(minVal_), diffMinMax(diffMinMax_),
+		pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {
 }
 
 void MatchParams::resetSymData() {
@@ -174,8 +177,8 @@ void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) 
 		return;
 	}
 
-	const cv::Mat approximationOfPatch =
-		symData.symAndMasks[SymData::GLYPH_IDX] * diffFgBg + bg.value();
+	const cv::Mat approximationOfPatch = bg.value() +
+		symData.symAndMasks[SymData::GROUNDED_GLYPH_IDX] * (diffFgBg / symData.diffMinMax);
 
 	sdevEdge = cv::norm(patch, approximationOfPatch, cv::NORM_L2, edgeMask) / sqrt(cnz);
 }
@@ -230,13 +233,29 @@ double FgMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevFg(patch, symData);
-	return pow(1. - mp.sdevFg.value()/CachedData::sdevMax, k);
+
+	// Returned value discourages large std. devs.
+	// For sdev =     0 (min) => returns 1 no matter k
+	// For sdev = 127.5 (max) => returns 0 no matter k (For k=0, this matching aspect is disabled)
+	// For other sdev-s       =>
+	//		returns closer to 1 for k in (0..1)
+	//		returns sdev for k=1
+	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
+	return pow(1. - mp.sdevFg.value() / CachedData::sdevMax, k);
 }
 
 double BgMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevBg(patch, symData);
+
+	// Returned value discourages large std. devs.
+	// For sdev =     0 (min) => returns 1 no matter k
+	// For sdev = 127.5 (max) => returns 0 no matter k (For k=0, this matching aspect is disabled)
+	// For other sdev-s       =>
+	//		returns closer to 1 for k in (0..1)
+	//		returns sdev for k=1
+	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 	return pow(1. - mp.sdevBg.value()/CachedData::sdevMax, k);
 }
 
@@ -244,6 +263,14 @@ double EdgeMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevEdge(patch, symData);
+
+	// Returned value discourages large std. devs.
+	// For sdev =     0 (min) => returns 1 no matter k
+	// For sdev = 127.5 (max) => returns 0 no matter k (For k=0, this matching aspect is disabled)
+	// For other sdev-s       =>
+	//		returns closer to 1 for k in (0..1)
+	//		returns sdev for k=1
+	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMax, k);
 }
 
@@ -251,7 +278,7 @@ double BetterContrast::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
-		MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
+						MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
 	static const double CONTRAST_RATIO = (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) / (2.*255);
 	
 	mp.computeFg(patch, symData);
@@ -259,9 +286,11 @@ double BetterContrast::assessMatch(const cv::Mat &patch,
 	
 	const double minimalContrast = // minimal contrast for the average brightness
 		MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (mp.fg.value() + mp.bg.value());
+
 	// range 0 .. 255, best when large
 	const double contrast = abs(mp.fg.value() - mp.bg.value());
-	// Encourage contrasts larger than minimalContrast:
+
+	// Encourages contrasts larger than minimalContrast:
 	// <1 for low contrast;  1 for minimalContrast;  >1 otherwise
 	return pow(contrast / minimalContrast, k);
 }
@@ -273,40 +302,46 @@ double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 	mp.computeMcApproxSym(patch, symData, cachedData);
 
 	// best glyph location is when mc-s are near to each other
-	// range 0 .. mcDistMax = 1.42*fontSz_1, best when 0
+	// range 0 .. 1.42*(fontSz-1), best when 0
 	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
-	// <=1 for mcsOffset >= preferredMaxMcDist;  >1 otherwise
-	
-	return pow(1. + (cachedData.preferredMaxMcDist - mcsOffset)/cachedData.mcDistMax, k);
+
+	// Discourages mcsOffset larger than preferredMaxMcDist:
+	//		returns 1 for mcsOffset == preferredMaxMcDist, no matter k
+	//		returns 0 for mcsOffset == 1.42*(fontSz-1), no matter k (k > 0)
+	//		returns in (0..1) for mcsOffset in (preferredMaxMcDist .. 1.42*(fontSz-1) )
+	//		returns > 1 for mcsOffset < preferredMaxMcDist
+	// Larger k induces larger penalty for large mcsOffset and
+	// also larger reward for small mcsOffset
+	return pow(1. + (cachedData.preferredMaxMcDist - mcsOffset) / cachedData.complPrefMaxMcDist, k);
 }
 
 double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
-	static const double SQRT2 = sqrt(2), TWO_SQRT2 = 2. - SQRT2;
+	static const double SQRT2 = sqrt(2), TWOmSQRT2 = 2. - SQRT2;
 	static const cv::Point2d ORIGIN; // (0, 0)
 
 	mp.computeMcPatch(patch, cachedData);
 	mp.computeMcApproxSym(patch, symData, cachedData);
 
 	// best glyph location is when mc-s are near to each other
-	// range 0 .. mcDistMax = 1.42*fontSz_1, best when 0
+	// range 0 .. 1.42*(fontSz-1), best when 0
 	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
-	// <=1 for mcsOffset >= preferredMaxMcDist;  >1 otherwise
 
 	const cv::Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
 	const cv::Point2d relMcGlyph = mp.mcGlyph.value() - cachedData.patchCenter;
 
-	// best gradient orientation when angle between mc-s is 0 => cos = 1
-	// Maintaining the cosine of the angle is ok, as it stays near 1 for small angles.
-	// -1..1 range, best when 1
-	double cosAngleMCs = 0.;
+	// best gradient orientation when angle between mc-s is 0 => cos = 1	
+	double cosAngleMCs = 0.; // -1..1 range, best when 1
 	if(relMcGlyph != ORIGIN && relMcPatch != ORIGIN) // avoid DivBy0
 		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (cv::norm(relMcGlyph) * cv::norm(relMcPatch));
 
-	// <=1 for |angleMCs| >= 45;  >1 otherwise
-	// lessen the importance for small mcsOffset-s (< preferredMaxMcDist)
-	return pow((1. + cosAngleMCs) * TWO_SQRT2,
+	// Penalizes large angle between mc-s, but no so much when they are close to each other.
+	// The mc-s are consider close when the distance between them is < preferredMaxMcDist
+	//		(1. + cosAngleMCs) * (2-sqrt(2)) is <=1 for |angleMCs| >= 45  and  >1 otherwise
+	// So, large k generally penalizes large angles and encourages small ones,
+	// but fades gradually for nearer mc-s or completely when the mc-s overlap.
+	return pow((1. + cosAngleMCs) * TWOmSQRT2,
 			   k * min(mcsOffset, cachedData.preferredMaxMcDist) / cachedData.preferredMaxMcDist);
 }
 
@@ -315,17 +350,19 @@ double LargerSym::assessMatch(const cv::Mat &patch,
 							MatchParams &mp) const {
 	mp.computeRhoApproxSym(symData, cachedData);
 
-	// <=1 for glyphs considered small;   >1 otherwise
+	// Encourages approximations with symbols filling at least x% of their box.
+	// The threshold x is provided by smallGlyphsCoverage.
+	// Returns < 1 for glyphs under threshold;   >= 1 otherwise
 	return pow(mp.glyphWeight.value() + 1. - cachedData.smallGlyphsCoverage, k);
 }
 
 void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 	sz = sz_;
 	sz_1 = sz - 1U;
-	sz2 = (double)sz*sz;
+	sz2 = (double)sz * sz;
 
-	preferredMaxMcDist = 3.*sz/8;
-	mcDistMax = sz_1*sqrt(2);
+	preferredMaxMcDist = 3. * sz / 8;
+	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
 	patchCenter = cv::Point2d(sz_1, sz_1) / 2;
 
 	consec = cv::Mat(1, sz, CV_64FC1);
@@ -361,9 +398,14 @@ void MatchEngine::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
-	static const double STILL_BG = .025,			// darkest shades
-		STILL_FG = 1. - STILL_BG, // brightest shades
-		EPS = 1e-6;
+	// constants for foreground / background thresholds
+	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
+	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
+	// When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
+	// But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
+	static const double STILL_BG = 0.,			// darkest shades
+					STILL_FG = 1. - STILL_BG,	// brightest shades
+					EPS = 1e-6;
 	symsSet.clear();
 	symsSet.reserve(fe.symsSet().size());
 
@@ -378,16 +420,21 @@ void MatchEngine::updateSymbols() {
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
 		minMaxIdx(glyph, &minVal, &maxVal);
-		const cv::Mat fgMask = (glyph > (minVal + STILL_FG * (maxVal-minVal))),
-				bgMask = (glyph < (minVal + STILL_BG * (maxVal-minVal)));
+		const cv::Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
+				fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
+				bgMask = (glyph <= (minVal + STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
-		symsSet.emplace_back(pms.symCode, pms.glyphSum, pms.mc, SymData::MatArray { {
+		symsSet.emplace_back(pms.symCode,
+							 minVal, maxVal-minVal,
+							 pms.glyphSum, pms.mc,
+							 SymData::MatArray { {
 								glyph,			// GLYPH_IDX
 								fgMask,			// FG_MASK_IDX 
 								bgMask,			// BG_MASK_IDX
 								edgeMask,		// EDGE_MASK_IDX
-								negGlyph		// NEG_GLYPH_IDX
+								negGlyph,		// NEG_GLYPH_IDX
+								groundedGlyph	// GROUNDED_GLYPH_IDX
 							} });
 	}
 
@@ -419,18 +466,21 @@ void MatchEngine::getReady() {
 }
 
 cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
-	const bool isColor = (patch_.channels() > 1);
+	// All blurring techniques I've tried seem not worthy => using original
+	cv::Mat blurredPatch = patch_;
+	const bool isColor = (blurredPatch.channels() > 1);
 	cv::Mat patchColor, patch, patchResult;
 	if(isColor) {
-		patchColor = patch_;
+		patchColor = blurredPatch;
 		cv::cvtColor(patchColor, patch, cv::COLOR_RGB2GRAY);
-	} else patch = patch_;
+	} else patch = blurredPatch;
 	patch.convertTo(patch, CV_64FC1);
 
 	findBestMatch(patch, best);
 
-	const auto &matricesForBest = symsSet[best.symIdx].symAndMasks;
-	const cv::Mat &bestGlyph = matricesForBest[SymData::GLYPH_IDX];
+	const auto &dataOfBest = symsSet[best.symIdx];
+	const auto &matricesForBest = dataOfBest.symAndMasks;
+	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_GLYPH_IDX];
 
 	if(isColor) {
 		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
@@ -443,12 +493,12 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
-			miuFg = *cv::mean(patch, fgMask).val;
-			miuBg = *cv::mean(patch, bgMask).val;
+			miuFg = *cv::mean(ch, fgMask).val;
+			miuBg = *cv::mean(ch, bgMask).val;
 			newDiff = miuFg - miuBg;
 
-			bestGlyph.convertTo(ch, CV_8UC1, newDiff, miuBg);
-
+			groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.diffMinMax, miuBg);
+			
 			diffFgBg += abs(newDiff);
 		}
 
@@ -468,18 +518,25 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 		if(abs(diff) < cfg.getBlankThreshold())
 			patchResult = cv::mean(patch);
 		else
-			bestGlyph.convertTo(patchResult, CV_8UC1, diff, *params.bg);
+			groundedBest.convertTo(patchResult, CV_8UC1, diff / dataOfBest.diffMinMax, *params.bg);
 	}
 	return patchResult;
+}
+
+double MatchEngine::assessMatch(const cv::Mat &patch,
+				   const SymData &symData,
+				   MatchParams &mp) const {
+	double score = 1.;
+	for(auto pAspect : aspects)
+		score *= pAspect->assessMatch(patch, symData, mp);
+	return score;
 }
 
 void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 	MatchParams mp;
 	unsigned idx = 0U;
 	for(const auto &symData : symsSet) {
-		double score = 1.;
-		for(auto pAspect : aspects)
-			score *= pAspect->assessMatch(patch, symData, mp);
+		double score = assessMatch(patch, symData, mp);
 
 		if(score > best.score)
 			best.update(score, idx, symData.code, mp);

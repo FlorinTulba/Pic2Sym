@@ -25,11 +25,13 @@
 // Most symbol information
 struct SymData final {
 	const unsigned long code;		// the code of the symbol
+	const double minVal = 0.;			// the value of darkest pixel, range 0..1
+	const double diffMinMax = 1.;		// difference between brightest and darkest pixels, each in 0..1
 	const double pixelSum;			// sum of the values of the pixels, each in 0..1
 	const cv::Point2d &mc;			// mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
-		GLYPH_IDX, FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX,
+		GLYPH_IDX, FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX, GROUNDED_GLYPH_IDX,
 		MATRICES_COUNT // keep this last and don't use it as index in MatArray objects
 	};
 
@@ -39,7 +41,7 @@ struct SymData final {
 
 	const MatArray symAndMasks;		// symbol + other matrices & masks
 
-	SymData(const unsigned long code_, const double pixelSum_,
+	SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 			const cv::Point2d &mc_, const MatArray &symAndMasks_);
 };
 
@@ -73,7 +75,7 @@ struct MatchParams final {
 	void computeMcApproxSym(const cv::Mat &patch, const SymData &symData,
 							const CachedData &cachedData);
 
-#ifdef _DEBUG // Next members are necessary for logging
+#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	static const std::wstring HEADER; // table header when values are serialized
 	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
 #endif
@@ -102,7 +104,7 @@ struct BestMatch final {
 	void update(double score_, unsigned symIdx_, unsigned long symCode_,
 				const MatchParams &params_);
 
-#ifdef _DEBUG // Next members are necessary for logging
+#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	static const std::wstring HEADER;
 	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
 
@@ -115,8 +117,17 @@ struct BestMatch final {
 #endif
 };
 
+// Interface providing assessMatch method for MatchAspect classes and also for MatchEngine
+struct IMatch abstract {
+	// scores the match between a gray patch and a symbol
+	virtual double assessMatch(const cv::Mat &patch,
+							   const SymData &symData,
+							   MatchParams &mp) const = 0;
+	virtual ~IMatch() = 0 {}
+};
+
 // Base class for all considered aspects of matching.
-class MatchAspect abstract {
+class MatchAspect abstract : public IMatch {
 protected:
 	const CachedData &cachedData; // cached information from matching engine
 	const double &k; // cached coefficient from cfg, corresponding to current aspect
@@ -124,17 +135,9 @@ protected:
 public:
 	MatchAspect(const CachedData &cachedData_, const double &k_) :
 		cachedData(cachedData_), k(k_) {}
-	virtual ~MatchAspect() = 0 {}
 
 	// all aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
 	bool enabled() const { return k > 0.; }
-	
-	// scores the match between a gray patch and a symbol based on current aspect
-	virtual double assessMatch(const cv::Mat &patch,
-							   const SymData &symData,
-							   MatchParams &mp) const {
-		return 1.;
-	}
 };
 
 // Selecting a symbol with the scene underneath it as uniform as possible
@@ -146,7 +149,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Aspect ensuring more uniform background scene around the selected symbol
@@ -158,7 +161,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Aspect ensuring the edges of the selected symbol seem to appear also on the patch
@@ -170,7 +173,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Discouraging barely visible symbols
@@ -182,7 +185,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Aspect concentrating on where's the center of gravity of the patch & its approximation
@@ -194,7 +197,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Aspect encouraging more accuracy while approximating the direction of the patch
@@ -206,7 +209,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Match aspect concerning user's preference for larger symbols as approximations
@@ -218,7 +221,7 @@ public:
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
-					   MatchParams &mp) const override;
+					   MatchParams &mp) const override; // IMatch override
 };
 
 class MatchEngine; // forward declaration
@@ -238,7 +241,7 @@ struct CachedData final {
 	double sz2;					// sz^2
 	double smallGlyphsCoverage;	// max density for symbols considered small
 	double preferredMaxMcDist;	// acceptable distance between mass centers (3/8*sz)
-	double mcDistMax;			// max possible distance between mass centers (sz_1*sqrt(2))
+	double complPrefMaxMcDist;	// max possible distance between mass centers (sz_1*sqrt(2)) - preferredMaxMcDist
 	cv::Point2d patchCenter;	// position of the center of the patch (sz_1/2, sz_1/2)
 	cv::Mat consec;				// row matrix with consecutive elements: 0..sz-1
 
@@ -248,7 +251,7 @@ private:
 };
 
 // MatchEngine finds best match for a patch based on current settings and symbols set.
-class MatchEngine final {
+class MatchEngine final : public IMatch {
 public:
 	// VSymData - vector with most information about each symbol
 	typedef std::vector<SymData> VSymData;
@@ -296,6 +299,10 @@ public:
 	// returns the approximation of 'patch_' plus other details in 'best'
 	cv::Mat approxPatch(const cv::Mat &patch_, BestMatch &best);
 
+	// scores the match between a gray patch and a symbol based on all enabled aspects
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override; // IMatch override
 #ifdef _DEBUG
 	bool usesUnicode() const; // Unicode glyphs are logged as symbols, the rest as their code
 #endif // _DEBUG

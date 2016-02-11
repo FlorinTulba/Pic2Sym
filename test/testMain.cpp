@@ -22,6 +22,8 @@
 #include "img.cpp"
 #include "config.cpp"
 
+#include <ctime>
+
 namespace ut {
 	bool Controller::initImg = false;
 	bool Controller::initFontEngine = false;
@@ -41,6 +43,104 @@ namespace ut {
 	}
 
 	Fixt::~Fixt() {
+	}
+
+	void showMismatches(const string &testTitle,
+					const vector<std::tuple<const Mat, const Mat, const BestMatch>> &mismatches) {
+		if(mismatches.empty())
+			return;
+		
+		const unsigned cases = (unsigned)mismatches.size();
+		const auto &firstItem = mismatches.front();
+		const auto &firstRefM = get<0>(firstItem);
+		const unsigned tileSz = (unsigned)firstRefM.rows;
+		const bool isColor = firstRefM.channels() > 1;
+		cerr<<"There were "<<cases<<" unexpected matches"<<endl;
+
+#ifdef _DEBUG
+#		define CONFIG_TYPE "Debug"
+#else
+#		define CONFIG_TYPE "Release"
+#endif
+		// Ensure there is a folder x64\<ConfigType>\UnitTesting\Mismatches
+		boost::filesystem::path dirOfPic2Sym(absolute("."));
+		if(exists("x64")) { // Solution root is the current folder
+			// Pic2Sym.exe is in x64/<CONFIG_TYPE>/ folder
+			dirOfPic2Sym.append("x64").append(CONFIG_TYPE);
+
+		} else { // UnitTesting.exe launched directly from its own folder
+			// Pic2Sym.exe is in ../ folder
+			dirOfPic2Sym = dirOfPic2Sym
+				.parent_path()	// parent of '<CONFIG_TYPE>/UnitTesting/.' is '<CONFIG_TYPE>/UnitTesting'
+				.parent_path();	// to get to <CONFIG_TYPE> we need one more step
+		}
+#undef CONFIG_TYPE
+
+		boost::filesystem::path pic2SymPath(boost::filesystem::path(dirOfPic2Sym)
+											.append("Pic2Sym.exe"));
+		if(!exists(pic2SymPath)) {
+			cerr<<"Couldn't locate Pic2Sym.exe"<<endl;
+			return;
+		}
+
+		// Ensure there is a folder x64\<ConfigType>\UnitTesting\Mismatches
+		boost::filesystem::path mismatchesFolder(dirOfPic2Sym);
+		if(!exists(mismatchesFolder.append("UnitTesting").append("Mismatches")))
+			create_directory(mismatchesFolder);
+
+		time_t suffix = time(nullptr);
+		const string uniqueTestTitle = testTitle + "_" + to_string(suffix);
+		wostringstream woss;
+		woss<<"Pic2Sym.exe \""<<uniqueTestTitle<<'"';
+		wstring commandLine(woss.str());
+
+		// Tiling the references/results in 2 rectangles with approx 800 x 600 aspect ratio
+		const double ar = 800/600.,
+			widthD = round(sqrt(cases*ar)), heightD = ceil(cases/widthD);
+		const unsigned widthTiles = (unsigned)widthD, heightTiles = (unsigned)heightD;
+		const unsigned width = widthTiles*tileSz, height = heightTiles*tileSz;
+		Mat m(2*height, width, (isColor?CV_8UC3:CV_8UC1), Scalar::all(127U)), // combined
+			mRef(m, Range(0, height)), // upper half contains the references
+			mRes(m, Range(height, 2*height)); // lower half for results
+		
+		// Tile the references & results
+		for(unsigned idx = 0U, r = 0U; r<heightTiles && idx<cases; ++r) {
+			Range rowRange(r*tileSz, (r+1)*tileSz);
+			for(unsigned c = 0U; c<widthTiles && idx<cases; ++c, ++idx) {
+				Range colRange(c*tileSz, (c+1)*tileSz);
+				const auto &item = mismatches[idx];
+				get<0>(item).copyTo(Mat(mRef, rowRange, colRange)); // reference
+				get<1>(item).copyTo(Mat(mRes, rowRange, colRange)); // result
+
+				// optionally present info about corresponding BestMatch get<2>(item)
+			}
+		}
+
+		// write the combined matrices as <uniqueTestTitle>.jpg
+		imwrite(boost::filesystem::path(mismatchesFolder)
+				.append(uniqueTestTitle).concat(".jpg").string().c_str(), m);
+
+		// start detached process to display a comparator with the references & results
+		PROCESS_INFORMATION pi { 0 }; STARTUPINFO si { 0 };
+		if(!CreateProcess(pic2SymPath.wstring().c_str(),
+						(LPWSTR)commandLine.c_str(),
+						NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL,
+						dirOfPic2Sym.wstring().c_str(),
+						&si, &pi)) {
+			DWORD er = GetLastError();
+
+			LPVOID lpMsgBuf;
+			FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |  FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, er, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, nullptr);
+
+			wstring reason((TCHAR*)lpMsgBuf);
+			ostringstream oss;
+			oss<<"(ErrCode=0x"<<hex<<setfill('0')<<setw(6)<<er<<dec<<") - "<<string(CBOUNDS(reason));
+
+			LocalFree(lpMsgBuf);
+
+			cerr<<"Couldn't display the mismatches due to:"<<endl;
+			cerr<<oss.str()<<endl;
+		}
 	}
 }
 
@@ -79,6 +179,10 @@ Img& Controller::getImg() {
 	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
 }
 
+Comparator& Controller::getComparator() {
+	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
+}
+
 FontEngine& Controller::getFontEngine() const {
 	GET_FIELD(FontEngine, *this);
 }
@@ -91,10 +195,6 @@ Transformer& Controller::getTransformer(const Config &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
-Comparator& Controller::getComparator() const {
-	GET_FIELD(Comparator, *this);
-}
-
 ControlPanel& Controller::getControlPanel(Config &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
@@ -103,7 +203,7 @@ ControlPanel& Controller::getControlPanel(Config &cfg_) {
 
 Controller::~Controller() {}
 
-void Controller::handleRequests() const {}
+void Controller::handleRequests() {}
 
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {}
 

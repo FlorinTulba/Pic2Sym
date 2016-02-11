@@ -43,8 +43,7 @@ const String ControlPanel::thresh4BlanksTrName = "Blanks below:";
 const String ControlPanel::outWTrName = "Max horizontally:";
 const String ControlPanel::outHTrName = "Max vertically:";
 
-CvWin::CvWin(const Controller &ctrler_, const String &winName_) :
-		ctrler(ctrler_), winName(winName_) {
+CvWin::CvWin(const String &winName_) : winName(winName_) {
 	namedWindow(winName);
 }
 
@@ -78,7 +77,7 @@ void CvWin::resize(int w, int h) const {
 	resizeWindow(winName, w, h);
 }
 
-Comparator::Comparator(const Controller &ctrler_) : CvWin(ctrler_, "Pic2Sym") {
+Comparator::Comparator(void** /*hackParam = nullptr*/) : CvWin("Pic2Sym") {
 	content = noImage;
 	createTrackbar(transpTrackName, winName,
 				   &trackPos, trackMax,
@@ -106,15 +105,14 @@ void Comparator::setReference(const Mat &ref_) {
 		setTransparency(1.);
 }
 
-void Comparator::setResult(const Mat &res_) {
+void Comparator::setResult(const Mat &res_, int transparency/* = (int)round(defaultTransparency * trackMax)*/) {
 	if(initial.empty())
 		throw logic_error("Please call Comparator::setResult() after Comparator::setReference()!");
 	if(initial.type() != res_.type() || initial.size != res_.size)
 		throw invalid_argument("Please provide a resulted image of the same size & type as the original image!");
 	result = res_;
-	int transparency = (int)round(defaultTransparency * trackMax);
 	if(trackPos != transparency)
-		setTrackbarPos(transpTrackName, winName, transparency);
+		cv::setTrackbarPos(transpTrackName, winName, transparency);
 	else
 		setTransparency(defaultTransparency);
 }
@@ -124,7 +122,7 @@ void Comparator::updateTransparency(int newTransp, void *userdata) {
 	pComp->setTransparency((double)newTransp/trackMax);
 }
 
-CmapInspect::CmapInspect(const Controller &ctrler_) : CvWin(ctrler_, "Charmap View"),
+CmapInspect::CmapInspect(const Controller &ctrler_) : CvWin("Charmap View"), ctrler(ctrler_),
 		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
 	createTrackbar(pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
@@ -352,18 +350,20 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 		MessageBox(nullptr, L"\t\tPic2Sym by Florin Tulba\n\n" \
 					L"\tThe Control Panel allows setting:\n\n" \
 					L"- which image to be approximated by symbols from a charset\n" \
+					L"- maximum number of symbols used horizontally & vertically\n" \
 					L"- which font family provides these symbols\n" \
 					L"- the desired encoding within the selected font family\n" \
-					L"- maximum number of symbols used horizontally & vertically\n" \
-					L"- the threshold contrast of determined matching glyphs below\n" \
-					L"   which to replace these barely visible matches with Blanks\n" \
-					L"- a factor to encourage matching symbols with large contrast\n" \
+					L"- the size of these symbols\n" \
 					L"- factors to favor better correspondence of foreground\n" \
-					L"   (under glyph) / background (around, aside glyph)\n" \
-					L"- a factor to enhance directionality (match patch 'gradient')\n" \
+					L"   (under glyph) / contours (edges of the glyph) /\n" \
+					L"   background (around, aside glyph)\n" \
+					L"- a factor to encourage matching symbols with large contrast\n" \
 					L"- a factor to encourage 'gravitational' smoothness\n" \
 					L"   (match patch 'mass center')\n" \
+					L"- a factor to enhance directionality (match patch 'gradient')\n" \
 					L"- a factor to favor selecting larger symbols over small ones\n\n" \
+					L"- the threshold contrast of determined matching glyphs below\n" \
+					L"   which to replace these barely visible matches with Blanks\n" \
 					L"The rudimentary sliders used here won't always show valid ranges.\n" \
 					L"They all must be integer, start from 0, end at least on 1.\n" \
 					L"When their labels is truncated, clicking on them will help.\n\n" \

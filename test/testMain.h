@@ -11,7 +11,10 @@
 #ifndef H_TEST_MAIN
 #define H_TEST_MAIN
 
+#include "match.h"
+
 #include <boost/test/unit_test.hpp>
+#include <opencv2/core/core.hpp>
 
 namespace ut { // unit testing namespace
 
@@ -37,6 +40,9 @@ namespace ut { // unit testing namespace
 		Fixt();		// set up
 		~Fixt();	// tear down
 	};
+
+	void showMismatches(const std::string &testTitle,
+		const std::vector<std::tuple<const cv::Mat, const cv::Mat, const BestMatch>> &mismatches);
 }
 
 #endif

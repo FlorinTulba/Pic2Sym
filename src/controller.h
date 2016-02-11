@@ -51,10 +51,10 @@ public: // Providing get<field> as public for Unit Testing
 #endif
 	// Methods for initialization
 	static Img& getImg();
+	static Comparator& getComparator();
 	FontEngine& getFontEngine() const;
 	MatchEngine& getMatchEngine(const Config &cfg_) const;
 	Transformer& getTransformer(const Config &cfg_) const;
-	Comparator& getComparator() const;
 	ControlPanel& getControlPanel(Config &cfg_);
 
 public:
@@ -62,7 +62,7 @@ public:
 	~Controller();				// destroys the windows
 
 	// Waits for the user to press ESC and confirm he wants to leave
-	void handleRequests() const;
+	static void handleRequests();
 
 	// Settings from view passed to model
 	void newImage(const std::string &imgPath);

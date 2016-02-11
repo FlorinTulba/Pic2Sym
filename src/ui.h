@@ -27,12 +27,10 @@ Allows setting title, overlay, status, location, size and resizing properties.
 */
 class CvWin abstract {
 protected:
-	const Controller &ctrler;			// window manager
-
 	const cv::String winName;	// window's handle
 	cv::Mat content;			// what to display 
 
-	CvWin(const Controller &ctrler_, const cv::String &winName_);
+	CvWin(const cv::String &winName_);
 
 public:
 	virtual ~CvWin() = 0 {}
@@ -63,12 +61,24 @@ class Comparator final : public CvWin {
 	void setTransparency(double transparency);	// called from updateTransparency
 
 public:
-	Comparator(const Controller &ctrler_);
+	/*
+	Creating a Comparator window.
+
+	The parameter just supports a macro mechanism that creates several object types
+	with variable number of parameters.
+
+	For Comparator, instead of 'Comparator field;', it would generate 'Comparator field();'
+	which is interpreted as a function declaration.
+
+	Adding this extra param generates no harm in the rest of the project,
+	but allows the macro to see it as object 'Comparator field(nullptr);', not function.
+	*/
+	Comparator(void** /*hackParam*/ =nullptr);
 
 	static void updateTransparency(int newTransp, void *userdata); // slider's callback
 
 	void setReference(const cv::Mat &reference_);
-	void setResult(const cv::Mat &result_);
+	void setResult(const cv::Mat &result_, int transparency = (int)round(defaultTransparency * trackMax));
 };
 
 /*
@@ -79,6 +89,8 @@ can be browsed using the page slider.
 class CmapInspect final : public CvWin {
 	static const cv::String pageTrackName;	// page slider handle
 	static const cv::Size pageSz;			// 640x480
+
+	const Controller &ctrler;	// window manager
 
 	cv::Mat grid;				// the symbols' `hive`
 	int page = 0;				// page slider position
