@@ -31,7 +31,7 @@ struct SymData final {
 	const cv::Point2d &mc;			// mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
-		GLYPH_IDX, FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX, GROUNDED_GLYPH_IDX,
+		FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX, GROUNDED_GLYPH_IDX,
 		MATRICES_COUNT // keep this last and don't use it as index in MatArray objects
 	};
 
@@ -62,7 +62,7 @@ struct MatchParams final {
 	boost::optional<double> sdevFg, sdevBg, sdevEdge;
 
 	// Prepare for next symbol to match against patch
-	void resetSymData(); // reset everything except mcPatch
+	void reset(bool skipMcPatch = true); // resets everything except mcPatch when skip = true
 
 	// Methods for computing each field
 	void computeFg(const cv::Mat &patch, const SymData &symData);
@@ -219,7 +219,7 @@ public:
 		MatchAspect(cachedData_, cfg.get_kGlyphWeight()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
+	double assessMatch(const cv::Mat&,
 					   const SymData &symData,
 					   MatchParams &mp) const override; // IMatch override
 };
@@ -240,7 +240,7 @@ struct CachedData final {
 	unsigned sz_1;				// sz - 1
 	double sz2;					// sz^2
 	double smallGlyphsCoverage;	// max density for symbols considered small
-	double preferredMaxMcDist;	// acceptable distance between mass centers (3/8*sz)
+	double preferredMaxMcDist;	// acceptable distance between mass centers (sz/8)
 	double complPrefMaxMcDist;	// max possible distance between mass centers (sz_1*sqrt(2)) - preferredMaxMcDist
 	cv::Point2d patchCenter;	// position of the center of the patch (sz_1/2, sz_1/2)
 	cv::Mat consec;				// row matrix with consecutive elements: 0..sz-1
@@ -248,6 +248,11 @@ struct CachedData final {
 private:
 	friend class MatchEngine;
 	void update(unsigned sz_, const FontEngine &fe_);
+
+#ifdef UNIT_TESTING // UnitTesting project should have public access to 'useNewSymSize' method
+public:
+#endif
+	void useNewSymSize(unsigned sz_);
 };
 
 // MatchEngine finds best match for a patch based on current settings and symbols set.

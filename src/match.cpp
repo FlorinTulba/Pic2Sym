@@ -115,9 +115,12 @@ SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double
 		pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {
 }
 
-void MatchParams::resetSymData() {
+void MatchParams::reset(bool skipMcPatch/* = true*/) {
 	mcGlyph = none;
 	glyphWeight = fg = bg = sdevFg = sdevBg = sdevEdge = none;
+
+	if(!skipMcPatch)
+		mcPatch = none;
 }
 
 void MatchParams::computeMean(const cv::Mat &patch, const cv::Mat &mask, optional<double> &miu) {
@@ -277,22 +280,15 @@ double EdgeMatch::assessMatch(const cv::Mat &patch,
 double BetterContrast::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
-	static const double MIN_CONTRAST_BRIGHT = 2., // less contrast needed for bright tones
-						MIN_CONTRAST_DARK = 5.; // more contrast needed for dark tones
-	static const double CONTRAST_RATIO = (MIN_CONTRAST_DARK - MIN_CONTRAST_BRIGHT) / (2.*255);
-	
 	mp.computeFg(patch, symData);
 	mp.computeBg(patch, symData);
 	
-	const double minimalContrast = // minimal contrast for the average brightness
-		MIN_CONTRAST_BRIGHT + CONTRAST_RATIO * (mp.fg.value() + mp.bg.value());
-
 	// range 0 .. 255, best when large
 	const double contrast = abs(mp.fg.value() - mp.bg.value());
 
-	// Encourages contrasts larger than minimalContrast:
-	// <1 for low contrast;  1 for minimalContrast;  >1 otherwise
-	return pow(contrast / minimalContrast, k);
+	// Encourages larger contrasts:
+	// 0 for no contrast; 1 for max contrast (255)
+	return pow(contrast / 255., k);
 }
 
 double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
@@ -340,12 +336,12 @@ double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 	// The mc-s are consider close when the distance between them is < preferredMaxMcDist
 	//		(1. + cosAngleMCs) * (2-sqrt(2)) is <=1 for |angleMCs| >= 45  and  >1 otherwise
 	// So, large k generally penalizes large angles and encourages small ones,
-	// but fades gradually for nearer mc-s or completely when the mc-s overlap.
+	// but fades gradually for nearer mc-s or fades completely when the mc-s overlap.
 	return pow((1. + cosAngleMCs) * TWOmSQRT2,
 			   k * min(mcsOffset, cachedData.preferredMaxMcDist) / cachedData.preferredMaxMcDist);
 }
 
-double LargerSym::assessMatch(const cv::Mat &patch,
+double LargerSym::assessMatch(const cv::Mat&,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeRhoApproxSym(symData, cachedData);
@@ -356,17 +352,21 @@ double LargerSym::assessMatch(const cv::Mat &patch,
 	return pow(mp.glyphWeight.value() + 1. - cachedData.smallGlyphsCoverage, k);
 }
 
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
+void CachedData::useNewSymSize(unsigned sz_) {
 	sz = sz_;
 	sz_1 = sz - 1U;
 	sz2 = (double)sz * sz;
 
-	preferredMaxMcDist = 3. * sz / 8;
+	preferredMaxMcDist = sz / 8.;
 	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
 	patchCenter = cv::Point2d(sz_1, sz_1) / 2;
 
 	consec = cv::Mat(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
+}
+
+void CachedData::update(unsigned sz_, const FontEngine &fe_) {
+	useNewSymSize(sz_);
 
 	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
 }
@@ -429,7 +429,6 @@ void MatchEngine::updateSymbols() {
 							 minVal, maxVal-minVal,
 							 pms.glyphSum, pms.mc,
 							 SymData::MatArray { {
-								glyph,			// GLYPH_IDX
 								fgMask,			// FG_MASK_IDX 
 								bgMask,			// BG_MASK_IDX
 								edgeMask,		// EDGE_MASK_IDX
@@ -541,7 +540,7 @@ void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 		if(score > best.score)
 			best.update(score, idx, symData.code, mp);
 
-		mp.resetSymData();
+		mp.reset();
 		++idx;
 	}
 }

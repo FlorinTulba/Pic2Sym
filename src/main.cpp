@@ -65,7 +65,7 @@ void viewMismatchesMode(const string &testTitle) {
 	}
 
 	const Mat mismatches = imread(mismatchesFile.string(), ImreadModes::IMREAD_UNCHANGED);
-	if(mismatches.data == nullptr) {
+	if(mismatches.empty()) {
 		cerr<<"Invalid jpg file for mismatches: "<<mismatchesFile<<'.'<<endl;
 		pauseAfterError();
 		return;

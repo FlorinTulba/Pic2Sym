@@ -24,7 +24,7 @@ const Mat Comparator::noImage = imread("res/NoImage.jpg");
 const String CmapInspect::pageTrackName = "Cmap Page:";
 const Size CmapInspect::pageSz(640, 480);
 
-const double ControlPanel::Converter::Contrast::maxReal = 15.;
+const double ControlPanel::Converter::Contrast::maxReal = 1.;
 const double ControlPanel::Converter::Correctness::maxReal = 10.;
 const double ControlPanel::Converter::Direction::maxReal = 5.;
 const double ControlPanel::Converter::Gravity::maxReal = 5.;

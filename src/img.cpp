@@ -20,7 +20,7 @@ using namespace boost::filesystem;
 using namespace cv;
 
 bool Img::reset(const cv::Mat &source_) {
-	if(source_.data == nullptr)
+	if(source_.empty())
 		return false;
 
 	source = source_;
@@ -52,7 +52,7 @@ bool Img::reset(const string &picName) {
 }
 
 Mat Img::resized(const Config &cfg) {
-	if(source.data == nullptr) {
+	if(source.empty()) {
 		cerr<<"No image set yet"<<endl;
 		throw logic_error("No image set yet");
 	}

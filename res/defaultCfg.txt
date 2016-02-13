@@ -33,8 +33,8 @@ ASIDE_GLYPH_CORRECTNESS	7.5
 ; Real coefficient that penalizes extremely low contrast matches,
 ; favoring less accurate ones, but which will bring more contrast.
 ; Set it to 0 if correctness is more important than a fancy result.
-; Any other real positive value is allowed. 1 is ok.
-MORE_CONTRAST_PREF	3.0
+; Any other real positive value is allowed. 0..1 range is preferred.
+MORE_CONTRAST_PREF	0.1
 
 ; Real coefficient that favors glyphs naturally disposed
 ; near the 'center of action' from the original area to approximate.
