@@ -361,9 +361,9 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 					L"- a factor to encourage 'gravitational' smoothness\n" \
 					L"   (match patch 'mass center')\n" \
 					L"- a factor to enhance directionality (match patch 'gradient')\n" \
-					L"- a factor to favor selecting larger symbols over small ones\n\n" \
+					L"- a factor to favor selecting larger symbols over small ones\n" \
 					L"- the threshold contrast of determined matching glyphs below\n" \
-					L"   which to replace these barely visible matches with Blanks\n" \
+					L"   which to replace these barely visible matches with Blanks\n\n" \
 					L"The rudimentary sliders used here won't always show valid ranges.\n" \
 					L"They all must be integer, start from 0, end at least on 1.\n" \
 					L"When their labels is truncated, clicking on them will help.\n\n" \
