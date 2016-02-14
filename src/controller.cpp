@@ -21,6 +21,7 @@
 #endif
 
 using namespace std;
+using namespace std::chrono;
 using namespace boost::filesystem;
 using namespace cv;
 
@@ -260,6 +261,70 @@ bool Controller::performTransformation() {
 
 	t.run();
 	return true;
+}
+
+void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) const {
+	if(done) {
+		reportGlyphProgress(1.);
+
+		ostringstream oss;
+		oss<<"The update of the symbols set took "<<elapsed<<" s!";
+
+		cout<<oss.str()<<endl<<endl;
+		if(pCmi)
+			pCmi->setOverlay(oss.str(), 3000);
+
+	} else {
+		reportGlyphProgress(0.);
+	}
+}
+
+void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
+	if(done) {
+		reportTransformationProgress(1.);
+
+		ostringstream oss;
+		oss<<"The transformation took "<<elapsed<<" s!";
+
+		cout<<oss.str()<<endl<<endl;
+		comp.setOverlay(oss.str(), 3000);
+
+	} else {
+		reportTransformationProgress(0.);
+	}
+}
+
+Controller::Timer::Timer(const Controller &ctrler_, ComputationType compType_) :
+ctrler(ctrler_), compType(compType_), start(high_resolution_clock::now()) {
+	switch(compType) {
+		case ComputationType::SYM_SET_UPDATE:
+			ctrler.symsSetUpdate();
+			break;
+		case ComputationType::IMG_TRANSFORM:
+			ctrler.imgTransform();
+			break;
+		default:;
+	}
+}
+
+Controller::Timer::~Timer() {
+	if(!active)
+		return;
+
+	duration<double> elapsedS = high_resolution_clock::now() - start;
+	switch(compType) {
+		case ComputationType::SYM_SET_UPDATE:
+			ctrler.symsSetUpdate(true, elapsedS.count());
+			break;
+		case ComputationType::IMG_TRANSFORM:
+			ctrler.imgTransform(true, elapsedS.count());
+			break;
+		default:;
+	}
+}
+
+void Controller::Timer::release() {
+	active = false;
 }
 
 // Methods from below have different definitions for UnitTesting project

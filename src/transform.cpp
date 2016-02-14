@@ -15,7 +15,6 @@
 
 #include <sstream>
 #include <numeric>
-#include <chrono>
 
 #if defined _DEBUG && !defined UNIT_TESTING
 #	include <fstream>
@@ -24,7 +23,6 @@
 #include <boost/filesystem/operations.hpp>
 
 using namespace std;
-using namespace std::chrono;
 using namespace boost::filesystem;
 
 Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_) :
@@ -33,12 +31,12 @@ Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEng
 }
 
 void Transformer::run() {
-	time_point<high_resolution_clock> start = high_resolution_clock::now();
-
 	me.updateSymbols(); // throws for invalid cmap/size
 
 	const cv::Mat resized = img.resized(cfg); // throws when no image
-	ctrler.reportTransformationProgress(0.); // keep it after img.resized, to display updated resized version as comparing image
+	
+	// keep it after img.resized, to display updated resized version as comparing image
+	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::IMG_TRANSFORM);
 
 	ostringstream oss;
 	oss<<img.name()<<'_'
@@ -57,6 +55,7 @@ void Transformer::run() {
 	if(exists(resultFile)) {
 		result = cv::imread(resultFile.string(), cv::ImreadModes::IMREAD_UNCHANGED);
 		ctrler.reportTransformationProgress(1.);
+		timer.release();
 
 		infoMsg("This image has already been transformed under these settings.\n"
 				"Displaying the available result");
@@ -112,11 +111,6 @@ void Transformer::run() {
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
 #endif
-
-	ctrler.reportTransformationProgress(1.);
-
-	duration<double> elapsedS = high_resolution_clock::now() - start;
-	cout<<"The transformation required "<<elapsedS.count()<<" s!"<<endl<<endl;
 }
 
 #ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods

@@ -579,7 +579,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.horiResolution = req.vertResolution = 72U;
 
 	double progress = 0.;
-	ctrler.reportGlyphProgress(progress);
+	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::SYM_SET_UPDATE);
+
 	// 2% for this stage, no reports
 	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
 	symsCont.reset(fontSz_, symsCount);
@@ -625,8 +626,6 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	// 1% for this stage, no more reports
 	symsCont.setAsReady();
-
-	ctrler.reportGlyphProgress(1.);
 
 #ifdef _DEBUG
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;

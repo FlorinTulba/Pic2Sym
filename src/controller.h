@@ -14,6 +14,8 @@
 #include "ui.h"
 #include "transform.h"
 
+#include <chrono>
+
 // Manager of the views and data.
 class Controller final {
 	// Data
@@ -45,6 +47,11 @@ class Controller final {
 	Details about the ongoing operation can be added to the title.
 	*/
 	void hourGlass(double progress, const std::string &title = "") const;
+
+	// called by friend class Timer from below when starting and ending the computations
+	void symsSetUpdate(bool done = false, double elapsed = 0.) const;	// updating symbols set
+	void imgTransform(bool done = false, double elapsed = 0.) const;	// transforming an image
+
 
 #ifdef UNIT_TESTING
 public: // Providing get<field> as public for Unit Testing
@@ -90,6 +97,31 @@ public:
 	// Transformer
 	bool performTransformation();
 	void reportTransformationProgress(double progress) const;
+
+	// Timing cmap updates and also image transformations
+	class Timer {
+	public:
+		enum struct ComputationType : unsigned char {
+			SYM_SET_UPDATE,	// used when updating the symbols set
+			IMG_TRANSFORM	// used when transforming an image
+		};
+	private:
+		const Controller &ctrler;
+		const ComputationType compType;
+
+		// the moment when computation started
+		const std::chrono::time_point<std::chrono::high_resolution_clock> start;
+
+		bool active = true;		// true as long as not released
+
+	public:
+		Timer(const Controller &ctrler_, ComputationType compType_);	// initializes start
+		~Timer();				// if not released, reports duration
+
+		void release();			// stops the timer
+	};
+
+	friend class Timer;
 
 #ifdef UNIT_TESTING
 	// Methods available only in Unit Testing mode
