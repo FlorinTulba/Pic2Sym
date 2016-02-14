@@ -282,6 +282,7 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
 	if(done) {
 		reportTransformationProgress(1.);
+		comp.setResult(t.getResult()); // display the result at the end of the transformation
 
 		ostringstream oss;
 		oss<<"The transformation took "<<elapsed<<" s!";
@@ -291,6 +292,7 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 
 	} else {
 		reportTransformationProgress(0.);
+		comp.setReference(img.getResized()); // display 'original' when starting transformation
 	}
 }
 
@@ -369,10 +371,6 @@ void Controller::reportGlyphProgress(double progress) const {
 
 void Controller::reportTransformationProgress(double progress) const {
 	hourGlass(progress, "Transforming image. Please wait");
-	if(progress == 0.)
-		comp.setReference(img.getResized()); // display 'original' when starting transformation
-	else if(progress == 1.)
-		comp.setResult(t.getResult()); // display the result at the end of the transformation
 }
 
 #define GET_FIELD(FieldType, ...) \
