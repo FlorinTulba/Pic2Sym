@@ -36,8 +36,8 @@ void showUsage() {
 
 // Normal mode launch. appFile is a path ending in Pic2Sym.exe
 void normalLaunch(const string &appFile) {
-	Config cfg(appFile);
-	Controller c(cfg);
+	Settings s(move(MatchSettings(appFile)));
+	Controller c(s);
 	Controller::handleRequests();
 }
 

@@ -16,12 +16,57 @@
 
 #include <chrono>
 
+class Controller;
+
+// Envelopes all parameters required for transforming images
+class Settings {
+	SymSettings ss;		// parameters concerning the symbols set used for approximating patches
+	ImgSettings is;		// contains max count of horizontal & vertical patches to process
+	MatchSettings ms;	// settings used during approximation process
+	friend class Controller; // the unique setter of the fields above (apart serialization)
+
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned version) {
+		ar&ss;
+		ar&is;
+		ar&ms;
+	}
+	friend class boost::serialization::access;
+
+public:
+	static const unsigned // Limits  
+		MIN_FONT_SIZE = 7U, MAX_FONT_SIZE = 50U, DEF_FONT_SIZE = 10U,
+		MAX_THRESHOLD_FOR_BLANKS = 50U,
+		MIN_H_SYMS = 3U, MAX_H_SYMS = 1024U,
+		MIN_V_SYMS = 3U, MAX_V_SYMS = 768U;
+
+	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
+	static bool isHmaxSymsOk(unsigned syms) { return syms>=MIN_H_SYMS && syms<=MAX_H_SYMS; }
+	static bool isVmaxSymsOk(unsigned syms) { return syms>=MIN_V_SYMS && syms<=MAX_V_SYMS; }
+	static bool isFontSizeOk(unsigned fs) { return fs>=MIN_FONT_SIZE && fs<=MAX_FONT_SIZE; }
+
+	/*
+	Creates a complete set of settings required during image transformations.
+	The incoming parameter ms_ is completely moved to ms field, so that Settings to be
+	the only setter of the MatchSettings in use.
+	*/
+	Settings(const MatchSettings &&ms_);
+
+	const SymSettings& symSettings() const { return ss; }
+	const ImgSettings& imgSettings() const { return is; }
+	const MatchSettings& matchSettings() const { return ms; }
+
+	friend std::ostream& operator<<(std::ostream &os, const Settings &s);
+};
+
+BOOST_CLASS_VERSION(Settings, 0)
+
 // Manager of the views and data.
 class Controller final {
 	// Data
 	Img &img;			// image to process
 	FontEngine &fe;		// font engine
-	Config &cfg;		// most settings for the transformations
+	Settings &cfg;		// the settings for the transformations
 	MatchEngine &me;	// matching engine
 	Transformer &t;		// transforming engine
 
@@ -37,11 +82,19 @@ class Controller final {
 
 	// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
-	bool validState(bool imageReguired = true) const;
+	bool validState(bool imageRequired = true) const;
 
 	void updateCmapStatusBar() const;	// updates information about font family, encoding and size
 	void symbolsChanged();				// triggered by new font family / encoding / size
-	
+
+	// called by FontEngine::newFont after installing a new font to update SymSettings
+	void selectedFontFile(const std::string &fName) const;
+	friend bool FontEngine::newFont(const std::string&);
+
+	// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
+	void selectedEncoding(const std::string &encName) const;
+	friend bool FontEngine::setNthUniqueEncoding(unsigned);
+
 	/*
 	Shows a 'Please wait' window and reports the progress (0..1) as %.
 	Details about the ongoing operation can be added to the title.
@@ -52,6 +105,10 @@ class Controller final {
 	void symsSetUpdate(bool done = false, double elapsed = 0.) const;	// updating symbols set
 	void imgTransform(bool done = false, double elapsed = 0.) const;	// transforming an image
 
+	// Next 3 private methods do the ground work for their public correspondent methods
+	bool _newFontFamily(const std::string &fontFile, bool forceUpdate = false);
+	bool _newFontEncoding(const std::string &encName, bool forceUpdate = false);
+	bool _newFontSize(int fontSz, bool forceUpdate = false);
 
 #ifdef UNIT_TESTING
 public: // Providing get<field> as public for Unit Testing
@@ -59,14 +116,20 @@ public: // Providing get<field> as public for Unit Testing
 	// Methods for initialization
 	static Img& getImg();
 	static Comparator& getComparator();
-	FontEngine& getFontEngine() const;
-	MatchEngine& getMatchEngine(const Config &cfg_) const;
-	Transformer& getTransformer(const Config &cfg_) const;
-	ControlPanel& getControlPanel(Config &cfg_);
+	FontEngine& getFontEngine(const SymSettings &ss_) const;
+	MatchEngine& getMatchEngine(const Settings &cfg_) const;
+	Transformer& getTransformer(const Settings &cfg_) const;
+	ControlPanel& getControlPanel(Settings &cfg_);
 
 public:
-	Controller(Config &cfg_);	// get the application path as parameter
+	Controller(Settings &s);	// get the application path as parameter
 	~Controller();				// destroys the windows
+
+	void restoreUserDefaultMatchSettings();
+	void setUserDefaultMatchSettings() const;
+
+	void loadSettings();
+	void saveSettings() const;
 
 	// Waits for the user to press ESC and confirm he wants to leave
 	static void handleRequests();
@@ -75,6 +138,7 @@ public:
 	void newImage(const std::string &imgPath);
 	void newFontFamily(const std::string &fontFile);
 	void newFontEncoding(int encodingIdx);
+	bool newFontEncoding(const std::string &encName);
 	void newFontSize(int fontSz);
 	void newUnderGlyphCorrectnessFactor(double k);
 	void newGlyphEdgeCorrectnessFactor(double k);
@@ -88,7 +152,7 @@ public:
 	void newVmaxSyms(int maxSyms);
 
 	// Settings passed from model to view
-	unsigned getFontSize() const { return cfg.getFontSz(); }
+	unsigned getFontSize() const { return cfg.ss.getFontSz(); }
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const;
 
 	// Progress about loading, adapting glyphs
@@ -126,7 +190,6 @@ public:
 #ifdef UNIT_TESTING
 	// Methods available only in Unit Testing mode
 	bool newImage(const cv::Mat &imgMat);	// Provide directly a matrix instead of an image
-	bool newFontEncoding(const std::string &encName); // Use an Encoding name
 #endif
 };
 

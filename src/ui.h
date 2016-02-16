@@ -19,7 +19,8 @@
 #include "transform.h"
 #include <opencv2/core.hpp>
 
-class Controller; // The views defined below interact with this class
+class Settings;		// global settings
+class Controller;	// The views defined below interact with this class
 
 /*
 CvWin - base class for Comparator & CmapInspect from below.
@@ -203,10 +204,15 @@ class ControlPanel final {
 	bool updatingEncMax = false;
 
 public:
-	ControlPanel(Controller &ctrler_, const Config &cfg);
+	ControlPanel(Controller &ctrler_, const Settings &cfg);
 
 	void updateEncodingsCount(unsigned uniqueEncodings);	// puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above
+
+	// updates font size & encoding sliders, if necessary
+	void updateSymSettings(unsigned encIdx, unsigned fontSz_);
+	void updateImgSettings(const ImgSettings &is); // updates sliders concerning ImgSettings items
+	void updateMatchSettings(const MatchSettings &ms); // updates sliders concerning MatchSettings items
 };
 
 #endif // H_UI

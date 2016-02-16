@@ -244,33 +244,38 @@ double ControlPanel::Converter::LargerSym::fromSlider(int largerSym) {
 	return proportionRule(largerSym, maxSlider, maxReal);
 }
 
-ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
+ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		ctrler(ctrler_),
-		maxHSyms(cfg.getMaxHSyms()), maxVSyms(cfg.getMaxVSyms()),
-		encoding(0U), fontSz(cfg.getFontSz()),
-		underGlyphCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevFg())),
-		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevEdge())),
-		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg.get_kSdevBg())),
-		moreContrast(Converter::Contrast::toSlider(cfg.get_kContrast())),
-		gravity(Converter::Gravity::toSlider(cfg.get_kMCsOffset())),
-		direction(Converter::Direction::toSlider(cfg.get_kCosAngleMCs())),
-		largerSym(Converter::LargerSym::toSlider(cfg.get_kGlyphWeight())),
-		thresh4Blanks(cfg.getBlankThreshold()) {
+		maxHSyms(cfg.imgSettings().getMaxHSyms()), maxVSyms(cfg.imgSettings().getMaxVSyms()),
+		encoding(0U), fontSz(cfg.symSettings().getFontSz()),
+		underGlyphCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevFg())),
+		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevEdge())),
+		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevBg())),
+		moreContrast(Converter::Contrast::toSlider(cfg.matchSettings().get_kContrast())),
+		gravity(Converter::Gravity::toSlider(cfg.matchSettings().get_kMCsOffset())),
+		direction(Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs())),
+		largerSym(Converter::LargerSym::toSlider(cfg.matchSettings().get_kGlyphWeight())),
+		thresh4Blanks(cfg.matchSettings().getBlankThreshold()) {
 
-	createButton("Select an Image to Transform",
+	createButton("Select an Image",
 				 [] (int, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		static FileOpen fo;
-		if(fo.promptForUserChoice())
-			pCtrler->newImage(fo.selection());
+		static ImgSelector is;
+		if(is.promptForUserChoice())
+			pCtrler->newImage(is.selection());
+	}, reinterpret_cast<void*>(&ctrler));
+	createButton("Transform the Image",
+				 [] (int, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->performTransformation();
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createTrackbar(outWTrName, nullptr, &maxHSyms, Config::MAX_H_SYMS,
+	createTrackbar(outWTrName, nullptr, &maxHSyms, Settings::MAX_H_SYMS,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newHmaxSyms(val);
 	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(outHTrName, nullptr, &maxVSyms, Config::MAX_V_SYMS,
+	createTrackbar(outHTrName, nullptr, &maxVSyms, Settings::MAX_V_SYMS,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newVmaxSyms(val);
@@ -289,16 +294,19 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newFontEncoding(val);
 	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(fontSzTrName, nullptr, &fontSz, Config::MAX_FONT_SIZE,
+	createTrackbar(fontSzTrName, nullptr, &fontSz, Settings::MAX_FONT_SIZE,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newFontSize(val);
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createButton("Transform chosen Image based on current Settings",
-				 [] (int, void *userdata) {
+	createButton("Restore defaults for values below", [] (int, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->performTransformation();
+		pCtrler->restoreUserDefaultMatchSettings();
+	}, reinterpret_cast<void*>(&ctrler));
+	createButton("Set as defaults the values below", [] (int, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->setUserDefaultMatchSettings();
 	}, reinterpret_cast<void*>(&ctrler));
 
 	createTrackbar(underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, Converter::Correctness::maxSlider,
@@ -340,13 +348,13 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 		pCtrler->newGlyphWeightFactor(Converter::LargerSym::fromSlider(val));
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createTrackbar(thresh4BlanksTrName, nullptr, &thresh4Blanks, Config::MAX_THRESHOLD_FOR_BLANKS,
+	createTrackbar(thresh4BlanksTrName, nullptr, &thresh4Blanks, Settings::MAX_THRESHOLD_FOR_BLANKS,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
 		pCtrler->newThreshold4BlanksFactor(val);
 	}, reinterpret_cast<void*>(&ctrler));
 
-	createButton("Instructions for using the Control Panel", [] (int, void*) {
+	createButton("Instructions", [] (int, void*) {
 		MessageBox(nullptr, L"\t\tPic2Sym by Florin Tulba\n\n" \
 					L"\tThe Control Panel allows setting:\n\n" \
 					L"- which image to be approximated by symbols from a charset\n" \
@@ -370,6 +378,66 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Config &cfg) :
 					L"There's more information in ReadMe.txt.\n",
 					L"Instructions", MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 	});
+	createButton("Load Settings", [] (int, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->loadSettings();
+	}, reinterpret_cast<void*>(&ctrler));
+	createButton("Save Settings", [] (int, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->saveSettings();
+	}, reinterpret_cast<void*>(&ctrler));
+}
+
+void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
+	int newVal = Converter::Correctness::toSlider(ms.get_kSdevFg());
+	while(underGlyphCorrectness != newVal)
+		setTrackbarPos(underGlyphCorrectnessTrName, nullptr, newVal);
+
+	newVal = Converter::Correctness::toSlider(ms.get_kSdevEdge());
+	while(glyphEdgeCorrectness != newVal)
+		setTrackbarPos(glyphEdgeCorrectnessTrName, nullptr, newVal);
+
+	newVal = Converter::Correctness::toSlider(ms.get_kSdevBg());
+	while(asideGlyphCorrectness != newVal)
+		setTrackbarPos(asideGlyphCorrectnessTrName, nullptr, newVal);
+
+	newVal = Converter::Contrast::toSlider(ms.get_kContrast());
+	while(moreContrast != newVal)
+		setTrackbarPos(moreContrastTrName, nullptr, newVal);
+
+	newVal = Converter::Gravity::toSlider(ms.get_kMCsOffset());
+	while(gravity != newVal)
+		setTrackbarPos(gravityTrName, nullptr, newVal);
+
+	newVal = Converter::Direction::toSlider(ms.get_kCosAngleMCs());
+	while(direction != newVal)
+		setTrackbarPos(directionTrName, nullptr, newVal);
+
+	newVal = Converter::LargerSym::toSlider(ms.get_kGlyphWeight());
+	while(largerSym != newVal)
+		setTrackbarPos(largerSymTrName, nullptr, newVal);
+
+	newVal = ms.getBlankThreshold();
+	while(thresh4Blanks != newVal)
+		setTrackbarPos(thresh4BlanksTrName, nullptr, newVal);
+}
+
+void ControlPanel::updateImgSettings(const ImgSettings &is) {
+	int newVal = is.getMaxHSyms();
+	while(maxHSyms != newVal)
+		setTrackbarPos(outWTrName, nullptr, newVal);
+
+	newVal = is.getMaxVSyms();
+	while(maxVSyms != newVal)
+		setTrackbarPos(outHTrName, nullptr, newVal);
+}
+
+void ControlPanel::updateSymSettings(unsigned encIdx, unsigned fontSz_) {
+	while(encoding != encIdx)
+		setTrackbarPos(encodingTrName, nullptr, encIdx);
+
+	while(fontSz != fontSz_)
+		setTrackbarPos(fontSzTrName, nullptr, fontSz_);
 }
 
 void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {

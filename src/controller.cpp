@@ -10,6 +10,7 @@
 
 #include "controller.h"
 #include "misc.h"
+#include "dlgs.h"
 
 #include <Windows.h>
 #include <sstream>
@@ -23,33 +24,42 @@
 using namespace std;
 using namespace std::chrono;
 using namespace boost::filesystem;
+using namespace boost::archive;
 using namespace cv;
 
-Controller::Controller(Config &cfg_) :
-		img(getImg()), fe(getFontEngine()), cfg(cfg_),
-		me(getMatchEngine(cfg_)), t(getTransformer(cfg_)),
-		comp(getComparator()), cp(getControlPanel(cfg_)),
-		hMaxSymsOk(Config::isHmaxSymsOk(cfg_.getMaxHSyms())),
-		vMaxSymsOk(Config::isVmaxSymsOk(cfg_.getMaxVSyms())),
-		fontSzOk(Config::isFontSizeOk(cfg_.getFontSz())) {
+Settings::Settings(const MatchSettings &&ms_) :
+	ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms(ms_) {}
+
+ostream& operator<<(ostream &os, const Settings &s) {
+	os<<s.ss<<s.is<<s.ms<<endl;
+	return os;
+}
+
+Controller::Controller(Settings &s) :
+		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
+		me(getMatchEngine(s)), t(getTransformer(s)),
+		comp(getComparator()), cp(getControlPanel(s)),
+		hMaxSymsOk(Settings::isHmaxSymsOk(s.is.getMaxHSyms())),
+		vMaxSymsOk(Settings::isVmaxSymsOk(s.is.getMaxVSyms())),
+		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
 	comp.setTitle("Pic2Sym - (c) 2016 Florin Tulba");
 	comp.setStatus("Press Ctrl+P for Control Panel; ESC to Exit");
 }
 
-bool Controller::validState(bool imageReguired/* = true*/) const {
-	if(((imageOk && hMaxSymsOk && vMaxSymsOk) || !imageReguired) &&
+bool Controller::validState(bool imageRequired/* = true*/) const {
+	if(((imageOk && hMaxSymsOk && vMaxSymsOk) || !imageRequired) &&
 	   fontFamilyOk && fontSzOk)
 		return true;
 
 	ostringstream oss;
 	oss<<"The problems are:"<<endl<<endl;
-	if(imageReguired && !imageOk)
+	if(imageRequired && !imageOk)
 		oss<<"- no image to transform"<<endl;
-	if(imageReguired && !hMaxSymsOk)
+	if(imageRequired && !hMaxSymsOk)
 		oss<<"- max count of symbols horizontally is too small"<<endl;
-	if(imageReguired && !vMaxSymsOk)
+	if(imageRequired && !vMaxSymsOk)
 		oss<<"- max count of symbols vertically is too small"<<endl;
 	if(!fontFamilyOk)
 		oss<<"- no font family to use during transformation"<<endl;
@@ -102,12 +112,12 @@ void Controller::newImage(const string &imgPath) {
 void Controller::updateCmapStatusBar() const {
 	ostringstream oss;
 	oss<<"Font type: '"<<fe.getFamily()<<' '<<fe.getStyle()
-		<<"' Size: "<<cfg.getFontSz()<<" Encoding: '"<<fe.getEncoding()<<'\'';
+		<<"' Size: "<<cfg.ss.getFontSz()<<" Encoding: '"<<fe.getEncoding()<<'\'';
 	pCmi->setStatus(oss.str());
 }
 
 void Controller::symbolsChanged() {
-	fe.setFontSz(cfg.getFontSz());
+	fe.setFontSz(cfg.ss.getFontSz());
 	me.updateSymbols();
 
 	updateCmapStatusBar();
@@ -115,27 +125,38 @@ void Controller::symbolsChanged() {
 	pCmi->showPage(0U);
 }
 
-void Controller::newFontFamily(const string &fontFile) {
-	if(fe.fontFileName().compare(fontFile) == 0)
-		return; // same font
+bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
+	if(fe.fontFileName().compare(fontFile) == 0 && !forceUpdate)
+		return false; // same font
 
 	if(!fe.newFont(fontFile)) {
 		ostringstream oss;
 		oss<<"Invalid font file: '"<<fontFile<<'\'';
 		errMsg(oss.str());
-		return;
+		return false;
 	}
 
 	cp.updateEncodingsCount(fe.uniqueEncodings());
 
 	if(!fontFamilyOk) {
 		fontFamilyOk = true;
-		pCmi = make_shared<CmapInspect>(*this);
+		pCmi = std::make_shared<CmapInspect>(*this);
 		pCmi->setPos(424, 0);		// Place cmap window on x axis between 424..1064
 		pCmi->permitResize(false);	// Ensure the user sees the symbols exactly their size
 	}
 
+	return true;
+}
+
+void Controller::newFontFamily(const string &fontFile) {
+	if(!_newFontFamily(fontFile))
+		return;
+
 	symbolsChanged();
+}
+
+void Controller::selectedFontFile(const string &fName) const {
+	cfg.ss.setFontFile(fName);
 }
 
 void Controller::newFontEncoding(int encodingIdx) {
@@ -154,32 +175,55 @@ void Controller::newFontEncoding(int encodingIdx) {
 	symbolsChanged();
 }
 
-void Controller::newFontSize(int fontSz) {
-	if(!Config::isFontSizeOk(fontSz)) {
+bool Controller::_newFontEncoding(const string &encName, bool forceUpdate/* = false*/) {
+	return fe.setEncoding(encName, forceUpdate);
+}
+
+bool Controller::newFontEncoding(const string &encName) {
+	bool result = _newFontEncoding(encName);
+	if(result)
+		symbolsChanged();
+
+	return result;
+}
+
+void Controller::selectedEncoding(const string &encName) const {
+	cfg.ss.setEncoding(encName);
+}
+
+bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
+	if(!Settings::isFontSizeOk(fontSz)) {
 		fontSzOk = false;
 		ostringstream oss;
-		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Config::MIN_FONT_SIZE<<'.';
+		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Settings::MIN_FONT_SIZE<<'.';
 		errMsg(oss.str());
-		return;
+		return false;
 	}
 
 	if(!fontSzOk)
 		fontSzOk = true;
 
-	if(!fontFamilyOk || (unsigned)fontSz == cfg.getFontSz())
+	if(!fontFamilyOk || ((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate))
+		return false;
+
+	cfg.ss.setFontSz(fontSz);
+	pCmi->updateGrid();
+
+	return true;
+}
+
+void Controller::newFontSize(int fontSz) {
+	if(!_newFontSize(fontSz))
 		return;
 
-	cfg.setFontSz(fontSz);
-	pCmi->updateGrid();
-	
 	symbolsChanged();
 }
 
 void Controller::newHmaxSyms(int maxSymbols) {
-	if(!Config::isHmaxSymsOk(maxSymbols)) {
+	if(!Settings::isHmaxSymsOk(maxSymbols)) {
 		hMaxSymsOk = false;
 		ostringstream oss;
-		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Config::MIN_H_SYMS<<'.';
+		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Settings::MIN_H_SYMS<<'.';
 		errMsg(oss.str());
 		return;
 	}
@@ -187,17 +231,17 @@ void Controller::newHmaxSyms(int maxSymbols) {
 	if(!hMaxSymsOk)
 		hMaxSymsOk = true;
 
-	if((unsigned)maxSymbols == cfg.getMaxHSyms())
+	if((unsigned)maxSymbols == cfg.is.getMaxHSyms())
 		return;
 
-	cfg.setMaxHSyms(maxSymbols);
+	cfg.is.setMaxHSyms(maxSymbols);
 }
 
 void Controller::newVmaxSyms(int maxSymbols) {
-	if(!Config::isVmaxSymsOk(maxSymbols)) {
+	if(!Settings::isVmaxSymsOk(maxSymbols)) {
 		vMaxSymsOk = false;
 		ostringstream oss;
-		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Config::MIN_V_SYMS<<'.';
+		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Settings::MIN_V_SYMS<<'.';
 		errMsg(oss.str());
 		return;
 	}
@@ -205,50 +249,50 @@ void Controller::newVmaxSyms(int maxSymbols) {
 	if(!vMaxSymsOk)
 		vMaxSymsOk = true;
 
-	if((unsigned)maxSymbols == cfg.getMaxVSyms())
+	if((unsigned)maxSymbols == cfg.is.getMaxVSyms())
 		return;
 
-	cfg.setMaxVSyms(maxSymbols);
+	cfg.is.setMaxVSyms(maxSymbols);
 }
 
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
-	if((unsigned)threshold != cfg.getBlankThreshold())
-		cfg.setBlankThreshold(threshold);
+	if((unsigned)threshold != cfg.ms.getBlankThreshold())
+		cfg.ms.setBlankThreshold(threshold);
 }
 
 void Controller::newContrastFactor(double k) {
-	if(k != cfg.get_kContrast())
-		cfg.set_kContrast(k);
+	if(k != cfg.ms.get_kContrast())
+		cfg.ms.set_kContrast(k);
 }
 
 void Controller::newUnderGlyphCorrectnessFactor(double k) {
-	if(k != cfg.get_kSdevFg())
-		cfg.set_kSdevFg(k);
+	if(k != cfg.ms.get_kSdevFg())
+		cfg.ms.set_kSdevFg(k);
 }
 
 void Controller::newAsideGlyphCorrectnessFactor(double k) {
-	if(k != cfg.get_kSdevBg())
-		cfg.set_kSdevBg(k);
+	if(k != cfg.ms.get_kSdevBg())
+		cfg.ms.set_kSdevBg(k);
 }
 
 void Controller::newGlyphEdgeCorrectnessFactor(double k) {
-	if(k != cfg.get_kSdevEdge())
-		cfg.set_kSdevEdge(k);
+	if(k != cfg.ms.get_kSdevEdge())
+		cfg.ms.set_kSdevEdge(k);
 }
 
 void Controller::newDirectionalSmoothnessFactor(double k) {
-	if(k != cfg.get_kCosAngleMCs())
-		cfg.set_kCosAngleMCs(k);
+	if(k != cfg.ms.get_kCosAngleMCs())
+		cfg.ms.set_kCosAngleMCs(k);
 }
 
 void Controller::newGravitationalSmoothnessFactor(double k) {
-	if(k != cfg.get_kMCsOffset())
-		cfg.set_kMCsOffset(k);
+	if(k != cfg.ms.get_kMCsOffset())
+		cfg.ms.set_kMCsOffset(k);
 }
 
 void Controller::newGlyphWeightFactor(double k) {
-	if(k != cfg.get_kGlyphWeight())
-		cfg.set_kGlyphWeight(k);
+	if(k != cfg.ms.get_kGlyphWeight())
+		cfg.ms.set_kGlyphWeight(k);
 }
 
 MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
@@ -282,7 +326,6 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
 	if(done) {
 		reportTransformationProgress(1.);
-		comp.setResult(t.getResult()); // display the result at the end of the transformation
 
 		ostringstream oss;
 		oss<<"The transformation took "<<elapsed<<" s!";
@@ -292,12 +335,90 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 
 	} else {
 		reportTransformationProgress(0.);
-		comp.setReference(img.getResized()); // display 'original' when starting transformation
+	}
+}
+
+void Controller::restoreUserDefaultMatchSettings() {
+	cfg.ms.loadUserDefaults();
+	cp.updateMatchSettings(cfg.ms);
+}
+
+void Controller::setUserDefaultMatchSettings() const {
+	cfg.ms.saveUserDefaults();
+}
+
+void Controller::loadSettings() {
+	static SettingsSelector ss; // loader
+	if(!ss.promptForUserChoice())
+		return;
+	
+	const SymSettings prevSymSettings(cfg.ss); // keep a copy of old SymSettings
+	cout<<"Loading settings from '"<<ss.selection()<<'\''<<endl;
+	try {
+		ifstream ifs(ss.selection());
+		text_iarchive ia(ifs);
+		ia>>cfg;
+	} catch(...) {
+		cerr<<"Couldn't load these settings"<<endl;
+		return;
+	}
+
+	cp.updateMatchSettings(cfg.ms);
+	cp.updateImgSettings(cfg.is);
+
+	if(prevSymSettings==cfg.ss)
+		return;
+
+	bool fontFileChanged = false, encodingChanged = false;
+	const auto newEncName = cfg.ss.getEncoding();
+	if(prevSymSettings.getFontFile().compare(cfg.ss.getFontFile()) != 0) {
+		_newFontFamily(cfg.ss.getFontFile(), true);
+		fontFileChanged = true;
+	}
+	if((!fontFileChanged && prevSymSettings.getEncoding().compare(newEncName) != 0) ||
+			(fontFileChanged && cfg.ss.getEncoding().compare(newEncName) != 0)) {
+		_newFontEncoding(newEncName, true);
+		encodingChanged = true;
+	}
+
+	if(prevSymSettings.getFontSz() != cfg.ss.getFontSz()) {
+		if(fontFileChanged || encodingChanged) {
+			pCmi->updateGrid();
+		} else {
+			_newFontSize(cfg.ss.getFontSz(), true);
+		}
+	}
+
+	unsigned currEncIdx;
+	fe.getEncoding(&currEncIdx);
+	cp.updateSymSettings(currEncIdx, cfg.ss.getFontSz());
+	
+	symbolsChanged();
+}
+
+void Controller::saveSettings() const {
+	if(!cfg.ss.ready()) {
+		warnMsg("There's no Font yet.\nSave settings only after selecting a font !");
+		return;
+	}
+
+	static SettingsSelector ss(false); // saver
+	if(!ss.promptForUserChoice())
+		return;
+
+	cout<<"Saving settings to '"<<ss.selection()<<'\''<<endl;
+	try {
+		ofstream ofs(ss.selection());
+		text_oarchive oa(ofs);
+		oa<<cfg;
+	} catch(...) {
+		cerr<<"Couldn't save current settings"<<endl;
+		return;
 	}
 }
 
 Controller::Timer::Timer(const Controller &ctrler_, ComputationType compType_) :
-ctrler(ctrler_), compType(compType_), start(high_resolution_clock::now()) {
+		ctrler(ctrler_), compType(compType_), start(high_resolution_clock::now()) {
 	switch(compType) {
 		case ComputationType::SYM_SET_UPDATE:
 			ctrler.symsSetUpdate();
@@ -371,6 +492,11 @@ void Controller::reportGlyphProgress(double progress) const {
 
 void Controller::reportTransformationProgress(double progress) const {
 	hourGlass(progress, "Transforming image. Please wait");
+	if(0. == progress) {
+		comp.setReference(img.getResized()); // display 'original' when starting transformation
+	} else if(1. == progress) {
+		comp.setResult(t.getResult()); // display the result at the end of the transformation
+	}
 }
 
 #define GET_FIELD(FieldType, ...) \
@@ -385,19 +511,19 @@ Comparator& Controller::getComparator() {
 	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
 }
 
-FontEngine& Controller::getFontEngine() const {
-	GET_FIELD(FontEngine, *this);
+FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
+	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine());
+MatchEngine& Controller::getMatchEngine(const Settings &cfg_) const {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss));
 }
 
-Transformer& Controller::getTransformer(const Config &cfg_) const {
+Transformer& Controller::getTransformer(const Settings &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
-ControlPanel& Controller::getControlPanel(Config &cfg_) {
+ControlPanel& Controller::getControlPanel(Settings &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
 

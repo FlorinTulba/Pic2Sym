@@ -411,7 +411,49 @@ void PmsCont::setAsReady() {
 	ready = true;
 }
 
-FontEngine::FontEngine(const Controller &ctrler_) : ctrler(ctrler_) {
+SymSettings::SymSettings(unsigned fontSz_) : fontSz(fontSz_) {
+}
+
+void SymSettings::setFontFile(const std::string &fontFile_) {
+	if(fontFile == fontFile_)
+		return;
+	cout<<"fontFile"<<" : '"<<fontFile<<"' -> '"<<fontFile_<<'\''<<endl;
+	fontFile = fontFile_;
+}
+
+void SymSettings::setEncoding(const std::string &encoding_) {
+	if(encoding == encoding_)
+		return;
+	cout<<"encoding"<<" : '"<<encoding<<"' -> '"<<encoding_<<'\''<<endl;
+	encoding = encoding_;
+}
+
+void SymSettings::setFontSz(unsigned fontSz_) {
+	if(fontSz == fontSz_)
+		return;
+	cout<<"fontSz"<<" : "<<fontSz<<" -> "<<fontSz_<<endl;
+	fontSz = fontSz_;
+}
+
+bool SymSettings::operator==(const SymSettings &other) const {
+	return fontFile.compare(other.fontFile) == 0 &&
+			encoding.compare(other.encoding) == 0 &&
+			fontSz == other.fontSz;
+}
+
+bool SymSettings::operator!=(const SymSettings &other) const {
+	return !((*this)==other);
+}
+
+ostream& operator<<(ostream &os, const SymSettings &ss) {
+	os<<"fontFile"<<" : "<<ss.fontFile<<endl;
+	os<<"encoding"<<" : "<<ss.encoding<<endl;
+	os<<"fontSz"<<" : "<<ss.fontSz<<endl;
+	return os;
+}
+
+FontEngine::FontEngine(const Controller &ctrler_, const SymSettings &ss_) :
+		ctrler(ctrler_), ss(ss_) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
@@ -470,23 +512,24 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 		return false;
 	}
 
-	encodingIndex = idx;
-	encoding = encodingsMap().left.find(face->charmap->encoding)->second;
-
-	cout<<"Using encoding "<<encoding<<" (index "<<encodingIndex<<')'<<endl;
+	encodingIndex = idx;	
+	const auto &encName = encodingsMap().left.find(face->charmap->encoding)->second;
+	cout<<"Using encoding "<<encName<<" (index "<<encodingIndex<<')'<<endl;
 
 	symsCont.reset();
+
+	ctrler.selectedEncoding(encName);
 
 	return true;
 }
 
-bool FontEngine::setEncoding(const string &encName) {
+bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/) {
 	if(face == nullptr) {
 		cerr<<"No Font yet! Please select one first and then call setEncoding!"<<endl;
 		throw logic_error("setEncoding called before selecting a font.");
 	}
 
-	if(encName.compare(encoding) == 0)
+	if(encName.compare(ss.getEncoding()) == 0 && !forceUpdate)
 		return true; // same encoding
 
 	const auto &encMapR = encodingsMap().right; // encodingName->FT_Encoding
@@ -537,9 +580,6 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 
 	encodingIndex = UINT_MAX;
 	setNthUniqueEncoding(0U);
-
-	if(!fontFile_.empty())
-		fontFile = fontFile_;
 }
 
 bool FontEngine::newFont(const string &fontFile_) {
@@ -549,6 +589,9 @@ bool FontEngine::newFont(const string &fontFile_) {
 		return false;
 	
 	setFace(face_, fontPath.string());
+	
+	ctrler.selectedFontFile(fontFile_);
+
 	return true;
 }
 
@@ -561,7 +604,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		throw logic_error("FontEngine::setFontSz called before FontEngine::newFont!");
 	}
 
-	if(!Config::isFontSizeOk(fontSz_)) {
+	if(!Settings::isFontSizeOk(fontSz_)) {
 		cerr<<"Invalid font size ("<<fontSz_<<") for FontEngine::setFontSz!"<<endl;
 		throw invalid_argument("Invalid font size for FontEngine::setFontSz!");
 	}
@@ -657,7 +700,7 @@ const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) co
 	if(pEncodingIndex != nullptr)
 		*pEncodingIndex = encodingIndex;
 
-	return encoding;
+	return ss.getEncoding();
 }
 
 unsigned FontEngine::uniqueEncodings() const {
@@ -685,7 +728,7 @@ double FontEngine::smallGlyphsCoverage() const {
 }
 
 const string& FontEngine::fontFileName() const {
-	return fontFile; // don't throw if empty; simply denote that the user didn't select a font yet
+	return ss.getFontFile(); // don't throw if empty; simply denote that the user didn't select a font yet
 }
 
 FT_String* FontEngine::getFamily() const {

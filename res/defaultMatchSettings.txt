@@ -1,22 +1,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Project:     Pic2Sym
-;;  File:        defaultCfg.txt
+;;  File:        defaultMatchSettings.txt
 ;;
 ;;  Author:      Florin Tulba
-;;  Created on:  2015-12-20
+;;  Created on:  2016-1-8
 ;;  
 ;;  Copyright (c) 2016 Florin Tulba
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Height & width in pixels of each symbol
-; Valid range: 7 .. 50
-FONT_HEIGHT		10
 
 ; Real coefficient that penalizes poor glyph matches when compared
 ; strictly to the region covered by the glyph's pixels
 ; Set it to 0 if it doesn't matter what lies under glyph's contour.
 ; Any other real positive value is allowed. 1 is ok.
-UNDER_GLYPH_CORRECTNESS	5.0
+UNDER_GLYPH_CORRECTNESS	2.5
 
 ; Real coefficient that penalizes poor glyph edge matches when compared
 ; strictly to the transition regions (contours) of the glyph.
@@ -63,11 +59,3 @@ LARGER_GLYPHS_PREF	0.5
 ; needs to be less than 3*<x> to use the Blank replacement.
 ; Valid range: 0 .. 50
 THRESHOLD_FOR_BLANK	0
-
-; Maximum number of symbols on each row of the resulted image
-; Valid range 3 .. 1024
-RESULT_WIDTH	500
-
-; Maximum number of symbols on each column of the resulted image
-; Valid range 3 .. 768
-RESULT_HEIGHT	300

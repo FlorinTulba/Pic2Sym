@@ -15,6 +15,7 @@
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif
 
+#include <tchar.h>
 #include <string>
 
 // Dlg is the base class for the standard Windows dialogs from below
@@ -28,9 +29,21 @@ public:
 	void reset() {}
 };
 
-class FileOpen final : public Dlg {
+class OpenSave abstract : public Dlg {
 public:
-	FileOpen() : Dlg() {}
+	OpenSave(const TCHAR * const = nullptr, const TCHAR * const = nullptr,
+			 const TCHAR * const  = nullptr,
+			 bool = true) : Dlg() {}
+};
+
+class ImgSelector final : public OpenSave {
+public:
+	ImgSelector() : OpenSave() {}
+};
+
+class SettingsSelector final : public OpenSave {
+public:
+	SettingsSelector(bool = true) : OpenSave() {}
 };
 
 class SelectFont final : public Dlg {

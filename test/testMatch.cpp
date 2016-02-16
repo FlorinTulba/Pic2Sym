@@ -282,9 +282,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckFgAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckFgAspect ...");
 
-		const Config cfg(50U, // symbol size (use even values, as some tests set half of the patch)
-						 1.); // fg correctness coefficient set to 1
-		const unsigned sz = cfg.getFontSz();
+		const SymSettings ss(50U); // symbol size (use even values, as some tests set half of the patch)
+		const unsigned sz = ss.getFontSz();
+		const MatchSettings cfg(1.); // fg correctness coefficient set to 1
 		const CachedData cd;
 		const FgMatch fm(cd, cfg);
 		const unsigned char valRand = (unsigned char)(randUnifUint() & 0xFF);
@@ -341,10 +341,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckEdgeAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckEdgeAspect ...");
 
-		const Config cfg(50U, // symbol size (use even >=4 values, as some tests below need that)
-						 0, // fg correctness coefficient (not relevant here)
-						 1); // edge correctness coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz;
+		const SymSettings ss(50U); // symbol size (use even >=4 values, as some tests below need that)
+		const unsigned sz = ss.getFontSz(), area = sz*sz;
+		const MatchSettings cfg(
+							0, // fg correctness coefficient (not relevant here)
+							1); // edge correctness coefficient set to 1
 		const CachedData cd;
 		const EdgeMatch em(cd, cfg);
 		const unsigned char valRand = (unsigned char)(randUnifUint() & 0xFF);
@@ -445,11 +446,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckBgAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckBgAspect ...");
 
-		const Config cfg(50U, // symbol size (use even >=4 values, as some tests below need that)
+		const SymSettings ss(50U); // symbol size (use even >=4 values, as some tests below need that)
+		const MatchSettings cfg(
 						 0, // fg correctness coefficient (not relevant here)
 						 0, // edge correctness coefficient (not relevant here)
 						 1.); // bg correctness coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz;
+		const unsigned sz = ss.getFontSz(), area = sz*sz;
 		const CachedData cd;
 		const BgMatch bm(cd, cfg);
 		const unsigned char valRand = (unsigned char)(randUnifUint() & 0xFF);
@@ -513,12 +515,13 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckContrastAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckContrastAspect ...");
 
-		const Config cfg(50U, // symbol size (use even >=4 values, as some tests below need that)
+		const SymSettings ss(50U); // symbol size (use even >=4 values, as some tests below need that)
+		const MatchSettings cfg(
 						 0, // fg correctness coefficient (not relevant here)
 						 0, // edge correctness coefficient (not relevant here)
 						 0, // bg correctness coefficient (not relevant here)
 						 1.); // contrast coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz;
+		const unsigned sz = ss.getFontSz(), area = sz*sz;
 		const CachedData cd;
 		const BetterContrast bc(cd, cfg);
 		const unsigned char valRand = (unsigned char)(randUnifUint() & 0xFF);
@@ -576,13 +579,14 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckGravitationalSmoothnessAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckGravitationalSmoothnessAspect ...");
 
-		Config cfg(50U, // symbol size
+		const SymSettings ss(50U); // symbol size
+		MatchSettings cfg(
 						 0, // fg correctness coefficient (not relevant here)
 						 0, // edge correctness coefficient (not relevant here)
 						 0, // bg correctness coefficient (not relevant here)
 						 0, // contrast coefficient (not relevant here)
 						 1.); // gravitational smoothness coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz, sz_1 = sz-1U;
+		const unsigned sz = ss.getFontSz(), area = sz*sz, sz_1 = sz-1U;
 		CachedData cd; cd.useNewSymSize(sz);
 		const GravitationalSmoothness gs(cd, cfg);
 		MatchParams mp;
@@ -671,14 +675,15 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckDirectionalSmoothnessAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckDirectionalSmoothnessAspect ...");
 
-		Config cfg(50U, // symbol size (Use even values >=4 to allow creating some scenarios below)
+		const SymSettings ss(50U); // symbol size (Use even values >=4 to allow creating some scenarios below)
+		MatchSettings cfg(
 				   0, // fg correctness coefficient (not relevant here)
 				   0, // edge correctness coefficient (not relevant here)
 				   0, // bg correctness coefficient (not relevant here)
 				   0, // contrast coefficient (not relevant here)
 				   0, // gravitational smoothness coefficient (not relevant here)
 				   1.); // directional smoothness coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz, sz_1 = sz-1U;
+		const unsigned sz = ss.getFontSz(), area = sz*sz, sz_1 = sz-1U;
 		CachedData cd; cd.useNewSymSize(sz);
 		const DirectionalSmoothness ds(cd, cfg);
 		MatchParams mp;
@@ -751,7 +756,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckLargerSymAspect) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckLargerSymAspect ...");
 
-		const Config cfg(50U, // symbol size
+		const SymSettings ss(50U); // symbol size
+		const MatchSettings cfg(
 						 0, // fg correctness coefficient (not relevant here)
 						 0, // edge correctness coefficient (not relevant here)
 						 0, // bg correctness coefficient (not relevant here)
@@ -759,7 +765,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						 0, // mc offset coefficient (not relevant here)
 						 0, // mc angle coefficient (not relevant here)
 						 1.); // symbol weight coefficient set to 1
-		const unsigned sz = cfg.getFontSz(), area = sz*sz;
+		const unsigned sz = ss.getFontSz(), area = sz*sz;
 		CachedData cd;
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
 		cd.sz2 = area;
@@ -801,10 +807,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 
 	BOOST_AUTO_TEST_CASE(MatchEngine_CheckAlteredCmapUsingStdDev) {
 		BOOST_TEST_MESSAGE("Running MatchEngine_CheckAlteredCmapUsingStdDev ...");
-		Config cfg(10U, 1., 1., 1.);
-		const unsigned sz = cfg.getFontSz();
-		::Controller c(cfg);
-		::MatchEngine &me = c.getMatchEngine(cfg);
+
+		// sdev-s factors for fg, edges and bg set to 1
+		Settings s(std::move(MatchSettings(1., 1., 1.)));
+		const unsigned sz = s.symSettings().getFontSz(); // default font size is 10
+		::Controller c(s);
+		::MatchEngine &me = c.getMatchEngine(s);
 
 		// Courier Bold Unicode > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
 		// Can't identify them exactly using std. dev. for fg, bg and edges, which all appear 0.

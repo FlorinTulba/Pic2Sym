@@ -16,6 +16,8 @@
 #endif
 
 #include "../src/config.h"
+#include "../src/img.h"
+#include "../src/controller.h"
 
 #include <opencv2/core.hpp>
 
@@ -53,9 +55,12 @@ public:
 
 class ControlPanel final {
 public:
-	ControlPanel(Controller&, const Config&) {}
+	ControlPanel(Controller&, const Settings&) {}
 	void updateEncodingsCount(unsigned) {}
 	bool encMaxHack() const { return false; }
+	void updateMatchSettings(const MatchSettings&) {}
+	void updateImgSettings(const ImgSettings&) {}
+	void updateSymSettings(unsigned, unsigned) {}
 };
 
 #endif

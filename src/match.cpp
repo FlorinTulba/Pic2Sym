@@ -9,6 +9,7 @@
  **********************************************************/
 
 #include "match.h"
+#include "controller.h"
 
 #include <numeric>
 
@@ -372,16 +373,17 @@ void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 }
 
 
-MatchEngine::MatchEngine(const Config &cfg_, FontEngine &fe_) :
+MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) :
 	cfg(cfg_), fe(fe_),
-	fgMatch(cachedData, cfg_), bgMatch(cachedData, cfg_), edgeMatch(cachedData, cfg_),
-	conMatch(cachedData, cfg_), grMatch(cachedData, cfg_), dirMatch(cachedData, cfg_),
-	lsMatch(cachedData, cfg_) {
+	fgMatch(cachedData, cfg_.matchSettings()), bgMatch(cachedData, cfg_.matchSettings()),
+	edgeMatch(cachedData, cfg_.matchSettings()), conMatch(cachedData, cfg_.matchSettings()),
+	grMatch(cachedData, cfg_.matchSettings()), dirMatch(cachedData, cfg_.matchSettings()),
+	lsMatch(cachedData, cfg_.matchSettings()) {
 }
 
 string MatchEngine::getIdForSymsToUse() {
-	const unsigned sz = cfg.getFontSz();
-	if(!Config::isFontSizeOk(sz)) {
+	const unsigned sz = cfg.symSettings().getFontSz();
+	if(!Settings::isFontSizeOk(sz)) {
 		cerr<<"Invalid font size to use: "<<sz<<endl;
 		throw logic_error("Invalid font size for getIdForSymsToUse");
 	}
@@ -410,7 +412,7 @@ void MatchEngine::updateSymbols() {
 	symsSet.reserve(fe.symsSet().size());
 
 	double minVal, maxVal;
-	const unsigned sz = cfg.getFontSz();
+	const unsigned sz = cfg.symSettings().getFontSz();
 	const int szGlyph[] = { 2, sz, sz },
 		szMasks[] = { 4, sz, sz };
 	for(const auto &pms : fe.symsSet()) {
@@ -456,7 +458,7 @@ MatchEngine::VSymDataCItPair MatchEngine::getSymsRange(unsigned from, unsigned c
 void MatchEngine::getReady() {
 	updateSymbols();
 
-	cachedData.update(cfg.getFontSz(), fe);
+	cachedData.update(cfg.symSettings().getFontSz(), fe);
 
 	aspects.clear();
 	for(auto pAspect : getAvailAspects())
@@ -501,7 +503,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 			diffFgBg += abs(newDiff);
 		}
 
-		if(diffFgBg < 3.*cfg.getBlankThreshold())
+		if(diffFgBg < 3.*cfg.matchSettings().getBlankThreshold())
 			patchResult = cv::mean(patchColor);
 		else
 			cv::merge(channels, patchResult);
@@ -514,7 +516,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 			params.computeBg(patch, symsSet[best.symIdx]);
 		double diff = *params.fg - *params.bg;
 
-		if(abs(diff) < cfg.getBlankThreshold())
+		if(abs(diff) < cfg.matchSettings().getBlankThreshold())
 			patchResult = cv::mean(patch);
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1, diff / dataOfBest.diffMinMax, *params.bg);

@@ -143,7 +143,7 @@ public:
 // Selecting a symbol with the scene underneath it as uniform as possible
 class FgMatch final : public MatchAspect {
 public:
-	FgMatch(const CachedData &cachedData_, const Config &cfg) :
+	FgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kSdevFg()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -155,7 +155,7 @@ public:
 // Aspect ensuring more uniform background scene around the selected symbol
 class BgMatch final : public MatchAspect {
 public:
-	BgMatch(const CachedData &cachedData_, const Config &cfg) :
+	BgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kSdevBg()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -167,7 +167,7 @@ public:
 // Aspect ensuring the edges of the selected symbol seem to appear also on the patch
 class EdgeMatch final : public MatchAspect {
 public:
-	EdgeMatch(const CachedData &cachedData_, const Config &cfg) :
+	EdgeMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kSdevEdge()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -179,7 +179,7 @@ public:
 // Discouraging barely visible symbols
 class BetterContrast final : public MatchAspect {
 public:
-	BetterContrast(const CachedData &cachedData_, const Config &cfg) :
+	BetterContrast(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kContrast()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -191,7 +191,7 @@ public:
 // Aspect concentrating on where's the center of gravity of the patch & its approximation
 class GravitationalSmoothness final : public MatchAspect {
 public:
-	GravitationalSmoothness(const CachedData &cachedData_, const Config &cfg) :
+	GravitationalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kMCsOffset()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -203,7 +203,7 @@ public:
 // Aspect encouraging more accuracy while approximating the direction of the patch
 class DirectionalSmoothness final : public MatchAspect {
 public:
-	DirectionalSmoothness(const CachedData &cachedData_, const Config &cfg) :
+	DirectionalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kCosAngleMCs()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -215,7 +215,7 @@ public:
 // Match aspect concerning user's preference for larger symbols as approximations
 class LargerSym final : public MatchAspect {
 public:
-	LargerSym(const CachedData &cachedData_, const Config &cfg) :
+	LargerSym(const CachedData &cachedData_, const MatchSettings &cfg) :
 		MatchAspect(cachedData_, cfg.get_kGlyphWeight()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
@@ -255,6 +255,8 @@ public:
 	void useNewSymSize(unsigned sz_);
 };
 
+class Settings; // forward declaration
+
 // MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine final : public IMatch {
 public:
@@ -266,7 +268,7 @@ public:
 	typedef std::pair< VSymDataCIt, VSymDataCIt > VSymDataCItPair;
 
 private:
-	const Config &cfg;			// settings for the engine
+	const Settings &cfg;		// settings for the engine
 	FontEngine &fe;				// symbols set manager
 	std::string symsIdReady;	// type of symbols ready to use for transformation
 	VSymData symsSet;			// set of most information on each symbol
@@ -291,7 +293,7 @@ private:
 	void findBestMatch(const cv::Mat &patch, BestMatch &best);
 
 public:
-	MatchEngine(const Config &cfg_, FontEngine &fe_);
+	MatchEngine(const Settings &cfg_, FontEngine &fe_);
 
 	std::string getIdForSymsToUse(); // type of the symbols determined by fe & cfg
 

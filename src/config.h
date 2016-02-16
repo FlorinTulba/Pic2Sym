@@ -14,49 +14,67 @@
 #include <string>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 
-/*
-Config class controls the parameters for transforming one or more images.
-*/
-class Config final {
+// MatchSettings class controls the matching parameters for transforming one or more images.
+class MatchSettings {
 	boost::filesystem::path workDir;	// Folder where the application was launched
 	boost::filesystem::path cfgPath;	// Path of the configuration file
 
-	unsigned fontSz = 0U;			// Using font height fontSz
-	double kSdevFg = 1, kSdevEdge = 1, kSdevBg = 1,
-		kContrast = 1;				// powers of factors for glyph correlation
-	double kMCsOffset = 1., kCosAngleMCs = 1.; // powers of factors targeting smoothness
-	double kGlyphWeight = 1.;		// power of factor aiming fanciness, not correctness
+	double kSdevFg = 0., kSdevEdge = 0., kSdevBg = 0.; // powers of factors for glyph correlation
+	double kContrast = 0.;						// power of factor for the resulted glyph contrast
+	double kMCsOffset = 0., kCosAngleMCs = 0.;	// powers of factors targeting smoothness
+	double kGlyphWeight = 0.;		// power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
-	unsigned hMaxSyms = 0U;			// Count of resulted horizontal symbols
-	unsigned vMaxSyms = 0U;			// Count of resulted vertical symbols
 
-	bool parseCfg(); // Parse res/defaultCfg.txt
+	template<class Archive>
+	void load(Archive &ar, const unsigned version) {
+		// It is useful to see which settings changed when loading
+		MatchSettings defSettings(*this); // create as copy of previous values
+
+		// read user default match settings
+		ar&defSettings.kSdevFg; ar&defSettings.kSdevEdge; ar&defSettings.kSdevBg;
+		ar&defSettings.kContrast;
+		ar&defSettings.kMCsOffset; ar&defSettings.kCosAngleMCs;
+		ar&defSettings.kGlyphWeight;
+		ar&defSettings.threshold4Blank;
+
+		// these show message when there are changes
+		set_kSdevFg(defSettings.kSdevFg);
+		set_kSdevEdge(defSettings.kSdevEdge);
+		set_kSdevBg(defSettings.kSdevBg);
+		set_kContrast(defSettings.kContrast);
+		set_kMCsOffset(defSettings.kMCsOffset);
+		set_kCosAngleMCs(defSettings.kCosAngleMCs);
+		set_kGlyphWeight(defSettings.kGlyphWeight);
+		setBlankThreshold(defSettings.threshold4Blank);
+	}
+	template<class Archive>
+	void save(Archive &ar, const unsigned version) const {
+		ar&kSdevFg; ar&kSdevEdge; ar&kSdevBg;
+		ar&kContrast;
+		ar&kMCsOffset; ar&kCosAngleMCs;
+		ar&kGlyphWeight;
+		ar&threshold4Blank;
+	}
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+	friend class boost::serialization::access;
 
 public:
-	static const unsigned // Limits
-		MIN_FONT_SIZE = 7U, MAX_FONT_SIZE = 50U,
-		MIN_H_SYMS = 3U, MAX_H_SYMS = 1024U,
-		MIN_V_SYMS = 3U, MAX_V_SYMS = 768U,
-		MAX_THRESHOLD_FOR_BLANKS = 50U;
+	/*
+	Initializes the fields from initMatchSettings.cfg when this file exists,
+	otherwise from res/defaultMatchSettings.txt.
+	The latter file is used to conveniently alter the defaults during development.
 
-	static bool isFontSizeOk(unsigned fs) { return fs>=MIN_FONT_SIZE && fs<=MAX_FONT_SIZE; }
-	static bool isHmaxSymsOk(unsigned syms) { return syms>=MIN_H_SYMS && syms<=MAX_H_SYMS; }
-	static bool isVmaxSymsOk(unsigned syms) { return syms>=MIN_V_SYMS && syms<=MAX_V_SYMS; }
-	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
-
-	Config(const std::string &appLaunchPath); // using defaultCfg.txt
+	The parameter appLaunchPath is the path to 'Pic2Sym.exe' and is used to determine
+	the folder where to look for 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
+	*/
+	MatchSettings(const std::string &appLaunchPath);
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
-
-	unsigned getFontSz() const { return fontSz; }
-	void setFontSz(unsigned fontSz_);
-
-	unsigned getMaxHSyms() const { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms);
-
-	unsigned getMaxVSyms() const { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms);
 
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	void setBlankThreshold(unsigned threshold4Blank_);
@@ -82,15 +100,20 @@ public:
 	const double& get_kGlyphWeight() const { return kGlyphWeight; }
 	void set_kGlyphWeight(double kGlyphWeight_);
 
-	friend std::ostream& operator<<(std::ostream &os, const Config &c);
+	bool parseCfg(const boost::filesystem::path &cfgFile); // Loads the settings provided in cfgFile
+	void loadUserDefaults(); // Overwrites current settings with those from initMatchSettings.cfg
+	void saveUserDefaults() const; // Overwrites initMatchSettings.cfg with current settings
+
+	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 #ifdef UNIT_TESTING
 	// Constructor available only within UnitTesting project
-	Config(unsigned fontSz_ = MIN_FONT_SIZE,
+	MatchSettings(
 		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
 		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U,
-		   unsigned hMaxSyms_ = MAX_H_SYMS, unsigned vMaxSyms_ = MAX_V_SYMS);
+		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U);
 #endif
 };
+
+BOOST_CLASS_VERSION(MatchSettings, 0)
 
 #endif

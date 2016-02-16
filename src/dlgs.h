@@ -34,15 +34,34 @@ public:
 	virtual void reset() { result.clear(); }
 };
 
-// FileOpen class controls a FileOpenDialog.
-class FileOpen final : public Dlg {
+// OpenSave class controls a FileOpenDialog / FileSaveDialog.
+class OpenSave abstract : public Dlg {
 	OPENFILENAME ofn;		// structure used by the FileOpenDialog
 	TCHAR fNameBuf[1024];	// buffer for the selected image file
 
+protected:
+	const bool toOpen = true;	// most derived classes want Open File Dialog (not Save)
+
 public:
-	FileOpen(); // Prepares the dialog
+	// Prepares the dialog
+	OpenSave(const TCHAR * const title,		// displayed title of the dialog
+			 const TCHAR * const filter,	// expected extensions
+			 const TCHAR * const defExtension = nullptr,	// default extension
+			 bool toOpen_ = true);			// open or save dialog
 
 	bool promptForUserChoice() override;
+};
+
+// Selecting an image to transform
+class ImgSelector final : public OpenSave {
+public:
+	ImgSelector();
+};
+
+// Selecting a settings file to load / be saved
+class SettingsSelector final : public OpenSave {
+public:
+	SettingsSelector(bool toOpen_ = true);
 };
 
 // SelectFont class controls a ChooseFont Dialog.

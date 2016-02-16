@@ -144,15 +144,13 @@ namespace ut {
 	}
 }
 
-Config::Config(unsigned fontSz_/* = MIN_FONT_SIZE*/,
+MatchSettings::MatchSettings(
 			   double kSdevFg_/* = 0.*/, double kSdevEdge_/* = 0.*/, double kSdevBg_/* = 0.*/,
 			   double kContrast_/* = 0.*/, double kMCsOffset_/* = 0.*/, double kCosAngleMCs_/* = 0.*/,
-			   double kGlyphWeight_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/,
-			   unsigned hMaxSyms_/* = MAX_H_SYMS*/, unsigned vMaxSyms_/* = MAX_V_SYMS*/) :
-	   fontSz(fontSz_),
+			   double kGlyphWeight_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
 	   kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
 	   kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
-	   threshold4Blank(threshold4Blank_), hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {
+	   threshold4Blank(threshold4Blank_) {
 	cout<<"Initial config values:"<<endl<<*this<<endl;
 }
 
@@ -183,19 +181,19 @@ Comparator& Controller::getComparator() {
 	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
 }
 
-FontEngine& Controller::getFontEngine() const {
-	GET_FIELD(FontEngine, *this);
+FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
+	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Config &cfg_) const {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine());
+MatchEngine& Controller::getMatchEngine(const Settings &cfg_) const {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss));
 }
 
-Transformer& Controller::getTransformer(const Config &cfg_) const {
+Transformer& Controller::getTransformer(const Settings &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
-ControlPanel& Controller::getControlPanel(Config &cfg_) {
+ControlPanel& Controller::getControlPanel(Settings &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
 
@@ -221,11 +219,11 @@ bool Controller::newImage(const cv::Mat &imgMat) {
 
 		// For valid matrices of size sz x sz, ignore MIN_H_SYMS & MIN_V_SYMS =>
 		// Testing an image containing a single patch
-		if(imgMat.cols == cfg.getFontSz() && imgMat.rows == cfg.getFontSz()) {
-			if(1U != cfg.getMaxHSyms())
-				cfg.setMaxHSyms(1U);
-			if(1U != cfg.getMaxVSyms())
-				cfg.setMaxVSyms(1U);
+		if(imgMat.cols == cfg.ss.getFontSz() && imgMat.rows == cfg.ss.getFontSz()) {
+			if(1U != cfg.is.getMaxHSyms())
+				cfg.is.setMaxHSyms(1U);
+			if(1U != cfg.is.getMaxVSyms())
+				cfg.is.setMaxVSyms(1U);
 
 			if(!hMaxSymsOk)
 				hMaxSymsOk = true;
@@ -234,14 +232,6 @@ bool Controller::newImage(const cv::Mat &imgMat) {
 		}
 	}
 
-	return result;
-}
-
-bool Controller::newFontEncoding(const std::string &encName) {
-	bool result = fe.setEncoding(encName);
-	if(result) {
-		symbolsChanged();
-	}
 	return result;
 }
 

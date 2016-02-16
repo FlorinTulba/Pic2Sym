@@ -16,6 +16,11 @@
 
 #include <boost/filesystem/path.hpp>
 #include <boost/bimap/bimap.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 #include <opencv2/core.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -123,6 +128,58 @@ public:
 	void setAsReady(); // No other symbols to append. Statistics can be now computed
 };
 
+// Parameters concerning the symbols set used for approximating patches.
+class SymSettings {
+	std::string fontFile;	// the file containing the used font family with the desired style
+	std::string encoding;	// the particular encoding of the used cmap
+	unsigned fontSz;		// size of the symbols
+
+	template<class Archive>
+	void load(Archive &ar, const unsigned version) {
+		// It is useful to see which settings changed when loading
+		SymSettings defSettings(*this); // create as copy of previous values
+
+		// read user default match settings
+		ar&defSettings.fontFile;
+		ar&defSettings.encoding;
+		ar&defSettings.fontSz;
+
+		// these show message when there are changes
+		setFontFile(defSettings.fontFile);
+		setEncoding(defSettings.encoding);
+		setFontSz(defSettings.fontSz);
+	}
+	template<class Archive>
+	void save(Archive &ar, const unsigned version) const {
+		ar&fontFile;
+		ar&encoding;
+		ar&fontSz;
+	}
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+	friend class boost::serialization::access;
+
+public:
+	// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
+	SymSettings(unsigned fontSz_);
+
+	bool ready() const { return !fontFile.empty(); }
+
+	const std::string& getFontFile() const { return fontFile; }
+	void setFontFile(const std::string &fontFile_);
+
+	const std::string& getEncoding() const { return encoding; }
+	void setEncoding(const std::string &encoding_);
+
+	unsigned getFontSz() const { return fontSz; }
+	void setFontSz(unsigned fontSz_);
+
+	bool operator==(const SymSettings &other) const;
+	bool operator!=(const SymSettings &other) const;
+	friend std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
+};
+
+BOOST_CLASS_VERSION(SymSettings, 0)
+
 // FontEngine class wraps some necessary FreeType functionality.
 class FontEngine final {
 	const Controller &ctrler;		// data & views manager
@@ -130,8 +187,7 @@ class FontEngine final {
 	FT_Library library	= nullptr;	// the FreeType lib
 	FT_Face face		= nullptr;	// a loaded font
 
-	std::string fontFile;			// path to the current font file
-	std::string encoding;			// name of selected charmap (cmap)
+	const SymSettings &ss;			// settings of this font engine
 	unsigned encodingIndex = 0U;	// the index of the selected cmap within face's charmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;	// indices for each unique Encoding within cmaps array
 
@@ -142,15 +198,16 @@ class FontEngine final {
 	When fName is valid, face_ parameter will return the successfully loaded font.
 	*/
 	bool checkFontFile(const boost::filesystem::path &fontPath, FT_Face &face_) const;
-	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/);	// Installs a new font
+	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/); // Installs a new font
 
 public:
-	FontEngine(const Controller &ctrler_);
+	FontEngine(const Controller &ctrler_, const SymSettings &ss_);
 	~FontEngine();
-
+	
 	bool newFont(const std::string &fontFile_);		// Tries to use the font from <fontFile_>
 	void setFontSz(unsigned fontSz_);				// Sets the desired font height in pixels
-	bool setEncoding(const std::string &encName);	// Sets an encoding by name
+
+	bool setEncoding(const std::string &encName, bool forceUpdate = false);	// Sets an encoding by name
 	bool setNthUniqueEncoding(unsigned idx);		// Switches to nth unique encoding
 
 	const std::vector<const PixMapSym>& symsSet() const;	// get the symsSet

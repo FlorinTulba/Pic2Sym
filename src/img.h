@@ -16,7 +16,56 @@
 #include <string>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
+/*
+Contains max count of horizontal & vertical patches to process.
+The image is resized appropriately before processing.
+*/
+class ImgSettings {
+	unsigned hMaxSyms;	// Count of resulted horizontal symbols
+	unsigned vMaxSyms;	// Count of resulted vertical symbols
+
+	template<class Archive>
+	void load(Archive &ar, const unsigned version) {
+		// It is useful to see which settings changed when loading
+		ImgSettings defSettings(*this); // create as copy of previous values
+
+		// read user default match settings
+		ar&defSettings.hMaxSyms;
+		ar&defSettings.vMaxSyms;
+
+		// these show message when there are changes
+		setMaxHSyms(defSettings.hMaxSyms);
+		setMaxVSyms(defSettings.vMaxSyms);
+	}
+	template<class Archive>
+	void save(Archive &ar, const unsigned version) const {
+		ar&hMaxSyms;
+		ar&vMaxSyms;
+	}
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+	friend class boost::serialization::access;
+
+public:
+	// Constructor takes initial values just to present a valid sliders positions in Control Panel
+	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
+		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
+
+	unsigned getMaxHSyms() const { return hMaxSyms; }
+	void setMaxHSyms(unsigned syms);
+
+	unsigned getMaxVSyms() const { return vMaxSyms; }
+	void setMaxVSyms(unsigned syms);
+
+	friend std::ostream& operator<<(std::ostream &os, const ImgSettings &is);
+};
+
+BOOST_CLASS_VERSION(ImgSettings, 0)
 
 // Img provides necessary API for manipulating the images to transform
 class Img final {
@@ -55,7 +104,7 @@ public:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
-	cv::Mat resized(const Config &cfg);
+	cv::Mat resized(const ImgSettings &is, unsigned patchSz);
 
 	bool isColor() const { return color; }	// color / grayscale image
 	const std::string& name() const { return imgName; } // return the stem of the image file name

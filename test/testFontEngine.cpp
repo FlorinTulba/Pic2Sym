@@ -140,11 +140,11 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile) {
 		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile ...");
 		try {
-			Config cfg;
-			Controller c(cfg);
+			Settings s(std::move(MatchSettings()));
+			Controller c(s);
 			string name;
 
-			FontEngine &fe = c.getFontEngine();
+			FontEngine &fe = c.getFontEngine(s.symSettings());
 
 			BOOST_CHECK_THROW(fe.setFontSz(10U), logic_error);
 			BOOST_CHECK_THROW(fe.setEncoding("UNICODE"), logic_error);
@@ -166,11 +166,11 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(CorrectFontFile) {
 		BOOST_TEST_MESSAGE("Running CorrectFontFile ...");
 		try {
-			Config cfg;
-			Controller c(cfg);
-			FontEngine fe(c); // might throw runtime_error
+			Settings s(std::move(MatchSettings()));
+			Controller c(s);
+			FontEngine &fe = c.getFontEngine(s.symSettings());
 
-			bool correct = false;
+			bool correct;
 			BOOST_CHECK_NO_THROW(correct = fe.newFont("")); // bad font file name
 			BOOST_CHECK(!correct);
 
@@ -187,13 +187,13 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontSize) {
 		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontSize ...");
 		try {
-			Config cfg;
-			Controller c(cfg);
+			Settings s(std::move(MatchSettings()));
+			Controller c(s);
 			bool correct = false;
 			unsigned unEncs = 0U, encIdx = 0U;
 			string enc, fname;
 			FT_String *fam = nullptr, *style = nullptr;
-			FontEngine fe(c); // might throw runtime_error
+			FontEngine &fe = c.getFontEngine(s.symSettings());
 
 			BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf")); // CORRECT
 			BOOST_CHECK(correct);
@@ -219,11 +219,11 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 			BOOST_CHECK(strcmp(style, "Bold") == 0);
 
 			// Setting Encodings
-			BOOST_REQUIRE_NO_THROW(correct = fe.setEncoding(enc)); // same encoding
-			BOOST_CHECK(correct);
+			BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding(enc)); // same encoding
+			BOOST_CHECK(!enc.empty());
 
-			BOOST_REQUIRE_NO_THROW(correct = fe.setEncoding("APPLE_ROMAN")); // new encoding
-			BOOST_CHECK(correct);
+			BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding("APPLE_ROMAN")); // new encoding
+			BOOST_CHECK(!enc.empty());
 
 			BOOST_CHECK(fe.getEncoding(&encIdx).compare("APPLE_ROMAN") == 0);
 			BOOST_CHECK(encIdx == 1U);
@@ -239,16 +239,16 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(CompleteFontConfig) {
 		BOOST_TEST_MESSAGE("Running CompleteFontConfig ...");
 		try {
-			Config cfg;
-			Controller c(cfg);
-			FontEngine fe(c); // might throw runtime_error
+			Settings s(std::move(MatchSettings()));
+			Controller c(s);
+			FontEngine &fe = c.getFontEngine(s.symSettings());
 
 			BOOST_REQUIRE_NO_THROW(fe.newFont("res\\BPmonoBold.ttf")); // UNICODE
 
-			BOOST_REQUIRE_THROW(fe.setFontSz(Config::MIN_FONT_SIZE-1U), invalid_argument);
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Config::MIN_FONT_SIZE)); // ok
-			BOOST_REQUIRE_THROW(fe.setFontSz(Config::MAX_FONT_SIZE+1U), invalid_argument);
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Config::MAX_FONT_SIZE)); // ok
+			BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE-1U), invalid_argument);
+			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE)); // ok
+			BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE+1U), invalid_argument);
+			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE)); // ok
 
 			BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
 			BOOST_CHECK_NO_THROW(fe.symsSet());

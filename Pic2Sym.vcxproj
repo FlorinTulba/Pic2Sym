@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
-    <Text Include="res\defaultCfg.txt" />
+    <Text Include="res\defaultMatchSettings.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\controller.h" />
@@ -102,7 +102,7 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -127,7 +127,7 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultCfg.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

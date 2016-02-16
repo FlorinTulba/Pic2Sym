@@ -19,33 +19,59 @@
 using namespace std;
 using namespace boost::filesystem;
 
-FileOpen::FileOpen() {
+OpenSave::OpenSave(const TCHAR * const title, const TCHAR * const filter,
+				   const TCHAR * const defExtension/* = nullptr*/,
+				   bool toOpen_/* = true*/) : toOpen(toOpen_) {
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = nullptr; // no owner
+	fNameBuf[0] = '\0';
 	ofn.lpstrFile = fNameBuf;
-	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
-	// use the contents of fNameBuf to initialize itself.
-	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = sizeof(fNameBuf);
-	ofn.lpstrFilter = _T("Allowed Image Files\0*.bmp;*.dib;*.png;*.tif;*.tiff;*.jpg;*.jpe;*.jp2;*.jpeg;*.webp;*.pbm;*.pgm;*.ppm;*.sr;*.ras\0\0");
+	ofn.lpstrFilter = filter;
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = nullptr;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = nullptr;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-	ofn.lpstrTitle = _T("Please select an image to process");
+	ofn.lpstrTitle = title;
+	if(defExtension != nullptr)
+		ofn.lpstrDefExt = defExtension;
+	if(toOpen)
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+	else
+		ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
 }
 
-bool FileOpen::promptForUserChoice() {
-	if(!GetOpenFileName(&ofn)) {
-		reset();
-		return false;
+bool OpenSave::promptForUserChoice() {
+	if(toOpen) {
+		if(!GetOpenFileName(&ofn)) {
+			reset();
+			return false;
+		}
+	} else {
+		if(!GetSaveFileName(&ofn)) {
+			reset();
+			return false;
+		}
 	}
 	const wstring wResult(ofn.lpstrFile);
 	result.assign(CBOUNDS(wResult));
 	return true;
 }
+
+ImgSelector::ImgSelector() :
+	OpenSave(
+		_T("Please select an image to process"),
+		_T("Allowed Image Files\0*.bmp;*.dib;*.png;*.tif;*.tiff;*.jpg;*.jpe;*.jp2;*.jpeg;*.webp;*.pbm;*.pgm;*.ppm;*.sr;*.ras\0\0")) {}
+
+SettingsSelector::SettingsSelector(bool toOpen_/* = true*/) :
+	OpenSave(
+		toOpen_ ?
+			_T("Please select a settings file to load") :
+			_T("Please specify where to save current settings"),
+		_T("Allowed Settings Files\0*.p2s\0\0"),
+		_T("p2s"),
+		toOpen_) {}
 
 /*
 FontFinder encapsulates the logic to obtain the file path for a given font name.

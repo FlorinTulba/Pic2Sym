@@ -51,7 +51,7 @@ bool Img::reset(const string &picName) {
 	return true;
 }
 
-Mat Img::resized(const Config &cfg) {
+Mat Img::resized(const ImgSettings &is, unsigned patchSz) {
 	if(source.empty()) {
 		cerr<<"No image set yet"<<endl;
 		throw logic_error("No image set yet");
@@ -59,9 +59,8 @@ Mat Img::resized(const Config &cfg) {
 
 	const int initW = source.cols, initH = source.rows;
 	const double initAr = initW / (double)initH;
-	const unsigned patchSz = cfg.getFontSz();
-	unsigned w = min(patchSz*cfg.getMaxHSyms(), (unsigned)initW),
-			h = min(patchSz*cfg.getMaxVSyms(), (unsigned)initH);
+	unsigned w = min(patchSz*is.getMaxHSyms(), (unsigned)initW),
+			h = min(patchSz*is.getMaxVSyms(), (unsigned)initH);
 	w -= w%patchSz;
 	h -= h%patchSz;
 
@@ -83,4 +82,24 @@ Mat Img::resized(const Config &cfg) {
 	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
 
 	return res;
+}
+
+void ImgSettings::setMaxHSyms(unsigned syms) {
+	if(syms == hMaxSyms)
+		return;
+	cout<<"hMaxSyms"<<" : "<<hMaxSyms<<" -> "<<syms<<endl;
+	hMaxSyms = syms;
+}
+
+void ImgSettings::setMaxVSyms(unsigned syms) {
+	if(syms == vMaxSyms)
+		return;
+	cout<<"vMaxSyms"<<" : "<<vMaxSyms<<" -> "<<syms<<endl;
+	vMaxSyms = syms;
+}
+
+ostream& operator<<(ostream &os, const ImgSettings &is) {
+	os<<"hMaxSyms"<<" : "<<is.hMaxSyms<<endl;
+	os<<"vMaxSyms"<<" : "<<is.vMaxSyms<<endl;
+	return os;
 }

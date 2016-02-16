@@ -25,7 +25,7 @@
 using namespace std;
 using namespace boost::filesystem;
 
-Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEngine &me_, Img &img_) :
+Transformer::Transformer(const Controller &ctrler_, const Settings &cfg_, MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
 	createOutputFolder();
 }
@@ -33,29 +33,31 @@ Transformer::Transformer(const Controller &ctrler_, const Config &cfg_, MatchEng
 void Transformer::run() {
 	me.updateSymbols(); // throws for invalid cmap/size
 
-	const cv::Mat resized = img.resized(cfg); // throws when no image
+	// throws when no image
+	const cv::Mat resized = img.resized(cfg.imgSettings(), cfg.symSettings().getFontSz());
 	
 	// keep it after img.resized, to display updated resized version as comparing image
 	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::IMG_TRANSFORM);
 
+	const auto &ss = cfg.matchSettings();
 	ostringstream oss;
 	oss<<img.name()<<'_'
 		<<me.getIdForSymsToUse()<<'_'
-		<<cfg.get_kSdevFg()<<'_'<<cfg.get_kSdevEdge()<<'_'<<cfg.get_kSdevBg()<<'_'
-		<<cfg.get_kContrast()<<'_'<<cfg.get_kMCsOffset()<<'_'<<cfg.get_kCosAngleMCs()<<'_'
-		<<cfg.get_kGlyphWeight()<<'_'<<cfg.getBlankThreshold()<<'_'
+		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
+		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
+		<<ss.get_kGlyphWeight()<<'_'<<ss.getBlankThreshold()<<'_'
 		<<resized.cols<<'_'<<resized.rows; // no extension yet
 	const string studiedCase = oss.str(); // id included in the result & trace file names
 
-	path resultFile(cfg.getWorkDir());
+	path resultFile(ss.getWorkDir());
 	resultFile.append("Output").append(studiedCase).
 		concat(".jpg");
 	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
 
 	if(exists(resultFile)) {
 		result = cv::imread(resultFile.string(), cv::ImreadModes::IMREAD_UNCHANGED);
-		ctrler.reportTransformationProgress(1.);
 		timer.release();
+		ctrler.reportTransformationProgress(1.);
 
 		infoMsg("This image has already been transformed under these settings.\n"
 				"Displaying the available result");
@@ -66,7 +68,7 @@ void Transformer::run() {
 
 #if defined _DEBUG && !defined UNIT_TESTING
 	static const wstring COMMA(L",\t");
-	path traceFile(cfg.getWorkDir());
+	path traceFile(ss.getWorkDir());
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 	wofstream ofs(traceFile.c_str());
@@ -76,7 +78,7 @@ void Transformer::run() {
 	const bool isUnicode = me.usesUnicode();
 #endif
 	
-	const unsigned sz = cfg.getFontSz();
+	const unsigned sz = cfg.symSettings().getFontSz();
 	result = cv::Mat(resized.rows, resized.cols, resized.type());
 
 	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
@@ -116,7 +118,7 @@ void Transformer::run() {
 #ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods
 void Transformer::createOutputFolder() {
 	// Ensure there is an Output folder
-	path outputFolder = cfg.getWorkDir();
+	path outputFolder = cfg.matchSettings().getWorkDir();
 	if(!exists(outputFolder.append("Output")))
 		create_directory(outputFolder);
 }

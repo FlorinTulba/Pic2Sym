@@ -17,8 +17,9 @@ using namespace cv;
 BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::Fixt)
 	BOOST_AUTO_TEST_CASE(Check_Controller) {
 		BOOST_TEST_MESSAGE("Running Check_Controller ...");
-		Config cfg;
-		Controller c(cfg);
+
+		Settings s(std::move(MatchSettings()));
+		Controller c(s);
 
 		BOOST_REQUIRE(!c.performTransformation()); // no font, no image
 
