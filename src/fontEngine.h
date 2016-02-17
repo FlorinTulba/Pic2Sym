@@ -140,9 +140,7 @@ class SymSettings {
 		SymSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
-		ar&defSettings.fontFile;
-		ar&defSettings.encoding;
-		ar&defSettings.fontSz;
+		ar >> defSettings.fontFile >> defSettings.encoding >> defSettings.fontSz;
 
 		// these show message when there are changes
 		setFontFile(defSettings.fontFile);
@@ -151,9 +149,7 @@ class SymSettings {
 	}
 	template<class Archive>
 	void save(Archive &ar, const unsigned version) const {
-		ar&fontFile;
-		ar&encoding;
-		ar&fontSz;
+		ar << fontFile << encoding << fontSz;
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;

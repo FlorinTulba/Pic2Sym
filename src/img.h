@@ -36,8 +36,7 @@ class ImgSettings {
 		ImgSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
-		ar&defSettings.hMaxSyms;
-		ar&defSettings.vMaxSyms;
+		ar >> defSettings.hMaxSyms >> defSettings.vMaxSyms;
 
 		// these show message when there are changes
 		setMaxHSyms(defSettings.hMaxSyms);
@@ -45,8 +44,7 @@ class ImgSettings {
 	}
 	template<class Archive>
 	void save(Archive &ar, const unsigned version) const {
-		ar&hMaxSyms;
-		ar&vMaxSyms;
+		ar << hMaxSyms << vMaxSyms;
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;

@@ -36,11 +36,11 @@ class MatchSettings {
 		MatchSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
-		ar&defSettings.kSdevFg; ar&defSettings.kSdevEdge; ar&defSettings.kSdevBg;
-		ar&defSettings.kContrast;
-		ar&defSettings.kMCsOffset; ar&defSettings.kCosAngleMCs;
-		ar&defSettings.kGlyphWeight;
-		ar&defSettings.threshold4Blank;
+		ar >> defSettings.kSdevFg >> defSettings.kSdevEdge >> defSettings.kSdevBg
+			>> defSettings.kContrast
+			>> defSettings.kMCsOffset >> defSettings.kCosAngleMCs
+			>> defSettings.kGlyphWeight
+			>> defSettings.threshold4Blank;
 
 		// these show message when there are changes
 		set_kSdevFg(defSettings.kSdevFg);
@@ -54,11 +54,11 @@ class MatchSettings {
 	}
 	template<class Archive>
 	void save(Archive &ar, const unsigned version) const {
-		ar&kSdevFg; ar&kSdevEdge; ar&kSdevBg;
-		ar&kContrast;
-		ar&kMCsOffset; ar&kCosAngleMCs;
-		ar&kGlyphWeight;
-		ar&threshold4Blank;
+		ar << kSdevFg << kSdevEdge << kSdevBg
+			<< kContrast
+			<< kMCsOffset << kCosAngleMCs
+			<< kGlyphWeight
+			<< threshold4Blank;
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;

@@ -27,9 +27,7 @@ class Settings {
 
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned version) {
-		ar&ss;
-		ar&is;
-		ar&ms;
+		ar & ss & is & ms;
 	}
 	friend class boost::serialization::access;
 
