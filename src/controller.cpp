@@ -356,7 +356,7 @@ void Controller::loadSettings() {
 	cout<<"Loading settings from '"<<ss.selection()<<'\''<<endl;
 	try {
 		ifstream ifs(ss.selection());
-		text_iarchive ia(ifs);
+		binary_iarchive ia(ifs);
 		ia>>cfg;
 	} catch(...) {
 		cerr<<"Couldn't load these settings"<<endl;
@@ -409,7 +409,7 @@ void Controller::saveSettings() const {
 	cout<<"Saving settings to '"<<ss.selection()<<'\''<<endl;
 	try {
 		ofstream ofs(ss.selection());
-		text_oarchive oa(ofs);
+		binary_oarchive oa(ofs);
 		oa<<cfg;
 	} catch(...) {
 		cerr<<"Couldn't save current settings"<<endl;

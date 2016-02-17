@@ -47,13 +47,13 @@ MatchSettings::MatchSettings(const string &appLaunchPath) {
 
 void MatchSettings::loadUserDefaults() {
 	ifstream ifs(cfgPath.string());
-	text_iarchive ia(ifs);
+	binary_iarchive ia(ifs);
 	ia>>*this;
 }
 
 void MatchSettings::saveUserDefaults() const {
 	ofstream ofs(cfgPath.string());
-	text_oarchive oa(ofs);
+	binary_oarchive oa(ofs);
 	oa<<*this;
 }
 
