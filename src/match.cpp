@@ -102,7 +102,7 @@ BestMatch& BestMatch::operator=(const BestMatch &other) {
 		score = other.score;
 		symIdx = other.symIdx;
 		symCode = other.symCode;
-		*const_cast<bool*>(&unicode) = other.unicode;
+		const_cast<bool&>(unicode) = other.unicode;
 		params = other.params;
 	}
 	return *this;

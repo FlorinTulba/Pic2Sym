@@ -180,7 +180,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   invHalfUc,		// glyph inverse in 0..255 byte range
 						   halfD1 } });		// grounded glyph is same as glyph (min is already 0)
 		SymData sdVertEdgeMask(sdHorizEdgeMask);
-		*(const_cast<Mat*>(&sdVertEdgeMask.symAndMasks[SymData::EDGE_MASK_IDX])) = verBeltUc;
+		const_cast<Mat&>(sdVertEdgeMask.symAndMasks[SymData::EDGE_MASK_IDX]) = verBeltUc;
 
 		// Checking glyph density for the given glyph
 		mp.reset();
@@ -791,14 +791,14 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 		BOOST_TEST(res == 1.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 
 		// Testing with a symbol that just enters the 'large symbols' category
-		mp.reset(); *(const_cast<double*>(&sd.pixelSum)) = area * cd.smallGlyphsCoverage;
+		mp.reset(); const_cast<double&>(sd.pixelSum) = area * cd.smallGlyphsCoverage;
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
 		BOOST_REQUIRE(mp.glyphWeight);
 		BOOST_TEST(*mp.glyphWeight == cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 
 		// Testing with largest possible symbol
-		mp.reset(); *(const_cast<double*>(&sd.pixelSum)) = area;
+		mp.reset(); const_cast<double&>(sd.pixelSum) = area;
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
 		BOOST_REQUIRE(mp.glyphWeight);
 		BOOST_TEST(*mp.glyphWeight == 1., test_tools::tolerance(1e-4));
