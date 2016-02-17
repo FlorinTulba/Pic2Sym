@@ -150,7 +150,8 @@ MatchSettings::MatchSettings(
 			   double kGlyphWeight_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
 	   kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
 	   kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
-	   threshold4Blank(threshold4Blank_) {
+	   threshold4Blank(threshold4Blank_),
+	   initialized(true) {
 	cout<<"Initial config values:"<<endl<<*this<<endl;
 }
 

@@ -21,8 +21,13 @@
 
 // MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
+public:
+	static const unsigned VERSION = 0U;
+
+private:
 	boost::filesystem::path workDir;	// Folder where the application was launched
-	boost::filesystem::path cfgPath;	// Path of the configuration file
+	boost::filesystem::path defCfgPath;	// Path of the original configuration file
+	boost::filesystem::path cfgPath;	// Path of the user configuration file
 
 	double kSdevFg = 0., kSdevEdge = 0., kSdevBg = 0.; // powers of factors for glyph correlation
 	double kContrast = 0.;						// power of factor for the resulted glyph contrast
@@ -30,8 +35,28 @@ class MatchSettings {
 	double kGlyphWeight = 0.;		// power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
 
+	/*
+	MatchSettings is considered correctly initialized if its data is read from
+	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
+	'initMatchSettings.cfg'.
+
+	First launch of the application will generate the second file from above and
+	further launches will check directly for 'initMatchSettings.cfg'.
+
+	Anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
+	obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
+	*/
+	bool initialized = false;		// set to true at the end of constructor
+
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
+		if(version < VERSION) {
+			if(!initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
+				throw invalid_argument("Obsolete version of 'initMatchSettings.cfg'!");
+
+			// Point reachable while reading Settings with an older version of MatchSettings field
+		}
+
 		// It is useful to see which settings changed when loading
 		MatchSettings defSettings(*this); // create as copy of previous values
 
@@ -62,6 +87,9 @@ class MatchSettings {
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
+
+	// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+	void createUserDefaults();
 
 public:
 	/*
@@ -114,6 +142,6 @@ public:
 #endif
 };
 
-BOOST_CLASS_VERSION(MatchSettings, 0)
+BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
 
 #endif

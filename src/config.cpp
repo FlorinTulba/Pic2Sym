@@ -13,6 +13,7 @@
 #include "controller.h"
 
 #include <fstream>
+#include <ctime>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -24,31 +25,46 @@ using namespace boost::property_tree;
 using namespace boost::archive;
 
 MatchSettings::MatchSettings(const string &appLaunchPath) {
-	boost::filesystem::path executablePath(absolute(appLaunchPath)),
-		defCfgPath = cfgPath = workDir = executablePath.remove_filename();
+	boost::filesystem::path executablePath(absolute(appLaunchPath));
+	defCfgPath = cfgPath = workDir = executablePath.remove_filename();
 	defCfgPath = defCfgPath.append("res").append("defaultMatchSettings.txt");
 	cfgPath = cfgPath.append("initMatchSettings.cfg");
 	
-	if(!exists(cfgPath)) {
-		if(!exists(defCfgPath)) {
-			cerr<<"There's no "<<cfgPath<<", neither "<<defCfgPath<<endl;
-			throw runtime_error("There's no initMatchSettings.cfg, neither res/defaultMatchSettings.txt");
-		}
-
-		if(!parseCfg(defCfgPath))
-			throw invalid_argument("Invalid Configuration!");
-
-		saveUserDefaults();
-
-	} else {
+	if(exists(cfgPath))
 		loadUserDefaults();
+	else
+		createUserDefaults();
+
+	initialized = true;
+}
+
+void MatchSettings::createUserDefaults() {
+	if(!exists(defCfgPath)) {
+		cerr<<"There's no "<<cfgPath<<", neither "<<defCfgPath<<endl;
+		throw runtime_error("There's no initMatchSettings.cfg, neither res/defaultMatchSettings.txt");
 	}
+
+	if(!parseCfg(defCfgPath))
+		throw runtime_error("Invalid Configuration!");
+
+	saveUserDefaults();
 }
 
 void MatchSettings::loadUserDefaults() {
-	ifstream ifs(cfgPath.string(), ios::binary);
-	binary_iarchive ia(ifs);
-	ia>>*this;
+	try {
+		ifstream ifs(cfgPath.string(), ios::binary);
+		binary_iarchive ia(ifs);
+		ia>>*this; // this might throw invalid_argument. See below
+
+	} catch(invalid_argument&) { // Obsolete version of 'initMatchSettings.cfg'
+		// Renaming the obsolete file
+		boost::filesystem::path bakFile(boost::filesystem::path(cfgPath)
+			.concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+		rename(cfgPath, bakFile);
+		
+		// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+		createUserDefaults();
+	}
 }
 
 void MatchSettings::saveUserDefaults() const {
