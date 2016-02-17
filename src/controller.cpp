@@ -355,7 +355,7 @@ void Controller::loadSettings() {
 	const SymSettings prevSymSettings(cfg.ss); // keep a copy of old SymSettings
 	cout<<"Loading settings from '"<<ss.selection()<<'\''<<endl;
 	try {
-		ifstream ifs(ss.selection());
+		ifstream ifs(ss.selection(), ios::binary);
 		binary_iarchive ia(ifs);
 		ia>>cfg;
 	} catch(...) {
@@ -408,7 +408,7 @@ void Controller::saveSettings() const {
 
 	cout<<"Saving settings to '"<<ss.selection()<<'\''<<endl;
 	try {
-		ofstream ofs(ss.selection());
+		ofstream ofs(ss.selection(), ios::binary);
 		binary_oarchive oa(ofs);
 		oa<<cfg;
 	} catch(...) {
