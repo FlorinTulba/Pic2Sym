@@ -30,12 +30,17 @@ MatchSettings::MatchSettings(const string &appLaunchPath) {
 	defCfgPath = defCfgPath.append("res").append("defaultMatchSettings.txt");
 	cfgPath = cfgPath.append("initMatchSettings.cfg");
 	
-	if(exists(cfgPath))
-		loadUserDefaults();
-	else
-		createUserDefaults();
+	if(exists(cfgPath)) {
+		if(MatchSettings::VERSION == loadUserDefaults())
+			return;
 
-	initialized = true;
+		// Renaming the obsolete file
+		rename(cfgPath, boost::filesystem::path(cfgPath)
+			   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+	}
+
+	// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+	createUserDefaults();
 }
 
 void MatchSettings::createUserDefaults() {
@@ -50,21 +55,12 @@ void MatchSettings::createUserDefaults() {
 	saveUserDefaults();
 }
 
-void MatchSettings::loadUserDefaults() {
-	try {
-		ifstream ifs(cfgPath.string(), ios::binary);
-		binary_iarchive ia(ifs);
-		ia>>*this; // this might throw invalid_argument. See below
+unsigned MatchSettings::loadUserDefaults() {
+	ifstream ifs(cfgPath.string(), ios::binary);
+	binary_iarchive ia(ifs);
+	ia>>*this;
 
-	} catch(invalid_argument&) { // Obsolete version of 'initMatchSettings.cfg'
-		// Renaming the obsolete file
-		boost::filesystem::path bakFile(boost::filesystem::path(cfgPath)
-			.concat(".").concat(to_string(time(nullptr))).concat(".bak"));
-		rename(cfgPath, bakFile);
-		
-		// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
-		createUserDefaults();
-	}
+	return ia.get_library_version();
 }
 
 void MatchSettings::saveUserDefaults() const {

@@ -35,28 +35,8 @@ private:
 	double kGlyphWeight = 0.;		// power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
 
-	/*
-	MatchSettings is considered correctly initialized if its data is read from
-	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
-	'initMatchSettings.cfg'.
-
-	First launch of the application will generate the second file from above and
-	further launches will check directly for 'initMatchSettings.cfg'.
-
-	Anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
-	obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
-	*/
-	bool initialized = false;		// set to true at the end of constructor
-
 	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
-		if(version < VERSION) {
-			if(!initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
-				throw invalid_argument("Obsolete version of 'initMatchSettings.cfg'!");
-
-			// Point reachable while reading Settings with an older version of MatchSettings field
-		}
-
+	void load(Archive &ar, const unsigned /*version*/) {
 		// It is useful to see which settings changed when loading
 		MatchSettings defSettings(*this); // create as copy of previous values
 
@@ -78,7 +58,7 @@ private:
 		setBlankThreshold(defSettings.threshold4Blank);
 	}
 	template<class Archive>
-	void save(Archive &ar, const unsigned version) const {
+	void save(Archive &ar, const unsigned /*version*/) const {
 		ar << kSdevFg << kSdevEdge << kSdevBg
 			<< kContrast
 			<< kMCsOffset << kCosAngleMCs
@@ -129,7 +109,12 @@ public:
 	void set_kGlyphWeight(double kGlyphWeight_);
 
 	bool parseCfg(const boost::filesystem::path &cfgFile); // Loads the settings provided in cfgFile
-	void loadUserDefaults(); // Overwrites current settings with those from initMatchSettings.cfg
+	
+	/*
+	Overwrites current settings with those from initMatchSettings.cfg.
+	Returns the version of the read MatchSettings.
+	*/
+	unsigned loadUserDefaults();
 	void saveUserDefaults() const; // Overwrites initMatchSettings.cfg with current settings
 
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
