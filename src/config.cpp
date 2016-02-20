@@ -18,6 +18,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/scope_exit.hpp>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -26,33 +27,41 @@ using namespace boost::archive;
 
 MatchSettings::MatchSettings(const string &appLaunchPath) {
 	boost::filesystem::path executablePath(absolute(appLaunchPath));
+
 	defCfgPath = cfgPath = workDir = executablePath.remove_filename();
-	defCfgPath = defCfgPath.append("res").append("defaultMatchSettings.txt");
-	cfgPath = cfgPath.append("initMatchSettings.cfg");
 	
-	if(exists(cfgPath))
-		try {
-			initialized = false;
-			loadUserDefaults();
-			initialized = true;
-			return;
-		} catch(invalid_argument&) {
-			// Renaming the obsolete file
-			rename(cfgPath, boost::filesystem::path(cfgPath)
-				   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+	if(!exists(defCfgPath.append("res").append("defaultMatchSettings.txt"))) {
+		cerr<<"There's no "<<defCfgPath<<endl;
+		throw runtime_error("There's no res/defaultMatchSettings.txt");
+	}
+
+	// Ensure initialized is true when leaving the constructor
+	BOOST_SCOPE_EXIT(this_) {
+		if(!this_->initialized)
+			this_->initialized = true;
+	} BOOST_SCOPE_EXIT_END;
+	
+	if(exists(cfgPath.append("initMatchSettings.cfg"))) {
+		if(last_write_time(cfgPath) > last_write_time(defCfgPath)) { // newer
+			try {
+				initialized = false;
+				loadUserDefaults(); // throws invalid_argument for older versions
+				
+				return;
+
+			} catch(invalid_argument&) {} // newer, but still obsolete due to its version
 		}
+
+		// Renaming the obsolete file
+		rename(cfgPath, boost::filesystem::path(cfgPath)
+			   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+	}
 
 	// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
 	createUserDefaults();
-	initialized = true;
 }
 
 void MatchSettings::createUserDefaults() {
-	if(!exists(defCfgPath)) {
-		cerr<<"There's no "<<cfgPath<<", neither "<<defCfgPath<<endl;
-		throw runtime_error("There's no initMatchSettings.cfg, neither res/defaultMatchSettings.txt");
-	}
-
 	if(!parseCfg(defCfgPath))
 		throw runtime_error("Invalid Configuration!");
 

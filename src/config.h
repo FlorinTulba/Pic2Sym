@@ -39,12 +39,12 @@ private:
 	/*
 	MatchSettings is considered correctly initialized if its data is read from
 	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
-	'initMatchSettings.cfg'.
+	'initMatchSettings.cfg'(if it exists and is newer than 'res/defaultMatchSettings.txt').
 
-	First launch of the application will generate the second file from above and
-	further launches will check directly for 'initMatchSettings.cfg'.
+	Each launch of the application will either create / update 'initMatchSettings.cfg'
+	if this doesn't exist / is older than 'res/defaultMatchSettings.txt'.
 
-	Anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
+	Besides, anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
 	obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
 
 	Initialized is set to false before calling 'loadUserDefaults' in the constructor
@@ -61,7 +61,8 @@ private:
 			// Point reachable while reading Settings with an older version of MatchSettings field
 		}
 
-		// It is useful to see which settings changed when loading
+		// It is useful to see which settings changed when loading =>
+		// Loading data in a temporary object and comparing with existing values.
 		MatchSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
@@ -104,7 +105,7 @@ private:
 
 public:
 	/*
-	Initializes the fields from initMatchSettings.cfg when this file exists,
+	Initializes the fields from initMatchSettings.cfg when this file exists and isn't obsolete,
 	otherwise from res/defaultMatchSettings.txt.
 	The latter file is used to conveniently alter the defaults during development.
 
