@@ -20,6 +20,8 @@ using namespace std;
 using namespace boost;
 
 namespace {
+	const double EPS = 1e-6;
+
 	// Conversion PixMapSym -> cv::Mat of type double with range [0..1] instead of [0..255]
 	cv::Mat toMat(const PixMapSym &pms, unsigned fontSz) {
 		cv::Mat result((int)fontSz, (int)fontSz, CV_8UC1, cv::Scalar(0U));
@@ -39,21 +41,27 @@ namespace {
 	}
 }
 
-const double CachedData::sdevMax = 127.5;
+const double CachedData::sdevMaxFgBg = 127.5;
+const double CachedData::sdevMaxEdge = 255.;
 
 #if defined _DEBUG || defined UNIT_TESTING
 
 #	define comma L",\t"
 
-const wstring MatchParams::HEADER(L"#mcGlyphX" comma L"#mcGlyphY" comma
-								  L"#mcPatchX" comma L"#mcPatchY" comma
+const wstring MatchParams::HEADER(L"#ssim" comma
+								  L"#sdFg" comma L"#sdEdge" comma L"#sdBg" comma
 								  L"#fg" comma L"#bg" comma
-								  L"#sdevFg" comma L"#sdevEdge" comma L"#sdevBg" comma
-								  L"#rho");
+								  L"#mcPaX" comma L"#mcPaY" comma
+								  L"#mcPX" comma L"#mcPY" comma
+								  L"#density");
 
 wostream& operator<<(wostream &os, const MatchParams &mp) {
-	if(mp.mcGlyph)
-		os<<mp.mcGlyph->x<<comma<<mp.mcGlyph->y<<comma;
+	os<<mp.ssim<<comma
+		<<mp.sdevFg<<comma<<mp.sdevEdge<<comma<<mp.sdevBg<<comma
+		<<mp.fg<<comma<<mp.bg<<comma;
+
+	if(mp.mcPatchApprox)
+		os<<mp.mcPatchApprox->x<<comma<<mp.mcPatchApprox->y<<comma;
 	else
 		os<<none<<comma<<none<<comma;
 
@@ -62,9 +70,8 @@ wostream& operator<<(wostream &os, const MatchParams &mp) {
 	else
 		os<<none<<comma<<none<<comma;
 
-	os<<mp.fg<<comma<<mp.bg<<comma
-		<<mp.sdevFg<<comma<<mp.sdevEdge<<comma<<mp.sdevBg<<comma
-		<<mp.glyphWeight;
+	os<<mp.symDensity;
+
 	return os;
 }
 
@@ -116,18 +123,22 @@ SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double
 		pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {
 }
 
-void MatchParams::reset(bool skipMcPatch/* = true*/) {
-	mcGlyph = none;
-	glyphWeight = fg = bg = sdevFg = sdevBg = sdevEdge = none;
+void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
+	mcPatchApprox = none;
+	patchApprox = none;
+	ssim = fg = bg = sdevFg = sdevBg = sdevEdge = symDensity = none;
 
-	if(!skipMcPatch)
+	if(!skipPatchInvariantParts) {
 		mcPatch = none;
+		blurredPatch = blurredPatchSq = variancePatch = none;
+	}
 }
 
 void MatchParams::computeMean(const cv::Mat &patch, const cv::Mat &mask, optional<double> &miu) {
 	if(miu)
 		return;
 	miu = *cv::mean(patch, mask).val;
+	assert(*miu > -EPS && *miu < 255.+EPS);
 }
 
 void MatchParams::computeFg(const cv::Mat &patch, const SymData &symData) {
@@ -151,6 +162,7 @@ void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
 		miu = *miu_.val;
 		sdev = *sdev_.val;
 	}
+	assert(*sdev < CachedData::sdevMaxFgBg+EPS);
 }
 
 void MatchParams::computeSdevFg(const cv::Mat &patch, const SymData &symData) {
@@ -159,6 +171,95 @@ void MatchParams::computeSdevFg(const cv::Mat &patch, const SymData &symData) {
 
 void MatchParams::computeSdevBg(const cv::Mat &patch, const SymData &symData) {
 	computeSdev(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg, sdevBg);
+}
+
+void MatchParams::computeBlurredPatch(const cv::Mat &patch) {
+	if(blurredPatch)
+		return;
+
+	cv::Mat blurredPatch_;
+	cv::GaussianBlur(patch, blurredPatch_,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+	blurredPatch = blurredPatch_;
+}
+
+void MatchParams::computeBlurredPatchSq(const cv::Mat &patch) {
+	if(blurredPatchSq)
+		return;
+
+	computeBlurredPatch(patch);
+	blurredPatchSq = blurredPatch.value().mul(blurredPatch.value());
+}
+
+void MatchParams::computeVariancePatch(const cv::Mat &patch) {
+	if(variancePatch)
+		return;
+
+	computeBlurredPatchSq(patch);
+
+	cv::Mat variancePatch_;
+	cv::GaussianBlur(patch.mul(patch), variancePatch_,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+	variancePatch_ -= blurredPatchSq.value();
+	variancePatch = variancePatch_;
+}
+
+void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
+	if(ssim)
+		return;
+
+	computePatchApprox(patch, symData);
+	const cv::Mat &approxPatch = patchApprox.value();
+	const double diffFgBg = fg.value() - bg.value();
+
+	computeVariancePatch(patch);
+	cv::Mat variancePatchApprox;
+	cv::GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+
+	// Saving a call to GaussianBlur each time current symbol is compared to a patch:
+	// Blur of the approximated patch is computed based on the blur of the
+	// grounded version of the original symbol
+	const cv::Mat blurredPatchApprox = bg.value() + (diffFgBg / symData.diffMinMax) *
+										symData.symAndMasks[SymData::BLURRED_GR_GLYPH_IDX],
+				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox);
+	variancePatchApprox -= blurredPatchApproxSq;
+
+	const cv::Mat productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
+	cv::Mat covariance, ssimMap;
+	cv::GaussianBlur(patch.mul(approxPatch), covariance,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+	covariance -= productBlurredMats;
+
+	const cv::Mat numerator = (2.*productBlurredMats + StructuralSimilarity::C1).
+					mul(StructuralSimilarity::C2 + 2.*covariance),
+		denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity::C1).
+					mul(StructuralSimilarity::C2 + variancePatch.value() + variancePatchApprox);
+
+	cv::divide(numerator, denominator, ssimMap);
+	ssim = *cv::mean(ssimMap).val;
+	assert(abs(*ssim) < 1.+EPS);
+}
+
+void MatchParams::computePatchApprox(const cv::Mat &patch, const SymData &symData) {
+	if(patchApprox)
+		return;
+
+	computeFg(patch, symData);
+	computeBg(patch, symData);
+
+	const double diffFgBg = fg.value() - bg.value();
+	if(diffFgBg == 0.) {
+		patchApprox = cv::Mat(patch.rows, patch.cols, CV_64FC1, cv::Scalar(bg.value()));
+		return;
+	}
+
+	patchApprox = bg.value() +
+		symData.symAndMasks[SymData::GROUNDED_GLYPH_IDX] * (diffFgBg / symData.diffMinMax);
 }
 
 void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) {
@@ -172,26 +273,18 @@ void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) 
 		return;
 	}
 
-	computeFg(patch, symData);
-	computeBg(patch, symData);
+	computePatchApprox(patch, symData);
 
-	const double diffFgBg = fg.value() - bg.value();
-	if(diffFgBg == 0.) {
-		sdevEdge = cv::norm(patch - bg.value(), cv::NORM_L2, edgeMask) / sqrt(cnz);
-		return;
-	}
-
-	const cv::Mat approximationOfPatch = bg.value() +
-		symData.symAndMasks[SymData::GROUNDED_GLYPH_IDX] * (diffFgBg / symData.diffMinMax);
-
-	sdevEdge = cv::norm(patch, approximationOfPatch, cv::NORM_L2, edgeMask) / sqrt(cnz);
+	sdevEdge = cv::norm(patch, patchApprox.value(), cv::NORM_L2, edgeMask) / sqrt(cnz);
+	assert(*sdevEdge < CachedData::sdevMaxEdge+EPS);
 }
 
-void MatchParams::computeRhoApproxSym(const SymData &symData, const CachedData &cachedData) {
-	if(glyphWeight)
+void MatchParams::computeSymDensity(const SymData &symData, const CachedData &cachedData) {
+	if(symDensity)
 		return;
 
-	glyphWeight = symData.pixelSum / cachedData.sz2;
+	symDensity = symData.pixelSum / cachedData.sz2;
+	assert(*symDensity < 1.+EPS);
 }
 
 void MatchParams::computeMcPatch(const cv::Mat &patch, const CachedData &cachedData) {
@@ -203,26 +296,31 @@ void MatchParams::computeMcPatch(const cv::Mat &patch, const CachedData &cachedD
 	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 	reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
 
-	mcPatch = cv::Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec)) / patchSum;
+	mcPatch = cv::Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
+						/ patchSum;
+	assert(mcPatch->x > -EPS && mcPatch->x < cachedData.sz_1+EPS);
+	assert(mcPatch->y > -EPS && mcPatch->y < cachedData.sz_1+EPS);
 }
 
-void MatchParams::computeMcApproxSym(const cv::Mat &patch, const SymData &symData,
+void MatchParams::computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
 									 const CachedData &cachedData) {
-	if(mcGlyph)
+	if(mcPatchApprox)
 		return;
 
 	computeFg(patch, symData);
 	computeBg(patch, symData);
-	computeRhoApproxSym(symData, cachedData);
+	computeSymDensity(symData, cachedData);
 
 	// Obtaining glyph's mass center
-	const double k = glyphWeight.value() * (fg.value() - bg.value()),
+	const double k = symDensity.value() * (fg.value() - bg.value()),
 				delta = .5 * bg.value() * cachedData.sz_1,
 				denominator = k + bg.value();
 	if(denominator == 0.)
-		mcGlyph = cachedData.patchCenter;
+		mcPatchApprox = cachedData.patchCenter;
 	else
-		mcGlyph = (k * symData.mc + cv::Point2d(delta, delta)) / denominator;
+		mcPatchApprox = (k * symData.mc + cv::Point2d(delta, delta)) / denominator;
+	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < cachedData.sz_1+EPS);
+	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < cachedData.sz_1+EPS);
 }
 
 void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
@@ -232,6 +330,32 @@ void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
 	symCode = symCode_;
 	params = params_;
 }
+
+const cv::Size StructuralSimilarity::WIN_SIZE(11, 11);
+const double StructuralSimilarity::SIGMA = 1.5;
+const double StructuralSimilarity::C1 = .01*.01*255.*255.; // (.01*255)^2
+const double StructuralSimilarity::C2 = .03*.03*255.*255.; // (.03*255)^2
+
+/*
+Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .
+
+Downsampling was not used, as the results normally get inspected by
+enlarging the regions of interest.
+*/
+double StructuralSimilarity::assessMatch(const cv::Mat &patch,
+										 const SymData &symData,
+										 MatchParams &mp) const {
+	
+	mp.computeSsim(patch, symData);
+
+	// Poor structural similarity produces ssim close to -1.
+	// Good structural similarity sets ssim towards 1.
+	// The returned value is in 0..1 range,
+	//		small for small ssim-s or large k (>1)
+	//		larger for good ssim-s or 0 < k <= 1
+	return pow((1. + mp.ssim.value()) / 2., k);
+}
+
 
 double FgMatch::assessMatch(const cv::Mat &patch,
 							const SymData &symData,
@@ -245,7 +369,7 @@ double FgMatch::assessMatch(const cv::Mat &patch,
 	//		returns closer to 1 for k in (0..1)
 	//		returns sdev for k=1
 	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
-	return pow(1. - mp.sdevFg.value() / CachedData::sdevMax, k);
+	return pow(1. - mp.sdevFg.value() / CachedData::sdevMaxFgBg, k);
 }
 
 double BgMatch::assessMatch(const cv::Mat &patch,
@@ -260,27 +384,27 @@ double BgMatch::assessMatch(const cv::Mat &patch,
 	//		returns closer to 1 for k in (0..1)
 	//		returns sdev for k=1
 	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
-	return pow(1. - mp.sdevBg.value()/CachedData::sdevMax, k);
+	return pow(1. - mp.sdevBg.value()/CachedData::sdevMaxFgBg, k);
 }
 
 double EdgeMatch::assessMatch(const cv::Mat &patch,
-							const SymData &symData,
-							MatchParams &mp) const {
+							  const SymData &symData,
+							  MatchParams &mp) const {
 	mp.computeSdevEdge(patch, symData);
 
 	// Returned value discourages large std. devs.
 	// For sdev =     0 (min) => returns 1 no matter k
-	// For sdev = 127.5 (max) => returns 0 no matter k (For k=0, this matching aspect is disabled)
+	// For sdev =	255 (max) => returns 0 no matter k (For k=0, this matching aspect is disabled)
 	// For other sdev-s       =>
 	//		returns closer to 1 for k in (0..1)
 	//		returns sdev for k=1
 	//		returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
-	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMax, k);
+	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMaxEdge, k);
 }
 
 double BetterContrast::assessMatch(const cv::Mat &patch,
-							const SymData &symData,
-							MatchParams &mp) const {
+								   const SymData &symData,
+								   MatchParams &mp) const {
 	mp.computeFg(patch, symData);
 	mp.computeBg(patch, symData);
 	
@@ -293,14 +417,14 @@ double BetterContrast::assessMatch(const cv::Mat &patch,
 }
 
 double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
-							const SymData &symData,
-							MatchParams &mp) const {
+											const SymData &symData,
+											MatchParams &mp) const {
 	mp.computeMcPatch(patch, cachedData);
-	mp.computeMcApproxSym(patch, symData, cachedData);
+	mp.computeMcPatchApprox(patch, symData, cachedData);
 
 	// best glyph location is when mc-s are near to each other
 	// range 0 .. 1.42*(fontSz-1), best when 0
-	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
+	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcPatchApprox.value());
 
 	// Discourages mcsOffset larger than preferredMaxMcDist:
 	//		returns 1 for mcsOffset == preferredMaxMcDist, no matter k
@@ -313,20 +437,20 @@ double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 }
 
 double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
-							const SymData &symData,
-							MatchParams &mp) const {
+										  const SymData &symData,
+										  MatchParams &mp) const {
 	static const double SQRT2 = sqrt(2), TWOmSQRT2 = 2. - SQRT2;
 	static const cv::Point2d ORIGIN; // (0, 0)
 
 	mp.computeMcPatch(patch, cachedData);
-	mp.computeMcApproxSym(patch, symData, cachedData);
+	mp.computeMcPatchApprox(patch, symData, cachedData);
 
 	// best glyph location is when mc-s are near to each other
 	// range 0 .. 1.42*(fontSz-1), best when 0
-	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcGlyph.value());
+	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcPatchApprox.value());
 
 	const cv::Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
-	const cv::Point2d relMcGlyph = mp.mcGlyph.value() - cachedData.patchCenter;
+	const cv::Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1	
 	double cosAngleMCs = 0.; // -1..1 range, best when 1
@@ -343,14 +467,14 @@ double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 }
 
 double LargerSym::assessMatch(const cv::Mat&,
-							const SymData &symData,
-							MatchParams &mp) const {
-	mp.computeRhoApproxSym(symData, cachedData);
+							  const SymData &symData,
+							  MatchParams &mp) const {
+	mp.computeSymDensity(symData, cachedData);
 
 	// Encourages approximations with symbols filling at least x% of their box.
 	// The threshold x is provided by smallGlyphsCoverage.
 	// Returns < 1 for glyphs under threshold;   >= 1 otherwise
-	return pow(mp.glyphWeight.value() + 1. - cachedData.smallGlyphsCoverage, k);
+	return pow(mp.symDensity.value() + 1. - cachedData.smallGlyphsCoverage, k);
 }
 
 void CachedData::useNewSymSize(unsigned sz_) {
@@ -374,7 +498,7 @@ void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 
 
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) :
-	cfg(cfg_), fe(fe_),
+	cfg(cfg_), fe(fe_), strSimMatch(cachedData, cfg_.matchSettings()),
 	fgMatch(cachedData, cfg_.matchSettings()), bgMatch(cachedData, cfg_.matchSettings()),
 	edgeMatch(cachedData, cfg_.matchSettings()), conMatch(cachedData, cfg_.matchSettings()),
 	grMatch(cachedData, cfg_.matchSettings()), dirMatch(cachedData, cfg_.matchSettings()),
@@ -406,8 +530,7 @@ void MatchEngine::updateSymbols() {
 	// When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
 	// But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
 	static const double STILL_BG = 0.,			// darkest shades
-					STILL_FG = 1. - STILL_BG,	// brightest shades
-					EPS = 1e-6;
+					STILL_FG = 1. - STILL_BG;	// brightest shades
 	symsSet.clear();
 	symsSet.reserve(fe.symsSet().size());
 
@@ -416,7 +539,7 @@ void MatchEngine::updateSymbols() {
 	const int szGlyph[] = { 2, sz, sz },
 		szMasks[] = { 4, sz, sz };
 	for(const auto &pms : fe.symsSet()) {
-		cv::Mat negGlyph, edgeMask;
+		cv::Mat negGlyph, edgeMask, blurredGlyph;
 		const cv::Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
@@ -426,6 +549,11 @@ void MatchEngine::updateSymbols() {
 				fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
 				bgMask = (glyph <= (minVal + STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
+		
+		// storing a blurred version of the grounded glyph for structural similarity match aspect
+		cv::GaussianBlur(groundedGlyph, blurredGlyph,
+						 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+						 cv::BORDER_REPLICATE);
 
 		symsSet.emplace_back(pms.symCode,
 							 minVal, maxVal-minVal,
@@ -435,7 +563,8 @@ void MatchEngine::updateSymbols() {
 								bgMask,			// BG_MASK_IDX
 								edgeMask,		// EDGE_MASK_IDX
 								negGlyph,		// NEG_GLYPH_IDX
-								groundedGlyph	// GROUNDED_GLYPH_IDX
+								groundedGlyph,	// GROUNDED_GLYPH_IDX
+								blurredGlyph	// BLURRED_GR_GLYPH_IDX
 							} });
 	}
 
@@ -510,12 +639,10 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 
 	} else { // grayscale result
 		auto &params = best.params;
-		if(!params.fg)
-			params.computeFg(patch, symsSet[best.symIdx]);
-		if(!params.bg)
-			params.computeBg(patch, symsSet[best.symIdx]);
-		double diff = *params.fg - *params.bg;
+		params.computeFg(patch, symsSet[best.symIdx]);
+		params.computeBg(patch, symsSet[best.symIdx]);
 
+		const double diff = *params.fg - *params.bg;
 		if(abs(diff) < cfg.matchSettings().getBlankThreshold())
 			patchResult = cv::mean(patch);
 		else
@@ -550,7 +677,7 @@ void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 #ifndef UNIT_TESTING // UnitTesting project has a different implementation for this method
 const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
 	static const vector<MatchAspect*> availAspects {
-		&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
+		&strSimMatch, &fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
 	};
 	return availAspects;
 }

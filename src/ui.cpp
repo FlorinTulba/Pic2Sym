@@ -24,14 +24,16 @@ const Mat Comparator::noImage = imread("res/NoImage.jpg");
 const String CmapInspect::pageTrackName = "Cmap Page:";
 const Size CmapInspect::pageSz(640, 480);
 
-const double ControlPanel::Converter::Contrast::maxReal = 1.;
+const double ControlPanel::Converter::StructuralSim::maxReal = 10.;
 const double ControlPanel::Converter::Correctness::maxReal = 10.;
+const double ControlPanel::Converter::Contrast::maxReal = 1.;
 const double ControlPanel::Converter::Direction::maxReal = 5.;
 const double ControlPanel::Converter::Gravity::maxReal = 5.;
 const double ControlPanel::Converter::LargerSym::maxReal = 10.;
 
 const String ControlPanel::fontSzTrName = "Font size:";
 const String ControlPanel::encodingTrName = "Encoding:";
+const String ControlPanel::structuralSimTrName = "Struct Sim:";
 const String ControlPanel::underGlyphCorrectnessTrName = "Fit under:";
 const String ControlPanel::glyphEdgeCorrectnessTrName = "Fit edge:";
 const String ControlPanel::asideGlyphCorrectnessTrName = "Fit aside:";
@@ -204,6 +206,14 @@ double ControlPanel::Converter::proportionRule(double x, double xMax, double yMa
 	return x * yMax / xMax;
 }
 
+int ControlPanel::Converter::StructuralSim::toSlider(double ssim) {
+	return (int)round(proportionRule(ssim, maxReal, maxSlider));
+}
+
+double ControlPanel::Converter::StructuralSim::fromSlider(int ssim) {
+	return proportionRule(ssim, maxSlider, maxReal);
+}
+
 int ControlPanel::Converter::Contrast::toSlider(double contrast) {
 	return (int)round(proportionRule(contrast, maxReal, maxSlider));
 }
@@ -248,6 +258,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		ctrler(ctrler_),
 		maxHSyms(cfg.imgSettings().getMaxHSyms()), maxVSyms(cfg.imgSettings().getMaxVSyms()),
 		encoding(0U), fontSz(cfg.symSettings().getFontSz()),
+		structuralSim(Converter::StructuralSim::toSlider(cfg.matchSettings().get_kSsim())),
 		underGlyphCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevFg())),
 		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevEdge())),
 		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevBg())),
@@ -309,6 +320,11 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		pCtrler->setUserDefaultMatchSettings();
 	}, reinterpret_cast<void*>(&ctrler));
 
+	createTrackbar(structuralSimTrName, nullptr, &structuralSim, Converter::StructuralSim::maxSlider,
+				   [] (int val, void *userdata) {
+		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		pCtrler->newStructuralSimilarityFactor(Converter::StructuralSim::fromSlider(val));
+	}, reinterpret_cast<void*>(&ctrler));
 	createTrackbar(underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, Converter::Correctness::maxSlider,
 				   [] (int val, void *userdata) {
 		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
@@ -362,6 +378,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 					L"- which font family provides these symbols\n" \
 					L"- the desired encoding within the selected font family\n" \
 					L"- the size of these symbols\n" \
+					L"- a factor to encourage structural similarity\n" \
 					L"- factors to favor better correspondence of foreground\n" \
 					L"   (under glyph) / contours (edges of the glyph) /\n" \
 					L"   background (around, aside glyph)\n" \
@@ -389,7 +406,11 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 }
 
 void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
-	int newVal = Converter::Correctness::toSlider(ms.get_kSdevFg());
+	int newVal = Converter::StructuralSim::toSlider(ms.get_kSsim());
+	while(structuralSim != newVal)
+		setTrackbarPos(structuralSimTrName, nullptr, newVal);
+
+	newVal = Converter::Correctness::toSlider(ms.get_kSdevFg());
 	while(underGlyphCorrectness != newVal)
 		setTrackbarPos(underGlyphCorrectnessTrName, nullptr, newVal);
 

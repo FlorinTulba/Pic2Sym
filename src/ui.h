@@ -144,6 +144,14 @@ class ControlPanel final {
 		*/
 		static double proportionRule(double x, double xMax, double yMax);
 
+		// used for the slider controlling the structural similarity
+		struct StructuralSim {
+			static const int maxSlider = 100;
+			static const double maxReal;
+			static int toSlider(double ssim);
+			static double fromSlider(int ssim);
+		};
+
 		// used for the 3 sliders controlling the correctness
 		struct Correctness {
 			static const int maxSlider = 100;
@@ -187,7 +195,9 @@ class ControlPanel final {
 
 	// Configuration sliders' handles
 	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName;
-	static const cv::String underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName, moreContrastTrName;
+	static const cv::String structuralSimTrName,
+		underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName,
+		moreContrastTrName;
 	static const cv::String gravityTrName, directionTrName, largerSymTrName, thresh4BlanksTrName;
 
 	Controller &ctrler;	// window manager
@@ -195,7 +205,7 @@ class ControlPanel final {
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
 	int encoding, fontSz;
-	int underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
+	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
 	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
 
 	// The max of the encodings slider won't update unless

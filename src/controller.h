@@ -138,6 +138,7 @@ public:
 	void newFontEncoding(int encodingIdx);
 	bool newFontEncoding(const std::string &encName);
 	void newFontSize(int fontSz);
+	void newStructuralSimilarityFactor(double k);
 	void newUnderGlyphCorrectnessFactor(double k);
 	void newGlyphEdgeCorrectnessFactor(double k);
 	void newAsideGlyphCorrectnessFactor(double k);

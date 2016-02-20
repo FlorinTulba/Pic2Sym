@@ -144,13 +144,14 @@ namespace ut {
 	}
 }
 
-MatchSettings::MatchSettings(
+MatchSettings::MatchSettings(double kSsim_/* = 0.*/,
 			   double kSdevFg_/* = 0.*/, double kSdevEdge_/* = 0.*/, double kSdevBg_/* = 0.*/,
 			   double kContrast_/* = 0.*/, double kMCsOffset_/* = 0.*/, double kCosAngleMCs_/* = 0.*/,
 			   double kGlyphWeight_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
-	   kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-	   kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
-	   threshold4Blank(threshold4Blank_) {
+		kSsim(kSsim_),
+		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
+		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
+		threshold4Blank(threshold4Blank_) {
 	cout<<"Initial config values:"<<endl<<*this<<endl;
 }
 
@@ -158,7 +159,7 @@ const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
 	static std::shared_ptr<const vector<MatchAspect*>> pAvailAspects;
 	if(ut::MatchEngine::initAvailAspects || !pAvailAspects) {
 		pAvailAspects = std::make_shared<const vector<MatchAspect*>>(vector<MatchAspect*>{
-			&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
+			&strSimMatch, &fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
 		});
 		ut::MatchEngine::initAvailAspects = false;
 	}

@@ -22,25 +22,54 @@
 // MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
 public:
-	static const unsigned VERSION = 0U;
+	static const unsigned VERSION = 1U;
 
 private:
 	boost::filesystem::path workDir;	// Folder where the application was launched
 	boost::filesystem::path defCfgPath;	// Path of the original configuration file
 	boost::filesystem::path cfgPath;	// Path of the user configuration file
 
+	double kSsim = 0.;				// power of factor controlling structural similarity
 	double kSdevFg = 0., kSdevEdge = 0., kSdevBg = 0.; // powers of factors for glyph correlation
 	double kContrast = 0.;						// power of factor for the resulted glyph contrast
 	double kMCsOffset = 0., kCosAngleMCs = 0.;	// powers of factors targeting smoothness
 	double kGlyphWeight = 0.;		// power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
 
+	/*
+	MatchSettings is considered correctly initialized if its data is read from
+	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
+	'initMatchSettings.cfg'.
+
+	First launch of the application will generate the second file from above and
+	further launches will check directly for 'initMatchSettings.cfg'.
+
+	Anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
+	obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
+
+	Initialized is set to false before calling 'loadUserDefaults' in the constructor
+	and it is always set to true at the end of the construction.
+	*/
+	bool initialized = true;
+
 	template<class Archive>
-	void load(Archive &ar, const unsigned /*version*/) {
+	void load(Archive &ar, const unsigned version) {
+		if(version < VERSION) {
+			if(!initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
+				throw invalid_argument("Obsolete version of 'initMatchSettings.cfg'!");
+
+			// Point reachable while reading Settings with an older version of MatchSettings field
+		}
+
 		// It is useful to see which settings changed when loading
 		MatchSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
+		if(version > 0U) {
+			ar >> defSettings.kSsim; // versions > 0 use kSsim
+		} else {
+			defSettings.kSsim = 0.; // version 0 didn't use kSsim
+		}
 		ar >> defSettings.kSdevFg >> defSettings.kSdevEdge >> defSettings.kSdevBg
 			>> defSettings.kContrast
 			>> defSettings.kMCsOffset >> defSettings.kCosAngleMCs
@@ -48,6 +77,7 @@ private:
 			>> defSettings.threshold4Blank;
 
 		// these show message when there are changes
+		set_kSsim(defSettings.kSsim);
 		set_kSdevFg(defSettings.kSdevFg);
 		set_kSdevEdge(defSettings.kSdevEdge);
 		set_kSdevBg(defSettings.kSdevBg);
@@ -58,8 +88,9 @@ private:
 		setBlankThreshold(defSettings.threshold4Blank);
 	}
 	template<class Archive>
-	void save(Archive &ar, const unsigned /*version*/) const {
-		ar << kSdevFg << kSdevEdge << kSdevBg
+	void save(Archive &ar, const unsigned/* version*/) const {
+		ar << kSsim
+			<< kSdevFg << kSdevEdge << kSdevBg
 			<< kContrast
 			<< kMCsOffset << kCosAngleMCs
 			<< kGlyphWeight
@@ -84,8 +115,8 @@ public:
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
-	unsigned getBlankThreshold() const { return threshold4Blank; }
-	void setBlankThreshold(unsigned threshold4Blank_);
+	const double& get_kSsim() const { return kSsim; }
+	void set_kSsim(double kSsim_);
 
 	const double& get_kSdevFg() const { return kSdevFg; }
 	void set_kSdevFg(double kSdevFg_);
@@ -108,19 +139,18 @@ public:
 	const double& get_kGlyphWeight() const { return kGlyphWeight; }
 	void set_kGlyphWeight(double kGlyphWeight_);
 
+	unsigned getBlankThreshold() const { return threshold4Blank; }
+	void setBlankThreshold(unsigned threshold4Blank_);
+
 	bool parseCfg(const boost::filesystem::path &cfgFile); // Loads the settings provided in cfgFile
 	
-	/*
-	Overwrites current settings with those from initMatchSettings.cfg.
-	Returns the version of the read MatchSettings.
-	*/
-	unsigned loadUserDefaults();
+	void loadUserDefaults(); // Overwrites current settings with those from initMatchSettings.cfg.
 	void saveUserDefaults() const; // Overwrites initMatchSettings.cfg with current settings
 
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 #ifdef UNIT_TESTING
 	// Constructor available only within UnitTesting project
-	MatchSettings(
+	MatchSettings(double kSsim_ = 0.,
 		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
 		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
 		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U);

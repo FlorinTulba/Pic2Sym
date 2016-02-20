@@ -30,17 +30,21 @@ MatchSettings::MatchSettings(const string &appLaunchPath) {
 	defCfgPath = defCfgPath.append("res").append("defaultMatchSettings.txt");
 	cfgPath = cfgPath.append("initMatchSettings.cfg");
 	
-	if(exists(cfgPath)) {
-		if(MatchSettings::VERSION == loadUserDefaults())
+	if(exists(cfgPath))
+		try {
+			initialized = false;
+			loadUserDefaults();
+			initialized = true;
 			return;
-
-		// Renaming the obsolete file
-		rename(cfgPath, boost::filesystem::path(cfgPath)
-			   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
-	}
+		} catch(invalid_argument&) {
+			// Renaming the obsolete file
+			rename(cfgPath, boost::filesystem::path(cfgPath)
+				   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+		}
 
 	// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
 	createUserDefaults();
+	initialized = true;
 }
 
 void MatchSettings::createUserDefaults() {
@@ -55,12 +59,10 @@ void MatchSettings::createUserDefaults() {
 	saveUserDefaults();
 }
 
-unsigned MatchSettings::loadUserDefaults() {
+void MatchSettings::loadUserDefaults() {
 	ifstream ifs(cfgPath.string(), ios::binary);
 	binary_iarchive ia(ifs);
-	ia>>*this;
-
-	return ia.get_library_version();
+	ia>>*this; // throws invalid_argument for obsolete 'initMatchSettings.cfg'
 }
 
 void MatchSettings::saveUserDefaults() const {
@@ -71,7 +73,8 @@ void MatchSettings::saveUserDefaults() const {
 
 bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 	bool correct = false;
-	double new_kSdevFg = 0., new_kSdevEdge = 0., new_kSdevBg = 0.,
+	double new_kSsim = 0.,
+		new_kSdevFg = 0., new_kSdevEdge = 0., new_kSdevBg = 0.,
 		new_kMCsOffset = 0., new_kCosAngleMCs = 0.,
 		new_kContrast = 0., new_kGlyphWeight = 0.;
 	unsigned newThreshold4Blank = 0U;
@@ -80,6 +83,7 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 		ptree theCfg;
 		read_info(cfgFile.string(), theCfg);
 
+		new_kSsim			= theCfg.get<double>(prop = "STRUCTURAL_SIMILARITY");
 		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_GLYPH_CORRECTNESS");
 		new_kSdevEdge		= theCfg.get<double>(prop = "GLYPH_EDGE_CORRECTNESS");
 		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_GLYPH_CORRECTNESS");
@@ -90,12 +94,13 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 		newThreshold4Blank	= theCfg.get<unsigned>(prop = "THRESHOLD_FOR_BLANK");
 
 		if(!Settings::isBlanksThresholdOk(newThreshold4Blank) ||
-		   new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. || new_kContrast < 0. ||
-		   new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
+		   new_kSsim < 0. || new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
+		   new_kContrast < 0. || new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
 		   new_kGlyphWeight < 0.)
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
 			correct = true;
+			kSsim = new_kSsim;
 			kSdevFg = new_kSdevFg;  kSdevEdge = new_kSdevEdge; kSdevBg = new_kSdevBg;
 			kContrast = new_kContrast; 
 			kMCsOffset = new_kMCsOffset; kCosAngleMCs = new_kCosAngleMCs;
@@ -115,11 +120,11 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 	return correct;
 }
 
-void MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
-	if(threshold4Blank == threshold4Blank_)
+void MatchSettings::set_kSsim(double kSsim_) {
+	if(kSsim == kSsim_)
 		return;
-	cout<<"threshold4Blank"<<" : "<<threshold4Blank<<" -> "<<threshold4Blank_<<endl;
-	threshold4Blank = threshold4Blank_;
+	cout<<"kSsim"<<" : "<<kSsim<<" -> "<<kSsim_<<endl;
+	kSsim = kSsim_;
 }
 
 void MatchSettings::set_kSdevFg(double kSdevFg_) {
@@ -171,7 +176,15 @@ void MatchSettings::set_kGlyphWeight(double kGlyphWeight_) {
 	kGlyphWeight = kGlyphWeight_;
 }
 
+void MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
+	if(threshold4Blank == threshold4Blank_)
+		return;
+	cout<<"threshold4Blank"<<" : "<<threshold4Blank<<" -> "<<threshold4Blank_<<endl;
+	threshold4Blank = threshold4Blank_;
+}
+
 ostream& operator<<(ostream &os, const MatchSettings &c) {
+	os<<"kSsim"<<" : "<<c.kSsim<<endl;
 	os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
 	os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;
 	os<<"kSdevBg"<<" : "<<c.kSdevBg<<endl;

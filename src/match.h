@@ -31,7 +31,10 @@ struct SymData final {
 	const cv::Point2d &mc;			// mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
-		FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, NEG_GLYPH_IDX, GROUNDED_GLYPH_IDX,
+		FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX,
+		NEG_GLYPH_IDX,
+		GROUNDED_GLYPH_IDX,
+		BLURRED_GR_GLYPH_IDX,
 		MATRICES_COUNT // keep this last and don't use it as index in MatArray objects
 	};
 
@@ -49,20 +52,29 @@ struct CachedData; // forward declaration
 
 // Holds relevant data during patch&glyph matching
 struct MatchParams final {
-	// This param is computed only once, if necessary, when approximating the patch
-	boost::optional<cv::Point2d> mcPatch;	// mass center for the patch
+	// These params are computed only once, if necessary, when approximating the patch
+	boost::optional<cv::Point2d> mcPatch;		// mass center for the patch
+	boost::optional<cv::Mat> blurredPatch;		// blurred version of the patch
+	boost::optional<cv::Mat> blurredPatchSq;	// blurredPatch element-wise squared
+	boost::optional<cv::Mat> variancePatch;		// blur(patch^2) - blurredPatchSq
 
 	// These params are evaluated for each symbol compared to the patch
-	boost::optional<cv::Point2d> mcGlyph;	// glyph's mass center
-	boost::optional<double> glyphWeight;	// % of the box covered by the glyph (0..1)
-	boost::optional<double> fg, bg;			// color for fg / bg (range 0..255)
+	boost::optional<cv::Mat> patchApprox;		// patch approximated by a given symbol
+	boost::optional<cv::Point2d> mcPatchApprox;	// mass center for the approximation of the patch
+	boost::optional<double> symDensity;			// % of the box covered by the glyph (0..1)
+	boost::optional<double> fg, bg;				// color for fg / bg (range 0..255)
+	boost::optional<double> ssim;				// structural similarity (-1..1)
 
 	// standard deviations for fg / bg / contour
-	// 0 .. 127.5; best when 0
+	// 0 .. <255; best when 0
 	boost::optional<double> sdevFg, sdevBg, sdevEdge;
 
-	// Prepare for next symbol to match against patch
-	void reset(bool skipMcPatch = true); // resets everything except mcPatch when skip = true
+	/*
+	Prepares for next symbol to match against patch.
+	When skip = true resets everything except mcPatch, blurredPatch,
+	blurredPatchSq and variancePatch.
+	*/
+	void reset(bool skipPatchInvariantParts = true); 
 
 	// Methods for computing each field
 	void computeFg(const cv::Mat &patch, const SymData &symData);
@@ -70,10 +82,15 @@ struct MatchParams final {
 	void computeSdevFg(const cv::Mat &patch, const SymData &symData);
 	void computeSdevBg(const cv::Mat &patch, const SymData &symData);
 	void computeSdevEdge(const cv::Mat &patch, const SymData &symData);
-	void computeRhoApproxSym(const SymData &symData, const CachedData &cachedData);
+	void computeSymDensity(const SymData &symData, const CachedData &cachedData);
 	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData);
-	void computeMcApproxSym(const cv::Mat &patch, const SymData &symData,
+	void computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
 							const CachedData &cachedData);
+	void computePatchApprox(const cv::Mat &patch, const SymData &symData);
+	void computeBlurredPatch(const cv::Mat &patch);
+	void computeBlurredPatchSq(const cv::Mat &patch);
+	void computeVariancePatch(const cv::Mat &patch);
+	void computeSsim(const cv::Mat &patch, const SymData &symData);
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	static const std::wstring HEADER; // table header when values are serialized
@@ -138,6 +155,25 @@ public:
 
 	// all aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
 	bool enabled() const { return k > 0.; }
+};
+
+/*
+Selecting a symbol with best structural similarity.
+See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
+*/
+class StructuralSimilarity final : public MatchAspect {
+public:
+	static const cv::Size WIN_SIZE;	// recommended window
+	static const double SIGMA;		// recommended standard deviation
+	static const double C1, C2;		// the 2 used stabilizer coefficients
+
+	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
+		MatchAspect(cachedData_, cfg.get_kSsim()) {}
+
+	// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override; // IMatch override
 };
 
 // Selecting a symbol with the scene underneath it as uniform as possible
@@ -229,12 +265,23 @@ class MatchEngine; // forward declaration
 // cached data for computing match parameters and evaluating match aspects
 struct CachedData final {
 	/*
-	Max possible std dev = 127.5.
+	Max possible std dev = 127.5  for foreground / background.
 	Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
 	In that case, the mean is 127.5 and the std dev is:
 	sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
 	*/
-	static const double sdevMax;
+	static const double sdevMaxFgBg;
+	
+	/*
+	Max possible std dev for edge is 255.
+	This happens in the following situation:
+	a) Foreground and background masks cover an empty area of the patch =>
+		approximated patch will be completely black
+	b) Edge mask covers a full brightness (255) area of the patch =>
+		every pixel from the patch covered by the edge mask has a deviation of 255 from 
+		the corresponding zone within the approximated patch.
+	*/
+	static const double sdevMaxEdge;
 
 	unsigned sz;				// symbol size
 	unsigned sz_1;				// sz - 1
@@ -274,6 +321,7 @@ private:
 	VSymData symsSet;			// set of most information on each symbol
 
 	// matching aspects
+	StructuralSimilarity strSimMatch;
 	FgMatch fgMatch;
 	BgMatch bgMatch;
 	EdgeMatch edgeMatch;

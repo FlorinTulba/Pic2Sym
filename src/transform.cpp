@@ -43,6 +43,7 @@ void Transformer::run() {
 	ostringstream oss;
 	oss<<img.name()<<'_'
 		<<me.getIdForSymsToUse()<<'_'
+		<<ss.get_kSsim()<<'_'
 		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
 		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
 		<<ss.get_kGlyphWeight()<<'_'<<ss.getBlankThreshold()<<'_'

@@ -8,6 +8,11 @@
 ;;  Copyright (c) 2016 Florin Tulba
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Real coefficient that encourages structural similarity
+; Set it to 0 if this is not an important match aspect.
+; Any other real positive value is allowed. 1 is ok.
+STRUCTURAL_SIMILARITY	1.0
+
 ; Real coefficient that penalizes poor glyph matches when compared
 ; strictly to the region covered by the glyph's pixels
 ; Set it to 0 if it doesn't matter what lies under glyph's contour.

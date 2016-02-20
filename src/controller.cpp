@@ -265,6 +265,11 @@ void Controller::newContrastFactor(double k) {
 		cfg.ms.set_kContrast(k);
 }
 
+void Controller::newStructuralSimilarityFactor(double k) {
+	if(k != cfg.ms.get_kSsim())
+		cfg.ms.set_kSsim(k);
+}
+
 void Controller::newUnderGlyphCorrectnessFactor(double k) {
 	if(k != cfg.ms.get_kSdevFg())
 		cfg.ms.set_kSdevFg(k);

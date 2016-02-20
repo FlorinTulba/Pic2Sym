@@ -86,8 +86,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
 		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == left, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (sz - 1U - top), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == (double)left, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(sz - 1U - top), test_tools::tolerance(1e-4));
 
 		// 3x3 subarea of pixels='uc' => glyphSum = 9*uc/255; massCenter = subArea's center
 		rows = 3U; cols = 3U; pixels.assign(rows*cols, uc); // all the pixel have the value 'uc'
@@ -99,8 +99,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
 		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == left+1U, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (sz - 1U - (top - 1U)), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == (double)(left+1U), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(sz - 1U - (top - 1U)), test_tools::tolerance(1e-4));
 
 		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
 		//		glyphSum = 255/255 = 1
