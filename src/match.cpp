@@ -231,8 +231,8 @@ void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
 	cv::Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
 	cv::GaussianBlur(approxPatch, blurredPatchApprox_,
-				 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-				 cv::BORDER_REPLICATE);
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
 	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
 	assert(abs(maxVal) < EPS);

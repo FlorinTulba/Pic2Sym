@@ -17,19 +17,19 @@ STRUCTURAL_SIMILARITY	1.0
 ; strictly to the region covered by the glyph's pixels
 ; Set it to 0 if it doesn't matter what lies under glyph's contour.
 ; Any other real positive value is allowed. 1 is ok.
-UNDER_GLYPH_CORRECTNESS	2.5
+UNDER_GLYPH_CORRECTNESS	0.25
 
 ; Real coefficient that penalizes poor glyph edge matches when compared
 ; strictly to the transition regions (contours) of the glyph.
 ; Set it to 0 if it doesn't matter what lies under the contour of the glyph.
 ; Any other real positive value is allowed. 1 is ok.
-GLYPH_EDGE_CORRECTNESS 10.0
+GLYPH_EDGE_CORRECTNESS 1.0
 
 ; Real coefficient that penalizes poor background glyph matches when compared
 ; strictly to the region falling aside the glyph.
 ; Set it to 0 if it doesn't matter what lies aside the glyph.
 ; Any other real positive value is allowed. 1 is ok.
-ASIDE_GLYPH_CORRECTNESS	7.5
+ASIDE_GLYPH_CORRECTNESS	0.75
 
 ; Real coefficient that penalizes extremely low contrast matches,
 ; favoring less accurate ones, but which will bring more contrast.
@@ -41,19 +41,19 @@ MORE_CONTRAST_PREF	0.1
 ; near the 'center of action' from the original area to approximate.
 ; Set it to 0 if chosen glyph can be far from the 'gravitational point' of the patch.
 ; Any other real positive value is allowed. 1 is ok.
-GRAVITATIONAL_SMOOTHNESS	0.5
+GRAVITATIONAL_SMOOTHNESS	0.2
 
 ; Real coefficient that favors glyphs naturally disposed in directions that
 ; simulate the color transition (gradient) from the original area to approximate.
 ; Set it to 0 if color transition directions don't matter.
 ; Any other real positive value is allowed. 1 is ok.
-DIRECTIONAL_SMOOTHNESS	0.25
+DIRECTIONAL_SMOOTHNESS	0.2
 
 ; Real coefficient that might enforce choosing larger symbols, like an 'A' instead of 'i',
 ; even when they are less similar to the approximated area.
 ; Set it to 0 if correctness is more important than a fancy result.
 ; Any other real positive value is allowed. 1 is ok.
-LARGER_GLYPHS_PREF	0.5
+LARGER_GLYPHS_PREF	0.2
 
 ; Threshold <x> below which to use Blank (Space) instead of a barely visible symbol.
 ; If a certain region gets approximated by a poorly visible character,
