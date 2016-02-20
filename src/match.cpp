@@ -210,35 +210,52 @@ void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
 	if(ssim)
 		return;
 
-	computePatchApprox(patch, symData);
-	const cv::Mat &approxPatch = patchApprox.value();
-	const double diffFgBg = fg.value() - bg.value();
+	cv::Mat covariance, ssimMap;
 
 	computeVariancePatch(patch);
-	cv::Mat variancePatchApprox;
-	cv::GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox,
+	computePatchApprox(patch, symData);
+	const cv::Mat &approxPatch = patchApprox.value();
+
+	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
+	// Blur and Variance of the approximated patch are computed based on the blur and variance
+	// of the grounded version of the original symbol
+	const double diffRatio = (fg.value() - bg.value()) / symData.diffMinMax;
+	const cv::Mat blurredPatchApprox = bg.value() + diffRatio *
+										symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
+				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
+				variancePatchApprox = diffRatio * diffRatio *
+										symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+
+#ifdef _DEBUG // checking the simplifications mentioned above
+	double minVal, maxVal;
+	cv::Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
+
+	cv::GaussianBlur(approxPatch, blurredPatchApprox_,
+				 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+				 cv::BORDER_REPLICATE);
+	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
+	assert(abs(minVal) < EPS);
+	assert(abs(maxVal) < EPS);
+
+	cv::GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
 					 cv::BORDER_REPLICATE);
-
-	// Saving a call to GaussianBlur each time current symbol is compared to a patch:
-	// Blur of the approximated patch is computed based on the blur of the
-	// grounded version of the original symbol
-	const cv::Mat blurredPatchApprox = bg.value() + (diffFgBg / symData.diffMinMax) *
-										symData.symAndMasks[SymData::BLURRED_GR_GLYPH_IDX],
-				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox);
-	variancePatchApprox -= blurredPatchApproxSq;
+	variancePatchApprox_ -= blurredPatchApproxSq;
+	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
+	assert(abs(minVal) < EPS);
+	assert(abs(maxVal) < EPS);
+#endif // checking the simplifications mentioned above
 
 	const cv::Mat productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	cv::Mat covariance, ssimMap;
 	cv::GaussianBlur(patch.mul(approxPatch), covariance,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
 					 cv::BORDER_REPLICATE);
 	covariance -= productBlurredMats;
 
 	const cv::Mat numerator = (2.*productBlurredMats + StructuralSimilarity::C1).
-					mul(StructuralSimilarity::C2 + 2.*covariance),
+					mul(2.*covariance + StructuralSimilarity::C2),
 		denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity::C1).
-					mul(StructuralSimilarity::C2 + variancePatch.value() + variancePatchApprox);
+					mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity::C2);
 
 	cv::divide(numerator, denominator, ssimMap);
 	ssim = *cv::mean(ssimMap).val;
@@ -259,7 +276,7 @@ void MatchParams::computePatchApprox(const cv::Mat &patch, const SymData &symDat
 	}
 
 	patchApprox = bg.value() +
-		symData.symAndMasks[SymData::GROUNDED_GLYPH_IDX] * (diffFgBg / symData.diffMinMax);
+		symData.symAndMasks[SymData::GROUNDED_SYM_IDX] * (diffFgBg / symData.diffMinMax);
 }
 
 void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) {
@@ -539,7 +556,7 @@ void MatchEngine::updateSymbols() {
 	const int szGlyph[] = { 2, sz, sz },
 		szMasks[] = { 4, sz, sz };
 	for(const auto &pms : fe.symsSet()) {
-		cv::Mat negGlyph, edgeMask, blurredGlyph;
+		cv::Mat negGlyph, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		const cv::Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
@@ -550,21 +567,28 @@ void MatchEngine::updateSymbols() {
 				bgMask = (glyph <= (minVal + STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 		
-		// storing a blurred version of the grounded glyph for structural similarity match aspect
-		cv::GaussianBlur(groundedGlyph, blurredGlyph,
-						 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-						 cv::BORDER_REPLICATE);
+		// Storing a blurred version of the grounded glyph for structural similarity match aspect
+		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+
+		// Storing also the variance of the grounded glyph for structural similarity match aspect
+		GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		symsSet.emplace_back(pms.symCode,
 							 minVal, maxVal-minVal,
 							 pms.glyphSum, pms.mc,
 							 SymData::MatArray { {
-								fgMask,			// FG_MASK_IDX 
-								bgMask,			// BG_MASK_IDX
-								edgeMask,		// EDGE_MASK_IDX
-								negGlyph,		// NEG_GLYPH_IDX
-								groundedGlyph,	// GROUNDED_GLYPH_IDX
-								blurredGlyph	// BLURRED_GR_GLYPH_IDX
+								fgMask,					// FG_MASK_IDX 
+								bgMask,					// BG_MASK_IDX
+								edgeMask,				// EDGE_MASK_IDX
+								negGlyph,				// NEG_SYM_IDX
+								groundedGlyph,			// GROUNDED_SYM_IDX
+								blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
+								varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
 							} });
 	}
 
@@ -610,7 +634,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 
 	const auto &dataOfBest = symsSet[best.symIdx];
 	const auto &matricesForBest = dataOfBest.symAndMasks;
-	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_GLYPH_IDX];
+	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
 
 	if(isColor) {
 		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
@@ -652,8 +676,8 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 }
 
 double MatchEngine::assessMatch(const cv::Mat &patch,
-				   const SymData &symData,
-				   MatchParams &mp) const {
+								const SymData &symData,
+								MatchParams &mp) const {
 	double score = 1.;
 	for(auto pAspect : aspects)
 		score *= pAspect->assessMatch(patch, symData, mp);

@@ -192,7 +192,7 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 		Range rowRange(r - fontSzM1, r + 1);
 		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
 			Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
-			it->symAndMasks[SymData::NEG_GLYPH_IDX].copyTo(region);
+			it->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
 		}
 	}
 }

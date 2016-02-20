@@ -200,7 +200,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   horBeltUc,		// edge byte mask (0 or 255)
 						   invHalfUc,		// glyph inverse in 0..255 byte range
 						   halfD1,			// grounded glyph is same as glyph (min is already 0)
-						   NOT_RELEVANT_MAT // blur of grounded glyph (not relevant here)
+						   NOT_RELEVANT_MAT,// blur of grounded glyph (not relevant here)
+						   NOT_RELEVANT_MAT // variance of grounded glyph (not relevant here)
 					   } });
 		SymData sdWithVertEdgeMask(sdWithHorizEdgeMask); // copy sdWithHorizEdgeMask and adapt it for vert. edge
 		const_cast<Mat&>(sdWithVertEdgeMask.symAndMasks[SymData::EDGE_MASK_IDX]) = verBeltUc;
@@ -362,14 +363,18 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 		const Mat diagFgMask = Mat::diag(Mat(1, sz, CV_8UC1, Scalar(255U))),
 				diagSymD1 = Mat::diag(Mat(1, sz, CV_64FC1, Scalar(1.))),
 				diagSymD255 = Mat::diag(Mat(1, sz, CV_64FC1, Scalar(255.)));
-		Mat blurredGlyph,
+		Mat blurOfGroundedGlyph, varOfGroundedGlyph,
 			allButMainDiagBgMask = Mat(sz, sz, CV_8UC1, Scalar(255U));
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = area - sz;
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		GaussianBlur(diagSymD1, blurredGlyph,
+		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
 					 cv::BORDER_REPLICATE);
+		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_D, // min in range 0..1 (not relevant here)
@@ -380,9 +385,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   diagFgMask,				// FG_MASK_IDX
 						   allButMainDiagBgMask,	// BG_MASK_IDX
 						   NOT_RELEVANT_MAT,		// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,		// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,		// NEG_SYM_IDX (not relevant here)
 						   diagSymD1,				// GROUNDED_GLYPH_IDX - same as the glyph
-						   blurredGlyph				// BLURRED_GLYPH_IDX (not relevant here)
+						   blurOfGroundedGlyph,		// BLURRED_GLYPH_IDX
+						   varOfGroundedGlyph		// VARIANCE_GR_SYM_IDX
 					   } });
 
 		// Testing on an uniform patch
@@ -434,9 +440,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   diagFgMask,			// FG_MASK_IDX
 						   NOT_RELEVANT_MAT,	// BG_MASK_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Testing on a uniform patch
@@ -520,9 +527,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   diagFgMask,			// FG_MASK_IDX
 						   allBut3DiagsBgMask,	// BG_MASK_IDX
 						   sideDiagsEdgeMask,	// EDGE_MASK_IDX
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   groundedGlyph,		// GROUNDED_GLYPH_IDX
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Testing on a uniform patch
@@ -609,9 +617,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   NOT_RELEVANT_MAT,	// FG_MASK_IDX (not relevant here)
 						   allBut3DiagsBgMask,	// BG_MASK_IDX
 						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Testing on a uniform patch
@@ -684,9 +693,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   diagFgMask,			// FG_MASK_IDX
 						   allBut3DiagsBgMask,	// BG_MASK_IDX
 						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Testing on a uniform patch
@@ -747,9 +757,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   fgMask,				// FG_MASK_IDX
 						   bgMask,				// BG_MASK_IDX
 						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Using a patch with a single 255 pixel in top left corner
@@ -846,9 +857,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   fgMask,				// FG_MASK_IDX
 						   bgMask,				// BG_MASK_IDX
 						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Using a patch with a single 255 pixel in top left corner
@@ -925,9 +937,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 						   NOT_RELEVANT_MAT, // FG_MASK_IDX (not relevant here)
 						   NOT_RELEVANT_MAT, // BG_MASK_IDX (not relevant here)
 						   NOT_RELEVANT_MAT, // EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // NEG_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT, // NEG_SYM_IDX (not relevant here)
 						   NOT_RELEVANT_MAT, // GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT	 // BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT, // BLURRED_GLYPH_IDX (not relevant here)
+						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
 					   } });
 
 		// Testing with an empty symbol (sd.pixelSum == 0)
@@ -992,7 +1005,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 			if(idx % step == 0U)
 				cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
 
-			const Mat &negGlyph = it->symAndMasks[SymData::NEG_GLYPH_IDX]; // byte 0..255
+			const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
 			Mat patchD255;
 			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
 			alterFgBg(patchD255, it->minVal, it->diffMinMax);
@@ -1069,7 +1082,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchEngine_Tests, Fixt)
 			if(idx % step == 0U)
 				cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
 
-			const Mat &negGlyph = it->symAndMasks[SymData::NEG_GLYPH_IDX]; // byte 0..255
+			const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
 			Mat patchD255;
 			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
 			alterFgBg(patchD255, it->minVal, it->diffMinMax);

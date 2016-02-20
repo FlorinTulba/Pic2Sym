@@ -25,17 +25,19 @@
 // Most symbol information
 struct SymData final {
 	const unsigned long code;		// the code of the symbol
-	const double minVal = 0.;			// the value of darkest pixel, range 0..1
-	const double diffMinMax = 1.;		// difference between brightest and darkest pixels, each in 0..1
+	const double minVal = 0.;		// the value of darkest pixel, range 0..1
+	const double diffMinMax = 1.;	// difference between brightest and darkest pixels, each in 0..1
 	const double pixelSum;			// sum of the values of the pixels, each in 0..1
 	const cv::Point2d &mc;			// mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
-		FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX,
-		NEG_GLYPH_IDX,
-		GROUNDED_GLYPH_IDX,
-		BLURRED_GR_GLYPH_IDX,
-		MATRICES_COUNT // keep this last and don't use it as index in MatArray objects
+		FG_MASK_IDX, BG_MASK_IDX, EDGE_MASK_IDX, // Masks: Foreground, Background and Edge
+		NEG_SYM_IDX,			// negative of the symbol (0..255 byte)
+		GROUNDED_SYM_IDX,		// symbol shifted (in brightness) to have black background (0..1)
+		BLURRED_GR_SYM_IDX,		// blurred version of the grounded symbol (0..1)
+		VARIANCE_GR_SYM_IDX,	// variance of the grounded symbol
+
+		MATRICES_COUNT // KEEP THIS LAST and DON'T USE IT AS INDEX in MatArray objects!
 	};
 
 	// For each symbol from cmap, there'll be several additional helpful matrices to store
