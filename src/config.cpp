@@ -85,7 +85,7 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 	double new_kSsim = 0.,
 		new_kSdevFg = 0., new_kSdevEdge = 0., new_kSdevBg = 0.,
 		new_kMCsOffset = 0., new_kCosAngleMCs = 0.,
-		new_kContrast = 0., new_kGlyphWeight = 0.;
+		new_kContrast = 0., new_kSymDensity = 0.;
 	unsigned newThreshold4Blank = 0U;
 	string prop;
 	try {
@@ -93,19 +93,19 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 		read_info(cfgFile.string(), theCfg);
 
 		new_kSsim			= theCfg.get<double>(prop = "STRUCTURAL_SIMILARITY");
-		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_GLYPH_CORRECTNESS");
-		new_kSdevEdge		= theCfg.get<double>(prop = "GLYPH_EDGE_CORRECTNESS");
-		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_GLYPH_CORRECTNESS");
+		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_SYM_CORRECTNESS");
+		new_kSdevEdge		= theCfg.get<double>(prop = "SYM_EDGE_CORRECTNESS");
+		new_kSdevBg			= theCfg.get<double>(prop = "ASIDE_SYM_CORRECTNESS");
 		new_kContrast		= theCfg.get<double>(prop = "MORE_CONTRAST_PREF");
 		new_kMCsOffset		= theCfg.get<double>(prop = "GRAVITATIONAL_SMOOTHNESS");
 		new_kCosAngleMCs	= theCfg.get<double>(prop = "DIRECTIONAL_SMOOTHNESS");
-		new_kGlyphWeight	= theCfg.get<double>(prop = "LARGER_GLYPHS_PREF");
+		new_kSymDensity		= theCfg.get<double>(prop = "LARGER_SYM_PREF");
 		newThreshold4Blank	= theCfg.get<unsigned>(prop = "THRESHOLD_FOR_BLANK");
 
 		if(!Settings::isBlanksThresholdOk(newThreshold4Blank) ||
 		   new_kSsim < 0. || new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
 		   new_kContrast < 0. || new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
-		   new_kGlyphWeight < 0.)
+		   new_kSymDensity < 0.)
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
 			correct = true;
@@ -113,7 +113,7 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 			kSdevFg = new_kSdevFg;  kSdevEdge = new_kSdevEdge; kSdevBg = new_kSdevBg;
 			kContrast = new_kContrast; 
 			kMCsOffset = new_kMCsOffset; kCosAngleMCs = new_kCosAngleMCs;
-			kGlyphWeight = new_kGlyphWeight; threshold4Blank = newThreshold4Blank;
+			kSymDensity = new_kSymDensity; threshold4Blank = newThreshold4Blank;
 
 			cout<<"Initial config values:"<<endl<<*this<<endl;
 		}
@@ -178,11 +178,11 @@ void MatchSettings::set_kMCsOffset(double kMCsOffset_) {
 	kMCsOffset = kMCsOffset_;
 }
 
-void MatchSettings::set_kGlyphWeight(double kGlyphWeight_) {
-	if(kGlyphWeight == kGlyphWeight_)
+void MatchSettings::set_kSymDensity(double kSymDensity_) {
+	if(kSymDensity == kSymDensity_)
 		return;
-	cout<<"kGlyphWeight"<<" : "<<kGlyphWeight<<" -> "<<kGlyphWeight_<<endl;
-	kGlyphWeight = kGlyphWeight_;
+	cout<<"kSymDensity"<<" : "<<kSymDensity<<" -> "<<kSymDensity_<<endl;
+	kSymDensity = kSymDensity_;
 }
 
 void MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
@@ -200,7 +200,7 @@ ostream& operator<<(ostream &os, const MatchSettings &c) {
 	os<<"kContrast"<<" : "<<c.kContrast<<endl;
 	os<<"kMCsOffset"<<" : "<<c.kMCsOffset<<endl;
 	os<<"kCosAngleMCs"<<" : "<<c.kCosAngleMCs<<endl;
-	os<<"kGlyphWeight"<<" : "<<c.kGlyphWeight<<endl;
+	os<<"kSymDensity"<<" : "<<c.kSymDensity<<endl;
 	os<<"threshold4Blank"<<" : "<<c.threshold4Blank<<endl;
 	return os;
 }

@@ -46,7 +46,7 @@ void Transformer::run() {
 		<<ss.get_kSsim()<<'_'
 		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
 		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
-		<<ss.get_kGlyphWeight()<<'_'<<ss.getBlankThreshold()<<'_'
+		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
 		<<resized.cols<<'_'<<resized.rows; // no extension yet
 	const string studiedCase = oss.str(); // id included in the result & trace file names
 

@@ -33,7 +33,7 @@ private:
 	double kSdevFg = 0., kSdevEdge = 0., kSdevBg = 0.; // powers of factors for glyph correlation
 	double kContrast = 0.;						// power of factor for the resulted glyph contrast
 	double kMCsOffset = 0., kCosAngleMCs = 0.;	// powers of factors targeting smoothness
-	double kGlyphWeight = 0.;		// power of factor aiming fanciness, not correctness
+	double kSymDensity = 0.;		// power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
 
 	/*
@@ -74,7 +74,7 @@ private:
 		ar >> defSettings.kSdevFg >> defSettings.kSdevEdge >> defSettings.kSdevBg
 			>> defSettings.kContrast
 			>> defSettings.kMCsOffset >> defSettings.kCosAngleMCs
-			>> defSettings.kGlyphWeight
+			>> defSettings.kSymDensity
 			>> defSettings.threshold4Blank;
 
 		// these show message when there are changes
@@ -85,7 +85,7 @@ private:
 		set_kContrast(defSettings.kContrast);
 		set_kMCsOffset(defSettings.kMCsOffset);
 		set_kCosAngleMCs(defSettings.kCosAngleMCs);
-		set_kGlyphWeight(defSettings.kGlyphWeight);
+		set_kSymDensity(defSettings.kSymDensity);
 		setBlankThreshold(defSettings.threshold4Blank);
 	}
 	template<class Archive>
@@ -94,7 +94,7 @@ private:
 			<< kSdevFg << kSdevEdge << kSdevBg
 			<< kContrast
 			<< kMCsOffset << kCosAngleMCs
-			<< kGlyphWeight
+			<< kSymDensity
 			<< threshold4Blank;
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
@@ -137,8 +137,8 @@ public:
 	const double& get_kMCsOffset() const { return kMCsOffset; }
 	void set_kMCsOffset(double kMCsOffset_);
 
-	const double& get_kGlyphWeight() const { return kGlyphWeight; }
-	void set_kGlyphWeight(double kGlyphWeight_);
+	const double& get_kSymDensity() const { return kSymDensity; }
+	void set_kSymDensity(double kSymDensity_);
 
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	void setBlankThreshold(unsigned threshold4Blank_);
@@ -154,7 +154,7 @@ public:
 	MatchSettings(double kSsim_ = 0.,
 		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
 		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kGlyphWeight_ = 0., unsigned threshold4Blank_ = 0U);
+		   double kSymDensity_ = 0., unsigned threshold4Blank_ = 0U);
 #endif
 };
 

@@ -147,10 +147,10 @@ namespace ut {
 MatchSettings::MatchSettings(double kSsim_/* = 0.*/,
 			   double kSdevFg_/* = 0.*/, double kSdevEdge_/* = 0.*/, double kSdevBg_/* = 0.*/,
 			   double kContrast_/* = 0.*/, double kMCsOffset_/* = 0.*/, double kCosAngleMCs_/* = 0.*/,
-			   double kGlyphWeight_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
+			   double kSymDensity_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
 		kSsim(kSsim_),
 		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kGlyphWeight(kGlyphWeight_),
+		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kSymDensity(kSymDensity_),
 		threshold4Blank(threshold4Blank_) {
 	cout<<"Initial config values:"<<endl<<*this<<endl;
 }

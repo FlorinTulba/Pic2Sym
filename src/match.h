@@ -254,7 +254,7 @@ public:
 class LargerSym final : public MatchAspect {
 public:
 	LargerSym(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kGlyphWeight()) {}
+		MatchAspect(cachedData_, cfg.get_kSymDensity()) {}
 
 	// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat&,

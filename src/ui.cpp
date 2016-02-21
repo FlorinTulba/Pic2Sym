@@ -265,7 +265,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		moreContrast(Converter::Contrast::toSlider(cfg.matchSettings().get_kContrast())),
 		gravity(Converter::Gravity::toSlider(cfg.matchSettings().get_kMCsOffset())),
 		direction(Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs())),
-		largerSym(Converter::LargerSym::toSlider(cfg.matchSettings().get_kGlyphWeight())),
+		largerSym(Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity())),
 		thresh4Blanks(cfg.matchSettings().getBlankThreshold()) {
 
 	createButton("Select an Image",
@@ -434,7 +434,7 @@ void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
 	while(direction != newVal)
 		setTrackbarPos(directionTrName, nullptr, newVal);
 
-	newVal = Converter::LargerSym::toSlider(ms.get_kGlyphWeight());
+	newVal = Converter::LargerSym::toSlider(ms.get_kSymDensity());
 	while(largerSym != newVal)
 		setTrackbarPos(largerSymTrName, nullptr, newVal);
 

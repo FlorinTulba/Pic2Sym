@@ -296,8 +296,8 @@ void Controller::newGravitationalSmoothnessFactor(double k) {
 }
 
 void Controller::newGlyphWeightFactor(double k) {
-	if(k != cfg.ms.get_kGlyphWeight())
-		cfg.ms.set_kGlyphWeight(k);
+	if(k != cfg.ms.get_kSymDensity())
+		cfg.ms.set_kSymDensity(k);
 }
 
 MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
