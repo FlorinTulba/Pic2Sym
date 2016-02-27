@@ -63,8 +63,10 @@ struct MatchParams final {
 	// These params are evaluated for each symbol compared to the patch
 	boost::optional<cv::Mat> patchApprox;		// patch approximated by a given symbol
 	boost::optional<cv::Point2d> mcPatchApprox;	// mass center for the approximation of the patch
+	boost::optional<double> mcsOffset;			// distance between the 2 mass centers
 	boost::optional<double> symDensity;			// % of the box covered by the glyph (0..1)
 	boost::optional<double> fg, bg;				// color for fg / bg (range 0..255)
+	boost::optional<double> contrast;			// fg - bg (range -255..255)
 	boost::optional<double> ssim;				// structural similarity (-1..1)
 
 	// standard deviations for fg / bg / contour
@@ -79,15 +81,17 @@ struct MatchParams final {
 	void reset(bool skipPatchInvariantParts = true); 
 
 	// Methods for computing each field
-	void computeFg(const cv::Mat &patch, const SymData &symData);
-	void computeBg(const cv::Mat &patch, const SymData &symData);
-	void computeSdevFg(const cv::Mat &patch, const SymData &symData);
-	void computeSdevBg(const cv::Mat &patch, const SymData &symData);
+	inline void computeFg(const cv::Mat &patch, const SymData &symData);
+	inline void computeBg(const cv::Mat &patch, const SymData &symData);
+	void computeContrast(const cv::Mat &patch, const SymData &symData);
+	inline void computeSdevFg(const cv::Mat &patch, const SymData &symData);
+	inline void computeSdevBg(const cv::Mat &patch, const SymData &symData);
 	void computeSdevEdge(const cv::Mat &patch, const SymData &symData);
 	void computeSymDensity(const SymData &symData, const CachedData &cachedData);
 	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData);
 	void computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
 							const CachedData &cachedData);
+	void computeMcsOffset(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
 	void computePatchApprox(const cv::Mat &patch, const SymData &symData);
 	void computeBlurredPatch(const cv::Mat &patch);
 	void computeBlurredPatchSq(const cv::Mat &patch);
@@ -107,7 +111,7 @@ private:
 
 	// Both computeSdevFg and computeSdevBg simply call this
 	static void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
-					 boost::optional<double> &miu, boost::optional<double> &sdev);
+							boost::optional<double> &miu, boost::optional<double> &sdev);
 };
 
 // Holds the best grayscale match found at a given time
@@ -349,6 +353,7 @@ public:
 
 	// Needed to display the cmap - returns a pair of symsSet iterators
 	VSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
+	unsigned getSymsCount() const;	// to be displayed in CmapView's status bar
 
 	void updateSymbols();	// using different charmap - also useful for displaying these changes
 	void getReady();		// called before a series of approxPatch

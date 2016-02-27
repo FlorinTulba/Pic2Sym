@@ -9,7 +9,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msvcrt$(ConfigurationSuffix).lib;msvcprt$(ConfigurationSuffix).lib;opencv_core$(OpenCvLibConfigSuffix).lib;opencv_imgcodecs$(OpenCvLibConfigSuffix).lib;opencv_imgproc$(OpenCvLibConfigSuffix).lib;freetype$(FreeTypeLibConfigSuffix).lib;libboost_system$(BoostLibConfigSuffix).lib;libboost_filesystem$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msvcrt$(ConfigurationSuffix).lib;msvcprt$(ConfigurationSuffix).lib;opencv_core$(OpenCvLibConfigSuffix).lib;opencv_imgcodecs$(OpenCvLibConfigSuffix).lib;opencv_imgproc$(OpenCvLibConfigSuffix).lib;freetype$(FreeTypeLibConfigSuffix).lib;libboost_system$(BoostLibConfigSuffix).lib;libboost_filesystem$(BoostLibConfigSuffix).lib;libboost_serialization$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

@@ -78,7 +78,7 @@ void viewMismatchesMode(const string &testTitle) {
 	// Comparator window size should stay within ~ 800x600
 	// Enlarge up to 3 times if resulting rows < 600.
 	// Enlarge also when resulted width would be less than 140 (width when the slider is visible)
-	double resizeFactor = max(140./cols, min(600./rows, 3.));
+	const double resizeFactor = max(140./cols, min(600./rows, 3.));
 
 	ostringstream oss;
 	oss<<"View mismatches for "<<testTitle;

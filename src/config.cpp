@@ -8,9 +8,8 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#include "config.h"
-#include "misc.h"
 #include "controller.h"
+#include "misc.h"
 
 #include <fstream>
 #include <ctime>

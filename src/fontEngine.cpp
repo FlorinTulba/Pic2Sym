@@ -8,9 +8,8 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#include "fontEngine.h"
-#include "misc.h"
 #include "controller.h"
+#include "misc.h"
 
 #include <sstream>
 #include <set>
@@ -660,8 +659,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		FT_ULong c;
 		double hRatio, vRatio;
 		tie(c, vRatio, hRatio) = item;
-		req.height = (FT_ULong)floor(factorV * (fontSz_<<6) / vRatio);
-		req.width = (FT_ULong)floor(factorH * (fontSz_<<6) / hRatio);
+		req.height = (FT_ULong)floor(factorV * ((FT_ULong)(fontSz_)<<6) / vRatio);
+		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / hRatio);
 		FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		symsCont.appendSym(c, face->glyph, bb);

@@ -111,8 +111,9 @@ void Controller::newImage(const string &imgPath) {
 
 void Controller::updateCmapStatusBar() const {
 	ostringstream oss;
-	oss<<"Font type: '"<<fe.getFamily()<<' '<<fe.getStyle()
-		<<"' Size: "<<cfg.ss.getFontSz()<<" Encoding: '"<<fe.getEncoding()<<'\'';
+	oss<<"Font type '"<<fe.getFamily()<<' '<<fe.getStyle()
+		<<"', size "<<cfg.ss.getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
+		<<" : "<<me.getSymsCount()<<" symbols";
 	pCmi->setStatus(oss.str());
 }
 

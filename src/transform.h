@@ -11,7 +11,6 @@
 #ifndef H_TRANSFORM
 #define H_TRANSFORM
 
-#include "config.h"
 #include "match.h"
 #include "img.h"
 

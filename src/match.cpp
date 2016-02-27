@@ -8,7 +8,6 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#include "match.h"
 #include "controller.h"
 
 #include <numeric>
@@ -126,7 +125,7 @@ SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
 	patchApprox = none;
-	ssim = fg = bg = sdevFg = sdevBg = sdevEdge = symDensity = none;
+	ssim = fg = bg = contrast = sdevFg = sdevBg = sdevEdge = symDensity = mcsOffset = none;
 
 	if(!skipPatchInvariantParts) {
 		mcPatch = none;
@@ -137,6 +136,7 @@ void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 void MatchParams::computeMean(const cv::Mat &patch, const cv::Mat &mask, optional<double> &miu) {
 	if(miu)
 		return;
+
 	miu = *cv::mean(patch, mask).val;
 	assert(*miu > -EPS && *miu < 255.+EPS);
 }
@@ -149,8 +149,19 @@ void MatchParams::computeBg(const cv::Mat &patch, const SymData &symData) {
 	computeMean(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg);
 }
 
+void MatchParams::computeContrast(const cv::Mat &patch, const SymData &symData) {
+	if(contrast)
+		return;
+
+	computeFg(patch, symData);
+	computeBg(patch, symData);
+
+	contrast = fg.value() - bg.value();
+	assert(abs(contrast.value()) < 255.5);
+}
+
 void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
-					 optional<double> &miu, optional<double> &sdev) {
+							  optional<double> &miu, optional<double> &sdev) {
 	if(sdev)
 		return;
 
@@ -219,7 +230,7 @@ void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
 	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-	const double diffRatio = (fg.value() - bg.value()) / symData.diffMinMax;
+	const double diffRatio = contrast.value() / symData.diffMinMax;
 	const cv::Mat blurredPatchApprox = bg.value() + diffRatio *
 										symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
 				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
@@ -246,8 +257,9 @@ void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
 	assert(abs(maxVal) < EPS);
 #endif // checking the simplifications mentioned above
 
-	const cv::Mat productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	cv::GaussianBlur(patch.mul(approxPatch), covariance,
+	const cv::Mat productMats = patch.mul(approxPatch),
+				productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
+	cv::GaussianBlur(productMats, covariance,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
 					 cv::BORDER_REPLICATE);
 	covariance -= productBlurredMats;
@@ -266,17 +278,15 @@ void MatchParams::computePatchApprox(const cv::Mat &patch, const SymData &symDat
 	if(patchApprox)
 		return;
 
-	computeFg(patch, symData);
-	computeBg(patch, symData);
+	computeContrast(patch, symData);
 
-	const double diffFgBg = fg.value() - bg.value();
-	if(diffFgBg == 0.) {
+	if(contrast.value() == 0.) {
 		patchApprox = cv::Mat(patch.rows, patch.cols, CV_64FC1, cv::Scalar(bg.value()));
 		return;
 	}
 
 	patchApprox = bg.value() +
-		symData.symAndMasks[SymData::GROUNDED_SYM_IDX] * (diffFgBg / symData.diffMinMax);
+		symData.symAndMasks[SymData::GROUNDED_SYM_IDX] * (contrast.value() / symData.diffMinMax);
 }
 
 void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) {
@@ -320,16 +330,15 @@ void MatchParams::computeMcPatch(const cv::Mat &patch, const CachedData &cachedD
 }
 
 void MatchParams::computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
-									 const CachedData &cachedData) {
+									   const CachedData &cachedData) {
 	if(mcPatchApprox)
 		return;
 
-	computeFg(patch, symData);
-	computeBg(patch, symData);
+	computeContrast(patch, symData);
 	computeSymDensity(symData, cachedData);
 
 	// Obtaining glyph's mass center
-	const double k = symDensity.value() * (fg.value() - bg.value()),
+	const double k = symDensity.value() * contrast.value(),
 				delta = .5 * bg.value() * cachedData.sz_1,
 				denominator = k + bg.value();
 	if(denominator == 0.)
@@ -340,8 +349,20 @@ void MatchParams::computeMcPatchApprox(const cv::Mat &patch, const SymData &symD
 	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < cachedData.sz_1+EPS);
 }
 
+void MatchParams::computeMcsOffset(const cv::Mat &patch, const SymData &symData,
+								   const CachedData &cachedData) {
+	if(mcsOffset)
+		return;
+
+	computeMcPatch(patch, cachedData);
+	computeMcPatchApprox(patch, symData, cachedData);
+
+	mcsOffset = cv::norm(mcPatch.value() - mcPatchApprox.value());
+	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
+}
+
 void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
-					  const MatchParams &params_) {
+					   const MatchParams &params_) {
 	score = score_;
 	symIdx = symIdx_;
 	symCode = symCode_;
@@ -422,26 +443,17 @@ double EdgeMatch::assessMatch(const cv::Mat &patch,
 double BetterContrast::assessMatch(const cv::Mat &patch,
 								   const SymData &symData,
 								   MatchParams &mp) const {
-	mp.computeFg(patch, symData);
-	mp.computeBg(patch, symData);
+	mp.computeContrast(patch, symData);
 	
-	// range 0 .. 255, best when large
-	const double contrast = abs(mp.fg.value() - mp.bg.value());
-
 	// Encourages larger contrasts:
 	// 0 for no contrast; 1 for max contrast (255)
-	return pow(contrast / 255., k);
+	return pow( abs(mp.contrast.value()) / 255., k);
 }
 
 double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 											const SymData &symData,
 											MatchParams &mp) const {
-	mp.computeMcPatch(patch, cachedData);
-	mp.computeMcPatchApprox(patch, symData, cachedData);
-
-	// best glyph location is when mc-s are near to each other
-	// range 0 .. 1.42*(fontSz-1), best when 0
-	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcPatchApprox.value());
+	mp.computeMcsOffset(patch, symData, cachedData);
 
 	// Discourages mcsOffset larger than preferredMaxMcDist:
 	//		returns 1 for mcsOffset == preferredMaxMcDist, no matter k
@@ -450,7 +462,8 @@ double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 	//		returns > 1 for mcsOffset < preferredMaxMcDist
 	// Larger k induces larger penalty for large mcsOffset and
 	// also larger reward for small mcsOffset
-	return pow(1. + (cachedData.preferredMaxMcDist - mcsOffset) / cachedData.complPrefMaxMcDist, k);
+	return pow(1. + (cachedData.preferredMaxMcDist - mp.mcsOffset.value()) /
+			   cachedData.complPrefMaxMcDist, k);
 }
 
 double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
@@ -459,12 +472,7 @@ double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 	static const double SQRT2 = sqrt(2), TWOmSQRT2 = 2. - SQRT2;
 	static const cv::Point2d ORIGIN; // (0, 0)
 
-	mp.computeMcPatch(patch, cachedData);
-	mp.computeMcPatchApprox(patch, symData, cachedData);
-
-	// best glyph location is when mc-s are near to each other
-	// range 0 .. 1.42*(fontSz-1), best when 0
-	const double mcsOffset = cv::norm(mp.mcPatch.value() - mp.mcPatchApprox.value());
+	mp.computeMcsOffset(patch, symData, cachedData);
 
 	const cv::Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
 	const cv::Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
@@ -480,7 +488,8 @@ double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 	// So, large k generally penalizes large angles and encourages small ones,
 	// but fades gradually for nearer mc-s or fades completely when the mc-s overlap.
 	return pow((1. + cosAngleMCs) * TWOmSQRT2,
-			   k * min(mcsOffset, cachedData.preferredMaxMcDist) / cachedData.preferredMaxMcDist);
+			   k * min(mp.mcsOffset.value(), cachedData.preferredMaxMcDist) /
+			   cachedData.preferredMaxMcDist);
 }
 
 double LargerSym::assessMatch(const cv::Mat&,
@@ -501,7 +510,7 @@ void CachedData::useNewSymSize(unsigned sz_) {
 
 	preferredMaxMcDist = sz / 8.;
 	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = cv::Point2d(sz_1, sz_1) / 2;
+	patchCenter = cv::Point2d(sz_1, sz_1) / 2.;
 
 	consec = cv::Mat(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
@@ -608,6 +617,10 @@ MatchEngine::VSymDataCItPair MatchEngine::getSymsRange(unsigned from, unsigned c
 	return make_pair(itStart, next(itStart, count));
 }
 
+unsigned MatchEngine::getSymsCount() const {
+	return (unsigned)symsSet.size();
+}
+
 void MatchEngine::getReady() {
 	updateSymbols();
 
@@ -663,14 +676,14 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 
 	} else { // grayscale result
 		auto &params = best.params;
-		params.computeFg(patch, symsSet[best.symIdx]);
-		params.computeBg(patch, symsSet[best.symIdx]);
+		params.computeContrast(patch, symsSet[best.symIdx]);
 
-		const double diff = *params.fg - *params.bg;
-		if(abs(diff) < cfg.matchSettings().getBlankThreshold())
+		if(abs(*params.contrast) < cfg.matchSettings().getBlankThreshold())
 			patchResult = cv::mean(patch);
 		else
-			groundedBest.convertTo(patchResult, CV_8UC1, diff / dataOfBest.diffMinMax, *params.bg);
+			groundedBest.convertTo(patchResult, CV_8UC1,
+								*params.contrast / dataOfBest.diffMinMax,
+								*params.bg);
 	}
 	return patchResult;
 }
@@ -701,7 +714,7 @@ void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
 #ifndef UNIT_TESTING // UnitTesting project has a different implementation for this method
 const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
 	static const vector<MatchAspect*> availAspects {
-		&strSimMatch, &fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
+		&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch, &strSimMatch
 	};
 	return availAspects;
 }

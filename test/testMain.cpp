@@ -159,7 +159,7 @@ const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
 	static std::shared_ptr<const vector<MatchAspect*>> pAvailAspects;
 	if(ut::MatchEngine::initAvailAspects || !pAvailAspects) {
 		pAvailAspects = std::make_shared<const vector<MatchAspect*>>(vector<MatchAspect*>{
-			&strSimMatch, &fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch
+			&fgMatch, &bgMatch, &edgeMatch, &conMatch, &grMatch, &dirMatch, &lsMatch, &strSimMatch
 		});
 		ut::MatchEngine::initAvailAspects = false;
 	}

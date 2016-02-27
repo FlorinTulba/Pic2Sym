@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
     <Text Include="res\defaultMatchSettings.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\fontEngine.h">

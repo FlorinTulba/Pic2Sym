@@ -8,9 +8,8 @@
  Copyright (c) 2016 Florin Tulba
  **********************************************************/
 
-#include "ui.h"
-#include "dlgs.h"
 #include "controller.h"
+#include "dlgs.h"
 
 #include <opencv2/highgui.hpp>
 
@@ -392,7 +391,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 					L"The rudimentary sliders used here won't always show valid ranges.\n" \
 					L"They all must be integer, start from 0, end at least on 1.\n" \
 					L"When their labels is truncated, clicking on them will help.\n\n" \
-					L"There's more information in ReadMe.txt.\n",
+					L"There's more information in ReadMe.md.\n",
 					L"Instructions", MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 	});
 	createButton("Load Settings", [] (int, void *userdata) {

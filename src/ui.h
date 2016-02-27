@@ -16,7 +16,9 @@
 #ifndef H_UI
 #define H_UI
 
-#include "transform.h"
+#include "match.h"
+#include "img.h"
+
 #include <opencv2/core.hpp>
 
 class Settings;		// global settings

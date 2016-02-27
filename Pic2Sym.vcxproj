@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
+    <Text Include="ReadMe.md" />
     <Text Include="res\defaultMatchSettings.txt" />
   </ItemGroup>
   <ItemGroup>
