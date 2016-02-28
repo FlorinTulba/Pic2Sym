@@ -370,7 +370,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 	}, reinterpret_cast<void*>(&ctrler));
 
 	createButton("Instructions", [] (int, void*) {
-		MessageBox(nullptr, L"\t\tPic2Sym by Florin Tulba\n\n" \
+		MessageBox(nullptr, L"\tPic2Sym (v1.0) - by Florin Tulba\n\n" \
 					L"\tThe Control Panel allows setting:\n\n" \
 					L"- which image to be approximated by symbols from a charset\n" \
 					L"- maximum number of symbols used horizontally & vertically\n" \

@@ -44,7 +44,7 @@ Controller::Controller(Settings &s) :
 		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
-	comp.setTitle("Pic2Sym - (c) 2016 Florin Tulba");
+	comp.setTitle("Pic2Sym (v1.0) - (c) 2016 Florin Tulba");
 	comp.setStatus("Press Ctrl+P for Control Panel; ESC to Exit");
 }
 

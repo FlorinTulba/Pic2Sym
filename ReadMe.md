@@ -5,8 +5,9 @@
 1. Description of Pic2Sym application \(*see below*\)
 2. [Related work](doc/relatedWork.md)
 3. [Example results](doc/results.md)
-4. [Performance](doc/performance.md)
-5. [Conclusions and further directions](doc/conclusions.md)
+4. [Testing the Provided Binary](doc/testBinary.md) \- ++Windows 64bits only++
+5. [Performance](doc/performance.md)
+6. [Conclusions and further directions](doc/conclusions.md)
 	[Appendix](doc/appendix.md) \(*various technical details*\)
 
 ## Description of the application ##
