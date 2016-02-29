@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        config.h
- 
- Author:      Florin Tulba
- Created on:  2016-1-8
+ This file was created on 2016-1-8
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #ifndef H_CONFIG
 #define H_CONFIG
@@ -47,24 +44,27 @@
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 
-// MatchSettings class controls the matching parameters for transforming one or more images.
+/// MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
 public:
-	static const unsigned VERSION = 1U;
+	static const unsigned VERSION = 1U; ///< version of MatchSettings class
 
 private:
-	boost::filesystem::path workDir;	// Folder where the application was launched
-	boost::filesystem::path defCfgPath;	// Path of the original configuration file
-	boost::filesystem::path cfgPath;	// Path of the user configuration file
+	boost::filesystem::path workDir;	///< Folder where the application was launched
+	boost::filesystem::path defCfgPath;	///< Path of the original configuration file
+	boost::filesystem::path cfgPath;	///< Path of the user configuration file
 
-	double kSsim = 0.;				// power of factor controlling structural similarity
-	double kSdevFg = 0., kSdevEdge = 0., kSdevBg = 0.; // powers of factors for glyph correlation
-	double kContrast = 0.;						// power of factor for the resulted glyph contrast
-	double kMCsOffset = 0., kCosAngleMCs = 0.;	// powers of factors targeting smoothness
-	double kSymDensity = 0.;		// power of factor aiming fanciness, not correctness
-	unsigned threshold4Blank = 0U;	// Using Blank character replacement under this threshold
+	double kSsim = 0.;				///< power of factor controlling structural similarity
+	double kSdevFg = 0.;			///< power of factor for foreground glyph-patch correlation
+	double kSdevEdge = 0.;			///< power of factor for contour glyph-patch correlation
+	double kSdevBg = 0.;			///< power of factor for background glyph-patch correlation
+	double kContrast = 0.;			///< power of factor for the resulted glyph contrast
+	double kMCsOffset = 0.;			///< power of factor targeting smoothness (mass-center offset)
+	double kCosAngleMCs = 0.;		///< power of factor targeting smoothness (mass-centers angle)
+	double kSymDensity = 0.;		///< power of factor aiming fanciness, not correctness
+	unsigned threshold4Blank = 0U;	///< Using Blank character replacement under this threshold
 
-	/*
+	/**
 	MatchSettings is considered correctly initialized if its data is read from
 	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
 	'initMatchSettings.cfg'(if it exists and is newer than 'res/defaultMatchSettings.txt').
@@ -80,6 +80,15 @@ private:
 	*/
 	bool initialized = true;
 
+	/**
+	Loading a MatchSettings object of a given version.
+	It overwrites *this, reporting any changes
+
+	@param ar the source of the object
+	@param version what version is the loaded object
+
+	@throw invalid_argument when loading an obsolete 'initMatchSettings.cfg'
+	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
 		if(version < VERSION) {
@@ -116,6 +125,8 @@ private:
 		set_kSymDensity(defSettings.kSymDensity);
 		setBlankThreshold(defSettings.threshold4Blank);
 	}
+
+	/// Saves *this to archive ar using current version of MatchSettings.
 	template<class Archive>
 	void save(Archive &ar, const unsigned/* version*/) const {
 		ar << kSsim
@@ -128,16 +139,16 @@ private:
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
 
-	// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+	/// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
 	void createUserDefaults();
 
 public:
-	/*
+	/**
 	Initializes the fields from initMatchSettings.cfg when this file exists and isn't obsolete,
 	otherwise from res/defaultMatchSettings.txt.
 	The latter file is used to conveniently alter the defaults during development.
 
-	The parameter appLaunchPath is the path to 'Pic2Sym.exe' and is used to determine
+	@param appLaunchPath the path to 'Pic2Sym.exe' and is used to determine
 	the folder where to look for 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
 	*/
 	MatchSettings(const std::string &appLaunchPath);
@@ -171,14 +182,15 @@ public:
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	void setBlankThreshold(unsigned threshold4Blank_);
 
-	bool parseCfg(const boost::filesystem::path &cfgFile); // Loads the settings provided in cfgFile
+	bool parseCfg(const boost::filesystem::path &cfgFile); ///< Loads the settings provided in cfgFile
 	
-	void loadUserDefaults(); // Overwrites current settings with those from initMatchSettings.cfg.
-	void saveUserDefaults() const; // Overwrites initMatchSettings.cfg with current settings
+	/// Overwrites current settings with those from initMatchSettings.cfg.
+	void loadUserDefaults();
+	void saveUserDefaults() const; ///< Overwrites initMatchSettings.cfg with current settings
 
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 #ifdef UNIT_TESTING
-	// Constructor available only within UnitTesting project
+	/// Constructor available only within UnitTesting project
 	MatchSettings(double kSsim_ = 0.,
 		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
 		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,

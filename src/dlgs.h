@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        dlgs.h
- 
- Author:      Florin Tulba
- Created on:  2016-1-8
+ This file was created on 2016-1-8
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #ifdef UNIT_TESTING
 #	include "../test/mockDlgs.h"
@@ -48,59 +45,61 @@
 #include <tchar.h>
 #include <string>
 
-// Dlg is the base class for the standard Windows dialogs from below
-class Dlg abstract {
+/// Dlg is the base class for the standard Windows dialogs from below
+class Dlg /*abstract*/ {
 protected:
-	std::string result = ""; // the result to be returned
+	std::string result = ""; ///< the result to be returned
 	Dlg() {}
 
 public:
 	virtual ~Dlg() = 0 {}
 
-	virtual bool promptForUserChoice() = 0; // Displays the dialog and stores the selection or returns false when canceled
+	/// Displays the dialog and stores the selection or returns false when canceled
+	virtual bool promptForUserChoice() = 0; 
 	const std::string& selection() const { return result; }
 	virtual void reset() { result.clear(); }
 };
 
-// OpenSave class controls a FileOpenDialog / FileSaveDialog.
-class OpenSave abstract : public Dlg {
-	OPENFILENAME ofn;		// structure used by the FileOpenDialog
-	TCHAR fNameBuf[1024];	// buffer for the selected image file
+/// OpenSave class controls a FileOpenDialog / FileSaveDialog.
+class OpenSave /*abstract*/ : public Dlg {
+	OPENFILENAME ofn;		///< structure used by the FileOpenDialog
+	TCHAR fNameBuf[1024];	///< buffer for the selected image file
 
 protected:
-	const bool toOpen = true;	// most derived classes want Open File Dialog (not Save)
+	const bool toOpen = true;	///< most derived classes want Open File Dialog (not Save)
+
+	/// Prepares the dialog
+	OpenSave(const TCHAR * const title,		///< displayed title of the dialog
+			 const TCHAR * const filter,	///< expected extensions
+			 const TCHAR * const defExtension = nullptr,	///< default extension
+			 bool toOpen_ = true			///< open or save dialog
+			 );
 
 public:
-	// Prepares the dialog
-	OpenSave(const TCHAR * const title,		// displayed title of the dialog
-			 const TCHAR * const filter,	// expected extensions
-			 const TCHAR * const defExtension = nullptr,	// default extension
-			 bool toOpen_ = true);			// open or save dialog
-
 	bool promptForUserChoice() override;
 };
 
-// Selecting an image to transform
+/// Selecting an image to transform
 class ImgSelector final : public OpenSave {
 public:
 	ImgSelector();
 };
 
-// Selecting a settings file to load / be saved
+/// Selecting a settings file to load / be saved
 class SettingsSelector final : public OpenSave {
 public:
 	SettingsSelector(bool toOpen_ = true);
 };
 
-// SelectFont class controls a ChooseFont Dialog.
+/// SelectFont class controls a ChooseFont Dialog.
 class SelectFont final : public Dlg {
-	CHOOSEFONT cf;		// structure used by the ChooseFont Dialog
-	LOGFONT lf;			// structure filled with Font information
+	CHOOSEFONT cf;		///< structure used by the ChooseFont Dialog
+	LOGFONT lf;			///< structure filled with Font information
 	bool isBold = false;
 	bool isItalic = false;
 
 public:
-	SelectFont(); // Prepares the dialog
+	SelectFont(); ///< Prepares the dialog
 
 	bool promptForUserChoice() override;
 

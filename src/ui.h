@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        ui.h
- 
- Author:      Florin Tulba
- Created on:  2016-1-22
+ This file was created on 2016-1-22
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #ifdef UNIT_TESTING
 #	include "../test/mockUi.h"
@@ -52,14 +49,14 @@
 class Settings;		// global settings
 class Controller;	// The views defined below interact with this class
 
-/*
+/**
 CvWin - base class for Comparator & CmapInspect from below.
 Allows setting title, overlay, status, location, size and resizing properties.
 */
-class CvWin abstract {
+class CvWin /*abstract*/ {
 protected:
-	const cv::String winName;	// window's handle
-	cv::Mat content;			// what to display 
+	const cv::String winName;	///< window's handle
+	cv::Mat content;			///< what to display 
 
 	CvWin(const cv::String &winName_);
 
@@ -75,24 +72,25 @@ public:
 	void resize(int w, int h) const;
 };
 
-/*
+/**
 View which permits comparing the original image with the transformed one.
+
 A slider adjusts the transparency of the resulted image,
 so that the original can be more or less visible.
 */
 class Comparator final : public CvWin {
-	static const cv::String transpTrackName;	// slider's handle
-	static const double defaultTransparency;	// used transparency when the result appears
-	static const int trackMax = 100;			// transparency range 0..100
-	static const cv::Mat noImage;				// image to display initially (not for processing)
+	static const cv::String transpTrackName;	///< slider's handle
+	static const double defaultTransparency;	///< used transparency when the result appears
+	static const int trackMax = 100;			///< transparency range 0..100
+	static const cv::Mat noImage;				///< image to display initially (not for processing)
 
-	cv::Mat initial, result;	// Compared items
-	int trackPos = 0;			// Transparency value
+	cv::Mat initial, result;	///< Compared items
+	int trackPos = 0;			///< Transparency value
 
-	void setTransparency(double transparency);	// called from updateTransparency
+	void setTransparency(double transparency);	///< called from updateTransparency
 
 public:
-	/*
+	/**
 	Creating a Comparator window.
 
 	The parameter just supports a macro mechanism that creates several object types
@@ -102,56 +100,63 @@ public:
 	which is interpreted as a function declaration.
 
 	Adding this extra param generates no harm in the rest of the project,
-	but allows the macro to see it as object 'Comparator field(nullptr);', not function.
+	but allows the macro to see it as object 'Comparator field(nullptr);', not a function.
 	*/
 	Comparator(void** /*hackParam*/ =nullptr);
 
-	static void updateTransparency(int newTransp, void *userdata); // slider's callback
+	static void updateTransparency(int newTransp, void *userdata); ///< slider's callback
 
 	void setReference(const cv::Mat &reference_);
-	void setResult(const cv::Mat &result_, int transparency = (int)round(defaultTransparency * trackMax));
+	void setResult(const cv::Mat &result_,
+				   int transparency = (int)round(defaultTransparency * trackMax));
 };
 
-/*
+/**
 Class for displaying the symbols from the current charmap (cmap).
+
 When there are lots of symbols, they are divided into pages which
 can be browsed using the page slider.
 */
 class CmapInspect final : public CvWin {
-	static const cv::String pageTrackName;	// page slider handle
-	static const cv::Size pageSz;			// 640x480
+	static const cv::String pageTrackName;	///< page slider handle
+	static const cv::Size pageSz;			///< 640x480
 
-	const Controller &ctrler;	// window manager
+	const Controller &ctrler;	///< window manager
 
-	cv::Mat grid;				// the symbols' `hive`
-	int page = 0;				// page slider position
-	unsigned pagesCount = 0U, symsPerPage = 0U; // used for dividing the cmap
+	cv::Mat grid;				///< the symbols' `hive`
+	int page = 0;				///< page slider position
+	unsigned pagesCount = 0U;	///< used for dividing the cmap
+	unsigned symsPerPage = 0U;	///< used for dividing the cmap
 
-	// The max of the page slider won't update unless
-	// issuing an additional slider move, which has to be ignored.
-	// 'updatingPageMax' is used for this hack
+	/**
+	hack field
+
+	The max of the page slider won't update unless
+	issuing an additional slider move, which has to be ignored.
+	*/
 	bool updatingPageMax = false;
 
-	cv::Mat createGrid() const;				// generates the grid that separates the glyphs
+	cv::Mat createGrid() const;				///< generates the grid that separates the glyphs
 
-	// content = grid + glyphs for current page specified by a pair of iterators
+	/// content = grid + glyphs for current page specified by a pair of iterators
 	void populateGrid(const MatchEngine::VSymDataCItPair &itPair);
 
-	unsigned computeSymsPerPage() const;	// determines how many symbols fit on a single page
+	unsigned computeSymsPerPage() const;	///< determines how many symbols fit on a single page
 
 public:
 	CmapInspect(const Controller &ctrler_);
 
-	static void updatePageIdx(int newPage, void *userdata); // slider's callback
+	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
 
-	void updatePagesCount(unsigned cmapSize);	// puts also the slider on 0
-	void updateGrid();							// Changing font size must update also the grid
+	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
+	void updateGrid();							///< Changing font size must update also the grid
 
-	void showPage(unsigned pageIdx);			// displays page <pageIdx>
+	void showPage(unsigned pageIdx);			///< displays page <pageIdx>
 };
 
-/*
+/**
 Configures the transformation settings, chooses which image to process and with which cmap.
+
 The range of the slider used for selecting the encoding is updated automatically
 based on the selected font family.
 
@@ -161,20 +166,21 @@ Furthermore, range 0..x can be invalid if the actual range is [x+1 .. y].
 In this latter case an error message will report the problem and the user needs to correct it.
 */
 class ControlPanel final {
-	/*
+	/**
 	Helper to convert settings from actual ranges to the ones used by the sliders.
+
 	For now, flexibility in choosing the conversion rules is more important than design,
 	so lots of redundancies appear below.
 	*/
 	struct Converter {
-		/*
+		/**
 		One possible conversion function 'proportionRule':
 			x in 0..xMax;  y in 0..yMax  =>
 			y = x*yMax/xMax
 		*/
 		static double proportionRule(double x, double xMax, double yMax);
 
-		// used for the slider controlling the structural similarity
+		/// used for the slider controlling the structural similarity
 		struct StructuralSim {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -182,7 +188,7 @@ class ControlPanel final {
 			static double fromSlider(int ssim);
 		};
 
-		// used for the 3 sliders controlling the correctness
+		/// used for the 3 sliders controlling the correctness
 		struct Correctness {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -190,7 +196,7 @@ class ControlPanel final {
 			static double fromSlider(int correctness);
 		};
 
-		// used for the slider controlling the contrast
+		/// used for the slider controlling the contrast
 		struct Contrast {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -198,7 +204,7 @@ class ControlPanel final {
 			static double fromSlider(int contrast);
 		};
 
-		// used for the slider controlling the 'gravitational' smoothness
+		/// used for the slider controlling the 'gravitational' smoothness
 		struct Gravity {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -206,7 +212,7 @@ class ControlPanel final {
 			static double fromSlider(int gravity);
 		};
 
-		// used for the slider controlling the directional smoothness
+		/// used for the slider controlling the directional smoothness
 		struct Direction {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -214,7 +220,7 @@ class ControlPanel final {
 			static double fromSlider(int direction);
 		};
 
-		// used for the slider controlling the preference for larger symbols
+		/// used for the slider controlling the preference for larger symbols
 		struct LargerSym {
 			static const int maxSlider = 100;
 			static const double maxReal;
@@ -238,21 +244,24 @@ class ControlPanel final {
 	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
 	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
 
-	// The max of the encodings slider won't update unless
-	// issuing an additional slider move, which has to be ignored.
-	// 'updatingEncMax' is used for this hack
+	/** 
+	hack field
+
+	The max of the encodings slider won't update unless
+	issuing an additional slider move, which has to be ignored.
+	*/
 	bool updatingEncMax = false;
 
 public:
 	ControlPanel(Controller &ctrler_, const Settings &cfg);
 
-	void updateEncodingsCount(unsigned uniqueEncodings);	// puts also the slider on 0
-	bool encMaxHack() const { return updatingEncMax; }		// used for the hack above
+	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
+	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above
 
-	// updates font size & encoding sliders, if necessary
+	/// updates font size & encoding sliders, if necessary
 	void updateSymSettings(unsigned encIdx, unsigned fontSz_);
-	void updateImgSettings(const ImgSettings &is); // updates sliders concerning ImgSettings items
-	void updateMatchSettings(const MatchSettings &ms); // updates sliders concerning MatchSettings items
+	void updateImgSettings(const ImgSettings &is); ///< updates sliders concerning ImgSettings items
+	void updateMatchSettings(const MatchSettings &ms); ///< updates sliders concerning MatchSettings items
 };
 
 #endif // H_UI

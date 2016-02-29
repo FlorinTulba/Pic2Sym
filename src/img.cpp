@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        img.cpp
- 
- Author:      Florin Tulba
- Created on:  2016-1-8
+ This file was created on 2016-1-8
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #include "img.h"
 

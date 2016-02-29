@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        img.h
- 
- Author:      Florin Tulba
- Created on:  2016-1-8
+ This file was created on 2016-1-8
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #ifndef H_IMG
 #define H_IMG
@@ -50,14 +47,21 @@
 #include <boost/serialization/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-/*
+/**
 Contains max count of horizontal & vertical patches to process.
+
 The image is resized appropriately before processing.
 */
 class ImgSettings {
-	unsigned hMaxSyms;	// Count of resulted horizontal symbols
-	unsigned vMaxSyms;	// Count of resulted vertical symbols
+	unsigned hMaxSyms;	///< Count of resulted horizontal symbols
+	unsigned vMaxSyms;	///< Count of resulted vertical symbols
 
+	/**
+	Overwrites *this with the ImgSettings object read from ar.
+
+	@param ar source of the object to load
+	@param version the version of the loaded ImgSettings
+	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
 		// It is useful to see which settings changed when loading
@@ -70,15 +74,17 @@ class ImgSettings {
 		setMaxHSyms(defSettings.hMaxSyms);
 		setMaxVSyms(defSettings.vMaxSyms);
 	}
+
+	/// Saves *this to ar
 	template<class Archive>
-	void save(Archive &ar, const unsigned version) const {
+	void save(Archive &ar, const unsigned) const {
 		ar << hMaxSyms << vMaxSyms;
 	}
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
 
 public:
-	// Constructor takes initial values just to present a valid sliders positions in Control Panel
+	/// Constructor takes initial values just to present a valid sliders positions in Control Panel
 	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
 		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
 
@@ -93,12 +99,13 @@ public:
 
 BOOST_CLASS_VERSION(ImgSettings, 0)
 
-// Img provides necessary API for manipulating the images to transform
+/// Img provides necessary API for manipulating the images to transform
 class Img final {
-	boost::filesystem::path imgPath;	// path of current image
-	std::string imgName;				// stem part of the image file name
-	cv::Mat source, res;				// the original & resized image
-	bool color = false;					// color / grayscale
+	boost::filesystem::path imgPath;	///< path of current image
+	std::string imgName;				///< stem part of the image file name
+	cv::Mat source;						///< the original image
+	cv::Mat res;						///< the resized image
+	bool color = false;					///< color / grayscale
 
 
 #ifdef UNIT_TESTING
@@ -107,7 +114,7 @@ public: // Providing reset(Mat) as public for Unit Testing
 	bool reset(const cv::Mat &source_);
 
 public:
-	/*
+	/**
 	Creates an Img object with default fields.
 	
 	The parameter just supports a macro mechanism that creates several object types
@@ -117,24 +124,27 @@ public:
 	which is interpreted as a function declaration.
 
 	Adding this extra param generates no harm in the rest of the project,
-	but allows the macro to see it as object 'Img field(nullptr);', not function.
+	but allows the macro to see it as object 'Img field(nullptr);', not a function.
 	*/
 	Img(void** /*hackParam*/ = nullptr) {} 
 
-	bool reset(const std::string &picName); // setting a new source image. Returns false for invalid images
+	/// setting a new source image. Returns false for invalid images
+	bool reset(const std::string &picName);
 
 	const cv::Mat& original() const { return source; }
 
-	/*
+	/**
 	If possible, 'resized' method adapts the original image to the parameters of the transformation:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
 	cv::Mat resized(const ImgSettings &is, unsigned patchSz);
 
-	bool isColor() const { return color; }	// color / grayscale image
-	const std::string& name() const { return imgName; } // return the stem of the image file name
-	const boost::filesystem::path& absPath() const { return imgPath; } // return the absolute path of the image file name
+	bool isColor() const { return color; }	///< color / grayscale image
+	const std::string& name() const { return imgName; } ///< return the stem of the image file name
+
+	/// @return absolute path of the image file name
+	const boost::filesystem::path& absPath() const { return imgPath; }
 
 	const cv::Mat& getResized() const { return res; }
 };

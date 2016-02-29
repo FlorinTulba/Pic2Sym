@@ -1,25 +1,22 @@
-/**************************************************************************************
- This file belongs to the 'Pic2Sym' application, which
- approximates images by a grid of colored symbols with colored backgrounds.
+/****************************************************************************************
+ The application Pic2Sym approximates images by a
+ grid of colored symbols with colored backgrounds.
 
- Project:     Pic2Sym 
- File:        fontEngine.cpp
- 
- Author:      Florin Tulba
- Created on:  2016-1-8
+ This file was created on 2016-1-8
+ and belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by 'Pic2Sym':
- - © 2015 Boost (www.boost.org)
-   License: http://www.boost.org/LICENSE_1_0.txt
+ Copyrights from the libraries used by the program:
+ - (c) 2015 Boost (www.boost.org)
+   License: <http://www.boost.org/LICENSE_1_0.txt>
             or doc/licenses/Boost.lic
- - © 2015 The FreeType Project (www.freetype.org)
-   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+ - (c) 2015 The FreeType Project (www.freetype.org)
+   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
 	        or doc/licenses/FTL.txt
- - © 2015 OpenCV (www.opencv.org)
-   License: http://opencv.org/license.html
+ - (c) 2015 OpenCV (www.opencv.org)
+   License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
  
- © 2016 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -34,7 +31,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- **************************************************************************************/
+ ****************************************************************************************/
 
 #include "controller.h"
 #include "misc.h"
@@ -53,15 +50,15 @@ using namespace boost::filesystem;
 using namespace boost::bimaps;
 
 namespace {
-	/*
+	/**
 	adjustScaling enforces sz as vertical size and determines an optimal horizontal size,
 	so that most symbols will widen enough to fill more of the drawing square,
 	while preserving the designer's placement.
 
-	The parameters <bb> and <symsCount> return the estimated future bounding box and
-	respectively the count of glyphs within selected charmap.
+	@param bb [out] estimated future bounding box
+	@param symsCount [out] count of glyphs within selected charmap
 
-	The returned pair will contain the scaling factors to remember.
+	@return pair with the scaling factors to remember.
 	*/
 	pair<double, double>
 				adjustScaling(FT_Face face, unsigned sz, FT_BBox &bb, unsigned &symsCount) {
@@ -140,7 +137,7 @@ namespace {
 		return make_pair(factorH, factorV);
 	}
 
-	// Minimal glyph shifting and cropping or none to fit the bounding box
+	/// Minimal glyph shifting and cropping or none to fit the bounding box
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 					   int leftBound, int topBound, int sz,
 					   int& rows_, int& cols_, int& left_, int& top_,
@@ -182,14 +179,16 @@ namespace {
 		assert(cols_>=0 && cols_<=sz);
 	}
 
-	// Creates a bimap using initializer_list. Needed in 'encodingsMap' below
+	/// Creates a bimap using initializer_list. Needed in 'encodingsMap' below
 	template <typename L, typename R>
 	bimap<L, R> make_bimap(initializer_list<typename bimap<L, R>::value_type> il) {
 		return bimap<L, R>(CBOUNDS(il));
 	}
 
-	// Holds the mapping between encodings codes and their corresponding names
-	// Returns non-const just to allow accessing the map with operator[].
+	/**
+	@return mapping between encodings codes and their corresponding names.
+	It's non-const just to allow accessing the map with operator[].
+	*/
 	const bimap<FT_Encoding, string>& encodingsMap() {
 
 		// Defines pairs like { FT_ENCODING_ADOBE_STANDARD, "ADOBE_STANDARD" }
