@@ -1,13 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  Project:     Pic2Sym
-;;  File:        defaultMatchSettings.txt
-;;
-;;  Author:      Florin Tulba
-;;  Created on:  2016-1-8
-;;  
-;;  Copyright (c) 2016 Florin Tulba
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Real coefficient that encourages structural similarity
 ; Set it to 0 if this is not an important match aspect.
 ; Valid range 0 .. 2.5.  1 is ok.

@@ -13,12 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="doc">
+      <UniqueIdentifier>{d1c8b5c0-b1c1-4348-8ee5-7054322c9bc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\examples">
+      <UniqueIdentifier>{3a8b4d59-97d2-4dde-9b99-710ca6c7e97c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\licenses">
+      <UniqueIdentifier>{7d5df763-5a5d-4b1c-aede-81fe65049733}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="ReadMe.md" />
+    <Text Include="README.md" />
+    <Text Include="doc\licenses\Boost.lic">
+      <Filter>doc\licenses</Filter>
+    </Text>
+    <Text Include="doc\licenses\OpenCV.lic">
+      <Filter>doc\licenses</Filter>
+    </Text>
+    <Text Include="doc\licenses\FTL.TXT">
+      <Filter>doc\licenses</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\fontEngine.h">
@@ -83,10 +101,136 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
+    <None Include="doc\appendix.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\conclusions.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\CtrlPanel.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\performance.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\relatedWork.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\results.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\testBinary.md">
+      <Filter>doc</Filter>
+    </None>
+    <None Include="doc\UnitTesting.md">
+      <Filter>doc</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\NoImage.jpg">
       <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="doc\examples\1.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\1_BPmono_Bold_UNICODE_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2030_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\1_BPmono_Bold_UNICODE_10_2.5_0_0_0_0_0_0_0_0_2030_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\6.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\6_BPmono_Bold_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\6_Envy Code R_Regular_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\6_ProFontWindows_Regular_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\7g.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\7g_Consolas_Italic_APPLE_ROMAN_10_2.5_0_0_0_0_0_0_0_0_1350_2030.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\13.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\13_Anonymous Pro_Bold_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\15.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\15_Monaco_Regular_UNICODE_10_2.5_0_0_0_0_0_0_0_0_2040_1350.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\17g.bmp">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\examples\17g_Courier New_Bold Italic_APPLE_ROMAN_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_250_250.jpg">
+      <Filter>doc\examples</Filter>
+    </Image>
+    <Image Include="doc\ClassDiag.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\CmapViewer.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\CtrlPanel.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\CtrlPanelAndInstructions.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\EndOfTransformation.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example1.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example2.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example3.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example4.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example5.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example6.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example7.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example8.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\Example9.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\MainAfterTransform.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\MismatchesUnitTesting.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\ProfileCallerCallee.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\ProfileFunctionDetails.jpg">
+      <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\ProfileSummary.jpg">
+      <Filter>doc</Filter>
     </Image>
   </ItemGroup>
 </Project>

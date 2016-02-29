@@ -11,7 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.md" />
+    <Text Include="doc\licenses\Boost.lic" />
+    <Text Include="doc\licenses\FTL.TXT" />
+    <Text Include="doc\licenses\OpenCV.lic" />
+    <Text Include="README.md" />
     <Text Include="res\defaultMatchSettings.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -38,9 +41,51 @@
     <ClCompile Include="src\ui.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="doc\appendix.md" />
+    <None Include="doc\conclusions.md" />
+    <None Include="doc\CtrlPanel.md" />
+    <None Include="doc\performance.md" />
+    <None Include="doc\relatedWork.md" />
+    <None Include="doc\results.md" />
+    <None Include="doc\testBinary.md" />
+    <None Include="doc\UnitTesting.md" />
     <None Include="Pic2Sym.licenseheader" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="doc\ClassDiag.jpg" />
+    <Image Include="doc\CmapViewer.jpg" />
+    <Image Include="doc\CtrlPanel.jpg" />
+    <Image Include="doc\CtrlPanelAndInstructions.jpg" />
+    <Image Include="doc\EndOfTransformation.jpg" />
+    <Image Include="doc\Example1.jpg" />
+    <Image Include="doc\Example2.jpg" />
+    <Image Include="doc\Example3.jpg" />
+    <Image Include="doc\Example4.jpg" />
+    <Image Include="doc\Example5.jpg" />
+    <Image Include="doc\Example6.jpg" />
+    <Image Include="doc\Example7.jpg" />
+    <Image Include="doc\Example8.jpg" />
+    <Image Include="doc\Example9.jpg" />
+    <Image Include="doc\examples\1.jpg" />
+    <Image Include="doc\examples\13.jpg" />
+    <Image Include="doc\examples\13_Anonymous Pro_Bold_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg" />
+    <Image Include="doc\examples\15.jpg" />
+    <Image Include="doc\examples\15_Monaco_Regular_UNICODE_10_2.5_0_0_0_0_0_0_0_0_2040_1350.jpg" />
+    <Image Include="doc\examples\17g.bmp" />
+    <Image Include="doc\examples\17g_Courier New_Bold Italic_APPLE_ROMAN_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_250_250.jpg" />
+    <Image Include="doc\examples\1_BPmono_Bold_UNICODE_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2030_1350.jpg" />
+    <Image Include="doc\examples\1_BPmono_Bold_UNICODE_10_2.5_0_0_0_0_0_0_0_0_2030_1350.jpg" />
+    <Image Include="doc\examples\6.jpg" />
+    <Image Include="doc\examples\6_BPmono_Bold_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg" />
+    <Image Include="doc\examples\6_Envy Code R_Regular_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg" />
+    <Image Include="doc\examples\6_ProFontWindows_Regular_APPLE_ROMAN_10_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg" />
+    <Image Include="doc\examples\7g.jpg" />
+    <Image Include="doc\examples\7g_Consolas_Italic_APPLE_ROMAN_10_2.5_0_0_0_0_0_0_0_0_1350_2030.jpg" />
+    <Image Include="doc\MainAfterTransform.jpg" />
+    <Image Include="doc\MismatchesUnitTesting.jpg" />
+    <Image Include="doc\ProfileCallerCallee.jpg" />
+    <Image Include="doc\ProfileFunctionDetails.jpg" />
+    <Image Include="doc\ProfileSummary.jpg" />
     <Image Include="res\NoImage.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -90,7 +135,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;PIC2SYM_VERSION="$(Pic2SymVersion)";_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -100,7 +145,6 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <Version>1.0</Version>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
@@ -114,7 +158,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;PIC2SYM_VERSION="$(Pic2SymVersion)";NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -126,7 +170,6 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <Version>1.0</Version>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>

@@ -8,6 +8,7 @@
 *.*sdf
 *.*log
 *.[bB][aA][kK]
+*.uml
 /*.props
 
 ## Folders to ignore
@@ -17,3 +18,4 @@ x64/
 include/
 lib/
 scripts/
+doc/doxy

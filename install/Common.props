@@ -2,7 +2,8 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    </PropertyGroup>
+    <Pic2SymVersion>1.0</Pic2SymVersion>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)include</AdditionalIncludeDirectories>
@@ -11,8 +12,12 @@
       <AdditionalLibraryDirectories>$(SolutionDir)lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>msvcrt$(ConfigurationSuffix).lib;msvcprt$(ConfigurationSuffix).lib;opencv_core$(OpenCvLibConfigSuffix).lib;opencv_imgcodecs$(OpenCvLibConfigSuffix).lib;opencv_imgproc$(OpenCvLibConfigSuffix).lib;freetype$(FreeTypeLibConfigSuffix).lib;libboost_system$(BoostLibConfigSuffix).lib;libboost_filesystem$(BoostLibConfigSuffix).lib;libboost_serialization$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <Version>$(Pic2SymVersion)</Version>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    </ItemGroup>
+    <BuildMacro Include="Pic2SymVersion">
+      <Value>$(Pic2SymVersion)</Value>
+    </BuildMacro>
+  </ItemGroup>
 </Project>

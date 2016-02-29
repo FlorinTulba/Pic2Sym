@@ -1,12 +1,40 @@
-/**********************************************************
- Project:     Pic2Sym
- File:        main.cpp
+/**************************************************************************************
+ This file belongs to the 'Pic2Sym' application, which
+ approximates images by a grid of colored symbols with colored backgrounds.
 
+ Project:     Pic2Sym 
+ File:        main.cpp
+ 
  Author:      Florin Tulba
  Created on:  2016-1-8
+
+ Copyrights from the libraries used by 'Pic2Sym':
+ - © 2015 Boost (www.boost.org)
+   License: http://www.boost.org/LICENSE_1_0.txt
+            or doc/licenses/Boost.lic
+ - © 2015 The FreeType Project (www.freetype.org)
+   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+	        or doc/licenses/FTL.txt
+ - © 2015 OpenCV (www.opencv.org)
+   License: http://opencv.org/license.html
+            or doc/licenses/OpenCV.lic
  
- Copyright (c) 2016 Florin Tulba
- **********************************************************/
+ © 2016 Florin Tulba <florintulba@yahoo.com>
+
+ This program is free software: you can use its results,
+ redistribute it and/or modify it under the terms of the GNU
+ Affero General Public License version 3 as published by the
+ Free Software Foundation.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program ('agpl-3.0.txt').
+ If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
+ **************************************************************************************/
 
 #include "controller.h"
 
@@ -34,8 +62,30 @@ void showUsage() {
 	pauseAfterError();
 }
 
+void copyrightNotice() {
+	cout<<string(80, '=')<<endl;
+	cout<<"Running 'Pic2Sym' application, which approximates images by a grid of colored"<<endl
+		<<"symbols with colored backgrounds."<<endl<<endl<<endl;
+	cout<<"(c) 2016 Florin Tulba  <florintulba@yahoo.com>"<<endl<<endl<<endl;
+	cout<<"The entire project can be found at: <https://github.com/FlorinTulba/Pic2Sym>" <<endl<<endl;
+	cout<<"This program is free software: you can use its results,\n" \
+		"redistribute it and/or modify it under the terms of the GNU\n" \
+		"Affero General Public License version 3 as published by the\n" \
+		"Free Software Foundation.\n\n" \
+		"This program is distributed in the hope that it will be useful,\n" \
+		"but WITHOUT ANY WARRANTY; without even the implied warranty of\n" \
+		"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n" \
+		"GNU Affero General Public License for more details.\n\n" \
+		"You should have received a copy of the GNU Affero General Public License\n" \
+		"along with this program ('agpl-3.0.txt').\n" \
+		"If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>."<<endl;
+	cout<<string(80, '=')<<endl<<endl;
+}
+
 // Normal mode launch. appFile is a path ending in Pic2Sym.exe
 void normalLaunch(const string &appFile) {
+	copyrightNotice();
+
 	Settings s(move(MatchSettings(appFile)));
 	Controller c(s);
 	Controller::handleRequests();

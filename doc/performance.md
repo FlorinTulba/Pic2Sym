@@ -12,7 +12,7 @@ This *Function Details* view presents the operations from **MatchParams::compute
 The red rectangles tackle the mentioned image blur (*GaussianBlur*) from **imgproc** dll. The overall duration for the blur is 28.9% (28.8% is displayed in the top\-right red rectangle, probably because it ignores call costs).
 
 The variables *blurredPatchApprox* (line 234) and *variancePatchApprox* (line 237) do actually require each same *GaussianBlur* computation method.
-However, their actual evaluation in the implemented optimized algorithm ++needs **\>8 x less time** each++.
+However, their actual evaluation in the implemented optimized algorithm _needs **\>8 x less time** each_.
 Lines 241-257 from the code check in Debug mode that the computations are the same when using normal and optimized methods.
 
 The call to *computeVariancePatch* on line 226 involves also 2 other sub\-calls to *GaussianBlur*, but they are performed only once per patch.
@@ -21,6 +21,8 @@ Despite the fact its single\-time workload is distributed among all the symbols 
 The transformation time for the non-optimized algorithm would be around 57% longer than for the implemented version (100% + 2*28.8% = ~157%).
 
 When disabling [Structural Similarity][], there are fewer differences among the remaining matching aspects. Smoothness and contour match aspects require a bit more time than the rest.
+
+* * *
 
 All matching aspects share the values that normally would be recomputed. First one who needs such a value will evaluate it; the next ones will simply use it.
 The total approximation effort is split in 3:
@@ -31,27 +33,27 @@ The total approximation effort is split in 3:
 Below I&#39;ll compute first the overall transformation complexity, ignoring (1) and (2) from above. Then I&#39;ll enumerate the distinct contribution of each matching aspect, without the part when they compute/read shared data.
 Let&#39;s consider **s** the symbol size, **n** the symbols count, **c** the count of patches to approximate and **w** the size of the blur window.
 For simplicity I won&#39;t count compare, saturation casts and loop index increment operations and I assume that all arithmetic operations will need the same time.
-Used estimates of OpenCv functions:
->	***countNonZero*** : 0.5\*s^2   (on average, half of the mask elements might be 0)
->	***mean*** : s^2 + 1   (with mask parameter)
->	***meanStdDev*** :  2.5\*s^2 + 3   (with mask parameter)
->	***GaussianBlur*** : 2\*w \* s^2   (for a decomposed kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
 
-**Overall transformation complexity** for a *color* image:
->	c \* { n \* [s^2 \* (2\*w +29.5) + 61 ]   +   s^2 \* (4\*w+30)   +   4\*s   +   8 }.
+Here are the estimations for employed OpenCv functions:
+- ***countNonZero*** : 0.5\*s^2   (on average, half of the mask elements might be 0)
+- ***mean*** : s^2 + 1   (with mask parameter)
+- ***meanStdDev*** :  2.5\*s^2 + 3   (with mask parameter)
+- ***GaussianBlur*** : 2\*w \* s^2   (for a decomposed kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
+
+**Overall transformation complexity** for a *color* image:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c \* { n \* [s^2 \* (2\*w +29.5) + 61 ]   +   s^2 \* (4\*w+30)   +   4\*s   +   8 }.
 
 **Separately** and **without the parts computing/reading of shared data**, each match aspect contributes as follows:
->	***[Structural Similarity][]*** : c \* { n \* [s^2 \* (2\*w+19) + 6 ]   +   s^2 \* (4\*w+3) }
->	***Fit under*** : 3\*c\*n
->	***Fit edge*** : (2.5\*s^2 + 7) \* c\*n
->	***Fit aside*** : 3\*c\*n
->	***Contrast*** : 1.5\*c\*n
->	***Gravity*** : 4\*c\*n
->	***Direction*** : 6\*c\*n
->	***Larger symbols*** : 3\*c\*n
->	***Blank threshold*** : 4\*c\*n
+- ***[Structural Similarity][]*** : c \* { n \* [s^2 \* (2\*w+19) + 6 ]   +   s^2 \* (4\*w+3) }
+- ***Fit under*** : 3\*c\*n
+- ***Fit edge*** : (2.5\*s^2 + 7) \* c\*n
+- ***Fit aside*** : 3\*c\*n
+- ***Contrast*** : 1.5\*c\*n
+- ***Gravity*** : 4\*c\*n
+- ***Direction*** : 6\*c\*n
+- ***Larger symbols*** : 3\*c\*n
+- ***Blank threshold*** : 4\*c\*n
 
-For **c**\=27540, **n**\=125, **s**\=10 and **w**\=11 (values used for the profiled transformation), the ratio of the complexities of *[Structural Similarity][]* and the *Overall Transformation* is ++**0.78617**, which is close to **79.95%** reported by the profiler++.
+For **c**=27540, **n**=125, **s**=10 and **w**=11 (values used for the profiled transformation), the ratio of the complexities of *[Structural Similarity][]* and the *Overall Transformation* is _**0.78617**, which is close to **79.95%** reported by the profiler_.
 The last discussed image demonstrates that the measured Structural Similarity computations concern almost entirely only Structural Similarity \- below the underlined computeVariancePatch, only 0.06% of the time is spent in shared values management (the call to *computePatchApprox*).
 
 The **memory required by the transformation process** is ***O***((n+c)\*s^2) where **c** is typically much larger than **n**.

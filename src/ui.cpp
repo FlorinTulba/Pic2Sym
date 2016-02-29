@@ -1,12 +1,40 @@
-/**********************************************************
- Project:     Pic2Sym
- File:        ui.cpp
+/**************************************************************************************
+ This file belongs to the 'Pic2Sym' application, which
+ approximates images by a grid of colored symbols with colored backgrounds.
 
+ Project:     Pic2Sym 
+ File:        ui.cpp
+ 
  Author:      Florin Tulba
  Created on:  2016-1-22
+
+ Copyrights from the libraries used by 'Pic2Sym':
+ - © 2015 Boost (www.boost.org)
+   License: http://www.boost.org/LICENSE_1_0.txt
+            or doc/licenses/Boost.lic
+ - © 2015 The FreeType Project (www.freetype.org)
+   License: http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
+	        or doc/licenses/FTL.txt
+ - © 2015 OpenCV (www.opencv.org)
+   License: http://opencv.org/license.html
+            or doc/licenses/OpenCV.lic
  
- Copyright (c) 2016 Florin Tulba
- **********************************************************/
+ © 2016 Florin Tulba <florintulba@yahoo.com>
+
+ This program is free software: you can use its results,
+ redistribute it and/or modify it under the terms of the GNU
+ Affero General Public License version 3 as published by the
+ Free Software Foundation.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program ('agpl-3.0.txt').
+ If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
+ **************************************************************************************/
 
 #include "controller.h"
 #include "dlgs.h"
@@ -369,9 +397,19 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		pCtrler->newThreshold4BlanksFactor(val);
 	}, reinterpret_cast<void*>(&ctrler));
 
+	createButton("About", [] (int, void*) {
+		MessageBox(nullptr, L"\t\tPic2Sym (v" _T(PIC2SYM_VERSION) L")\n\n" \
+				   L"This application approximates images by a grid of\n" \
+				   L"colored symbols with colored backgrounds.\n\n" \
+				   L"For details, please visit:\n" \
+				   L"<https://github.com/FlorinTulba/Pic2Sym>\n\n" \
+				   L"or contact the author at: <florintulba@yahoo.com>.\n\n\n" \
+				   L"© 2016 Florin Tulba under the GNU AGPL v3 license:\n" \
+				   L"<http://www.gnu.org/licenses/agpl-3.0.txt>",
+				   L"About", MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+	});
 	createButton("Instructions", [] (int, void*) {
-		MessageBox(nullptr, L"\tPic2Sym (v1.0) - by Florin Tulba\n\n" \
-					L"\tThe Control Panel allows setting:\n\n" \
+		MessageBox(nullptr, L"The Control Panel allows setting:\n\n" \
 					L"- which image to be approximated by symbols from a charset\n" \
 					L"- maximum number of symbols used horizontally & vertically\n" \
 					L"- which font family provides these symbols\n" \
@@ -390,8 +428,7 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 					L"   which to replace these barely visible matches with Blanks\n\n" \
 					L"The rudimentary sliders used here won't always show valid ranges.\n" \
 					L"They all must be integer, start from 0, end at least on 1.\n" \
-					L"When their labels is truncated, clicking on them will help.\n\n" \
-					L"There's more information in ReadMe.md.\n",
+					L"When their labels is truncated, clicking on them will help.",
 					L"Instructions", MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 	});
 	createButton("Load Settings", [] (int, void *userdata) {
