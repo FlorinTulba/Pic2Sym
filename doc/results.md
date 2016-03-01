@@ -65,7 +65,7 @@ A reason might be that there are many large background differences among neighbo
 _ _ _
 
 Finally, default settings, but with [Structural Similarity][] disabled; 625 patches to approximate using 218 symbols (*Courier_New_Bold Italic_APPLE_ROMAN_10*); Duration: 1 s<br>
-[![](Example9.jpg)](examples/17g_Courier_New_Bold_Italic_APPLE_ROMAN_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_250_250.jpg)<br>
+[![](Example9.jpg)](examples/17g_Courier New_Bold_Italic_APPLE_ROMAN_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_250_250.jpg)<br>
 ***Bold Italic*** fonts don&#39;t serve well when patches contain vertical texture, like the pajama of the man from top\-right corner.
 
 * * *
