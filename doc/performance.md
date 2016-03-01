@@ -26,6 +26,7 @@ When disabling [Structural Similarity][], there are fewer differences among the 
 
 All matching aspects share the values that normally would be recomputed. First one who needs such a value will evaluate it; the next ones will simply use it.
 The total approximation effort is split in 3:
+
 1.	Symbol\-specific data preparation - various masks, a negative, a blurred version and others, all obtained when the glyph is loaded and resized
 2.	Transformation\-specific values computation - patch area, some limits and others, all generated at the start of the transformation
 3.	Actual approximation of each patch
