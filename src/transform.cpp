@@ -106,19 +106,43 @@ void Transformer::run() {
 	const unsigned sz = cfg.symSettings().getFontSz();
 	result = cv::Mat(resized.rows, resized.cols, resized.type());
 
+	cv::Mat resizedBlurred;
+	cv::GaussianBlur(resized, resizedBlurred,
+					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 cv::BORDER_REPLICATE);
+
 	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
 		ctrler.reportTransformationProgress((double)r/h);
 
+		const cv::Range rowRange(r, r+sz);
+
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
-			const cv::Mat patch(resized, cv::Range(r, r+sz), cv::Range(c, c+sz));
+			const cv::Range colRange(c, c+sz);
+			const cv::Mat patch(resized, rowRange, colRange);
 
 #if defined _DEBUG && !defined UNIT_TESTING
 			BestMatch best(isUnicode);
 #else
 			BestMatch best;
 #endif
-			const cv::Mat approximation = me.approxPatch(patch, best);
-			approximation.copyTo(cv::Mat(result, cv::Range(r, r+sz), cv::Range(c, c+sz)));
+			const cv::Mat approximation = me.approxPatch(patch, best),
+						blurredPatch(resizedBlurred, rowRange, colRange),
+						destRegion(result, rowRange, colRange);
+			cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
+			meanStdDev(patch-approximation, miu, sdevApproximation);
+			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
+			const double sdevSum = *sdevBlurredPatch.val + *sdevApproximation.val;
+			const double weight = (sdevSum > 0.) ? (*sdevApproximation.val / sdevSum) : 0.;
+			static const double THRESHOLD_WEIGHT = .55;
+			if(weight <= THRESHOLD_WEIGHT)
+				approximation.copyTo(destRegion);
+			else {
+				cv::Mat combination;
+				addWeighted(blurredPatch, weight,
+							approximation, 1.-weight,
+							0., combination);
+				combination.copyTo(destRegion);
+			}
 
 #if defined _DEBUG && !defined UNIT_TESTING
 			ofs<<r/sz<<COMMA<<c/sz<<COMMA<<best<<endl;
