@@ -120,23 +120,42 @@ void Transformer::run() {
 			const cv::Range colRange(c, c+sz);
 			const cv::Mat patch(resized, rowRange, colRange);
 
+			const cv::Mat blurredPatch(resizedBlurred, rowRange, colRange),
+						destRegion(result, rowRange, colRange);
+
+			// Don't approximate rather uniform patches
+			double minVal, maxVal;
+			cv::minMaxIdx(blurredPatch, &minVal, &maxVal);
+			static const double THRESHOLD_CONTRAST_BLURRED = 7.;
+			if(maxVal-minVal < THRESHOLD_CONTRAST_BLURRED) {
+				blurredPatch.copyTo(destRegion);
+				continue;
+			}
+
+			// The patch is less uniform, so it needs approximation
 #if defined _DEBUG && !defined UNIT_TESTING
 			BestMatch best(isUnicode);
 #else
 			BestMatch best;
 #endif
-			const cv::Mat approximation = me.approxPatch(patch, best),
-						blurredPatch(resizedBlurred, rowRange, colRange),
-						destRegion(result, rowRange, colRange);
+
+			const cv::Mat approximation = me.approxPatch(patch, best);
+
+			// Compare the quality of the approximation versus the bias of the blur
 			cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
 			meanStdDev(patch-approximation, miu, sdevApproximation);
 			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
 			const double sdevSum = *sdevBlurredPatch.val + *sdevApproximation.val;
 			const double weight = (sdevSum > 0.) ? (*sdevApproximation.val / sdevSum) : 0.;
-			static const double THRESHOLD_WEIGHT = .55;
-			if(weight <= THRESHOLD_WEIGHT)
+
+			static const double THRESHOLD_WEIGHT = .5;
+			if(weight <= THRESHOLD_WEIGHT) {
+				// If the approximation is satisfactory-enough, use it as it is
 				approximation.copyTo(destRegion);
-			else {
+
+			} else {
+				// If the approximation isn't satisfactory-enough, combine it with the blurred patch:
+				// the less satisfactory the approximation is, the more the weight of the blurred patch should be
 				cv::Mat combination;
 				addWeighted(blurredPatch, weight,
 							approximation, 1.-weight,
