@@ -172,7 +172,9 @@ namespace ut {
 MatchSettings::MatchSettings(double kSsim_/* = 0.*/,
 			   double kSdevFg_/* = 0.*/, double kSdevEdge_/* = 0.*/, double kSdevBg_/* = 0.*/,
 			   double kContrast_/* = 0.*/, double kMCsOffset_/* = 0.*/, double kCosAngleMCs_/* = 0.*/,
-			   double kSymDensity_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/) :
+			   double kSymDensity_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/,
+			   bool hybridResultMode_/* = false*/) :
+		hybridResultMode(hybridResultMode_),
 		kSsim(kSsim_),
 		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
 		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kSymDensity(kSymDensity_),

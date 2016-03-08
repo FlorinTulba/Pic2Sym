@@ -47,7 +47,7 @@
 /// MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
 public:
-	static const unsigned VERSION = 1U; ///< version of MatchSettings class
+	static const unsigned VERSION = 2U; ///< version of MatchSettings class
 
 private:
 	boost::filesystem::path workDir;	///< Folder where the application was launched
@@ -63,6 +63,7 @@ private:
 	double kCosAngleMCs = 0.;		///< power of factor targeting smoothness (mass-centers angle)
 	double kSymDensity = 0.;		///< power of factor aiming fanciness, not correctness
 	unsigned threshold4Blank = 0U;	///< Using Blank character replacement under this threshold
+	bool hybridResultMode = false;	///< 'normal' means actual result; 'hybrid' cosmeticizes the result
 
 	/**
 	MatchSettings is considered correctly initialized if its data is read from
@@ -103,10 +104,15 @@ private:
 		MatchSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
-		if(version > 0U) {
-			ar >> defSettings.kSsim; // versions > 0 use kSsim
+		if(version >= 2U) { // versions >= 2 use hybridResultMode
+			ar >> defSettings.hybridResultMode;
 		} else {
-			defSettings.kSsim = 0.; // version 0 didn't use kSsim
+			defSettings.hybridResultMode = false;
+		}
+		if(version >= 1U) { // versions >= 1 use kSsim
+			ar >> defSettings.kSsim;
+		} else {
+			defSettings.kSsim = 0.;
 		}
 		ar >> defSettings.kSdevFg >> defSettings.kSdevEdge >> defSettings.kSdevBg
 			>> defSettings.kContrast
@@ -115,6 +121,7 @@ private:
 			>> defSettings.threshold4Blank;
 
 		// these show message when there are changes
+		setResultMode(defSettings.hybridResultMode);
 		set_kSsim(defSettings.kSsim);
 		set_kSdevFg(defSettings.kSdevFg);
 		set_kSdevEdge(defSettings.kSdevEdge);
@@ -129,7 +136,8 @@ private:
 	/// Saves *this to archive ar using current version of MatchSettings.
 	template<class Archive>
 	void save(Archive &ar, const unsigned/* version*/) const {
-		ar << kSsim
+		ar << hybridResultMode
+			<< kSsim
 			<< kSdevFg << kSdevEdge << kSdevBg
 			<< kContrast
 			<< kMCsOffset << kCosAngleMCs
@@ -154,6 +162,9 @@ public:
 	MatchSettings(const std::string &appLaunchPath);
 
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
+
+	const bool& isHybridResult() const { return hybridResultMode; }
+	void setResultMode(bool hybridResultMode_);
 
 	const double& get_kSsim() const { return kSsim; }
 	void set_kSsim(double kSsim_);
@@ -194,7 +205,8 @@ public:
 	MatchSettings(double kSsim_ = 0.,
 		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
 		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kSymDensity_ = 0., unsigned threshold4Blank_ = 0U);
+		   double kSymDensity_ = 0., unsigned threshold4Blank_ = 0U,
+		   bool hybridResultMode_ = false);
 #endif
 };
 

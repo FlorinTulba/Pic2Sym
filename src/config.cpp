@@ -105,7 +105,7 @@ void MatchSettings::saveUserDefaults() const {
 }
 
 bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
-	bool correct = false;
+	bool correct = false, newResultMode = false;
 	double new_kSsim = 0.,
 		new_kSdevFg = 0., new_kSdevEdge = 0., new_kSdevBg = 0.,
 		new_kMCsOffset = 0., new_kCosAngleMCs = 0.,
@@ -116,6 +116,7 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 		ptree theCfg;
 		read_info(cfgFile.string(), theCfg);
 
+		newResultMode		= theCfg.get<bool>(prop = "HYBRID_RESULT");
 		new_kSsim			= theCfg.get<double>(prop = "STRUCTURAL_SIMILARITY");
 		new_kSdevFg			= theCfg.get<double>(prop = "UNDER_SYM_CORRECTNESS");
 		new_kSdevEdge		= theCfg.get<double>(prop = "SYM_EDGE_CORRECTNESS");
@@ -133,6 +134,7 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 			cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
 		else {
 			correct = true;
+			hybridResultMode = newResultMode;
 			kSsim = new_kSsim;
 			kSdevFg = new_kSdevFg;  kSdevEdge = new_kSdevEdge; kSdevBg = new_kSdevBg;
 			kContrast = new_kContrast; 
@@ -151,6 +153,13 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 	}
 
 	return correct;
+}
+
+void MatchSettings::setResultMode(bool hybridResultMode_) {
+	if(hybridResultMode == hybridResultMode_)
+		return;
+	cout<<"hybridResultMode"<<" : "<<hybridResultMode<<" -> "<<hybridResultMode_<<endl;
+	hybridResultMode = hybridResultMode_;
 }
 
 void MatchSettings::set_kSsim(double kSsim_) {
@@ -217,6 +226,7 @@ void MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
 }
 
 ostream& operator<<(ostream &os, const MatchSettings &c) {
+	os<<"hybridResultMode"<<" : "<<c.hybridResultMode<<endl;
 	os<<"kSsim"<<" : "<<c.kSsim<<endl;
 	os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
 	os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;

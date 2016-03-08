@@ -188,6 +188,14 @@ public:
 	void newThreshold4BlanksFactor(unsigned t);
 	void newHmaxSyms(int maxSyms);
 	void newVmaxSyms(int maxSyms);
+	/**
+	Sets the result mode:
+	- approximations only (actual result) - patches become symbols, with no cosmeticizing.
+	- hybrid (cosmeticized result) - for displaying approximations blended with a blurred version of the original. The better an approximation, the fainter the hint background
+
+	@param hybrid boolean: when true, establishes the cosmeticized mode; otherwise leaves the actual result as it is
+	*/
+	void setResultMode(bool hybrid);
 
 	// Settings passed from model to view
 	unsigned getFontSize() const { return cfg.ss.getFontSz(); }

@@ -281,6 +281,11 @@ void Controller::newVmaxSyms(int maxSymbols) {
 	cfg.is.setMaxVSyms(maxSymbols);
 }
 
+void Controller::setResultMode(bool hybrid) {
+	if(hybrid != cfg.ms.isHybridResult())
+		cfg.ms.setResultMode(hybrid);
+}
+
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if((unsigned)threshold != cfg.ms.getBlankThreshold())
 		cfg.ms.setBlankThreshold(threshold);
@@ -501,7 +506,7 @@ void Controller::handleRequests() {
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
-		namedWindow(waitWin);
+		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
 #ifndef _DEBUG // destroyWindow in Debug mode triggers deallocation of invalid block
 	} else if(progress == 1.) {
 		destroyWindow(waitWin);

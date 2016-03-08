@@ -67,6 +67,7 @@ void Transformer::run() {
 	ostringstream oss;
 	oss<<img.name()<<'_'
 		<<me.getIdForSymsToUse()<<'_'
+		<<ss.isHybridResult()<<'_'
 		<<ss.get_kSsim()<<'_'
 		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
 		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
@@ -118,14 +119,13 @@ void Transformer::run() {
 
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
 			const cv::Range colRange(c, c+sz);
-			const cv::Mat patch(resized, rowRange, colRange);
-
-			const cv::Mat blurredPatch(resizedBlurred, rowRange, colRange),
+			const cv::Mat patch(resized, rowRange, colRange),
+						blurredPatch(resizedBlurred, rowRange, colRange),
 						destRegion(result, rowRange, colRange);
 
 			// Don't approximate rather uniform patches
 			double minVal, maxVal;
-			cv::minMaxIdx(blurredPatch, &minVal, &maxVal);
+			cv::minMaxIdx(blurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
 			static const double THRESHOLD_CONTRAST_BLURRED = 7.;
 			if(maxVal-minVal < THRESHOLD_CONTRAST_BLURRED) {
 				blurredPatch.copyTo(destRegion);
@@ -141,27 +141,23 @@ void Transformer::run() {
 
 			const cv::Mat approximation = me.approxPatch(patch, best);
 
-			// Compare the quality of the approximation versus the bias of the blur
+			// For non-hybrid result mode, just copy the approximation to the result
+			if(!cfg.matchSettings().isHybridResult()) {
+				approximation.copyTo(destRegion);
+				continue;
+			}
+
+			// Hybrid Result Mode - Combine the approximation with the blurred patch:
+			// the less satisfactory the approximation is,
+			// the more the weight of the blurred patch should be
 			cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
 			meanStdDev(patch-approximation, miu, sdevApproximation);
 			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
 			const double sdevSum = *sdevBlurredPatch.val + *sdevApproximation.val;
 			const double weight = (sdevSum > 0.) ? (*sdevApproximation.val / sdevSum) : 0.;
-
-			static const double THRESHOLD_WEIGHT = .5;
-			if(weight <= THRESHOLD_WEIGHT) {
-				// If the approximation is satisfactory-enough, use it as it is
-				approximation.copyTo(destRegion);
-
-			} else {
-				// If the approximation isn't satisfactory-enough, combine it with the blurred patch:
-				// the less satisfactory the approximation is, the more the weight of the blurred patch should be
-				cv::Mat combination;
-				addWeighted(blurredPatch, weight,
-							approximation, 1.-weight,
-							0., combination);
-				combination.copyTo(destRegion);
-			}
+			cv::Mat combination;
+			addWeighted(blurredPatch, weight, approximation, 1.-weight, 0., combination);
+			combination.copyTo(destRegion);
 
 #if defined _DEBUG && !defined UNIT_TESTING
 			ofs<<r/sz<<COMMA<<c/sz<<COMMA<<best<<endl;

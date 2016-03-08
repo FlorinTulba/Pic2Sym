@@ -1,3 +1,9 @@
+; Boolean switch to configure how cosmeticized the result will be.
+; If HYBRID_RESULT is false, the result will be strictly the approximated image.
+; A hybrid result cosmeticizes the actual result by blending poor matches with
+; a blurred version of the original. The better an approximation, the fainter the hint background.
+HYBRID_RESULT	false
+
 ; Real coefficient that encourages structural similarity
 ; Set it to 0 if this is not an important match aspect.
 ; Valid range 0 .. 2.5.  1 is ok.

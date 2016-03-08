@@ -231,7 +231,7 @@ class ControlPanel final {
 
 	// Configuration sliders' handles
 	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName;
-	static const cv::String structuralSimTrName,
+	static const cv::String hybridResultTrName, structuralSimTrName,
 		underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName,
 		moreContrastTrName;
 	static const cv::String gravityTrName, directionTrName, largerSymTrName, thresh4BlanksTrName;
@@ -241,6 +241,7 @@ class ControlPanel final {
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
 	int encoding, fontSz;
+	int hybridResult;
 	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
 	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
 
