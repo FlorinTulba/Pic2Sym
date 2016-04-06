@@ -155,74 +155,84 @@ bool MatchSettings::parseCfg(const boost::filesystem::path &cfgFile) {
 	return correct;
 }
 
-void MatchSettings::setResultMode(bool hybridResultMode_) {
-	if(hybridResultMode == hybridResultMode_)
-		return;
-	cout<<"hybridResultMode"<<" : "<<hybridResultMode<<" -> "<<hybridResultMode_<<endl;
-	hybridResultMode = hybridResultMode_;
+MatchSettings& MatchSettings::setResultMode(bool hybridResultMode_) {
+	if(hybridResultMode != hybridResultMode_) {
+		cout<<"hybridResultMode"<<" : "<<hybridResultMode<<" -> "<<hybridResultMode_<<endl;
+		hybridResultMode = hybridResultMode_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kSsim(double kSsim_) {
-	if(kSsim == kSsim_)
-		return;
-	cout<<"kSsim"<<" : "<<kSsim<<" -> "<<kSsim_<<endl;
-	kSsim = kSsim_;
+MatchSettings& MatchSettings::set_kSsim(double kSsim_) {
+	if(kSsim != kSsim_) {
+		cout<<"kSsim"<<" : "<<kSsim<<" -> "<<kSsim_<<endl;
+		kSsim = kSsim_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kSdevFg(double kSdevFg_) {
-	if(kSdevFg == kSdevFg_)
-		return;
-	cout<<"kSdevFg"<<" : "<<kSdevFg<<" -> "<<kSdevFg_<<endl;
-	kSdevFg = kSdevFg_;
+MatchSettings& MatchSettings::set_kSdevFg(double kSdevFg_) {
+	if(kSdevFg != kSdevFg_) {
+		cout<<"kSdevFg"<<" : "<<kSdevFg<<" -> "<<kSdevFg_<<endl;
+		kSdevFg = kSdevFg_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kSdevEdge(double kSdevEdge_) {
-	if(kSdevEdge == kSdevEdge_)
-		return;
-	cout<<"kSdevEdge"<<" : "<<kSdevEdge<<" -> "<<kSdevEdge_<<endl;
-	kSdevEdge = kSdevEdge_;
+MatchSettings& MatchSettings::set_kSdevEdge(double kSdevEdge_) {
+	if(kSdevEdge != kSdevEdge_) {
+		cout<<"kSdevEdge"<<" : "<<kSdevEdge<<" -> "<<kSdevEdge_<<endl;
+		kSdevEdge = kSdevEdge_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kSdevBg(double kSdevBg_) {
-	if(kSdevBg == kSdevBg_)
-		return;
-	cout<<"kSdevBg"<<" : "<<kSdevBg<<" -> "<<kSdevBg_<<endl;
-	kSdevBg = kSdevBg_;
+MatchSettings& MatchSettings::set_kSdevBg(double kSdevBg_) {
+	if(kSdevBg != kSdevBg_) {
+		cout<<"kSdevBg"<<" : "<<kSdevBg<<" -> "<<kSdevBg_<<endl;
+		kSdevBg = kSdevBg_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kContrast(double kContrast_) {
-	if(kContrast == kContrast_)
-		return;
-	cout<<"kContrast"<<" : "<<kContrast<<" -> "<<kContrast_<<endl;
-	kContrast = kContrast_;
+MatchSettings& MatchSettings::set_kContrast(double kContrast_) {
+	if(kContrast != kContrast_) {
+		cout<<"kContrast"<<" : "<<kContrast<<" -> "<<kContrast_<<endl;
+		kContrast = kContrast_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kCosAngleMCs(double kCosAngleMCs_) {
-	if(kCosAngleMCs == kCosAngleMCs_)
-		return;
-	cout<<"kCosAngleMCs"<<" : "<<kCosAngleMCs<<" -> "<<kCosAngleMCs_<<endl;
-	kCosAngleMCs = kCosAngleMCs_;
+MatchSettings& MatchSettings::set_kCosAngleMCs(double kCosAngleMCs_) {
+	if(kCosAngleMCs != kCosAngleMCs_) {
+		cout<<"kCosAngleMCs"<<" : "<<kCosAngleMCs<<" -> "<<kCosAngleMCs_<<endl;
+		kCosAngleMCs = kCosAngleMCs_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kMCsOffset(double kMCsOffset_) {
-	if(kMCsOffset == kMCsOffset_)
-		return;
-	cout<<"kMCsOffset"<<" : "<<kMCsOffset<<" -> "<<kMCsOffset_<<endl;
-	kMCsOffset = kMCsOffset_;
+MatchSettings& MatchSettings::set_kMCsOffset(double kMCsOffset_) {
+	if(kMCsOffset != kMCsOffset_) {
+		cout<<"kMCsOffset"<<" : "<<kMCsOffset<<" -> "<<kMCsOffset_<<endl;
+		kMCsOffset = kMCsOffset_;
+	}
+	return *this;
 }
 
-void MatchSettings::set_kSymDensity(double kSymDensity_) {
-	if(kSymDensity == kSymDensity_)
-		return;
-	cout<<"kSymDensity"<<" : "<<kSymDensity<<" -> "<<kSymDensity_<<endl;
-	kSymDensity = kSymDensity_;
+MatchSettings& MatchSettings::set_kSymDensity(double kSymDensity_) {
+	if(kSymDensity != kSymDensity_) {
+		cout<<"kSymDensity"<<" : "<<kSymDensity<<" -> "<<kSymDensity_<<endl;
+		kSymDensity = kSymDensity_;
+	}
+	return *this;
 }
 
-void MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
-	if(threshold4Blank == threshold4Blank_)
-		return;
-	cout<<"threshold4Blank"<<" : "<<threshold4Blank<<" -> "<<threshold4Blank_<<endl;
-	threshold4Blank = threshold4Blank_;
+MatchSettings& MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
+	if(threshold4Blank != threshold4Blank_) {
+		cout<<"threshold4Blank"<<" : "<<threshold4Blank<<" -> "<<threshold4Blank_<<endl;
+		threshold4Blank = threshold4Blank_;
+	}
+	return *this;
 }
 
 ostream& operator<<(ostream &os, const MatchSettings &c) {

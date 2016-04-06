@@ -53,7 +53,7 @@ struct SymData final {
 	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
 	const double pixelSum;			///< sum of the values of the pixels, each in 0..1
-	const cv::Point2d &mc;			///< mass center of the symbol given original fg & bg
+	const cv::Point2d mc;			///< mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph

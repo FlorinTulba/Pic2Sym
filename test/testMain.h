@@ -44,6 +44,18 @@
 /// unit testing namespace
 namespace ut {
 
+	/// Generates an uniformly-distributed random unsigned
+	unsigned randUnifUint();
+
+	/**
+	Generates an uniformly-distributed random unsigned char.
+
+	@param minIncl fist possible random value
+	@param maxIncl last possible random value
+	@return the random value
+	*/
+	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
+
 	/// Used for a global fixture to reinitialize Controller's fields for each test
 	struct Controller {
 

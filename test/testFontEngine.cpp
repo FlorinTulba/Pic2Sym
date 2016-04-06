@@ -46,246 +46,297 @@ using namespace std;
 using namespace cv;
 using namespace boost;
 
-BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum ...");
+namespace ut {
+	class FontEngineFixtComputations : public Fixt {
+		unsigned sz; // patch side length
+		Mat consec, revConsec; // column vectors of consecutive values
 
-		// Glyph data has ASCENDING vertical axis,
-		// while the mass-center is considered on a DESCENDING vertical axis
-
-		random_device rd;
-		mt19937 gen(rd());
-		uniform_int_distribution<unsigned> uid;
-
-		unsigned sz = 10U; // patches of 10x10
-		Mat consec(1, sz, CV_64FC1), // 0..9
-			revConsec;	// 9..0
-		iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..9
-		flip(consec, revConsec, 1);	// 9..0
-
-		// Test EMPTY PATCH => glyphSum = 0, massCenter = (4.5, 4.5)
+	protected:
 		vector<unsigned char> pixels; // uses ASCENDING vertical axis
-		unsigned char rows = 0U, cols = 5U, left = 0U, top = sz-1U;
-		double gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
-		BOOST_REQUIRE(gs == 0.);
-		Point2d mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec); // measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+		unsigned char rows = 0U, cols = 0U; // pixels will have rows x cols elements
+		unsigned char left = 0U, top = 0U; // location of glyph within the wrapping square
 
-		// Empty patch, as well
-		rows = 4U; cols = 0U;
+	public:
+		unsigned getSz() const { return sz; }
+		void setSz(unsigned sz_) {
+			sz = sz_;
+			consec = Mat(1, sz_, CV_64FC1);
+			iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..sz-1
+			flip(consec, revConsec, 1);	// sz-1..0
+		}
+		const Mat& getConsec() const { return consec; }
+		const Mat& getRevConsec() const { return revConsec; }
+
+		double gs = 0.; // glyph sum to be computed within each test case
+		Point2d mc; // mass-center to be computed within each test case
+
+		FontEngineFixtComputations() : Fixt() {
+			setSz(10U); // patches are 10x10 by default
+		}
+	};
+
+	class FontEngineFixtConfig : public Fixt {
+		Settings s;
+		::Controller c;
+
+	protected:
+		FontEngine *pfe = nullptr;
+
+	public:
+		FontEngineFixtConfig() : Fixt(), s(std::move(MatchSettings())), c(s) {
+			try {
+				pfe = &c.getFontEngine(s.symSettings());
+			} catch(runtime_error&) {
+				cerr<<"Couldn't create FontEngine"<<endl;
+			}
+		}
+	};
+}
+
+BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComputations)
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0");
+		cols = 5U; top = getSz()-1U;
+
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
 		BOOST_REQUIRE(gs == 0.);
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
-		// mc is measured based on a DESCENDING vertical axis
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+	}
 
-		// Empty patch, although pixels not empty this time
-		rows = 5U; cols = 5U; pixels.assign(rows*cols, 0U);
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0");
+		rows = 4U; top = getSz()-1U;
+
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_REQUIRE(gs == 0.);
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+	}
+
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_AllDataIs0_CenterAnd0) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_AllDataIs0_CenterAnd0");
+		rows = cols = 5U; top = getSz()-1U;
+		pixels.assign(rows*cols, 0U);
+
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
 		BOOST_TEST(gs == 0., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
-		// mc is measured based on a DESCENDING vertical axis
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+	}
 
-		// FULL PATCH => glyphSum = 0, massCenter = (4.5, 4.5)
-		unsigned char uc = (unsigned char)uid(gen)&0xFFU; // random value 0..255
-		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
-		rows = sz; cols = sz; pixels.assign(rows*cols, uc); // all pixels are 'uc'
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2ChosenPixels_ExpectedValues) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_2ChosenPixels_ExpectedValues");
+		rows = 1U; cols = 7U; left = 2U;
+		pixels.assign(rows*cols, 0U);
+		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
+		pixels[0] = 170; pixels[cols-1] = 85; // 170 = 85*2, and 170 + 85 = 255
+
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
-		BOOST_TEST(gs == sz*sz*uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4)); // 170 + 85 = 255
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
+		// mc is measured based on a DESCENDING vertical axis
+		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
+		BOOST_TEST(mc.y == getSz()-1U, test_tools::tolerance(1e-4));
+	}
+
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_UniformPatch_CenterAndAverage) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_UniformPatch_CenterAndAverage");
+		rows = cols = getSz(); top = getSz()-1U;
+		const auto uc = ut::randUnsignedChar(1U);
+		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
+		pixels.assign(rows*cols, uc);
+
+		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		BOOST_TEST(gs == getSz()*getSz()*uc/255., test_tools::tolerance(1e-4));
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+	}
 
-		// Single non-zero pixel => glyphSum = pixelValue/255; massCenter = pixelPosition
-		rows = 1U; cols = 1U; pixels.assign(rows*cols, uc); // the pixel has value 'uc'
-		left = (unsigned char)uid(gen)%sz; // random value 0..sz-1
-		top = (unsigned char)uid(gen)%sz; // random value 0..sz-1
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_SinglePixelNon0_PixelPositionAndPixelValueDiv255) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_SinglePixelNon0_PixelPositionAndPixelValueDiv255");
+		rows = cols = 1U;
+		left = ut::randUnsignedChar(0U, getSz()-1U);
+		top = ut::randUnsignedChar(0U, getSz()-1U);
+		const auto uc = ut::randUnsignedChar(1U);
+		pixels.push_back(uc);
 		cout<<"Checking patch with a single non-zero pixel at: top="
 			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
+
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
 		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)left, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)(sz - 1U - top), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(getSz() - 1U - top), test_tools::tolerance(1e-4));
+	}
 
-		// 3x3 subarea of pixels='uc' => glyphSum = 9*uc/255; massCenter = subArea's center
-		rows = 3U; cols = 3U; pixels.assign(rows*cols, uc); // all the pixel have the value 'uc'
-		left = (unsigned char)uid(gen)%(sz-2U); // random value 0..sz-3
-		top = (unsigned char)(2U + uid(gen)%(sz-2U)); // random value 2..sz-1
-		cout<<"Checking patch with a 3x3 uniform non-zero subarea at: top="
-			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255");
+		rows = cols = 3U;
+		left = ut::randUnsignedChar(0U, getSz()-3U);
+		top = ut::randUnsignedChar(2U, getSz()-1U);
+		const auto uc = ut::randUnsignedChar(1U);
+		pixels.assign(rows*cols, uc); // all pixels are 'uc'
+
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
 		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)(left+1U), test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)(sz - 1U - (top - 1U)), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(getSz() - 1U - (top - 1U)), test_tools::tolerance(1e-4));
+	}
 
-		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
-		//		glyphSum = 255/255 = 1
-		//		massCenter = (4, sz-1),
-		// 4 is at one third the distance 2..8
-		// 170 = 85*2, and 170 + 85 = 255
-		rows = 1; cols = 7; left = 2U; top = 0U; pixels.assign(rows*cols, 0U);
-		pixels[0] = 170; pixels[cols-1] = 85;
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
-		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
-		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == sz-1U, test_tools::tolerance(1e-4));
-
-		// random 2 points: p1(x1, y1) and p2(x2, y2) => glyphSum = (p1+p2)/255 and
-		// massCenter = ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) )
-		rows = sz; cols = sz; left = 0U; top = sz-1U; pixels.assign(rows*cols, 0U);
-		unsigned char p1 = 1U+(unsigned char)uid(gen)%255U, // random value 1..255
-					p2 = 1U+(unsigned char)uid(gen)%255U, // random value 1..255
-			x1 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
-			x2 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
-			y1 = (unsigned char)uid(gen)%sz, // random value 0..sz-1
-			y2 = (unsigned char)uid(gen)%sz; // random value 0..sz-1
+	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues) {
+		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues");
+		rows = cols = getSz(); top = getSz() - 1U;
+		pixels.assign(rows*cols, 0U);
+		// random 2 points: p1(x1, y1) and p2(x2, y2)
+		const unsigned char p1 = ut::randUnsignedChar(1U), // random value 1..255
+			p2 = ut::randUnsignedChar(1U), // random value 1..255
+			x1 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
+			x2 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
+			y1 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
+			y2 = ut::randUnsignedChar(0U, getSz()-1U); // random value 0..sz-1
 		pixels[x1+y1*cols] = p1; pixels[x2+y2*cols] = p2;
 		cout<<"Checking mass-center for 2 pixels: "
 			<<(unsigned)p1<<'('<<(unsigned)x1<<','<<(unsigned)y1<<"); "
 			<<(unsigned)p2<<'('<<(unsigned)x2<<','<<(unsigned)y2<<')'<<endl;
+		
 		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
-		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(sz, pixels, rows, cols, left, top, gs, consec, revConsec);
+		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
+		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
+		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) )
 		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == sz-1U-((double)y1*p1+y2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == getSz()-1U-((double)y1*p1+y2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
 	}
+BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Computations
 
-	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile) {
-		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile ...");
-		try {
-			Settings s(std::move(MatchSettings()));
-			Controller c(s);
-			string name;
+BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
+	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations) {
+		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations");
+		if(nullptr == pfe)
+			return;
 
-			FontEngine &fe = c.getFontEngine(s.symSettings());
-
-			BOOST_CHECK_THROW(fe.setFontSz(10U), logic_error);
-			BOOST_CHECK_THROW(fe.setEncoding("UNICODE"), logic_error);
-			BOOST_CHECK_THROW(fe.setNthUniqueEncoding(0U), logic_error);
-			BOOST_CHECK_THROW(fe.symsSet(), logic_error);
-			BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
-			BOOST_CHECK_THROW(fe.uniqueEncodings(), logic_error);
-			BOOST_CHECK_THROW(fe.getEncoding(), logic_error);
-			BOOST_CHECK_THROW(fe.getFamily(), logic_error);
-			BOOST_CHECK_THROW(fe.getStyle(), logic_error);
+		FontEngine &fe = *pfe;
+		string name;
+		BOOST_CHECK_THROW(fe.setFontSz(10U), logic_error);
+		BOOST_CHECK_THROW(fe.setEncoding("UNICODE"), logic_error);
+		BOOST_CHECK_THROW(fe.setNthUniqueEncoding(0U), logic_error);
+		BOOST_CHECK_THROW(fe.symsSet(), logic_error);
+		BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
+		BOOST_CHECK_THROW(fe.uniqueEncodings(), logic_error);
+		BOOST_CHECK_THROW(fe.getEncoding(), logic_error);
+		BOOST_CHECK_THROW(fe.getFamily(), logic_error);
+		BOOST_CHECK_THROW(fe.getStyle(), logic_error);
 			
-			BOOST_REQUIRE_NO_THROW(name = fe.fontFileName());
-			BOOST_CHECK(name.empty());
-		} catch(runtime_error&) {
-			cerr<<"Couldn't create FontEngine"<<endl;
-		}
+		BOOST_REQUIRE_NO_THROW(name = fe.fontFileName());
+		BOOST_REQUIRE(name.empty());
 	}
 
-	BOOST_AUTO_TEST_CASE(CorrectFontFile) {
-		BOOST_TEST_MESSAGE("Running CorrectFontFile ...");
-		try {
-			Settings s(std::move(MatchSettings()));
-			Controller c(s);
-			FontEngine &fe = c.getFontEngine(s.symSettings());
+	BOOST_AUTO_TEST_CASE(FontConfig_IncorrectFontFile_CannotSetFont) {
+		BOOST_TEST_MESSAGE("Running FontConfig_IncorrectFontFile_CannotSetFont");
+		if(nullptr == pfe)
+			return;
 
-			bool correct;
-			BOOST_CHECK_NO_THROW(correct = fe.newFont("")); // bad font file name
-			BOOST_CHECK(!correct);
-
-			BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\vga855.fon")); // non-scalable font
-			BOOST_CHECK(!correct);
-			
-			BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf")); // CORRECT
-			BOOST_CHECK(correct);
-		} catch(runtime_error&) {
-			cerr<<"Couldn't create FontEngine"<<endl;
-		}
+		FontEngine &fe = *pfe;
+		bool correct;
+		BOOST_CHECK_NO_THROW(correct = pfe->newFont("")); // bad font file name
+		BOOST_REQUIRE(!correct);
 	}
 
-	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontSize) {
-		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontSize ...");
-		try {
-			Settings s(std::move(MatchSettings()));
-			Controller c(s);
-			bool correct = false;
-			unsigned unEncs = 0U, encIdx = 0U;
-			string enc, fname;
-			FT_String *fam = nullptr, *style = nullptr;
-			FontEngine &fe = c.getFontEngine(s.symSettings());
+	BOOST_AUTO_TEST_CASE(FontConfig_NonScalableFont_CannotSetFont) {
+		BOOST_TEST_MESSAGE("Running FontConfig_NonScalableFont_CannotSetFont");
+		if(nullptr == pfe)
+			return;
 
-			BOOST_REQUIRE_NO_THROW(correct = fe.newFont("res\\BPmonoBold.ttf")); // CORRECT
-			BOOST_CHECK(correct);
-
-			// No font size throws
-			BOOST_CHECK_THROW(fe.symsSet(), logic_error);
-			BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
-
-			// Everything else ok
-			BOOST_REQUIRE_NO_THROW(fname = fe.fontFileName());
-			BOOST_CHECK(!fname.empty());
-
-			BOOST_REQUIRE_NO_THROW(unEncs = fe.uniqueEncodings());
-			BOOST_REQUIRE(unEncs == 2U);
-
-			BOOST_REQUIRE_NO_THROW(enc = fe.getEncoding(&encIdx));
-			BOOST_CHECK(enc.compare("UNICODE") == 0 && encIdx == 0);
-
-			BOOST_REQUIRE_NO_THROW(fam = fe.getFamily());
-			BOOST_CHECK(strcmp(fam, "BPmono") == 0);
-
-			BOOST_REQUIRE_NO_THROW(style = fe.getStyle());
-			BOOST_CHECK(strcmp(style, "Bold") == 0);
-
-			// Setting Encodings
-			BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding(enc)); // same encoding
-			BOOST_CHECK(!enc.empty());
-
-			BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding("APPLE_ROMAN")); // new encoding
-			BOOST_CHECK(!enc.empty());
-
-			BOOST_CHECK(fe.getEncoding(&encIdx).compare("APPLE_ROMAN") == 0);
-			BOOST_CHECK(encIdx == 1U);
-
-			// Recheck that no font size throws for the new encoding
-			BOOST_CHECK_THROW(fe.symsSet(), logic_error);
-			BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
-		} catch(runtime_error&) {
-			cerr<<"Couldn't create FontEngine"<<endl;
-		}
+		bool correct;
+		BOOST_CHECK_NO_THROW(correct = pfe->newFont("res\\vga855.fon"));
+		BOOST_REQUIRE(!correct);
 	}
 
-	BOOST_AUTO_TEST_CASE(CompleteFontConfig) {
-		BOOST_TEST_MESSAGE("Running CompleteFontConfig ...");
-		try {
-			Settings s(std::move(MatchSettings()));
-			Controller c(s);
-			FontEngine &fe = c.getFontEngine(s.symSettings());
+	BOOST_AUTO_TEST_CASE(FontConfig_CorrectFontFile_SettingFontOk) {
+		BOOST_TEST_MESSAGE("Running FontConfig_CorrectFontFile_SettingFontOk");
+		if(nullptr == pfe)
+			return;
 
-			BOOST_REQUIRE_NO_THROW(fe.newFont("res\\BPmonoBold.ttf")); // UNICODE
-
-			BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE-1U), invalid_argument);
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE)); // ok
-			BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE+1U), invalid_argument);
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE)); // ok
-
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
-			BOOST_CHECK_NO_THROW(fe.symsSet());
-			BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569, test_tools::tolerance(1e-4));
-
-			BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
-			BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));
-			BOOST_CHECK_NO_THROW(fe.symsSet());
-			BOOST_TEST(fe.smallGlyphsCoverage() == 0.109403, test_tools::tolerance(1e-4));
-		} catch(runtime_error&) {
-			cerr<<"Couldn't create FontEngine"<<endl;
-		}
+		bool correct;
+		BOOST_REQUIRE_NO_THROW(correct = pfe->newFont("res\\BPmonoBold.ttf"));
+		BOOST_REQUIRE(correct);
 	}
-BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests
 
+	BOOST_AUTO_TEST_CASE(FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage) {
+		BOOST_TEST_MESSAGE("Running FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage");
+		if(nullptr == pfe)
+			return;
+
+		FontEngine &fe = *pfe;
+		unsigned unEncs = 0U, encIdx = 0U;
+		string enc, fname;
+		FT_String *fam = nullptr, *style = nullptr;
+		fe.newFont("res\\BPmonoBold.ttf");
+
+		// No font size throws
+		BOOST_CHECK_THROW(fe.symsSet(), logic_error);
+		BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
+
+		// Everything else ok
+		BOOST_REQUIRE_NO_THROW(fname = fe.fontFileName());
+		BOOST_CHECK(!fname.empty());
+
+		BOOST_REQUIRE_NO_THROW(unEncs = fe.uniqueEncodings());
+		BOOST_REQUIRE(unEncs == 2U);
+
+		BOOST_REQUIRE_NO_THROW(enc = fe.getEncoding(&encIdx));
+		BOOST_CHECK(enc.compare("UNICODE") == 0 && encIdx == 0);
+
+		BOOST_REQUIRE_NO_THROW(fam = fe.getFamily());
+		BOOST_CHECK(strcmp(fam, "BPmono") == 0);
+
+		BOOST_REQUIRE_NO_THROW(style = fe.getStyle());
+		BOOST_CHECK(strcmp(style, "Bold") == 0);
+
+		// Setting Encodings
+		BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding(enc)); // same encoding
+		BOOST_CHECK(!enc.empty());
+
+		BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding("APPLE_ROMAN")); // new encoding
+		BOOST_CHECK(!enc.empty());
+
+		BOOST_CHECK(fe.getEncoding(&encIdx).compare("APPLE_ROMAN") == 0);
+		BOOST_CHECK(encIdx == 1U);
+
+		// Recheck that no font size throws for the new encoding
+		BOOST_CHECK_THROW(fe.symsSet(), logic_error);
+		BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
+	}
+
+	BOOST_AUTO_TEST_CASE(FontConfig_CompleteConfig_NoProblemsExpected) {
+		BOOST_TEST_MESSAGE("Running FontConfig_CompleteConfig_NoProblemsExpected");
+		if(nullptr == pfe)
+			return;
+
+		FontEngine &fe = *pfe;
+		fe.newFont("res\\BPmonoBold.ttf");
+
+		BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE-1U), invalid_argument);
+		BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MIN_FONT_SIZE)); // ok
+		BOOST_REQUIRE_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE+1U), invalid_argument);
+		BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings::MAX_FONT_SIZE)); // ok
+
+		BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
+		BOOST_CHECK_NO_THROW(fe.symsSet());
+		BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569, test_tools::tolerance(1e-4));
+
+		BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
+		BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));
+		BOOST_CHECK_NO_THROW(fe.symsSet());
+		BOOST_TEST(fe.smallGlyphsCoverage() == 0.109403, test_tools::tolerance(1e-4));
+	}
+BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Config

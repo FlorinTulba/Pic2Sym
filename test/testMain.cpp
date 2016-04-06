@@ -48,6 +48,7 @@
 #include "config.cpp"
 
 #include <ctime>
+#include <random>
 
 namespace ut {
 	bool Controller::initImg = false;
@@ -167,20 +168,20 @@ namespace ut {
 			cerr<<oss.str()<<endl;
 		}
 	}
+
+	unsigned randUnifUint() {
+		static random_device rd;
+		static mt19937 gen(rd());
+		static uniform_int_distribution<unsigned> uid;
+		return uid(gen);
+	}
+
+	unsigned char randUnsignedChar(unsigned char minIncl/* = 0U*/, unsigned char maxIncl/* = 255U*/) {
+		return (unsigned char)(minIncl + randUnifUint()%((unsigned)(maxIncl - minIncl) + 1U));
+	}
 }
 
-MatchSettings::MatchSettings(double kSsim_/* = 0.*/,
-			   double kSdevFg_/* = 0.*/, double kSdevEdge_/* = 0.*/, double kSdevBg_/* = 0.*/,
-			   double kContrast_/* = 0.*/, double kMCsOffset_/* = 0.*/, double kCosAngleMCs_/* = 0.*/,
-			   double kSymDensity_/* = 0.*/, unsigned threshold4Blank_/* = 0U*/,
-			   bool hybridResultMode_/* = false*/) :
-		hybridResultMode(hybridResultMode_),
-		kSsim(kSsim_),
-		kSdevFg(kSdevFg_), kSdevEdge(kSdevEdge_), kSdevBg(kSdevBg_), kContrast(kContrast_),
-		kMCsOffset(kMCsOffset_), kCosAngleMCs(kCosAngleMCs_), kSymDensity(kSymDensity_),
-		threshold4Blank(threshold4Blank_) {
-	cout<<"Initial config values:"<<endl<<*this<<endl;
-}
+MatchSettings::MatchSettings() {}
 
 const vector<MatchAspect*>& MatchEngine::getAvailAspects() {
 	static std::shared_ptr<const vector<MatchAspect*>> pAvailAspects;

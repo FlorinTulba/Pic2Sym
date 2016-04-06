@@ -164,34 +164,34 @@ public:
 	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
 	const bool& isHybridResult() const { return hybridResultMode; }
-	void setResultMode(bool hybridResultMode_);
+	MatchSettings& setResultMode(bool hybridResultMode_);
 
 	const double& get_kSsim() const { return kSsim; }
-	void set_kSsim(double kSsim_);
+	MatchSettings& set_kSsim(double kSsim_);
 
 	const double& get_kSdevFg() const { return kSdevFg; }
-	void set_kSdevFg(double kSdevFg_);
+	MatchSettings& set_kSdevFg(double kSdevFg_);
 
 	const double& get_kSdevEdge() const { return kSdevEdge; }
-	void set_kSdevEdge(double kSdevEdge_);
+	MatchSettings& set_kSdevEdge(double kSdevEdge_);
 
 	const double& get_kSdevBg() const { return kSdevBg; }
-	void set_kSdevBg(double kSdevBg_);
+	MatchSettings& set_kSdevBg(double kSdevBg_);
 
 	const double& get_kContrast() const { return kContrast; }
-	void set_kContrast(double kContrast_);
+	MatchSettings& set_kContrast(double kContrast_);
 
 	const double& get_kCosAngleMCs() const { return kCosAngleMCs; }
-	void set_kCosAngleMCs(double kCosAngleMCs_);
+	MatchSettings& set_kCosAngleMCs(double kCosAngleMCs_);
 
 	const double& get_kMCsOffset() const { return kMCsOffset; }
-	void set_kMCsOffset(double kMCsOffset_);
+	MatchSettings& set_kMCsOffset(double kMCsOffset_);
 
 	const double& get_kSymDensity() const { return kSymDensity; }
-	void set_kSymDensity(double kSymDensity_);
+	MatchSettings& set_kSymDensity(double kSymDensity_);
 
 	unsigned getBlankThreshold() const { return threshold4Blank; }
-	void setBlankThreshold(unsigned threshold4Blank_);
+	MatchSettings& setBlankThreshold(unsigned threshold4Blank_);
 
 	bool parseCfg(const boost::filesystem::path &cfgFile); ///< Loads the settings provided in cfgFile
 	
@@ -202,11 +202,7 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 #ifdef UNIT_TESTING
 	/// Constructor available only within UnitTesting project
-	MatchSettings(double kSsim_ = 0.,
-		   double kSdevFg_ = 0., double kSdevEdge_ = 0., double kSdevBg_ = 0.,
-		   double kContrast_ = 0., double kMCsOffset_ = 0., double kCosAngleMCs_ = 0.,
-		   double kSymDensity_ = 0., unsigned threshold4Blank_ = 0U,
-		   bool hybridResultMode_ = false);
+	MatchSettings();
 #endif
 };
 
