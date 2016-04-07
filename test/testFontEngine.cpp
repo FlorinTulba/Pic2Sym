@@ -47,42 +47,48 @@ using namespace cv;
 using namespace boost;
 
 namespace ut {
+	/// Fixture reducing some declarative effort from tests
 	class FontEngineFixtComputations : public Fixt {
-		unsigned sz; // patch side length
-		Mat consec, revConsec; // column vectors of consecutive values
+		unsigned sz;			///> patch side length. Use setSz and getSz to access it within tests
+		Mat consec, revConsec;	///> column vectors of consecutive values (updated by setSz; getters available)
 
 	protected:
-		vector<unsigned char> pixels; // uses ASCENDING vertical axis
-		unsigned char rows = 0U, cols = 0U; // pixels will have rows x cols elements
-		unsigned char left = 0U, top = 0U; // location of glyph within the wrapping square
+		vector<unsigned char> pixels;		///> Data defining the glyph. Uses ASCENDING vertical axis
+		unsigned char rows = 0U, cols = 0U; ///> pixels will have rows x cols elements
+		unsigned char left = 0U, top = 0U;	///> location of glyph within the wrapping square
 
 	public:
+		double gs = 0.; ///> glyph sum to be computed within each test case
+		Point2d mc;		///> mass-center to be computed within each test case
+
+		const Mat& getConsec() const { return consec; }
+		const Mat& getRevConsec() const { return revConsec; }
 		unsigned getSz() const { return sz; }
+
+		/// Setter of sz. Updates consec and revConsec
 		void setSz(unsigned sz_) {
 			sz = sz_;
 			consec = Mat(1, sz_, CV_64FC1);
 			iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..sz-1
 			flip(consec, revConsec, 1);	// sz-1..0
 		}
-		const Mat& getConsec() const { return consec; }
-		const Mat& getRevConsec() const { return revConsec; }
 
-		double gs = 0.; // glyph sum to be computed within each test case
-		Point2d mc; // mass-center to be computed within each test case
-
-		FontEngineFixtComputations() : Fixt() {
-			setSz(10U); // patches are 10x10 by default
+		/// Creates a fixture with the provided sz value
+		FontEngineFixtComputations(unsigned sz_ = 10U) : Fixt() {
+			setSz(sz_);
 		}
 	};
 
+	/// Provides a FontEngine object to the tests using this specialized fixture
 	class FontEngineFixtConfig : public Fixt {
-		Settings s;
-		::Controller c;
+		Settings s;		///> default settings. Tests shouldn't touch it
+		::Controller c;	///> controller using default settings. Tests shouldn't touch it
 
 	protected:
-		FontEngine *pfe = nullptr;
+		FontEngine *pfe = nullptr; ///> pointer to the FontEngine object needed within tests
 
 	public:
+		/// Creates the fixture providing a FontEngine object
 		FontEngineFixtConfig() : Fixt(), s(std::move(MatchSettings())), c(s) {
 			try {
 				pfe = &c.getFontEngine(s.symSettings());
@@ -93,6 +99,7 @@ namespace ut {
 	};
 }
 
+// Test suite checking PixMapSym functionality
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComputations)
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0) {
 		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0");
@@ -218,6 +225,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 	}
 BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Computations
 
+// Test suite checking FontEngine constraints
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations) {
 		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations");

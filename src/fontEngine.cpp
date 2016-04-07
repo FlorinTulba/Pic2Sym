@@ -441,14 +441,14 @@ SymSettings::SymSettings(unsigned fontSz_) : fontSz(fontSz_) {
 }
 
 void SymSettings::setFontFile(const std::string &fontFile_) {
-	if(fontFile == fontFile_)
+	if(fontFile.compare(fontFile_) == 0)
 		return;
 	cout<<"fontFile"<<" : '"<<fontFile<<"' -> '"<<fontFile_<<'\''<<endl;
 	fontFile = fontFile_;
 }
 
 void SymSettings::setEncoding(const std::string &encoding_) {
-	if(encoding == encoding_)
+	if(encoding.compare(encoding_) == 0)
 		return;
 	cout<<"encoding"<<" : '"<<encoding<<"' -> '"<<encoding_<<'\''<<endl;
 	encoding = encoding_;

@@ -41,12 +41,13 @@ using namespace cv;
 using namespace std;
 
 namespace ut {
+	/// Creates a Controller with default settings
 	struct ControllerFixt : Fixt {
 	private:
-		Settings s;
+		Settings s; ///> tests shouldn't touch the settings
 
 	protected:
-		::Controller c;
+		::Controller c; ///> the controller provided to the tests
 
 	public:
 		ControllerFixt() : Fixt(),
@@ -54,17 +55,19 @@ namespace ut {
 			c(s) {}
 	};
 
-	struct ControllerFixtUsingBpMonoBoldFont : ControllerFixt {
-		ControllerFixtUsingBpMonoBoldFont() : ControllerFixt() {
+	/// Provides a font to the tests using this specialized fixture
+	struct ControllerFixtUsingACertainFont : ControllerFixt {
+		ControllerFixtUsingACertainFont(const string &fontPath = "res\\BPmonoBold.ttf") : ControllerFixt() {
 			try {
-				c.newFontFamily("res\\BPmonoBold.ttf");
+				c.newFontFamily(fontPath);
 			} catch(...) {
-				cerr<<"Couldn't set BpMonoBold font"<<endl;
+				cerr<<"Couldn't set '"<<fontPath<<"' font"<<endl;
 			}
 		}
 	};
 }
 
+// Main Controller test suite
 BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 	BOOST_AUTO_TEST_CASE(AttemptTransformation_NoSettings_NoTransformationPossible) {
 		BOOST_TEST_MESSAGE("Running AttemptTransformation_NoSettings_NoTransformationPossible");
@@ -93,7 +96,8 @@ BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 		BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
 	}
 
-	BOOST_FIXTURE_TEST_SUITE(Controller_Tests_Using_BpMonoBoldFont, ut::ControllerFixtUsingBpMonoBoldFont)
+	// Child Controller test suite whose tests use all BpMonoBold font
+	BOOST_FIXTURE_TEST_SUITE(Controller_Tests_Using_BpMonoBoldFont, ut::ControllerFixtUsingACertainFont)
 		BOOST_AUTO_TEST_CASE(CheckNewEncoding_UseAppleRomanFromBPmonoBold_NoThrow) {
 			BOOST_TEST_MESSAGE("Running CheckNewEncoding_UseAppleRomanFromBPmonoBold_NoThrow");
 			BOOST_REQUIRE_NO_THROW(c.newFontEncoding("APPLE_ROMAN"));

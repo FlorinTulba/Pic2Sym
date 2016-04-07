@@ -236,15 +236,24 @@ MatchSettings& MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
 }
 
 ostream& operator<<(ostream &os, const MatchSettings &c) {
-	os<<"hybridResultMode"<<" : "<<c.hybridResultMode<<endl;
-	os<<"kSsim"<<" : "<<c.kSsim<<endl;
-	os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
-	os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;
-	os<<"kSdevBg"<<" : "<<c.kSdevBg<<endl;
-	os<<"kContrast"<<" : "<<c.kContrast<<endl;
-	os<<"kMCsOffset"<<" : "<<c.kMCsOffset<<endl;
-	os<<"kCosAngleMCs"<<" : "<<c.kCosAngleMCs<<endl;
-	os<<"kSymDensity"<<" : "<<c.kSymDensity<<endl;
-	os<<"threshold4Blank"<<" : "<<c.threshold4Blank<<endl;
+	os<<"hybridResultMode"<<" : "<<boolalpha<<c.hybridResultMode<<endl;
+	if(c.kSsim > 0.)
+		os<<"kSsim"<<" : "<<c.kSsim<<endl;
+	if(c.kSdevFg > 0.)
+		os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
+	if(c.kSdevEdge > 0.)
+		os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;
+	if(c.kSdevBg > 0.)
+		os<<"kSdevBg"<<" : "<<c.kSdevBg<<endl;
+	if(c.kContrast > 0.)
+		os<<"kContrast"<<" : "<<c.kContrast<<endl;
+	if(c.kMCsOffset > 0.)
+		os<<"kMCsOffset"<<" : "<<c.kMCsOffset<<endl;
+	if(c.kCosAngleMCs > 0.)
+		os<<"kCosAngleMCs"<<" : "<<c.kCosAngleMCs<<endl;
+	if(c.kSymDensity > 0.)
+		os<<"kSymDensity"<<" : "<<c.kSymDensity<<endl;
+	if(c.threshold4Blank > 0.)
+		os<<"threshold4Blank"<<" : "<<c.threshold4Blank<<endl;
 	return os;
 }

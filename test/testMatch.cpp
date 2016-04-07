@@ -120,17 +120,27 @@ namespace ut {
 		}
 	}
 
+	/// Creates the matrix 'randUc' of sz x sz random unsigned chars
 	void randInit(unsigned sz, Mat &randUc) {
 		vector<unsigned char> randV;
 		generate_n(back_inserter(randV), sz*sz, [] {return randUnsignedChar(); });
 		randUc = Mat(sz, sz, CV_8UC1, (void*)randV.data());
 	}
 
+	/// Creates matrix 'invHalfD255' sz x sz with first half black (0) and second half white (255)
 	void updateInvHalfD255(unsigned sz, Mat &invHalfD255) {
-		Mat halfD255 = Mat(sz, sz, CV_64FC1, Scalar(0.)); halfD255.rowRange(0, sz/2) = 255.;
-		invHalfD255 = 255. - halfD255;
+		invHalfD255 = Mat(sz, sz, CV_64FC1, Scalar(0.));
+		invHalfD255.rowRange(sz/2, sz) = 255.;
 	}
 
+	/**
+	Creates 2 shared_ptr to 2 symbol data objects.
+
+	@param sz patch side length
+	@param cd reference to cached data (reusing patch center computation)
+	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 rows mid height define a horizontal edge mask
+	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
+	*/
 	void updateSymDataOfHalfFullGlyphs(unsigned sz, const CachedData &cd,
 									   std::shared_ptr<SymData> &sdWithHorizEdgeMask, 
 									   std::shared_ptr<SymData> &sdWithVertEdgeMask) {
@@ -140,14 +150,14 @@ namespace ut {
 		// 2 columns mid width
 		Mat verBeltUc = Mat(sz, sz, CV_8UC1, Scalar(0U)); verBeltUc.colRange(sz/2-1, sz/2+1) = 255U;
 
-		// 1st horizontal half full
+		// 1st horizontal half - full
 		Mat halfUc = Mat(sz, sz, CV_8UC1, Scalar(0U)); halfUc.rowRange(0, sz/2) = 255U;
 		Mat halfD1 = Mat(sz, sz, CV_64FC1, Scalar(0.)); halfD1.rowRange(0, sz/2) = 1.;
 
-		// 2nd horizontal half full
+		// 2nd horizontal half - full
 		Mat invHalfUc = 255U - halfUc;
 
-		// Testing a glyph half 0, half 255
+		// A glyph half 0, half 255
 		sdWithHorizEdgeMask = std::make_shared<SymData>(
 				NOT_RELEVANT_UL,	// glyph code (not relevant here)
 				0., // min glyph value (0..1 range)
@@ -163,70 +173,58 @@ namespace ut {
 						NOT_RELEVANT_MAT,// blur of grounded glyph (not relevant here)
 						NOT_RELEVANT_MAT // variance of grounded glyph (not relevant here)
 					} });
-		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask); // copy sdWithHorizEdgeMask and adapt it for vert. edge
+		
+		// copy sdWithHorizEdgeMask and adapt it for vert. edge
+		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask);
 		const_cast<Mat&>(sdWithVertEdgeMask->symAndMasks[SymData::EDGE_MASK_IDX]) = verBeltUc;
 	}
 
-	class ComputeMeanSdevMassCenterFixt : public Fixt {
-		unsigned sz; // patch side length
-		Mat emptyUc, emptyD; // completely empty
-		Mat wholeUc; // completely full
-		Mat consec; // 0 .. sz-1 consecutive double values
-		CachedData cd; // cached data based on sz
-		Mat randUc, randD1, randD255;
-
-	public:
-		void randInitPatch() {
-			randInit(sz, randUc);
-			randUc.convertTo(randD1, CV_64FC1, 1./255);
-			randUc.convertTo(randD255, CV_64FC1);
-		}
-		void setSz(unsigned sz_) {
-			sz = sz_;
-			emptyUc = Mat(sz, sz, CV_8UC1, Scalar(0U));
-			emptyD = Mat(sz, sz, CV_64FC1, Scalar(0.));
-			wholeUc = Mat(sz, sz, CV_8UC1, Scalar(255U));
-			cd.useNewSymSize(sz);
-			consec = cd.consec;
-
-			randInitPatch();
-		}
-		unsigned getSz() const { return sz; }
-		const Mat& getEmptyUc() const { return emptyUc; }
-		const Mat& getEmptyD() const { return emptyD; }
-		const Mat& getWholeUc() const { return wholeUc; }
-		const Mat& getConsec() const { return consec; }
-		const Mat& getRandUc() const { return randUc; }
-		const Mat& getRandD1() const { return randD1; }
-		const Mat& getRandD255() const { return randD255; }
-		const CachedData& getCd() const { return cd; }
-
-		optional<double> miu, sdev;
-
-		ComputeMeanSdevMassCenterFixt() : Fixt() {
-			setSz(50U); // Select an even sz, as the tests need to set exactly half pixels
-		}
-	};
-
+	/// Fixture helping tests computing matching parameters 
 	class MatchParamsFixt : public Fixt {
-		unsigned sz; // patch side length
-		Mat emptyUc, emptyD; // completely empty
-		Mat randUc, randD1, randD255;
-		Mat consec; // 0 .. sz-1 consecutive double values
-		Mat invHalfD255;
-		CachedData cd; // cached data based on sz
+		unsigned sz;	///> patch side length (tests should use provided public accessor methods)
+		Mat emptyUc;	///> Empty matrix sz x sz of unsigned chars
+		Mat emptyD;		///> Empty matrix sz x sz of doubles
+		Mat fullUc;		///> sz x sz matrix filled with 255 (unsigned char)
+		Mat invHalfD255;///> sz x sz matrix vertically split in 2. One half white, the other black
+		Mat consec;		///> 0 .. sz-1 consecutive double values
+		CachedData cd;	///> cached data based on sz
+		Mat randUc;		///> sz x sz random unsigned chars
+		Mat randD1;		///> sz x sz random doubles (0 .. 1)
+		Mat randD255;	///> sz x sz random doubles (0 .. 255)
 		std::shared_ptr<SymData> sdWithHorizEdgeMask, sdWithVertEdgeMask;
 
-	public:
+		/// Random initialization of randUc and computing corresponding randD1 and randD255
 		void randInitPatch() {
 			randInit(sz, randUc);
 			randUc.convertTo(randD1, CV_64FC1, 1./255);
 			randUc.convertTo(randD255, CV_64FC1);
 		}
+
+	public:
+		optional<double> miu;	///> mean computed within tests
+		optional<double> sdev;	///> standard deviation computed within tests
+		MatchParams mp;			///> matching parameters computed during tests
+		double minV;			///> min of the error between the patch and its approximation
+		double maxV;			///> max of the error between the patch and its approximation
+
+		const Mat& getEmptyUc() const { return emptyUc; }
+		const Mat& getEmptyD() const { return emptyD; }
+		const Mat& getFullUc() const { return fullUc; }
+		const Mat& getConsec() const { return consec; }
+		const Mat& getRandUc() const { return randUc; }
+		const Mat& getRandD255() const { return randD255; }
+		const Mat& getInvHalfD255() const { return invHalfD255; }
+		const CachedData& getCd() const { return cd; }
+		const std::shared_ptr<SymData> getSdWithHorizEdgeMask() const { return sdWithHorizEdgeMask; }
+		const std::shared_ptr<SymData> getSdWithVertEdgeMask() const { return sdWithVertEdgeMask; }
+		unsigned getSz() const { return sz; }
+
+		/// Updates sz, cd, consec and the matrices empty, random and full
 		void setSz(unsigned sz_) {
 			sz = sz_;
 			emptyUc = Mat(sz, sz, CV_8UC1, Scalar(0U));
 			emptyD = Mat(sz, sz, CV_64FC1, Scalar(0.));
+			fullUc = Mat(sz, sz, CV_8UC1, Scalar(255U));
 			cd.useNewSymSize(sz);
 			consec = cd.consec;
 
@@ -235,37 +233,34 @@ namespace ut {
 			updateInvHalfD255(sz, invHalfD255);
 			updateSymDataOfHalfFullGlyphs(sz, cd, sdWithHorizEdgeMask, sdWithVertEdgeMask);
 		}
-		unsigned getSz() const { return sz; }
-		const Mat& getEmptyUc() const { return emptyUc; }
-		const Mat& getEmptyD() const { return emptyD; }
-		const Mat& getRandUc() const { return randUc; }
-		const Mat& getRandD1() const { return randD1; }
-		const Mat& getRandD255() const { return randD255; }
-		const Mat& getConsec() const { return consec; }
-		const Mat& getInvHalfD255() const { return invHalfD255; }
-		const CachedData& getCd() const { return cd; }
-		const std::shared_ptr<SymData> getSdWithHorizEdgeMask() const { return sdWithHorizEdgeMask; }
-		const std::shared_ptr<SymData> getSdWithVertEdgeMask() const { return sdWithVertEdgeMask; }
 
-		MatchParams mp;
-		double minV = 0., maxV = 0.;
+		/**
+		Creates a fixture useful for the tests computing match parameters.
 
-		MatchParamsFixt() : Fixt() {
-			setSz(50U); // Select an even sz, as the tests need to set exactly half pixels
+		@param sz_ patch side length. Select an even value, as the tests need to set exactly half pixels
+		*/
+		MatchParamsFixt(unsigned sz_ = 50U) : Fixt() {
+			setSz(sz_);
 		}
 	};
 
+	/// Fixture for the matching aspects
 	class MatchAspectsFixt : public Fixt {
-		unsigned sz, area;
+		unsigned sz;	///> patch side length (tests should use provided public accessor methods)
+		unsigned area;	///> sz^2 (Use getter within tests)
 
 	protected:
-		CachedData cd;
-		MatchSettings cfg;
-		MatchParams mp;
-		Mat patchD255;
-		double res, minV, maxV;
+		CachedData cd;		///> cached data that can be changed during tests
+		MatchSettings cfg;	///> determines which aspect is tested
 
 	public:
+		MatchParams mp;	///> tests compute these match parameters
+		Mat patchD255;	///> declares the patch to be approximated
+		double res;		///> assessment of the match between the patch and the resulted approximation
+		double minV;	///> min of the error between the patch and its approximation
+		double maxV;	///> max of the error between the patch and its approximation
+
+		/// Updates sz and area
 		void setSz(unsigned sz_) {
 			sz = sz_;
 			area = sz*sz;
@@ -273,31 +268,182 @@ namespace ut {
 		unsigned getSz() const { return sz; }
 		unsigned getArea() const { return area; }
 
-		MatchAspectsFixt() : Fixt() {
-			setSz(50U); // Select an even sz, as the tests need to set exactly half pixels
+		/**
+		Creates a fixture useful for the tests checking the match aspects.
+
+		@param sz_ patch side length. Select an even value, as the tests need to set exactly half pixels
+		*/
+		MatchAspectsFixt(unsigned sz_ = 50U) : Fixt() {
+			setSz(sz_);
 		}
 	};
 
-	class AlteredCmapAsPatchesToTestFixt : public Fixt {
-	protected:
-		Settings s;
-		::Controller c;
-		::MatchEngine &me;
+	/// Parameterized test case. Uniform patches get approximated by completely faded glyphs.
+	void checkParams_UniformPatch_GlyphConvergesToPatch(unsigned sz,
+														const CachedData &cd,
+														const SymData &symData) {
+		const auto valRand = randUnsignedChar(1U);
+		Mat unifPatchD255(sz, sz, CV_64FC1, Scalar(valRand));
+		MatchParams mp;
+		double minV, maxV;
+		mp.computePatchApprox(unifPatchD255, symData);
+		BOOST_REQUIRE(mp.patchApprox);
+		minMaxIdx(mp.patchApprox.value(), &minV, &maxV);
+		BOOST_TEST(minV == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(maxV == (double)valRand, test_tools::tolerance(1e-4));
+		// Its mass-center will be ( (sz-1)/2 , (sz-1)/2 )
+		mp.computeMcPatchApprox(unifPatchD255, symData, cd);
+		BOOST_REQUIRE(mp.mcPatchApprox);
+		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y, test_tools::tolerance(1e-4));
+		mp.computeSdevEdge(unifPatchD255, symData);
+		BOOST_REQUIRE(mp.sdevEdge);
+		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+	}
 
-	public:
-		vector<std::tuple<const Mat, const Mat, const BestMatch>> mismatches;
-		::MatchEngine::VSymDataCIt it, itEnd;
+	/// Parameterized test case. A glyph which is the inverse of a patch converges to the patch.
+	void checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(unsigned sz,
+																	   const Mat &invHalfD255,
+																	   const CachedData &cd,
+																	   const SymData &symData) {
+		MatchParams mp;
+		double minV, maxV;
+		mp.computePatchApprox(invHalfD255, symData);
+		BOOST_REQUIRE(mp.patchApprox);
+		minMaxIdx(mp.patchApprox.value()-invHalfD255, &minV, &maxV);
+		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
+		// Its mass-center will be ( (sz-1)/2 ,  (3*sz/2-1)/2 )
+		mp.computeMcPatchApprox(invHalfD255, symData, cd); \
+		BOOST_REQUIRE(mp.mcPatchApprox);
+		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == (3*sz/2.-1U)/2., test_tools::tolerance(1e-4));
+		mp.computeSdevEdge(invHalfD255, symData);
+		BOOST_REQUIRE(mp.sdevEdge);
+		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+	}
+	
+	/// Parameterized test case. A glyph which is the highest-contrast version of a patch converges to the patch.
+	void checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(unsigned sz,
+																		const Mat &emptyD,
+																		const CachedData &cd,
+																		const SymData &symData) {
+		MatchParams mp;
+		double minV, maxV;
+		// Testing the mentioned glyph on a patch half 85, half 170=2*85
+		Mat twoBandsD255 = emptyD.clone();
+		twoBandsD255.rowRange(0, sz/2) = 170.; twoBandsD255.rowRange(sz/2, sz) = 85.;
 
-		AlteredCmapAsPatchesToTestFixt() : Fixt(), 
-				s(std::move(MatchSettings())),
-				c(s),
-				me(c.getMatchEngine(s)) {}
-	};
+		mp.computePatchApprox(twoBandsD255, symData);
+		BOOST_REQUIRE(mp.patchApprox);
+		minMaxIdx(mp.patchApprox.value()-twoBandsD255, &minV, &maxV);
+		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
+		// Its mass-center will be ( (sz-1)/2 ,  (5*sz-6)/12 )
+		mp.computeMcPatchApprox(twoBandsD255, symData, cd);
+		BOOST_REQUIRE(mp.mcPatchApprox);
+		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == (5*sz-6)/12., test_tools::tolerance(1e-4));
+		mp.computeSdevEdge(twoBandsD255, symData);
+		BOOST_REQUIRE(mp.sdevEdge);
+		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+	}
+
+	// msArray, fontFamilies and encodings from below are used to generate the data sets used within
+	// CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors test below
+	
+	/// array of all MatchSetting-s configurations to be tested for all selected font configurations
+	const MatchSettings msArray[] = {
+		MatchSettings().set_kSsim(1.),
+		MatchSettings().set_kSdevFg(1.).set_kSdevEdge(1.).set_kSdevBg(1.) };
+
+
+	/**
+	map of fonts to be tested.
+
+	The elements are the full combination of font family and the desired encoding.
+
+	Below are some variants:
+	Courier Bold Unicode ("C:\\Windows\\Fonts\\courbd.ttf") > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
+	Envy Code R Unicode ("C:\\Windows\\Fonts\\Envy Code R Bold.ttf") > 600 glyphs
+	Bp Mono Bold ("res\\BPmonoBold.ttf") - 210 glyphs for Unicode, 134 for Apple Roman
+	*/
+	map<string, string> fonts { { "res\\BPmonoBold.ttf", "APPLE_ROMAN" } };
+	
+	typedef decltype(fonts)::value_type StrStrPair; // used to specify that such pairs shouldn't be displayed
 }
 
 using namespace ut;
 
-BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, ComputeMeanSdevMassCenterFixt)
+BOOST_TEST_DONT_PRINT_LOG_VALUE(StrStrPair)
+BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
+
+					// For Cartesian product (all combinations) use below '*'
+					// For zip (only the combinations formed by pairs with same indeces) use '^'
+					 boost::unit_test::data::make(msArray) * fonts,
+					 ms, font) {
+	Fixt fixt; // mandatory
+	const string &fontFamily = font.first, &encoding = font.second;
+
+	ostringstream oss;
+	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors for "
+		<<fontFamily<<'('<<encoding<<") with "<<ms;
+	string nameOfTest = oss.str();
+	replace(BOUNDS(nameOfTest), '\n', ' ');
+	BOOST_TEST_MESSAGE("Running " + nameOfTest);
+	Settings s(std::move(MatchSettings(ms)));
+	::Controller c(s);
+	::MatchEngine &me = c.getMatchEngine(s);
+
+	const unsigned sz = s.symSettings().getFontSz(); // default font size is 10
+
+	c.newFontFamily(fontFamily);
+	c.newFontEncoding(encoding);
+	me.getReady();
+
+	// Recognizing the glyphs from current cmap
+	::MatchEngine::VSymDataCIt it, itEnd;
+	tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
+	const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
+	vector<std::tuple<const Mat, const Mat, const BestMatch>> mismatches;
+	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
+		if(idx % step == 0U) // report progress
+			cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
+
+		const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
+		Mat patchD255;
+		negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
+		alterFgBg(patchD255, it->minVal, it->diffMinMax);
+		addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
+
+		BestMatch best;
+		const Mat approximated = me.approxPatch(patchD255, best);
+
+		if(best.symIdx != idx) {
+			mismatches.emplace_back(patchD255, approximated, best);
+			MatchParams mp;
+			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
+			cerr<<"Approximation achieved score="
+				<<fixed<<setprecision(17)<<best.score
+				<<" while the score for the expected symbol is "
+				<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
+			wcerr<<"Params from approximated symbol: "<<best.params<<endl;
+			wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
+		}
+	}
+
+	// Normally, less than 3% of the altered symbols are not identified correctly.
+	BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
+
+	if(!mismatches.empty()) {
+		wcerr<<"The parameters were displayed in this order:"<<endl;
+		wcerr<<MatchParams::HEADER<<endl<<endl;
+
+		showMismatches(nameOfTest, mismatches);
+	}
+}
+
+BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 	// Patches have pixels with double values 0..255.
 	// Glyphs have pixels with double values 0..1.
 	// Masks have pixels with byte values 0..255.
@@ -307,10 +453,10 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, ComputeMeanSdevMas
 		optional<double> miu1, sdev1;
 
 		// Check that computeSdev performs the same when preceded or not by computeMean
-		MatchParams::computeMean(getRandD255(), getWholeUc(), miu);
-		MatchParams::computeSdev(getRandD255(), getWholeUc(), miu, sdev); // miu already computed
+		MatchParams::computeMean(getRandD255(), getFullUc(), miu);
+		MatchParams::computeSdev(getRandD255(), getFullUc(), miu, sdev); // miu already computed
 
-		MatchParams::computeSdev(getRandD255(), getWholeUc(), miu1, sdev1); // miu1 not computed yet
+		MatchParams::computeSdev(getRandD255(), getFullUc(), miu1, sdev1); // miu1 not computed yet
 		BOOST_REQUIRE(miu && sdev && miu1 && sdev1);
 		BOOST_TEST(*miu == *miu1, test_tools::tolerance(1e-4));
 		BOOST_TEST(*sdev == *sdev1, test_tools::tolerance(1e-4));
@@ -339,7 +485,7 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, ComputeMeanSdevMas
 		const auto valRand = randUnsignedChar();
 		Mat halfD255 = getEmptyD().clone(); halfD255.rowRange(0, getSz()/2) = 255.;
 
-		MatchParams::computeSdev(halfD255, getWholeUc(), miu, sdev);
+		MatchParams::computeSdev(halfD255, getFullUc(), miu, sdev);
 		BOOST_REQUIRE(miu && sdev);
 		BOOST_TEST(*miu == 127.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(*sdev == CachedData::sdevMaxFgBg, test_tools::tolerance(1e-4));
@@ -350,9 +496,7 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, ComputeMeanSdevMas
 		BOOST_TEST(mp.mcPatch->x == getCd().patchCenter.x, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == (getSz()/2.-1U)/2., test_tools::tolerance(1e-4));
 	}
-BOOST_AUTO_TEST_SUITE_END() // MeanSdevMassCenterComputation_Tests
 
-BOOST_FIXTURE_TEST_SUITE(CheckMatchParams, MatchParamsFixt)
 	BOOST_AUTO_TEST_CASE(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5) {
 		BOOST_TEST_MESSAGE("Running ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5");
 		mp.computeSymDensity(*getSdWithHorizEdgeMask(), getCd());
@@ -360,84 +504,35 @@ BOOST_FIXTURE_TEST_SUITE(CheckMatchParams, MatchParamsFixt)
 		BOOST_TEST(*mp.symDensity == 0.5, test_tools::tolerance(1e-4));
 	}
 
-#define Macro_CheckParams_UniformPatch_GlyphConvergesToPatch(symDataType) \
-	BOOST_AUTO_TEST_CASE(CheckParams_UniformPatch_GlyphConvergesToPatch__##symDataType) { \
-		BOOST_TEST_MESSAGE("Running CheckParams_UniformPatch_GlyphConvergesToPatch__" #symDataType); \
-		const auto &symData = (string("HorizEdgeMask").compare(#symDataType) == 0) ? \
-			*getSdWithHorizEdgeMask() : *getSdWithVertEdgeMask(); \
-		const auto valRand = randUnsignedChar(1U); \
-		Mat unifPatchD255(getSz(), getSz(), CV_64FC1, Scalar(valRand)); \
-		\
-		mp.computePatchApprox(unifPatchD255, symData); \
-		BOOST_REQUIRE(mp.patchApprox); \
-		minMaxIdx(mp.patchApprox.value(), &minV, &maxV); \
-		BOOST_TEST(minV == (double)valRand, test_tools::tolerance(1e-4)); \
-		BOOST_TEST(maxV == (double)valRand, test_tools::tolerance(1e-4)); \
-		/*Its mass-center will be ( (sz-1)/2 , (sz-1)/2 )*/ \
-		mp.computeMcPatchApprox(unifPatchD255, symData, getCd()); \
-		BOOST_REQUIRE(mp.mcPatchApprox); \
-		BOOST_TEST(mp.mcPatchApprox->x == getCd().patchCenter.x, test_tools::tolerance(1e-4)); \
-		BOOST_TEST(mp.mcPatchApprox->y == getCd().patchCenter.y, test_tools::tolerance(1e-4)); \
-		mp.computeSdevEdge(unifPatchD255, symData); \
-		BOOST_REQUIRE(mp.sdevEdge); \
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4)); \
+	BOOST_AUTO_TEST_CASE(CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch) {
+		BOOST_TEST_MESSAGE("Running CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch");
+		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithHorizEdgeMask());
 	}
 
-	Macro_CheckParams_UniformPatch_GlyphConvergesToPatch(HorizEdgeMask)
-	Macro_CheckParams_UniformPatch_GlyphConvergesToPatch(VertEdgeMask)
-#undef Macro_CheckParams_UniformPatch_GlyphConvergesToPatch
-
-#define Macro_CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(symDataType) \
-	BOOST_AUTO_TEST_CASE(CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch__##symDataType) { \
-		BOOST_TEST_MESSAGE("Running CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch__" #symDataType); \
-		const auto &symData = (string("HorizEdgeMask").compare(#symDataType) == 0) ? \
-			*getSdWithHorizEdgeMask() : *getSdWithVertEdgeMask(); \
-		mp.computePatchApprox(getInvHalfD255(), symData); \
-		BOOST_REQUIRE(mp.patchApprox); \
-		minMaxIdx(mp.patchApprox.value()-getInvHalfD255(), &minV, &maxV); \
-		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4)); \
-		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4)); \
-		/*Its mass-center will be ( (sz-1)/2 ,  (3*sz/2-1)/2 )*/ \
-		mp.computeMcPatchApprox(getInvHalfD255(), symData, getCd()); \
-		BOOST_REQUIRE(mp.mcPatchApprox); \
-		BOOST_TEST(mp.mcPatchApprox->x == getCd().patchCenter.x, test_tools::tolerance(1e-4)); \
-		BOOST_TEST(mp.mcPatchApprox->y == (3*getSz()/2.-1U)/2., test_tools::tolerance(1e-4)); \
-		mp.computeSdevEdge(getInvHalfD255(), symData); \
-		BOOST_REQUIRE(mp.sdevEdge); \
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4)); \
+	BOOST_AUTO_TEST_CASE(CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch) {
+		BOOST_TEST_MESSAGE("Running CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch");
+		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithVertEdgeMask());
 	}
 
-	Macro_CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(HorizEdgeMask)
-	Macro_CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(VertEdgeMask)
-#undef Macro_CheckParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch
-
-#define Macro_CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(symDataType) \
-	BOOST_AUTO_TEST_CASE(CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast__##symDataType) { \
-		BOOST_TEST_MESSAGE("Running CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast__" #symDataType); \
-		const auto &symData = (string("HorizEdgeMask").compare(#symDataType) == 0) ? \
-			*getSdWithHorizEdgeMask() : *getSdWithVertEdgeMask(); \
-		/*Testing the mentioned glyph on a patch half 85, half 170=2*85*/ \
-		Mat twoBandsD255 = getEmptyD().clone(); \
-		twoBandsD255.rowRange(0, getSz()/2) = 170.; twoBandsD255.rowRange(getSz()/2, getSz()) = 85.; \
-		 \
-		mp.computePatchApprox(twoBandsD255, symData); \
-		BOOST_REQUIRE(mp.patchApprox); \
-		minMaxIdx(mp.patchApprox.value()-twoBandsD255, &minV, &maxV); \
-		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4)); \
-		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4)); \
-		/*Its mass-center will be ( (sz-1)/2 ,  (5*sz-6)/12 )*/ \
-		mp.computeMcPatchApprox(twoBandsD255, symData, getCd()); \
-		BOOST_REQUIRE(mp.mcPatchApprox); \
-		BOOST_TEST(mp.mcPatchApprox->x == getCd().patchCenter.x, test_tools::tolerance(1e-4)); \
-		BOOST_TEST(mp.mcPatchApprox->y == (5*getSz()-6)/12., test_tools::tolerance(1e-4)); \
-		mp.computeSdevEdge(twoBandsD255, symData); \
-		BOOST_REQUIRE(mp.sdevEdge); \
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4)); \
+	BOOST_AUTO_TEST_CASE(CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch) {
+		BOOST_TEST_MESSAGE("Running CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch");
+		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithHorizEdgeMask());
 	}
 
-	Macro_CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(HorizEdgeMask)
-	Macro_CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(VertEdgeMask)
-#undef Macro_CheckParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast
+	BOOST_AUTO_TEST_CASE(CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch) {
+		BOOST_TEST_MESSAGE("Running CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch");
+		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithVertEdgeMask());
+	}
+
+	BOOST_AUTO_TEST_CASE(CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast) {
+		BOOST_TEST_MESSAGE("Running CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast");
+		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithHorizEdgeMask());
+	}
+
+	BOOST_AUTO_TEST_CASE(CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast) {
+		BOOST_TEST_MESSAGE("Running CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast");
+		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithVertEdgeMask());
+	}
 
 	BOOST_AUTO_TEST_CASE(CheckParams_RowValuesSameAsRowIndeces_PredictedParams) {
 		BOOST_TEST_MESSAGE("Running CheckParams_RowValuesSameAsRowIndeces_PredictedParams");
@@ -1536,124 +1631,3 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 2.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // MatchAspects_Tests
-
-BOOST_FIXTURE_TEST_SUITE(AlteredCmapAsPatchesToTest, AlteredCmapAsPatchesToTestFixt)
-	BOOST_AUTO_TEST_CASE(CheckAlteredCmap_UsingStructuralSimilarity_ExpectLessThan3PercentErrors) {
-		BOOST_TEST_MESSAGE("Running CheckAlteredCmap_UsingStructuralSimilarity_ExpectLessThan3PercentErrors");
-
-		const_cast<MatchSettings&>(s.matchSettings()).set_kSsim(1.);
-		const unsigned sz = s.symSettings().getFontSz(); // default font size is 10
-
-		// Courier Bold Unicode > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
-// 	  	c.newFontFamily("C:\\Windows\\Fonts\\courbd.ttf");
-
-		// Envy Code R Unicode > 600 glyphs
-// 		c.newFontFamily("C:\\Windows\\Fonts\\Envy Code R Bold.ttf");
-// 		c.newFontEncoding("UNICODE");
-
-		// Bp Mono Bold - 210 glyphs for Unicode, 134 for Apple Roman
-		c.newFontFamily("res\\BPmonoBold.ttf");
-		c.newFontEncoding("APPLE_ROMAN");
-		me.getReady();
-
-		// Recognizing the glyphs from current cmap
-		tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
-		const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
-		for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
-			if(idx % step == 0U) // report progress
-				cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
-
-			const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
-			Mat patchD255;
-			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
-			alterFgBg(patchD255, it->minVal, it->diffMinMax);
-			addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
-
-			BestMatch best;
-			const Mat approximated = me.approxPatch(patchD255, best);
-
-			if(best.symIdx != idx) {
-				mismatches.emplace_back(patchD255, approximated, best);
-				MatchParams mp;
-				cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
-				cerr<<"Approximation achieved score="
-					<<fixed<<setprecision(17)<<best.score
-					<<" while the score for the expected symbol is "
-					<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
-				wcerr<<"Params from approximated symbol: "<<best.params<<endl;
-				wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
-			}
-		}
-
-		// Normally, less than 3% of the altered symbols are not identified correctly.
-		BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
-
-		if(!mismatches.empty()) {
-			wcerr<<"The parameters were displayed in this order:"<<endl;
-			wcerr<<MatchParams::HEADER<<endl<<endl;
-
-			showMismatches("MatchEngine_CheckAlteredCmapUsingStructuralSimilarity", mismatches);
-		}
-	}
-
-	BOOST_AUTO_TEST_CASE(CheckAlteredCmap_UsingStdDevs_ExpectLessThan3PercentErrors) {
-		BOOST_TEST_MESSAGE("CheckAlteredCmap_UsingStdDevs_ExpectLessThan3PercentErrors");
-
-		// sdev-s factors for fg, edges and bg set to 1
-		const_cast<MatchSettings&>(s.matchSettings()).set_kSdevFg(1.).set_kSdevBg(1.).set_kSdevEdge(1.);
-		const unsigned sz = s.symSettings().getFontSz(); // default font size is 10
-
-		// Courier Bold Unicode > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
-		// Can't identify them exactly using std. dev. for fg, bg and edges, which all appear 0.
-		// In both cases, the scores are 1.00000000000000000 (17 decimals!!) 
-//  	c.newFontFamily("C:\\Windows\\Fonts\\courbd.ttf");
-
-		// Envy Code R Unicode > 600 glyphs
-// 		c.newFontFamily("C:\\Windows\\Fonts\\Envy Code R Bold.ttf");
-// 		c.newFontEncoding("UNICODE"));
-
-		// Bp Mono Bold - 210 glyphs for Unicode, 134 for Apple Roman
-		c.newFontFamily("res\\BPmonoBold.ttf");
-		c.newFontEncoding("APPLE_ROMAN");
-		me.getReady();
-
-		// Recognizing the glyphs from current cmap
-		tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
-		const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
-		for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
-			if(idx % step == 0U)
-				cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
-
-			const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
-			Mat patchD255;
-			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
-			alterFgBg(patchD255, it->minVal, it->diffMinMax);
- 			addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
-
-			BestMatch best;
-			const Mat approximated = me.approxPatch(patchD255, best);
-
-			if(best.symIdx != idx) {
-				mismatches.emplace_back(patchD255, approximated, best);
-				MatchParams mp;
-				cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
-				cerr<<"Approximation achieved score="
-					<<fixed<<setprecision(17)<<best.score
-					<<" while the score for the expected symbol is "
-					<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
-				wcerr<<"Params from approximated symbol: "<<best.params<<endl;
-				wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
-			}
-		}
-
-		// Normally, less than 3% of the altered symbols are not identified correctly.
-		BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
-
-		if(!mismatches.empty()) {
-			wcerr<<"The parameters were displayed in this order:"<<endl;
-			wcerr<<MatchParams::HEADER<<endl<<endl;
-
-			showMismatches("MatchEngine_CheckAlteredCmapUsingStdDev", mismatches);
-		}
-	}
-BOOST_AUTO_TEST_SUITE_END() // AlteredCmapAsPatchesToTest
