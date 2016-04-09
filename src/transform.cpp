@@ -125,12 +125,18 @@ void Transformer::run() {
 
 			// Don't approximate rather uniform patches
 			double minVal, maxVal;
-			cv::minMaxIdx(blurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
+			cv::Mat grayBlurredPatch;
+			if(img.isColor())
+				cv::cvtColor(blurredPatch, grayBlurredPatch, cv::COLOR_RGB2GRAY);
+			else
+				grayBlurredPatch = blurredPatch;
+
+			cv::minMaxIdx(grayBlurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
 			static const double THRESHOLD_CONTRAST_BLURRED = 7.;
 			if(maxVal-minVal < THRESHOLD_CONTRAST_BLURRED) {
 				blurredPatch.copyTo(destRegion);
 				continue;
-			}
+		}
 
 			// The patch is less uniform, so it needs approximation
 #if defined _DEBUG && !defined UNIT_TESTING
@@ -153,8 +159,14 @@ void Transformer::run() {
 			cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
 			meanStdDev(patch-approximation, miu, sdevApproximation);
 			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
-			const double sdevSum = *sdevBlurredPatch.val + *sdevApproximation.val;
-			const double weight = (sdevSum > 0.) ? (*sdevApproximation.val / sdevSum) : 0.;
+			double totalSdevBlurredPatch = *sdevBlurredPatch.val,
+				totalSdevApproximation = *sdevApproximation.val;
+			if(img.isColor()) {
+				totalSdevBlurredPatch += sdevBlurredPatch.val[1] + sdevBlurredPatch.val[2];
+				totalSdevApproximation += sdevApproximation.val[1] + sdevApproximation.val[2];
+			}
+			const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
+			const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
 			cv::Mat combination;
 			addWeighted(blurredPatch, weight, approximation, 1.-weight, 0., combination);
 			combination.copyTo(destRegion);
