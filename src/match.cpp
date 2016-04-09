@@ -660,6 +660,7 @@ void MatchEngine::getReady() {
 cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 	// All blurring techniques I've tried seem not worthy => using original
 	cv::Mat blurredPatch = patch_;
+	const unsigned sz = patch_.rows;
 	const bool isColor = (blurredPatch.channels() > 1);
 	cv::Mat patchColor, patch, patchResult;
 	if(isColor) {
@@ -695,7 +696,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 		}
 
 		if(diffFgBg < 3.*cfg.matchSettings().getBlankThreshold())
-			patchResult = cv::mean(patchColor);
+			patchResult = cv::Mat(sz, sz, CV_8UC3, cv::mean(patchColor));
 		else
 			cv::merge(channels, patchResult);
 
@@ -704,7 +705,7 @@ cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
 		params.computeContrast(patch, symsSet[best.symIdx]);
 
 		if(abs(*params.contrast) < cfg.matchSettings().getBlankThreshold())
-			patchResult = cv::mean(patch);
+			patchResult = cv::Mat(sz, sz, CV_8UC1, cv::Scalar(*cv::mean(patch).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
 								*params.contrast / dataOfBest.diffMinMax,
