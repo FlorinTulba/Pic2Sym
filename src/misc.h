@@ -40,6 +40,9 @@
 #include <iomanip>
 #include <string>
 
+// Error margin
+const double EPS = 1e-6;
+
 // Display an expression and its value
 #define PRINT(expr)			std::cout<<#expr " : "<<(expr)
 #define PRINTLN(expr)		PRINT(expr)<<std::endl
@@ -50,6 +53,10 @@
 // Example: copy(x.begin(), x.end(), ..) => copy(BOUNDS(x), ..)
 #define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
 #define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
+
+// string <-> wstring conversions
+std::wstring str2wstr(const std::string &str);
+std::string wstr2str(const std::wstring &wstr);
 
 // Notifying the user
 void infoMsg(const std::string &text, const std::string &title = "");

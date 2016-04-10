@@ -2,8 +2,8 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-2-7
- and belongs to the UnitTesting project.
+ This file was created on 2016-4-9
+ and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -33,49 +33,31 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MOCK_DLGS
-#define H_MOCK_DLGS
+#include "cachedData.h"
+#include "fontEngine.h"
 
-#ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif
+#include <numeric>
 
-#include <tchar.h>
-#include <string>
+using namespace std;
 
-// Dlg is the base class for the standard Windows dialogs from below
-class Dlg /*abstract*/ {
-protected:
-	Dlg() {}
+const double CachedData::sdevMaxFgBg = 127.5;
+const double CachedData::sdevMaxEdge = 255.;
 
-public:
-	bool promptForUserChoice() { return true; }
-	const std::string& selection() const { static std::string result; return result; }
-	void reset() {}
-};
+void CachedData::useNewSymSize(unsigned sz_) {
+	sz = sz_;
+	sz_1 = sz - 1U;
+	sz2 = (double)sz * sz;
 
-class OpenSave /*abstract*/ : public Dlg {
-protected:
-	OpenSave(const TCHAR * const = nullptr, const TCHAR * const = nullptr,
-			 const TCHAR * const  = nullptr,
-			 bool = true) : Dlg() {}
-};
+	preferredMaxMcDist = sz / 8.;
+	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
+	patchCenter = cv::Point2d(sz_1, sz_1) / 2.;
 
-class ImgSelector : public OpenSave {
-public:
-	ImgSelector() : OpenSave() {}
-};
+	consec = cv::Mat(1, sz, CV_64FC1);
+	iota(consec.begin<double>(), consec.end<double>(), 0.);
+}
 
-class SettingsSelector : public OpenSave {
-public:
-	SettingsSelector(bool = true) : OpenSave() {}
-};
+void CachedData::update(unsigned sz_, const FontEngine &fe_) {
+	useNewSymSize(sz_);
 
-class SelectFont : public Dlg {
-public:
-	SelectFont() : Dlg() {}
-	bool bold() const { return false; }
-	bool italic() const { return false; }
-};
-
-#endif
+	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
+}

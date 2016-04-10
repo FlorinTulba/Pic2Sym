@@ -1,0 +1,119 @@
+;#####################################################################################
+; This file contains many configurable texts and parameters of the application.      #
+; Grouping them here means they can be modified without recompiling any source file. #
+;#####################################################################################
+
+;========================
+; Configurable Constants
+;========================
+; Constants for the sliders controlling the range of each matching aspect
+ControlPanel::Converter::StructuralSim::maxSlider	100
+ControlPanel::Converter::StructuralSim::maxReal	2.5
+ControlPanel::Converter::Correctness::maxSlider	100
+ControlPanel::Converter::Correctness::maxReal	2.5
+ControlPanel::Converter::Contrast::maxSlider	100
+ControlPanel::Converter::Contrast::maxReal	2.5
+ControlPanel::Converter::Gravity::maxSlider	100
+ControlPanel::Converter::Gravity::maxReal	2.
+ControlPanel::Converter::Direction::maxSlider	100
+ControlPanel::Converter::Direction::maxReal	2.
+ControlPanel::Converter::LargerSym::maxSlider	100
+ControlPanel::Converter::LargerSym::maxReal	1.
+
+; Values for the Transparency slider from the Comparator window
+Comparator::trackMax	100
+Comparator::defaultTransparency	.25
+
+; Values for the Charmap Inspector window
+CmapInspect_width	640
+CmapInspect_height	480
+
+; Limits for the Settings
+Settings::MIN_FONT_SIZE	7
+Settings::MAX_FONT_SIZE	50
+Settings::DEF_FONT_SIZE	10
+Settings::MAX_THRESHOLD_FOR_BLANKS	50
+Settings::MIN_H_SYMS	3
+Settings::MAX_H_SYMS	1024
+Settings::MIN_V_SYMS	3
+Settings::MAX_V_SYMS	768
+
+; What percent (0..1) of the glyphs from a charmap set are considered small
+; 0.1 means that smallest 10% of all glyphs are considered small
+PmsCont::SMALL_GLYPHS_PERCENT	0.1
+
+; Constant for background threshold
+; 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
+; STILL_BG was set to 0, as there are font families with extremely similar glyphs.
+; When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
+; But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
+MatchEngine_updateSymbols_STILL_BG	0.
+
+; Blurred Patches with Contrast less than this value will become part of the result.
+; No approximation will be performed for such patches.
+; Max Contrast is 255.
+Transformer_run_THRESHOLD_CONTRAST_BLURRED	7.
+
+; Constants for Structural Similarity aspect
+; C1 = (.01*255)^2   ;   C2 = (.03*255)^2
+StructuralSimilarity_RecommendedWindowSide	11
+StructuralSimilarity::SIGMA	1.5
+StructuralSimilarity::C1	6.5025
+StructuralSimilarity::C2	58.5225
+
+;==============================
+; Configurable Texts or Labels
+;==============================
+; Label of the transparency slider from the Comparator window
+Comparator::transpTrackName	"Transparency %"
+
+; Label of the page slider from the Charmap Inspector window
+CmapInspect::pageTrackName	"Cmap Page:"
+
+; Labels of the buttons and sliders from the Control Panel
+ControlPanel::selectImgLabel	"Select an Image"
+ControlPanel::transformImgLabel	"Transform the Image"
+ControlPanel::selectFontLabel	"Select a Scalable, preferably also Monospaced Font Family"
+ControlPanel::restoreDefaultsLabel	"Restore defaults for values below"
+ControlPanel::saveAsDefaultsLabel	"Set as defaults the values below"
+ControlPanel::aboutLabel	"About"
+ControlPanel::instructionsLabel	"Instructions"
+ControlPanel::loadSettingsLabel	"Load Settings"
+ControlPanel::saveSettingsLabel	"Save Settings"
+ControlPanel::fontSzTrName	"Font size:"
+ControlPanel::encodingTrName	"Encoding:"
+ControlPanel::hybridResultTrName	"Hybrid Result"
+ControlPanel::structuralSimTrName	"Struct Sim:"
+ControlPanel::underGlyphCorrectnessTrName	"Fit under:"
+ControlPanel::glyphEdgeCorrectnessTrName	"Fit edge:"
+ControlPanel::asideGlyphCorrectnessTrName	"Fit aside:"
+ControlPanel::moreContrastTrName	"Contrast:"
+ControlPanel::gravityTrName	"Mass Center:"
+ControlPanel::directionTrName	"Direction:"
+ControlPanel::largerSymTrName	"Larger Symbols:"
+ControlPanel::thresh4BlanksTrName	"Blanks below:"
+ControlPanel::outWTrName	"Max horizontally:"
+ControlPanel::outHTrName	"Max vertically:"
+
+; Initial title of the Comparator window. It contains placeholder $(PIC2SYM_VERSION) to be replaced with the actual version of the application
+Comparator_initial_title	"Pic2Sym (v$(PIC2SYM_VERSION)) - (c) 2016 Florin Tulba"
+
+; Status bar label for the Comparator window
+Comparator_statusBar	"Press Ctrl+P for Control Panel; ESC to Exit"
+
+; Prefixes of the title of the hourglass window while a specific operation is in progress
+Controller::PREFIX_GLYPH_PROGRESS	"Processing glyphs. Please wait"
+Controller::PREFIX_TRANSFORMATION_PROGRESS	"Transforming image. Please wait"
+
+; Table headers for logging information about each approximated patch
+MatchParams::HEADER	"#ssim,	#sdFg,	#sdEdge,	#sdBg,	#fg,	#bg,	#mcPaX,	#mcPaY,	#mcPX,	#mcPY,	#density"
+BestMatch::HEADER	"#GlyphCode,	#ChosenScore,	"
+
+; Text displayed within the About dialog. It contains placeholder $(PIC2SYM_VERSION) to be replaced with the actual version of the application
+ControlPanel::aboutText	"\t\tPic2Sym (v$(PIC2SYM_VERSION))\n\nThis application approximates images by a grid of\ncolored symbols with colored backgrounds.\n\nFor details, please visit:\n<https://github.com/FlorinTulba/Pic2Sym>\n\nor contact the author at: <florintulba@yahoo.com>.\n\n\n(c) 2016 Florin Tulba under the GNU AGPL v3 license:\n<http://www.gnu.org/licenses/agpl-3.0.txt>"
+
+; Text for the Instructions dialog
+ControlPanel::instructionsText	"The Control Panel allows setting:\n\n- which image to be approximated by symbols from a charset\n- maximum number of symbols used horizontally & vertically\n- which font family provides these symbols\n- the desired encoding within the selected font family\n- the size of these symbols\n- the result mode: normal or hybrid (cosmeticized version)\n- a factor to encourage structural similarity\n- factors to favor better correspondence of foreground\n   (under glyph) / contours (edges of the glyph) /\n   background (around, aside glyph)\n- a factor to encourage matching symbols with large contrast\n- a factor to encourage 'gravitational' smoothness\n   (match patch 'mass center')\n- a factor to enhance directionality (match patch 'gradient')\n- a factor to favor selecting larger symbols over small ones\n- the threshold contrast of determined matching glyphs below\n   which to replace these barely visible matches with Blanks\n\nThe rudimentary sliders used here won't always show valid ranges.\nThey all must be integer, start from 0, end at least on 1.\nWhen their labels is truncated, clicking on them will help."
+
+; Copyright note
+copyrightText	"Running 'Pic2Sym' application, which approximates images by a grid of colored\nsymbols with colored backgrounds.\n\n\nThe entire project can be found at: <https://github.com/FlorinTulba/Pic2Sym>\n\nThis program is free software: you can use its results,\nredistribute it and/or modify it under the terms of the GNU\nAffero General Public License version 3 as published by the\nFree Software Foundation.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\nGNU Affero General Public License for more details.\n\nYou should have received a copy of the GNU Affero General Public License\nalong with this program ('agpl-3.0.txt').\nIf not, see <http://www.gnu.org/licenses/agpl-3.0.txt>."

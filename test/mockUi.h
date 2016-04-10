@@ -40,7 +40,7 @@
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif
 
-#include "../src/config.h"
+#include "../src/settings.h"
 #include "../src/img.h"
 #include "../src/controller.h"
 
@@ -67,6 +67,8 @@ public:
 	static void updateTransparency(int, void*) {}
 	void setReference(const cv::Mat&) {}
 	void setResult(const cv::Mat&,int=0) {}
+	using CvWin::resize; // to remain visible after declaring an overload below
+	void resize() const {}
 };
 
 class CmapInspect final : public CvWin {

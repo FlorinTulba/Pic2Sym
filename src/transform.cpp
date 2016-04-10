@@ -36,6 +36,9 @@
 #include "controller.h"
 
 #include "misc.h"
+#include "matchSettingsManip.h"
+#include "settings.h"
+#include "matchParams.h"
 
 #include <sstream>
 #include <numeric>
@@ -54,28 +57,23 @@ Transformer::Transformer(const Controller &ctrler_, const Settings &cfg_, MatchE
 	createOutputFolder();
 }
 
+extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
+
 void Transformer::run() {
 	me.updateSymbols(); // throws for invalid cmap/size
 
 	// throws when no image
-	const cv::Mat resized = img.resized(cfg.imgSettings(), cfg.symSettings().getFontSz());
+	const ResizedImg resizedImg(img, cfg.imgSettings(), cfg.symSettings().getFontSz());
+	const_cast<Controller&>(ctrler).updateResizedImg(resizedImg);
+	const cv::Mat &resized = resizedImg.get();
 	
-	// keep it after img.resized, to display updated resized version as comparing image
+	// keep it after ResizedImg, to display updated resized version as comparing image
 	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::IMG_TRANSFORM);
 
-	const auto &ss = cfg.matchSettings();
-	ostringstream oss;
-	oss<<img.name()<<'_'
-		<<me.getIdForSymsToUse()<<'_'
-		<<ss.isHybridResult()<<'_'
-		<<ss.get_kSsim()<<'_'
-		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
-		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
-		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
-		<<resized.cols<<'_'<<resized.rows; // no extension yet
-	const string studiedCase = oss.str(); // id included in the result & trace file names
+	const string &studiedCase = textStudiedCase(resized.rows, resized.cols);
 
-	path resultFile(ss.getWorkDir());
+#ifndef UNIT_TESTING
+	path resultFile(MatchSettingsManip::instance().getWorkDir());
 	resultFile.append("Output").append(studiedCase).
 		concat(".jpg");
 	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
@@ -89,12 +87,13 @@ void Transformer::run() {
 				"Displaying the available result");
 		return;
 	}
+#endif
 
 	me.getReady();
 
 #if defined _DEBUG && !defined UNIT_TESTING
 	static const wstring COMMA(L",\t");
-	path traceFile(ss.getWorkDir());
+	path traceFile(MatchSettingsManip::instance().getWorkDir());
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 	wofstream ofs(traceFile.c_str());
@@ -132,11 +131,11 @@ void Transformer::run() {
 				grayBlurredPatch = blurredPatch;
 
 			cv::minMaxIdx(grayBlurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
-			static const double THRESHOLD_CONTRAST_BLURRED = 7.;
+			static const double THRESHOLD_CONTRAST_BLURRED = Transformer_run_THRESHOLD_CONTRAST_BLURRED;
 			if(maxVal-minVal < THRESHOLD_CONTRAST_BLURRED) {
 				blurredPatch.copyTo(destRegion);
 				continue;
-		}
+			}
 
 			// The patch is less uniform, so it needs approximation
 #if defined _DEBUG && !defined UNIT_TESTING
@@ -160,7 +159,7 @@ void Transformer::run() {
 			meanStdDev(patch-approximation, miu, sdevApproximation);
 			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
 			double totalSdevBlurredPatch = *sdevBlurredPatch.val,
-				totalSdevApproximation = *sdevApproximation.val;
+					totalSdevApproximation = *sdevApproximation.val;
 			if(img.isColor()) {
 				totalSdevBlurredPatch += sdevBlurredPatch.val[1] + sdevBlurredPatch.val[2];
 				totalSdevApproximation += sdevApproximation.val[1] + sdevApproximation.val[2];
@@ -194,7 +193,7 @@ void Transformer::run() {
 #ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods
 void Transformer::createOutputFolder() {
 	// Ensure there is an Output folder
-	path outputFolder = cfg.matchSettings().getWorkDir();
+	path outputFolder = MatchSettingsManip::instance().getWorkDir();
 	if(!exists(outputFolder.append("Output")))
 		create_directory(outputFolder);
 }

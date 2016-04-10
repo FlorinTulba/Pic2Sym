@@ -36,6 +36,8 @@
 #include "controller.h"
 #include "misc.h"
 #include "dlgs.h"
+#include "settings.h"
+#include "controlPanel.h"
 
 #include <Windows.h>
 #include <sstream>
@@ -43,6 +45,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #ifndef UNIT_TESTING
+#	include "matchSettingsManip.h"
 #	include <opencv2/highgui.hpp>
 #endif
 
@@ -52,26 +55,9 @@ using namespace boost::filesystem;
 using namespace boost::archive;
 using namespace cv;
 
-Settings::Settings(const MatchSettings &&ms_) :
-	ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms(ms_) {}
+Settings::Settings(const MatchSettings &ms_) : ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms(ms_) {}
 
-ostream& operator<<(ostream &os, const Settings &s) {
-	os<<s.ss<<s.is<<s.ms<<endl;
-	return os;
-}
-
-Controller::Controller(Settings &s) :
-		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
-		me(getMatchEngine(s)), t(getTransformer(s)),
-		comp(getComparator()), cp(getControlPanel(s)),
-		hMaxSymsOk(Settings::isHmaxSymsOk(s.is.getMaxHSyms())),
-		vMaxSymsOk(Settings::isVmaxSymsOk(s.is.getMaxVSyms())),
-		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
-	comp.setPos(0, 0);
-	comp.permitResize(false);
-	comp.setTitle("Pic2Sym (v" PIC2SYM_VERSION ") - (c) 2016 Florin Tulba");
-	comp.setStatus("Press Ctrl+P for Control Panel; ESC to Exit");
-}
+Settings::Settings() : ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
 	if(((imageOk && hMaxSymsOk && vMaxSymsOk) || !imageRequired) &&
@@ -105,13 +91,6 @@ void Controller::newImage(const string &imgPath) {
 		return;
 	}
 
-	// Comparator window is to be placed within 1024x768 top-left part of the screen
-	static const double
-		HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS = 70,
-		WIDTH_LATERAL_BORDERS = 4,
-		H_NUMERATOR = 768-HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS, // desired max height - HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS
-		W_NUMERATOR = 1024-WIDTH_LATERAL_BORDERS; // desired max width - WIDTH_LATERAL_BORDERS
-
 	ostringstream oss;
 	oss<<"Pic2Sym on image: "<<img.absPath();
 	comp.setTitle(oss.str());
@@ -124,22 +103,11 @@ void Controller::newImage(const string &imgPath) {
 	const Mat &orig = img.original();
 	comp.setReference(orig); // displays the image
 
-	// Resize window to preserve the aspect ratio of the loaded image,
-	// while not enlarging it, nor exceeding 1024 x 768
-	const int height = orig.rows, width = orig.cols;
-	const double k = min(1., min(H_NUMERATOR/height, W_NUMERATOR/width));
-	const int winHeight = (int)round(k*height+HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS),
-			winWidth = (int)round(k*width+WIDTH_LATERAL_BORDERS);
-	
-	comp.resize(winWidth, winHeight);
+	comp.resize();
 }
 
 void Controller::updateCmapStatusBar() const {
-	ostringstream oss;
-	oss<<"Font type '"<<fe.getFamily()<<' '<<fe.getStyle()
-		<<"', size "<<cfg.ss.getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
-		<<" : "<<me.getSymsCount()<<" symbols";
-	pCmi->setStatus(oss.str());
+	pCmi->setStatus(textForCmapStatusBar());
 }
 
 void Controller::symbolsChanged() {
@@ -286,6 +254,11 @@ void Controller::setResultMode(bool hybrid) {
 		cfg.ms.setResultMode(hybrid);
 }
 
+unsigned Controller::getFontSize() const {
+	return cfg.ss.getFontSz();
+}
+
+
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if((unsigned)threshold != cfg.ms.getBlankThreshold())
 		cfg.ms.setBlankThreshold(threshold);
@@ -335,6 +308,10 @@ MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned ma
 	return me.getSymsRange(from, maxCount);
 }
 
+void Controller::updateResizedImg(const ResizedImg &resizedImg_) {
+	resizedImg = &resizedImg_;
+}
+
 bool Controller::performTransformation() {
 	if(!validState())
 		return false;
@@ -347,12 +324,10 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 	if(done) {
 		reportGlyphProgress(1.);
 
-		ostringstream oss;
-		oss<<"The update of the symbols set took "<<elapsed<<" s!";
-
-		cout<<oss.str()<<endl<<endl;
+		const string &cmapOverlayText = textForCmapOverlay(elapsed);
+		cout<<cmapOverlayText<<endl<<endl;
 		if(pCmi)
-			pCmi->setOverlay(oss.str(), 3000);
+			pCmi->setOverlay(cmapOverlayText, 3000);
 
 	} else {
 		reportGlyphProgress(0.);
@@ -363,11 +338,9 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 	if(done) {
 		reportTransformationProgress(1.);
 
-		ostringstream oss;
-		oss<<"The transformation took "<<elapsed<<" s!";
-
-		cout<<oss.str()<<endl<<endl;
-		comp.setOverlay(oss.str(), 3000);
+		const string &comparatorOverlayText = textForComparatorOverlay(elapsed);
+		cout<<comparatorOverlayText <<endl<<endl;
+		comp.setOverlay(comparatorOverlayText, 3000);
 
 	} else {
 		reportTransformationProgress(0.);
@@ -375,12 +348,16 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 }
 
 void Controller::restoreUserDefaultMatchSettings() {
-	cfg.ms.loadUserDefaults();
+#ifndef UNIT_TESTING
+	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
+#endif
 	cp.updateMatchSettings(cfg.ms);
 }
 
 void Controller::setUserDefaultMatchSettings() const {
-	cfg.ms.saveUserDefaults();
+#ifndef UNIT_TESTING
+	MatchSettingsManip::instance().saveUserDefaults(cfg.ms);
+#endif
 }
 
 void Controller::loadSettings() {
@@ -493,16 +470,6 @@ Controller::~Controller() {
 	destroyAllWindows();
 }
 
-void Controller::handleRequests() {
-	for(;;) {
-		// When pressing ESC, prompt the user if he wants to exit
-		if(27 == waitKey() &&
-		   IDYES == MessageBox(nullptr, L"Do you want to leave the application?", L"Question",
-		   MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND))
-		   break;
-	}
-}
-
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
@@ -517,19 +484,21 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 			oss<<waitWin;
 		else
 			oss<<title;
-		oss<<" ("<<fixed<<setprecision(0)<<progress*100.<<"%)";
-		setWindowTitle(waitWin, oss.str());
+		const string &hourGlassText = textHourGlass(oss.str(), progress);
+		setWindowTitle(waitWin, hourGlassText);
 	}
 }
 
 void Controller::reportGlyphProgress(double progress) const {
-	hourGlass(progress, "Processing glyphs. Please wait");
+	hourGlass(progress, PREFIX_GLYPH_PROGRESS);
 }
 
 void Controller::reportTransformationProgress(double progress) const {
-	hourGlass(progress, "Transforming image. Please wait");
+	hourGlass(progress, PREFIX_TRANSFORMATION_PROGRESS);
 	if(0. == progress) {
-		comp.setReference(img.getResized()); // display 'original' when starting transformation
+		if(nullptr == resizedImg)
+			throw logic_error("Please call Controller::updateResizedImg at the start of transformation!");
+		comp.setReference(resizedImg->get()); // display 'original' when starting transformation
 	} else if(1. == progress) {
 		comp.setResult(t.getResult()); // display the result at the end of the transformation
 	}

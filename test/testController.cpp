@@ -34,7 +34,7 @@
  ****************************************************************************************/
 
 #include "testMain.h"
-
+#include "settings.h"
 #include "controller.h"
 
 using namespace cv;
@@ -44,14 +44,14 @@ namespace ut {
 	/// Creates a Controller with default settings
 	struct ControllerFixt : Fixt {
 	private:
-		Settings s; ///> tests shouldn't touch the settings
+		Settings s; ///< tests shouldn't touch the settings
 
 	protected:
-		::Controller c; ///> the controller provided to the tests
+		::Controller c; ///< the controller provided to the tests
 
 	public:
 		ControllerFixt() : Fixt(),
-			s(std::move(MatchSettings())),
+			s(),
 			c(s) {}
 	};
 

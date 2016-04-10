@@ -272,7 +272,7 @@ public:
 		RegistryHelper rh;
 		while(rh.extractNextFont(wCurFontName, wCurFontFileName))
 			if(relevantFontName(wCurFontName, wFontName, isBold, isItalic))
-				choices[string(CBOUNDS(wCurFontName))] =
+				choices[wstr2str(wCurFontName)] =
 							refineFontFileName(wCurFontFileName);
 
 		return extractResult(choices);

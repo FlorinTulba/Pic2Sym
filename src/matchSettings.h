@@ -33,27 +33,25 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CONFIG
-#define H_CONFIG
+#ifndef H_MATCH_SETTINGS
+#define H_MATCH_SETTINGS
 
-#include <string>
-
-#include <boost/filesystem/path.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 
+#ifndef UNIT_TESTING
+class MatchSettingsManip; // forward declaration
+#endif
+
 /// MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
 public:
+	// BUILD CLEAN WHEN THIS CHANGES!
 	static const unsigned VERSION = 2U; ///< version of MatchSettings class
 
-private:
-	boost::filesystem::path workDir;	///< Folder where the application was launched
-	boost::filesystem::path defCfgPath;	///< Path of the original configuration file
-	boost::filesystem::path cfgPath;	///< Path of the user configuration file
-
+protected:
 	double kSsim = 0.;				///< power of factor controlling structural similarity
 	double kSdevFg = 0.;			///< power of factor for foreground glyph-patch correlation
 	double kSdevEdge = 0.;			///< power of factor for contour glyph-patch correlation
@@ -65,21 +63,10 @@ private:
 	unsigned threshold4Blank = 0U;	///< Using Blank character replacement under this threshold
 	bool hybridResultMode = false;	///< 'normal' means actual result; 'hybrid' cosmeticizes the result
 
-	/**
-	MatchSettings is considered correctly initialized if its data is read from
-	'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
-	'initMatchSettings.cfg'(if it exists and is newer than 'res/defaultMatchSettings.txt').
-
-	Each launch of the application will either create / update 'initMatchSettings.cfg'
-	if this doesn't exist / is older than 'res/defaultMatchSettings.txt'.
-
-	Besides, anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
-	obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
-
-	Initialized is set to false before calling 'loadUserDefaults' in the constructor
-	and it is always set to true at the end of the construction.
-	*/
-	bool initialized = true;
+#ifndef UNIT_TESTING
+	bool initialized = false;		///< true after FIRST completed initialization
+	friend class MatchSettingsManip; // to access initialized
+#endif
 
 	/**
 	Loading a MatchSettings object of a given version.
@@ -88,16 +75,13 @@ private:
 	@param ar the source of the object
 	@param version what version is the loaded object
 
-	@throw invalid_argument when loading an obsolete 'initMatchSettings.cfg'
+	@throw invalid_argument when MatchSettingsManip::instance().load() throws
 	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
-		if(version < VERSION) {
-			if(!initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
-				throw invalid_argument("Obsolete version of 'initMatchSettings.cfg'!");
-
-			// Point reachable while reading Settings with an older version of MatchSettings field
-		}
+#ifndef UNIT_TESTING
+		MatchSettingsManip::instance().load(*this, ar, version);
+#endif
 
 		// It is useful to see which settings changed when loading =>
 		// Loading data in a temporary object and comparing with existing values.
@@ -147,21 +131,14 @@ private:
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
 
-	/// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
-	void createUserDefaults();
-
 public:
 	/**
-	Initializes the fields from initMatchSettings.cfg when this file exists and isn't obsolete,
-	otherwise from res/defaultMatchSettings.txt.
-	The latter file is used to conveniently alter the defaults during development.
+	Initializes the object.
 
-	@param appLaunchPath the path to 'Pic2Sym.exe' and is used to determine
-	the folder where to look for 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
+	When unit testing, it leaves it empty.
+	Otherwise it will ask MatchSettingsManip to load its fields from disk.
 	*/
-	MatchSettings(const std::string &appLaunchPath);
-
-	const boost::filesystem::path& getWorkDir() const { return workDir; }
+	MatchSettings();
 
 	const bool& isHybridResult() const { return hybridResultMode; }
 	MatchSettings& setResultMode(bool hybridResultMode_);
@@ -193,17 +170,7 @@ public:
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	MatchSettings& setBlankThreshold(unsigned threshold4Blank_);
 
-	bool parseCfg(const boost::filesystem::path &cfgFile); ///< Loads the settings provided in cfgFile
-	
-	/// Overwrites current settings with those from initMatchSettings.cfg.
-	void loadUserDefaults();
-	void saveUserDefaults() const; ///< Overwrites initMatchSettings.cfg with current settings
-
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
-#ifdef UNIT_TESTING
-	/// Constructor available only within UnitTesting project
-	MatchSettings();
-#endif
 };
 
 BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);

@@ -34,6 +34,8 @@
  ****************************************************************************************/
 
 #include "controller.h"
+#include "matchSettingsManip.h"
+#include "settings.h"
 
 #include <boost/filesystem/operations.hpp>
 
@@ -42,48 +44,25 @@ using namespace cv;
 using namespace boost::filesystem;
 
 // Prevents closing the console before the user sees an error message
-void pauseAfterError() {
-	string line;
-	cout<<endl<<"Press Enter to leave"<<endl;
-	getline(cin, line);
-}
+void pauseAfterError();
 
 // Proper usage
-void showUsage() {
-	cout<<"Usage:"<<endl;
-	cout<<"There are 2 launch modes:"<<endl;
-	cout<<"A) Normal launch mode (no parameters)"<<endl;
-	cout<<"		Pic2Sym.exe"<<endl<<endl;
-	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 1 parameters)"<<endl;
-	cout<<"		Pic2Sym.exe \"<testTitle>\""<<endl<<endl;
-	pauseAfterError();
-}
+void showUsage();
 
 void copyrightNotice() {
-	cout<<string(80, '=')<<endl;
-	cout<<"Running 'Pic2Sym' application, which approximates images by a grid of colored"<<endl
-		<<"symbols with colored backgrounds."<<endl<<endl<<endl;
-	cout<<"(c) 2016 Florin Tulba  <florintulba@yahoo.com>"<<endl<<endl<<endl;
-	cout<<"The entire project can be found at: <https://github.com/FlorinTulba/Pic2Sym>" <<endl<<endl;
-	cout<<"This program is free software: you can use its results,\n" \
-		"redistribute it and/or modify it under the terms of the GNU\n" \
-		"Affero General Public License version 3 as published by the\n" \
-		"Free Software Foundation.\n\n" \
-		"This program is distributed in the hope that it will be useful,\n" \
-		"but WITHOUT ANY WARRANTY; without even the implied warranty of\n" \
-		"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n" \
-		"GNU Affero General Public License for more details.\n\n" \
-		"You should have received a copy of the GNU Affero General Public License\n" \
-		"along with this program ('agpl-3.0.txt').\n" \
-		"If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>."<<endl;
-	cout<<string(80, '=')<<endl<<endl;
+	const string hBar(80, '=');
+	cout<<hBar<<endl;
+	extern const string copyrightText;
+	cout<<copyrightText<<endl;
+	cout<<hBar<<endl<<endl;
 }
 
 // Normal mode launch. appFile is a path ending in Pic2Sym.exe
 void normalLaunch(const string &appFile) {
 	copyrightNotice();
 
-	Settings s(move(MatchSettings(appFile)));
+	MatchSettingsManip::init(appFile);
+	Settings s;
 	Controller c(s);
 	Controller::handleRequests();
 }

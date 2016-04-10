@@ -38,16 +38,13 @@
 
 #else // UNIT_TESTING not defined
 
-#ifndef H_UI
-#define H_UI
+#ifndef H_VIEWS
+#define H_VIEWS
 
-#include "match.h"
+#include "matchEngine.h"
 #include "img.h"
 
 #include <opencv2/core.hpp>
-
-class Settings;		// global settings
-class Controller;	// The views defined below interact with this class
 
 /**
 CvWin - base class for Comparator & CmapInspect from below.
@@ -78,10 +75,11 @@ View which permits comparing the original image with the transformed one.
 A slider adjusts the transparency of the resulted image,
 so that the original can be more or less visible.
 */
-class Comparator final : public CvWin {
+class Comparator : public CvWin {
+protected:
 	static const cv::String transpTrackName;	///< slider's handle
 	static const double defaultTransparency;	///< used transparency when the result appears
-	static const int trackMax = 100;			///< transparency range 0..100
+	static const int trackMax;					///< transparency range 0..trackMax
 	static const cv::Mat noImage;				///< image to display initially (not for processing)
 
 	cv::Mat initial, result;	///< Compared items
@@ -109,7 +107,12 @@ public:
 	void setReference(const cv::Mat &reference_);
 	void setResult(const cv::Mat &result_,
 				   int transparency = (int)round(defaultTransparency * trackMax));
+	
+	using CvWin::resize; // to remain visible after declaring an overload below
+	void resize() const;
 };
+
+class Controller; // forward declaration
 
 /**
 Class for displaying the symbols from the current charmap (cmap).
@@ -117,9 +120,10 @@ Class for displaying the symbols from the current charmap (cmap).
 When there are lots of symbols, they are divided into pages which
 can be browsed using the page slider.
 */
-class CmapInspect final : public CvWin {
+class CmapInspect : public CvWin {
+protected:
 	static const cv::String pageTrackName;	///< page slider handle
-	static const cv::Size pageSz;			///< 640x480
+	static const cv::Size pageSz;			///< size of the window
 
 	const Controller &ctrler;	///< window manager
 
@@ -154,117 +158,6 @@ public:
 	void showPage(unsigned pageIdx);			///< displays page <pageIdx>
 };
 
-/**
-Configures the transformation settings, chooses which image to process and with which cmap.
-
-The range of the slider used for selecting the encoding is updated automatically
-based on the selected font family.
-
-The sliders from OpenCV are quite basic, so ranges must be integer, start from 0 and include 1.
-Thus, range 0..1 could also mean there's only one value (0) and the 1 will be ignored.
-Furthermore, range 0..x can be invalid if the actual range is [x+1 .. y].
-In this latter case an error message will report the problem and the user needs to correct it.
-*/
-class ControlPanel final {
-	/**
-	Helper to convert settings from actual ranges to the ones used by the sliders.
-
-	For now, flexibility in choosing the conversion rules is more important than design,
-	so lots of redundancies appear below.
-	*/
-	struct Converter {
-		/**
-		One possible conversion function 'proportionRule':
-			x in 0..xMax;  y in 0..yMax  =>
-			y = x*yMax/xMax
-		*/
-		static double proportionRule(double x, double xMax, double yMax);
-
-		/// used for the slider controlling the structural similarity
-		struct StructuralSim {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double ssim);
-			static double fromSlider(int ssim);
-		};
-
-		/// used for the 3 sliders controlling the correctness
-		struct Correctness {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double correctness);
-			static double fromSlider(int correctness);
-		};
-
-		/// used for the slider controlling the contrast
-		struct Contrast {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double contrast);
-			static double fromSlider(int contrast);
-		};
-
-		/// used for the slider controlling the 'gravitational' smoothness
-		struct Gravity {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double gravity);
-			static double fromSlider(int gravity);
-		};
-
-		/// used for the slider controlling the directional smoothness
-		struct Direction {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double direction);
-			static double fromSlider(int direction);
-		};
-
-		/// used for the slider controlling the preference for larger symbols
-		struct LargerSym {
-			static const int maxSlider = 100;
-			static const double maxReal;
-			static int toSlider(double largerSym);
-			static double fromSlider(int largerSym);
-		};
-	};
-
-	// Configuration sliders' handles
-	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName;
-	static const cv::String hybridResultTrName, structuralSimTrName,
-		underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName,
-		moreContrastTrName;
-	static const cv::String gravityTrName, directionTrName, largerSymTrName, thresh4BlanksTrName;
-
-	Controller &ctrler;	// window manager
-
-	// Configuration sliders' positions
-	int maxHSyms, maxVSyms;
-	int encoding, fontSz;
-	int hybridResult;
-	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
-	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
-
-	/** 
-	hack field
-
-	The max of the encodings slider won't update unless
-	issuing an additional slider move, which has to be ignored.
-	*/
-	bool updatingEncMax = false;
-
-public:
-	ControlPanel(Controller &ctrler_, const Settings &cfg);
-
-	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
-	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above
-
-	/// updates font size & encoding sliders, if necessary
-	void updateSymSettings(unsigned encIdx, unsigned fontSz_);
-	void updateImgSettings(const ImgSettings &is); ///< updates sliders concerning ImgSettings items
-	void updateMatchSettings(const MatchSettings &ms); ///< updates sliders concerning MatchSettings items
-};
-
-#endif // H_UI
+#endif // H_VIEWS
 
 #endif // UNIT_TESTING not defined

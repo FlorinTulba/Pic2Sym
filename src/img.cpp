@@ -34,6 +34,7 @@
  ****************************************************************************************/
 
 #include "img.h"
+#include "imgSettings.h"
 
 #include <iostream>
 
@@ -76,7 +77,22 @@ bool Img::reset(const string &picName) {
 	return true;
 }
 
-Mat Img::resized(const ImgSettings &is, unsigned patchSz) {
+void ImgSettings::setMaxHSyms(unsigned syms) {
+	if(syms == hMaxSyms)
+		return;
+	cout<<"hMaxSyms"<<" : "<<hMaxSyms<<" -> "<<syms<<endl;
+	hMaxSyms = syms;
+}
+
+void ImgSettings::setMaxVSyms(unsigned syms) {
+	if(syms == vMaxSyms)
+		return;
+	cout<<"vMaxSyms"<<" : "<<vMaxSyms<<" -> "<<syms<<endl;
+	vMaxSyms = syms;
+}
+
+ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz) : original(img) {
+	const Mat &source = img.original();
 	if(source.empty()) {
 		cerr<<"No image set yet"<<endl;
 		throw logic_error("No image set yet");
@@ -85,7 +101,7 @@ Mat Img::resized(const ImgSettings &is, unsigned patchSz) {
 	const int initW = source.cols, initH = source.rows;
 	const double initAr = initW / (double)initH;
 	unsigned w = min(patchSz*is.getMaxHSyms(), (unsigned)initW),
-			h = min(patchSz*is.getMaxVSyms(), (unsigned)initH);
+		h = min(patchSz*is.getMaxVSyms(), (unsigned)initH);
 	w -= w%patchSz;
 	h -= h%patchSz;
 
@@ -105,26 +121,4 @@ Mat Img::resized(const ImgSettings &is, unsigned patchSz) {
 	}
 
 	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
-
-	return res;
-}
-
-void ImgSettings::setMaxHSyms(unsigned syms) {
-	if(syms == hMaxSyms)
-		return;
-	cout<<"hMaxSyms"<<" : "<<hMaxSyms<<" -> "<<syms<<endl;
-	hMaxSyms = syms;
-}
-
-void ImgSettings::setMaxVSyms(unsigned syms) {
-	if(syms == vMaxSyms)
-		return;
-	cout<<"vMaxSyms"<<" : "<<vMaxSyms<<" -> "<<syms<<endl;
-	vMaxSyms = syms;
-}
-
-ostream& operator<<(ostream &os, const ImgSettings &is) {
-	os<<"hMaxSyms"<<" : "<<is.hMaxSyms<<endl;
-	os<<"vMaxSyms"<<" : "<<is.vMaxSyms<<endl;
-	return os;
 }

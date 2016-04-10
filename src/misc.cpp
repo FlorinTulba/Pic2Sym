@@ -69,8 +69,8 @@ namespace {
 		if(title.empty())
 			title = msgCateg.name();
 
-		MessageBox(nullptr, wstring(CBOUNDS(text)).c_str(),
-				   wstring(CBOUNDS(title)).c_str(),
+		MessageBox(nullptr, str2wstr(text).c_str(),
+				   str2wstr(title).c_str(),
 				   MB_OK | MB_TASKMODAL | MB_SETFOREGROUND | msgCateg.val());
 	}
 
@@ -103,4 +103,12 @@ void warnMsg(const string &text, const string &title/* = ""*/) {
 
 void errMsg(const string &text, const string &title/* = ""*/) {
 	msg(MsgCateg::ERR_CATEG, title, text);
+}
+
+wstring str2wstr(const string &str) {
+	return std::move(wstring(CBOUNDS(str)));
+}
+
+string wstr2str(const wstring &wstr) {
+	return std::move(string(CBOUNDS(wstr)));
 }

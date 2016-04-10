@@ -62,10 +62,9 @@ public:
 
 /// OpenSave class controls a FileOpenDialog / FileSaveDialog.
 class OpenSave /*abstract*/ : public Dlg {
+protected:
 	OPENFILENAME ofn;		///< structure used by the FileOpenDialog
 	TCHAR fNameBuf[1024];	///< buffer for the selected image file
-
-protected:
 	const bool toOpen = true;	///< most derived classes want Open File Dialog (not Save)
 
 	/// Prepares the dialog
@@ -80,19 +79,20 @@ public:
 };
 
 /// Selecting an image to transform
-class ImgSelector final : public OpenSave {
+class ImgSelector : public OpenSave {
 public:
 	ImgSelector();
 };
 
 /// Selecting a settings file to load / be saved
-class SettingsSelector final : public OpenSave {
+class SettingsSelector : public OpenSave {
 public:
 	SettingsSelector(bool toOpen_ = true);
 };
 
 /// SelectFont class controls a ChooseFont Dialog.
-class SelectFont final : public Dlg {
+class SelectFont : public Dlg {
+protected:
 	CHOOSEFONT cf;		///< structure used by the ChooseFont Dialog
 	LOGFONT lf;			///< structure filled with Font information
 	bool isBold = false;

@@ -36,77 +36,22 @@
 #ifndef H_IMG
 #define H_IMG
 
-#include "config.h"
-
 #include <string>
 
 #include <boost/filesystem/path.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-/**
-Contains max count of horizontal & vertical patches to process.
+// forward declaration
+class ImgSettings;
+class ResizedImg;
 
-The image is resized appropriately before processing.
-*/
-class ImgSettings {
-	unsigned hMaxSyms;	///< Count of resulted horizontal symbols
-	unsigned vMaxSyms;	///< Count of resulted vertical symbols
-
-	/**
-	Overwrites *this with the ImgSettings object read from ar.
-
-	@param ar source of the object to load
-	@param version the version of the loaded ImgSettings
-	*/
-	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
-		// It is useful to see which settings changed when loading
-		ImgSettings defSettings(*this); // create as copy of previous values
-
-		// read user default match settings
-		ar >> defSettings.hMaxSyms >> defSettings.vMaxSyms;
-
-		// these show message when there are changes
-		setMaxHSyms(defSettings.hMaxSyms);
-		setMaxVSyms(defSettings.vMaxSyms);
-	}
-
-	/// Saves *this to ar
-	template<class Archive>
-	void save(Archive &ar, const unsigned) const {
-		ar << hMaxSyms << vMaxSyms;
-	}
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
-
-public:
-	/// Constructor takes initial values just to present a valid sliders positions in Control Panel
-	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
-		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
-
-	unsigned getMaxHSyms() const { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms);
-
-	unsigned getMaxVSyms() const { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms);
-
-	friend std::ostream& operator<<(std::ostream &os, const ImgSettings &is);
-};
-
-BOOST_CLASS_VERSION(ImgSettings, 0)
-
-/// Img provides necessary API for manipulating the images to transform
-class Img final {
+/// Img holds the data of the original image
+class Img {
+protected:
 	boost::filesystem::path imgPath;	///< path of current image
 	std::string imgName;				///< stem part of the image file name
 	cv::Mat source;						///< the original image
-	cv::Mat res;						///< the resized image
 	bool color = false;					///< color / grayscale
-
 
 #ifdef UNIT_TESTING
 public: // Providing reset(Mat) as public for Unit Testing
@@ -133,20 +78,29 @@ public:
 
 	const cv::Mat& original() const { return source; }
 
-	/**
-	If possible, 'resized' method adapts the original image to the parameters of the transformation:
-	- The image must fit within prescribed bounds
-	- The image must preserve its original aspect ratio and cannot become larger
-	*/
-	cv::Mat resized(const ImgSettings &is, unsigned patchSz);
-
 	bool isColor() const { return color; }	///< color / grayscale image
 	const std::string& name() const { return imgName; } ///< return the stem of the image file name
 
 	/// @return absolute path of the image file name
 	const boost::filesystem::path& absPath() const { return imgPath; }
+};
 
-	const cv::Mat& getResized() const { return res; }
+/// ResizedImg is the version of the original image which is ready to be transformed
+class ResizedImg {
+protected:
+	cv::Mat res; ///< the resized image
+
+public:
+	const Img &original; ///< reference to initial image
+
+	/**
+	If possible, it adapts the original image to the parameters of the transformation:
+	- The image must fit within prescribed bounds
+	- The image must preserve its original aspect ratio and cannot become larger
+	*/
+	ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz);
+
+	const cv::Mat& get() const { return res; }
 };
 
 #endif

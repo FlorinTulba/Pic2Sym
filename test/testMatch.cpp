@@ -35,6 +35,8 @@
 
 #include "testMain.h"
 #include "misc.h"
+#include "settings.h"
+#include "matchParams.h"
 #include "controller.h"
 
 #include <random>
@@ -164,15 +166,14 @@ namespace ut {
 				1.,	// difference between min and max glyph (0..1 range)
 				sz*sz/2.,	// pixelSum = 255*(sz^2/2)/255 = sz^2/2
 				Point2d(cd.patchCenter.x, (sz/2.-1U)/2.), // glyph's mass center
-				SymData::MatArray { {
-						halfUc,			// fg byte mask (0 or 255)
-						invHalfUc,		// bg byte mask (0 or 255)
-						horBeltUc,		// edge byte mask (0 or 255)
-						invHalfUc,		// glyph inverse in 0..255 byte range
-						halfD1,			// grounded glyph is same as glyph (min is already 0)
-						NOT_RELEVANT_MAT,// blur of grounded glyph (not relevant here)
-						NOT_RELEVANT_MAT // variance of grounded glyph (not relevant here)
-					} });
+				SymData::IdxMatMap {
+					{ SymData::FG_MASK_IDX, halfUc },
+					{ SymData::BG_MASK_IDX, invHalfUc },
+					{ SymData::EDGE_MASK_IDX, horBeltUc },
+					{ SymData::NEG_SYM_IDX, invHalfUc },
+
+					// grounded glyph is same as glyph (min is already 0)
+					{ SymData::GROUNDED_SYM_IDX, halfD1 }});
 		
 		// copy sdWithHorizEdgeMask and adapt it for vert. edge
 		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask);
@@ -181,16 +182,16 @@ namespace ut {
 
 	/// Fixture helping tests computing matching parameters 
 	class MatchParamsFixt : public Fixt {
-		unsigned sz;	///> patch side length (tests should use provided public accessor methods)
-		Mat emptyUc;	///> Empty matrix sz x sz of unsigned chars
-		Mat emptyD;		///> Empty matrix sz x sz of doubles
-		Mat fullUc;		///> sz x sz matrix filled with 255 (unsigned char)
-		Mat invHalfD255;///> sz x sz matrix vertically split in 2. One half white, the other black
-		Mat consec;		///> 0 .. sz-1 consecutive double values
-		CachedData cd;	///> cached data based on sz
-		Mat randUc;		///> sz x sz random unsigned chars
-		Mat randD1;		///> sz x sz random doubles (0 .. 1)
-		Mat randD255;	///> sz x sz random doubles (0 .. 255)
+		unsigned sz;	///< patch side length (tests should use provided public accessor methods)
+		Mat emptyUc;	///< Empty matrix sz x sz of unsigned chars
+		Mat emptyD;		///< Empty matrix sz x sz of doubles
+		Mat fullUc;		///< sz x sz matrix filled with 255 (unsigned char)
+		Mat invHalfD255;///< sz x sz matrix vertically split in 2. One half white, the other black
+		Mat consec;		///< 0 .. sz-1 consecutive double values
+		CachedData cd;	///< cached data based on sz
+		Mat randUc;		///< sz x sz random unsigned chars
+		Mat randD1;		///< sz x sz random doubles (0 .. 1)
+		Mat randD255;	///< sz x sz random doubles (0 .. 255)
 		std::shared_ptr<SymData> sdWithHorizEdgeMask, sdWithVertEdgeMask;
 
 		/// Random initialization of randUc and computing corresponding randD1 and randD255
@@ -201,11 +202,11 @@ namespace ut {
 		}
 
 	public:
-		optional<double> miu;	///> mean computed within tests
-		optional<double> sdev;	///> standard deviation computed within tests
-		MatchParams mp;			///> matching parameters computed during tests
-		double minV;			///> min of the error between the patch and its approximation
-		double maxV;			///> max of the error between the patch and its approximation
+		optional<double> miu;	///< mean computed within tests
+		optional<double> sdev;	///< standard deviation computed within tests
+		MatchParams mp;			///< matching parameters computed during tests
+		double minV;			///< min of the error between the patch and its approximation
+		double maxV;			///< max of the error between the patch and its approximation
 
 		const Mat& getEmptyUc() const { return emptyUc; }
 		const Mat& getEmptyD() const { return emptyD; }
@@ -246,19 +247,19 @@ namespace ut {
 
 	/// Fixture for the matching aspects
 	class MatchAspectsFixt : public Fixt {
-		unsigned sz;	///> patch side length (tests should use provided public accessor methods)
-		unsigned area;	///> sz^2 (Use getter within tests)
+		unsigned sz;	///< patch side length (tests should use provided public accessor methods)
+		unsigned area;	///< sz^2 (Use getter within tests)
 
 	protected:
-		CachedData cd;		///> cached data that can be changed during tests
-		MatchSettings cfg;	///> determines which aspect is tested
+		CachedData cd;		///< cached data that can be changed during tests
+		MatchSettings cfg;	///< determines which aspect is tested
 
 	public:
-		MatchParams mp;	///> tests compute these match parameters
-		Mat patchD255;	///> declares the patch to be approximated
-		double res;		///> assessment of the match between the patch and the resulted approximation
-		double minV;	///> min of the error between the patch and its approximation
-		double maxV;	///> max of the error between the patch and its approximation
+		MatchParams mp;	///< tests compute these match parameters
+		Mat patchD255;	///< declares the patch to be approximated
+		double res;		///< assessment of the match between the patch and the resulted approximation
+		double minV;	///< min of the error between the patch and its approximation
+		double maxV;	///< max of the error between the patch and its approximation
 
 		/// Updates sz and area
 		void setSz(unsigned sz_) {
@@ -389,9 +390,11 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors for "
 		<<fontFamily<<'('<<encoding<<") with "<<ms;
 	string nameOfTest = oss.str();
-	replace(BOUNDS(nameOfTest), '\n', ' ');
+	for(const char toReplace : string(" \t\n\\/():"))
+		replace(BOUNDS(nameOfTest), toReplace, '_');
 	BOOST_TEST_MESSAGE("Running " + nameOfTest);
-	Settings s(std::move(MatchSettings(ms)));
+
+	Settings s(ms);
 	::Controller c(s);
 	::MatchEngine &me = c.getMatchEngine(s);
 
@@ -622,15 +625,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   1., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,				// FG_MASK_IDX
-						   allButMainDiagBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,		// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,		// NEG_SYM_IDX (not relevant here)
-						   diagSymD1,				// GROUNDED_GLYPH_IDX - same as the glyph
-						   blurOfGroundedGlyph,		// BLURRED_GLYPH_IDX
-						   varOfGroundedGlyph		// VARIANCE_GR_SYM_IDX
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allButMainDiagBgMask },
+					   { SymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
+					   { SymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
+					   { SymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph }});
 
 		// Testing on an uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -674,15 +674,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   1., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,				// FG_MASK_IDX
-						   allButMainDiagBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,		// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,		// NEG_SYM_IDX (not relevant here)
-						   diagSymD1,				// GROUNDED_GLYPH_IDX - same as the glyph
-						   blurOfGroundedGlyph,		// BLURRED_GLYPH_IDX
-						   varOfGroundedGlyph		// VARIANCE_GR_SYM_IDX
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allButMainDiagBgMask },
+					   { SymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
+					   { SymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
+					   { SymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph } });
 
 		// Testing on a patch with the background = valRand and diagonal = valRand's complementary value
 		const double complVal = (double)((128U + valRand) & 0xFFU);
@@ -711,15 +708,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -743,15 +732,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -776,15 +757,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
 		double expectedMiu = (getSz()-1U)/2., expectedSdev = 0., aux;
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -837,15 +810,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   sideDiagsEdgeMask,	// EDGE_MASK_IDX
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   groundedGlyph,		// GROUNDED_GLYPH_IDX
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { SymData::GROUNDED_SYM_IDX, groundedGlyph }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -893,15 +862,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   sideDiagsEdgeMask,	// EDGE_MASK_IDX
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   groundedGlyph,		// GROUNDED_GLYPH_IDX
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -950,15 +915,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   sideDiagsEdgeMask,	// EDGE_MASK_IDX
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   groundedGlyph,		// GROUNDED_GLYPH_IDX
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on a patch with uniform rows, but gradually brighter, from top to bottom
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1016,15 +977,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   sideDiagsEdgeMask,	// EDGE_MASK_IDX
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   groundedGlyph,		// GROUNDED_GLYPH_IDX
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on an uniform lower triangular patch
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1058,15 +1015,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT,	// FG_MASK_IDX (not relevant here)
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = bm.assessMatch(patchD255, sd, mp);
@@ -1093,15 +1042,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT,	// FG_MASK_IDX (not relevant here)
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
@@ -1129,15 +1070,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT,	// FG_MASK_IDX (not relevant here)
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		double expectedMiu = (getSz()-1U)/2.,
@@ -1177,15 +1110,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
@@ -1216,15 +1143,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(255.)));
 		res = bc.assessMatch(patchD255, sd, mp);
@@ -1254,15 +1175,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   diagFgMask,			// FG_MASK_IDX
-						   allBut3DiagsBgMask,	// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, diagFgMask },
+					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(127.5)));
 		res = bc.assessMatch(patchD255, sd, mp);
@@ -1291,15 +1206,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask }});
 
 		// Using a patch with a single 255 pixel in top left corner
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1338,15 +1247,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the middle pixels pair on the top row on 255
 		// Patch mc is at half width on top row.
@@ -1389,15 +1292,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the last pixel on the top row on 255
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1437,15 +1334,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with a single 255 pixel in top left corner
 		// Same as 1st scenario from Gravitational Smoothness
@@ -1480,15 +1371,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the middle pixels pair on the top row on 255
 		// Patch mc is at half width on top row.
@@ -1524,15 +1409,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
-				   SymData::MatArray { { // symAndMasks
-						   fgMask,				// FG_MASK_IDX
-						   bgMask,				// BG_MASK_IDX
-						   NOT_RELEVANT_MAT,	// EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT,	// BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {
+					   { SymData::FG_MASK_IDX, fgMask },
+					   { SymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the last pixel on the top row on 255
 		// Same as 3rd scenario from Gravitational Smoothness
@@ -1560,15 +1439,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   0., // pixelSum (INITIALLY, AN EMPTY SYMBOL IS CONSIDERED)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT, // FG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {});
 
 		// Testing with an empty symbol (sd.pixelSum == 0)
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
@@ -1588,15 +1459,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   getArea() * cd.smallGlyphsCoverage, // pixelSum (symbol that just enters the 'large symbols' category)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT, // FG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {});
 
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
 		BOOST_REQUIRE(mp.symDensity);
@@ -1615,15 +1478,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   getArea(), // pixelSum (largest possible symbol)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::MatArray { { // symAndMasks
-						   NOT_RELEVANT_MAT, // FG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BG_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // EDGE_MASK_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // NEG_SYM_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // GROUNDED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT, // BLURRED_GLYPH_IDX (not relevant here)
-						   NOT_RELEVANT_MAT		// VARIANCE_GR_SYM_IDX (not relevant here)
-					   } });
+				   SymData::IdxMatMap {});
 
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
 		BOOST_REQUIRE(mp.symDensity);

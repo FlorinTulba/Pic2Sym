@@ -37,6 +37,7 @@
 #define H_TEST_MAIN
 
 #include "match.h"
+#include "matchParams.h"
 
 #include <boost/test/unit_test.hpp>
 #include <opencv2/core/core.hpp>
@@ -68,10 +69,8 @@ namespace ut {
 			initTransformer, initComparator, initControlPanel;
 	};
 
-	/// Used for a global fixture to reinitialize MatchEngine's availAspects in getReady()
-	struct MatchEngine {
-		static bool initAvailAspects;
-	};
+	/// Mock MatchEngine
+	struct MatchEngine {};
 
 	/// Fixture to be used before every test
 	struct Fixt {

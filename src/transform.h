@@ -36,7 +36,7 @@
 #ifndef H_TRANSFORM
 #define H_TRANSFORM
 
-#include "match.h"
+#include "matchEngine.h"
 #include "img.h"
 
 #include <string>
@@ -48,7 +48,8 @@ class Settings;		// global settings
 class Controller;	// data & views manager
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
-class Transformer final {
+class Transformer {
+protected:
 	const Controller &ctrler;	///< data & views manager
 
 	const Settings &cfg;		///< general configuration
@@ -56,6 +57,8 @@ class Transformer final {
 	Img &img;					///< current image to process
 
 	cv::Mat result;				///< the result of the transformation
+	
+	const std::string textStudiedCase(int rows, int cols) const;
 
 	void createOutputFolder();
 

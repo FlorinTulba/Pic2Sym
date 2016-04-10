@@ -2,8 +2,8 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-2-7
- and belongs to the UnitTesting project.
+ This file was created on 2016-4-10
+ and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -33,49 +33,18 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MOCK_DLGS
-#define H_MOCK_DLGS
+#include "propsReader.h"
 
-#ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif
+#include <iostream>
 
-#include <tchar.h>
-#include <string>
+using namespace std;
+using namespace boost::property_tree;
 
-// Dlg is the base class for the standard Windows dialogs from below
-class Dlg /*abstract*/ {
-protected:
-	Dlg() {}
-
-public:
-	bool promptForUserChoice() { return true; }
-	const std::string& selection() const { static std::string result; return result; }
-	void reset() {}
-};
-
-class OpenSave /*abstract*/ : public Dlg {
-protected:
-	OpenSave(const TCHAR * const = nullptr, const TCHAR * const = nullptr,
-			 const TCHAR * const  = nullptr,
-			 bool = true) : Dlg() {}
-};
-
-class ImgSelector : public OpenSave {
-public:
-	ImgSelector() : OpenSave() {}
-};
-
-class SettingsSelector : public OpenSave {
-public:
-	SettingsSelector(bool = true) : OpenSave() {}
-};
-
-class SelectFont : public Dlg {
-public:
-	SelectFont() : Dlg() {}
-	bool bold() const { return false; }
-	bool italic() const { return false; }
-};
-
-#endif
+PropsReader::PropsReader(const boost::filesystem::path &propsFile_) : propsFile(propsFile_) {
+	try {
+		read_info(propsFile.string(), props);
+	} catch(info_parser_error&) {
+		cerr<<"Couldn't read '"<<propsFile<<'\''<<endl;
+		throw;
+	}
+}

@@ -2,8 +2,8 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-2-7
- and belongs to the UnitTesting project.
+ This file was created on 2016-4-9
+ and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -33,49 +33,37 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MOCK_DLGS
-#define H_MOCK_DLGS
+#include "symSettings.h"
 
-#ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif
+using namespace std;
 
-#include <tchar.h>
-#include <string>
+void SymSettings::setFontFile(const std::string &fontFile_) {
+	if(fontFile.compare(fontFile_) == 0)
+		return;
+	cout<<"fontFile"<<" : '"<<fontFile<<"' -> '"<<fontFile_<<'\''<<endl;
+	fontFile = fontFile_;
+}
 
-// Dlg is the base class for the standard Windows dialogs from below
-class Dlg /*abstract*/ {
-protected:
-	Dlg() {}
+void SymSettings::setEncoding(const std::string &encoding_) {
+	if(encoding.compare(encoding_) == 0)
+		return;
+	cout<<"encoding"<<" : '"<<encoding<<"' -> '"<<encoding_<<'\''<<endl;
+	encoding = encoding_;
+}
 
-public:
-	bool promptForUserChoice() { return true; }
-	const std::string& selection() const { static std::string result; return result; }
-	void reset() {}
-};
+void SymSettings::setFontSz(unsigned fontSz_) {
+	if(fontSz == fontSz_)
+		return;
+	cout<<"fontSz"<<" : "<<fontSz<<" -> "<<fontSz_<<endl;
+	fontSz = fontSz_;
+}
 
-class OpenSave /*abstract*/ : public Dlg {
-protected:
-	OpenSave(const TCHAR * const = nullptr, const TCHAR * const = nullptr,
-			 const TCHAR * const  = nullptr,
-			 bool = true) : Dlg() {}
-};
+bool SymSettings::operator==(const SymSettings &other) const {
+	return fontFile.compare(other.fontFile) == 0 &&
+		encoding.compare(other.encoding) == 0 &&
+		fontSz == other.fontSz;
+}
 
-class ImgSelector : public OpenSave {
-public:
-	ImgSelector() : OpenSave() {}
-};
-
-class SettingsSelector : public OpenSave {
-public:
-	SettingsSelector(bool = true) : OpenSave() {}
-};
-
-class SelectFont : public Dlg {
-public:
-	SelectFont() : Dlg() {}
-	bool bold() const { return false; }
-	bool italic() const { return false; }
-};
-
-#endif
+bool SymSettings::operator!=(const SymSettings &other) const {
+	return !((*this)==other);
+}

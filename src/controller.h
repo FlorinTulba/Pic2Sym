@@ -36,67 +36,22 @@
 #ifndef H_CONTROLLER
 #define H_CONTROLLER
 
-#include "ui.h"
+#include "imgSettings.h"
+#include "views.h"
 #include "transform.h"
 
 #include <chrono>
 
-class Controller;
-
-/// Envelopes all parameters required for transforming images
-class Settings {
-	SymSettings ss;		///< parameters concerning the symbols set used for approximating patches
-	ImgSettings is;		///< contains max count of horizontal & vertical patches to process
-	MatchSettings ms;	///< settings used during approximation process
-	friend class Controller; ///< the unique setter of ss, is, ms (apart serialization)
-
-	/**
-	Loads or saves a Settings object.
-
-	@param ar the source/target archive
-	@param version When loading (overwriting *this with the Settings from ar),
-	it represents the version of the object loaded from ar;
-	When saving to ar, it's the last version of Settings
-	*/
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned version) {
-		ar & ss & is & ms;
-	}
-	friend class boost::serialization::access;
-
-public:
-	static const unsigned // Limits  
-		MIN_FONT_SIZE = 7U, MAX_FONT_SIZE = 50U, DEF_FONT_SIZE = 10U,
-		MAX_THRESHOLD_FOR_BLANKS = 50U,
-		MIN_H_SYMS = 3U, MAX_H_SYMS = 1024U,
-		MIN_V_SYMS = 3U, MAX_V_SYMS = 768U;
-
-	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
-	static bool isHmaxSymsOk(unsigned syms) { return syms>=MIN_H_SYMS && syms<=MAX_H_SYMS; }
-	static bool isVmaxSymsOk(unsigned syms) { return syms>=MIN_V_SYMS && syms<=MAX_V_SYMS; }
-	static bool isFontSizeOk(unsigned fs) { return fs>=MIN_FONT_SIZE && fs<=MAX_FONT_SIZE; }
-
-	/**
-	Creates a complete set of settings required during image transformations.
-
-	@param ms_ incoming parameter completely moved to ms field, so that Settings to be
-	the only setter of the MatchSettings in use.
-	*/
-	Settings(const MatchSettings &&ms_);
-
-	const SymSettings& symSettings() const { return ss; }
-	const ImgSettings& imgSettings() const { return is; }
-	const MatchSettings& matchSettings() const { return ms; }
-
-	friend std::ostream& operator<<(std::ostream &os, const Settings &s);
-};
-
-BOOST_CLASS_VERSION(Settings, 0)
+class ControlPanel; // forward declaration
 
 /// Manager of the views and data.
-class Controller final {
+class Controller {
+protected:
 	// Data
-	Img &img;			///< image to process
+	Img &img;			///< original image to process after resizing
+
+	/// pointer to the resized version of most recent image that had to be transformed
+	const ResizedImg *resizedImg = nullptr;
 	FontEngine &fe;		///< font engine
 	Settings &cfg;		///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
@@ -115,6 +70,13 @@ class Controller final {
 	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageRequired = true) const;
+
+	const std::string textForCmapStatusBar() const;
+	const std::string textForCmapOverlay(double elapsed) const;
+	const std::string textForComparatorOverlay(double elapsed) const;
+	const std::string textHourGlass(const std::string &prefix, double progress) const;
+	static const std::string PREFIX_GLYPH_PROGRESS;
+	static const std::string PREFIX_TRANSFORMATION_PROGRESS;
 
 	void updateCmapStatusBar() const;	///< updates information about font family, encoding and size
 	void symbolsChanged();				///< triggered by new font family / encoding / size
@@ -198,13 +160,14 @@ public:
 	void setResultMode(bool hybrid);
 
 	// Settings passed from model to view
-	unsigned getFontSize() const { return cfg.ss.getFontSz(); }
+	unsigned getFontSize() const;
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const;
 
 	/// Report progress about loading, adapting glyphs
 	void reportGlyphProgress(double progress) const;
 
 	// Transformer
+	void updateResizedImg(const ResizedImg &resizedImg_);
 	bool performTransformation();
 	void reportTransformationProgress(double progress) const;
 
