@@ -57,8 +57,6 @@ Transformer::Transformer(const Controller &ctrler_, const Settings &cfg_, MatchE
 	createOutputFolder();
 }
 
-extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
-
 void Transformer::run() {
 	me.updateSymbols(); // throws for invalid cmap/size
 
@@ -131,8 +129,8 @@ void Transformer::run() {
 				grayBlurredPatch = blurredPatch;
 
 			cv::minMaxIdx(grayBlurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
-			static const double THRESHOLD_CONTRAST_BLURRED = Transformer_run_THRESHOLD_CONTRAST_BLURRED;
-			if(maxVal-minVal < THRESHOLD_CONTRAST_BLURRED) {
+			extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
+			if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED) {
 				blurredPatch.copyTo(destRegion);
 				continue;
 			}

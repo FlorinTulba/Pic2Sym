@@ -108,9 +108,6 @@ ostream& operator<<(ostream &os, const MatchSettings &c) {
 	return os;
 }
 
-extern const string Comparator_initial_title;
-extern const string Comparator_statusBar;
-
 Controller::Controller(Settings &s) :
 		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
 		me(getMatchEngine(s)), t(getTransformer(s)),
@@ -120,7 +117,9 @@ Controller::Controller(Settings &s) :
 		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
+	extern const string Comparator_initial_title;
 	comp.setTitle(Comparator_initial_title);
+	extern const string Comparator_statusBar;
 	comp.setStatus(Comparator_statusBar);
 }
 

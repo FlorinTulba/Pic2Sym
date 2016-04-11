@@ -70,8 +70,6 @@ MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) :
 		grMatch(cachedData, cfg_.matchSettings()), dirMatch(cachedData, cfg_.matchSettings()),
 		lsMatch(cachedData, cfg_.matchSettings()) {}
 
-extern const double MatchEngine_updateSymbols_STILL_BG;
-
 void MatchEngine::updateSymbols() {
 	const string idForSymsToUse = getIdForSymsToUse(); // throws for invalid cmap/size
 	if(symsIdReady.compare(idForSymsToUse) == 0)
@@ -82,8 +80,8 @@ void MatchEngine::updateSymbols() {
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
 	// When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
 	// But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
-	static const double STILL_BG = MatchEngine_updateSymbols_STILL_BG,	// darkest shades
-					STILL_FG = 1. - STILL_BG;							// brightest shades
+	extern const double MatchEngine_updateSymbols_STILL_BG;					// darkest shades
+	static const double STILL_FG = 1. - MatchEngine_updateSymbols_STILL_BG;	// brightest shades
 	symsSet.clear();
 	symsSet.reserve(fe.symsSet().size());
 
@@ -98,7 +96,7 @@ void MatchEngine::updateSymbols() {
 		minMaxIdx(glyph, &minVal, &maxVal);
 		const cv::Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
 			fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
-			bgMask = (glyph <= (minVal + STILL_BG * (maxVal-minVal)));
+			bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 		// Storing a blurred version of the grounded glyph for structural similarity match aspect
