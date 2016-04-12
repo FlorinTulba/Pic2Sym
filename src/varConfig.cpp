@@ -62,6 +62,7 @@ static PropsReader varConfig("res/varConfig.txt");
 
 // Macros for reading the properties from varConfig
 #define READ_PROP(prop, type) prop = varConfig.read<type>(#prop)
+#define READ_BOOL_PROP(prop) READ_PROP(prop, bool)
 #define READ_INT_PROP(prop) READ_PROP(prop, int)
 #define READ_UINT_PROP(prop) READ_PROP(prop, unsigned)
 #define READ_DOUBLE_PROP(prop) READ_PROP(prop, double)
@@ -69,6 +70,8 @@ static PropsReader varConfig("res/varConfig.txt");
 #define READ_WSTR_PROP(prop) prop = str2wstr(varConfig.read<string>(#prop))
 
 // Reading data
+extern const bool READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
+
 const unsigned READ_UINT_PROP(Settings::MIN_FONT_SIZE);
 const unsigned READ_UINT_PROP(Settings::MAX_FONT_SIZE);
 const unsigned READ_UINT_PROP(Settings::DEF_FONT_SIZE);
@@ -154,6 +157,7 @@ const wstring READ_WSTR_PROP(BestMatch::HEADER) + MatchParams::HEADER;
 #endif // _DEBUG || UNIT_TESTING
 
 #undef READ_PROP
+#undef READ_BOOL_PROP
 #undef READ_INT_PROP
 #undef READ_UINT_PROP
 #undef READ_DOUBLE_PROP

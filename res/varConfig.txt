@@ -6,6 +6,9 @@
 ;========================
 ; Configurable Constants
 ;========================
+; Switch to choose between transforming the original, or its blurred version
+Transform_BlurredPatches_InsteadOf_Originals	false
+
 ; Constants for the sliders controlling the range of each matching aspect
 ControlPanel::Converter::StructuralSim::maxSlider	100
 ControlPanel::Converter::StructuralSim::maxReal	2.5

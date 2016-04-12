@@ -56,7 +56,10 @@ Patch::Patch(const Mat &patch_, const Mat &blurredPatch_, bool isColor_) :
 	if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED)
 		needsApproximation = false;
 
-	const cv::Mat &patch2Process = patch; // blurredPatch
+	// Configurable source of transformation - either the patch itself, or its blurred version:
+	extern const bool Transform_BlurredPatches_InsteadOf_Originals;
+	const cv::Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
+				blurredPatch : patch;
 	if(isColor)
 		cv::cvtColor(patch2Process, grayPatchD, cv::COLOR_RGB2GRAY);
 	else
