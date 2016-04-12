@@ -36,16 +36,14 @@
 #include "controller.h"
 
 #include "misc.h"
-#include "matchSettingsManip.h"
 #include "settings.h"
+#include "matchSettingsManip.h"
 #include "matchParams.h"
+#include "patch.h"
+#include "transformTrace.h"
 
 #include <sstream>
 #include <numeric>
-
-#if defined _DEBUG && !defined UNIT_TESTING
-#	include <fstream>
-#endif
 
 #include <boost/filesystem/operations.hpp>
 
@@ -64,6 +62,8 @@ void Transformer::run() {
 	const ResizedImg resizedImg(img, cfg.imgSettings(), cfg.symSettings().getFontSz());
 	const_cast<Controller&>(ctrler).updateResizedImg(resizedImg);
 	const cv::Mat &resized = resizedImg.get();
+	const MatchSettings &ms = cfg.matchSettings();
+	const bool isColor = img.isColor();
 	
 	// keep it after ResizedImg, to display updated resized version as comparing image
 	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::IMG_TRANSFORM);
@@ -89,21 +89,10 @@ void Transformer::run() {
 
 	me.getReady();
 
-#if defined _DEBUG && !defined UNIT_TESTING
-	static const wstring COMMA(L",\t");
-	path traceFile(MatchSettingsManip::instance().getWorkDir());
-	traceFile.append("data_").concat(studiedCase).
-		concat(".csv"); // generating a CSV trace file
-	wofstream ofs(traceFile.c_str());
-	ofs<<"#Row"<<COMMA<<"#Col"<<COMMA<<BestMatch::HEADER<<endl;
-
-	// Unicode symbols are logged in symbol format, while other encodings log their code
-	const bool isUnicode = me.usesUnicode();
-#endif
-	
 	const unsigned sz = cfg.symSettings().getFontSz();
-	result = cv::Mat(resized.rows, resized.cols, resized.type());
+	TransformTrace tt(studiedCase, sz, me.usesUnicode()); // log support (DEBUG mode only)
 
+	result = cv::Mat(resized.rows, resized.cols, resized.type());
 	cv::Mat resizedBlurred;
 	cv::GaussianBlur(resized, resizedBlurred,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
@@ -117,70 +106,17 @@ void Transformer::run() {
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
 			const cv::Range colRange(c, c+sz);
 			const cv::Mat patch(resized, rowRange, colRange),
-						blurredPatch(resizedBlurred, rowRange, colRange),
-						destRegion(result, rowRange, colRange);
+						blurredPatch(resizedBlurred, rowRange, colRange);
 
-			// Don't approximate rather uniform patches
-			double minVal, maxVal;
-			cv::Mat grayBlurredPatch;
-			if(img.isColor())
-				cv::cvtColor(blurredPatch, grayBlurredPatch, cv::COLOR_RGB2GRAY);
-			else
-				grayBlurredPatch = blurredPatch;
+			Patch p(patch, blurredPatch, isColor);
+			const BestMatch best = p.approximate(ms, me);
+			const cv::Mat &approximation = best.bestVariant.approx;
+			cv::Mat destRegion(result, rowRange, colRange);
+			approximation.copyTo(destRegion);
 
-			cv::minMaxIdx(grayBlurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
-			extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
-			if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED) {
-				blurredPatch.copyTo(destRegion);
-				continue;
-			}
-
-			// The patch is less uniform, so it needs approximation
-#if defined _DEBUG && !defined UNIT_TESTING
-			BestMatch best(isUnicode);
-#else
-			BestMatch best;
-#endif
-
-			const cv::Mat approximation = me.approxPatch(patch, best);
-
-			// For non-hybrid result mode, just copy the approximation to the result
-			if(!cfg.matchSettings().isHybridResult()) {
-				approximation.copyTo(destRegion);
-				continue;
-			}
-
-			// Hybrid Result Mode - Combine the approximation with the blurred patch:
-			// the less satisfactory the approximation is,
-			// the more the weight of the blurred patch should be
-			cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
-			meanStdDev(patch-approximation, miu, sdevApproximation);
-			meanStdDev(patch-blurredPatch, miu, sdevBlurredPatch);
-			double totalSdevBlurredPatch = *sdevBlurredPatch.val,
-					totalSdevApproximation = *sdevApproximation.val;
-			if(img.isColor()) {
-				totalSdevBlurredPatch += sdevBlurredPatch.val[1] + sdevBlurredPatch.val[2];
-				totalSdevApproximation += sdevApproximation.val[1] + sdevApproximation.val[2];
-			}
-			const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
-			const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
-			cv::Mat combination;
-			addWeighted(blurredPatch, weight, approximation, 1.-weight, 0., combination);
-			combination.copyTo(destRegion);
-
-#if defined _DEBUG && !defined UNIT_TESTING
-			ofs<<r/sz<<COMMA<<c/sz<<COMMA<<best<<endl;
-#endif
+			tt.newEntry(r, c, best); // log the data about best match (DEBUG mode only)
 		}
-#if defined _DEBUG && !defined UNIT_TESTING
-		ofs.flush(); // flush after processing a full row (of height sz) of the image
-#endif
 	}
-
-#if defined _DEBUG && !defined UNIT_TESTING
-	// Flushing and closing the trace file, to be also ready when inspecting the resulted image
-	ofs.close();
-#endif
 
 #ifndef UNIT_TESTING
 	cout<<"Writing result to "<<resultFile<<endl<<endl;

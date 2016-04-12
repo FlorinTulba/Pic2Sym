@@ -34,29 +34,14 @@
  ****************************************************************************************/
 
 #include "matchParams.h"
+#include "matchSettings.h"
 #include "symData.h"
 #include "cachedData.h"
+#include "patch.h"
 #include "misc.h"
 
 using namespace std;
 using namespace boost;
-
-#if defined _DEBUG || defined UNIT_TESTING
-
-BestMatch::BestMatch(bool isUnicode/* = true*/) : unicode(isUnicode) {}
-
-BestMatch& BestMatch::operator=(const BestMatch &other) {
-	if(this != &other) {
-		score = other.score;
-		symIdx = other.symIdx;
-		symCode = other.symCode;
-		const_cast<bool&>(unicode) = other.unicode;
-		params = other.params;
-	}
-	return *this;
-}
-
-#endif // _DEBUG
 
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
@@ -207,10 +192,98 @@ void MatchParams::computeMcsOffset(const cv::Mat &patch, const SymData &symData,
 	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
 }
 
-void BestMatch::update(double score_, unsigned symIdx_, unsigned long symCode_,
-					   const MatchParams &params_) {
+BestMatch& BestMatch::update(double score_, unsigned long symCode_,
+							 unsigned symIdx_, const SymData &sd,
+							 const MatchParams &mp) {
 	score = score_;
-	symIdx = symIdx_;
 	symCode = symCode_;
-	params = params_;
+	symIdx = symIdx_;
+	pSymData = &sd;
+	bestVariant.params = mp;
+	return *this;
 }
+
+BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
+	if(nullptr == pSymData) {
+		bestVariant.approx = patch.blurredPatch;
+		return *this;
+	}
+
+	const auto &dataOfBest = *pSymData;
+	const auto &matricesForBest = dataOfBest.symAndMasks;
+	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
+
+	cv::Mat patchResult;
+
+	if(patch.isColor) {
+		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
+			&bgMask = matricesForBest[SymData::BG_MASK_IDX];
+
+		vector<cv::Mat> channels;
+		cv::split(patch.patch, channels);
+
+		double miuFg, miuBg, newDiff, diffFgBg = 0.;
+		for(auto &ch : channels) {
+			ch.convertTo(ch, CV_64FC1); // processing double values
+
+			miuFg = *cv::mean(ch, fgMask).val;
+			miuBg = *cv::mean(ch, bgMask).val;
+			newDiff = miuFg - miuBg;
+
+			groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.diffMinMax, miuBg);
+
+			diffFgBg += abs(newDiff);
+		}
+
+		if(diffFgBg < 3.*ms.getBlankThreshold())
+			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC3, cv::mean(patch.patch));
+		else
+			cv::merge(channels, patchResult);
+
+	} else { // grayscale result
+		auto &params = bestVariant.params;
+		params.computeContrast(patch.patch, *pSymData);
+
+		if(abs(*params.contrast) < ms.getBlankThreshold())
+			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC1, cv::Scalar(*cv::mean(patch.patch).val));
+		else
+			groundedBest.convertTo(patchResult, CV_8UC1,
+			*params.contrast / dataOfBest.diffMinMax,
+			*params.bg);
+	}
+
+	bestVariant.approx = patchResult;
+
+	// For non-hybrid result mode we're done
+	if(!ms.isHybridResult())
+		return *this;
+
+	// Hybrid Result Mode - Combine the approximation with the blurred patch:
+	// the less satisfactory the approximation is,
+	// the more the weight of the blurred patch should be
+	cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
+	meanStdDev(patch.patch-bestVariant.approx, miu, sdevApproximation);
+	meanStdDev(patch.patch-patch.blurredPatch, miu, sdevBlurredPatch);
+	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
+		totalSdevApproximation = *sdevApproximation.val;
+	if(patch.isColor) {
+		totalSdevBlurredPatch += sdevBlurredPatch.val[1] + sdevBlurredPatch.val[2];
+		totalSdevApproximation += sdevApproximation.val[1] + sdevApproximation.val[2];
+	}
+	const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
+	const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
+	cv::Mat combination;
+	addWeighted(patch.blurredPatch, weight, bestVariant.approx, 1.-weight, 0., combination);
+	bestVariant.approx = combination;
+
+	return *this;
+}
+
+#if defined _DEBUG || defined UNIT_TESTING
+
+BestMatch& BestMatch::setUnicode(bool unicode_) {
+	unicode = unicode_;
+	return *this;
+}
+
+#endif // _DEBUG

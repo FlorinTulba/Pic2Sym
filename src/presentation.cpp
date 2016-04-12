@@ -43,7 +43,6 @@
 
 #include <iomanip>
 
-#include <boost/optional/optional_io.hpp>
 #include <opencv2/highgui.hpp>
 
 using namespace std;
@@ -188,56 +187,6 @@ const string Transformer::textStudiedCase(int rows, int cols) const {
 		<<cols<<'_'<<rows; // no extension yet
 	return oss.str(); // this text is included in the result & trace file names
 }
-
-#if defined _DEBUG || defined UNIT_TESTING
-
-#	define comma L",\t"
-
-wostream& operator<<(wostream &os, const MatchParams &mp) {
-	os<<mp.ssim<<comma
-		<<mp.sdevFg<<comma<<mp.sdevEdge<<comma<<mp.sdevBg<<comma
-		<<mp.fg<<comma<<mp.bg<<comma;
-
-	if(mp.mcPatchApprox)
-		os<<mp.mcPatchApprox->x<<comma<<mp.mcPatchApprox->y<<comma;
-	else
-		os<<none<<comma<<none<<comma;
-
-	if(mp.mcPatch)
-		os<<mp.mcPatch->x<<comma<<mp.mcPatch->y<<comma;
-	else
-		os<<none<<comma<<none<<comma;
-
-	os<<mp.symDensity;
-
-	return os;
-}
-
-wostream& operator<<(wostream &os, const BestMatch &bm) {
-	unsigned long symCode = bm.symCode;
-	if(bm.unicode) {
-		if(symCode == (unsigned long)',')
-			os<<L"COMMA";
-		else if(symCode == (unsigned long)'(')
-			os<<L"OPEN_PAR";
-		else if(symCode == (unsigned long)')')
-			os<<L"CLOSE_PAR";
-		else if(os<<(wchar_t)symCode)
-			os<<'('<<symCode<<')';
-		else {
-			os.clear();
-			os<<symCode;
-		}
-	} else
-		os<<symCode;
-
-	os<<comma<<bm.score<<comma<<bm.params;
-	return os;
-}
-
-#	undef comma
-
-#endif // _DEBUG || UNIT_TESTING
 
 #ifndef UNIT_TESTING
 Comparator::Comparator(void** /*hackParam = nullptr*/) : CvWin("Pic2Sym") {

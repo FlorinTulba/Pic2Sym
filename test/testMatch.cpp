@@ -37,6 +37,7 @@
 #include "misc.h"
 #include "settings.h"
 #include "matchParams.h"
+#include "patch.h"
 #include "controller.h"
 
 #include <random>
@@ -46,6 +47,7 @@
 #include <set>
 
 #include <boost/optional/optional.hpp>
+#include <boost/optional/optional_io.hpp>
 #include <boost/test/data/test_case.hpp>
 
 using namespace cv;
@@ -419,8 +421,9 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		alterFgBg(patchD255, it->minVal, it->diffMinMax);
 		addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
 
-		BestMatch best;
-		const Mat approximated = me.approxPatch(patchD255, best);
+		Patch thePatch(patchD255, patchD255, false);
+		BestMatch best = me.approxPatch(thePatch);
+		const Mat &approximated = best.bestVariant.approx;
 
 		if(best.symIdx != idx) {
 			mismatches.emplace_back(patchD255, approximated, best);
@@ -430,7 +433,7 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 				<<fixed<<setprecision(17)<<best.score
 				<<" while the score for the expected symbol is "
 				<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
-			wcerr<<"Params from approximated symbol: "<<best.params<<endl;
+			wcerr<<"Params from approximated symbol: "<<best.bestVariant.params<<endl;
 			wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
 		}
 	}

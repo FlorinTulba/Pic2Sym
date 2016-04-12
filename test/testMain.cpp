@@ -43,6 +43,7 @@
 #include "fontEngine.cpp"
 #include "matchEngine.cpp"
 #include "match.cpp"
+#include "patch.cpp"
 #include "transform.cpp"
 #include "controller.cpp"
 #include "img.cpp"
@@ -55,6 +56,7 @@
 #include "cachedData.cpp"
 #include "structuralSimilarity.cpp"
 #include "propsReader.cpp"
+#include "transformTrace.cpp"
 
 #include <ctime>
 #include <random>

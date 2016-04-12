@@ -35,6 +35,7 @@
 
 #include "matchEngine.h"
 #include "matchParams.h"
+#include "patch.h"
 #include "settings.h"
 #include "misc.h"
 
@@ -155,61 +156,20 @@ void MatchEngine::getReady() {
 			aspects.push_back(pAspect);
 }
 
-cv::Mat MatchEngine::approxPatch(const cv::Mat &patch_, BestMatch &best) {
-	// All blurring techniques I've tried seem not worthy => using original
-	cv::Mat blurredPatch = patch_;
-	const unsigned sz = patch_.rows;
-	const bool isColor = (blurredPatch.channels() > 1);
-	cv::Mat patchColor, patch, patchResult;
-	if(isColor) {
-		patchColor = blurredPatch;
-		cv::cvtColor(patchColor, patch, cv::COLOR_RGB2GRAY);
-	} else patch = blurredPatch;
-	patch.convertTo(patch, CV_64FC1);
+BestMatch MatchEngine::approxPatch(const Patch &patch) const {
+	BestMatch best(patch);
+	MatchParams mp;
+	unsigned idx = 0U;
+	for(const auto &symData : symsSet) {
+		double score = assessMatch(patch.matrixToApprox(), symData, mp);
 
-	findBestMatch(patch, best);
+		if(score > best.score)
+			best.update(score, symData.code, idx, symData, mp);
 
-	const auto &dataOfBest = symsSet[best.symIdx];
-	const auto &matricesForBest = dataOfBest.symAndMasks;
-	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
-
-	if(isColor) {
-		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
-			&bgMask = matricesForBest[SymData::BG_MASK_IDX];
-
-		vector<cv::Mat> channels;
-		cv::split(patchColor, channels);
-
-		double miuFg, miuBg, newDiff, diffFgBg = 0.;
-		for(auto &ch : channels) {
-			ch.convertTo(ch, CV_64FC1); // processing double values
-
-			miuFg = *cv::mean(ch, fgMask).val;
-			miuBg = *cv::mean(ch, bgMask).val;
-			newDiff = miuFg - miuBg;
-
-			groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.diffMinMax, miuBg);
-
-			diffFgBg += abs(newDiff);
-		}
-
-		if(diffFgBg < 3.*cfg.matchSettings().getBlankThreshold())
-			patchResult = cv::Mat(sz, sz, CV_8UC3, cv::mean(patchColor));
-		else
-			cv::merge(channels, patchResult);
-
-	} else { // grayscale result
-		auto &params = best.params;
-		params.computeContrast(patch, symsSet[best.symIdx]);
-
-		if(abs(*params.contrast) < cfg.matchSettings().getBlankThreshold())
-			patchResult = cv::Mat(sz, sz, CV_8UC1, cv::Scalar(*cv::mean(patch).val));
-		else
-			groundedBest.convertTo(patchResult, CV_8UC1,
-			*params.contrast / dataOfBest.diffMinMax,
-			*params.bg);
+		mp.reset();
+		++idx;
 	}
-	return patchResult;
+	return best.updatePatchApprox(cfg.matchSettings());
 }
 
 double MatchEngine::assessMatch(const cv::Mat &patch,
@@ -221,22 +181,14 @@ double MatchEngine::assessMatch(const cv::Mat &patch,
 	return score;
 }
 
-void MatchEngine::findBestMatch(const cv::Mat &patch, BestMatch &best) {
-	MatchParams mp;
-	unsigned idx = 0U;
-	for(const auto &symData : symsSet) {
-		double score = assessMatch(patch, symData, mp);
-
-		if(score > best.score)
-			best.update(score, idx, symData.code, mp);
-
-		mp.reset();
-		++idx;
-	}
-}
-
 #ifdef _DEBUG
+
 bool MatchEngine::usesUnicode() const {
 	return fe.getEncoding().compare("UNICODE") == 0;
 }
+
+#else // _DEBUG not defined
+
+bool MatchEngine::usesUnicode() const { return true; }
+
 #endif // _DEBUG

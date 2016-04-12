@@ -71,12 +71,12 @@ protected:
 	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageRequired = true) const;
 
-	const std::string textForCmapStatusBar() const;
-	const std::string textForCmapOverlay(double elapsed) const;
-	const std::string textForComparatorOverlay(double elapsed) const;
-	const std::string textHourGlass(const std::string &prefix, double progress) const;
-	static const std::string PREFIX_GLYPH_PROGRESS;
-	static const std::string PREFIX_TRANSFORMATION_PROGRESS;
+	const std::string textForCmapStatusBar() const; ///< status bar with font information
+	const std::string textForCmapOverlay(double elapsed) const; ///< Glyph loading duration
+	const std::string textForComparatorOverlay(double elapsed) const; ///< Transformation duration
+	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress
+	static const std::string PREFIX_GLYPH_PROGRESS; ///< Starting text for glyph progress reports
+	static const std::string PREFIX_TRANSFORMATION_PROGRESS; ///< Starting text for image transformation progress reports
 
 	void updateCmapStatusBar() const;	///< updates information about font family, encoding and size
 	void symbolsChanged();				///< triggered by new font family / encoding / size

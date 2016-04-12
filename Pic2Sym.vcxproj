@@ -32,12 +32,14 @@
     <ClInclude Include="src\matchSettingsManip.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\matchSettings.h" />
+    <ClInclude Include="src\patch.h" />
     <ClInclude Include="src\pixMapSym.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\views.h" />
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +48,7 @@
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
+    <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\img.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -59,6 +62,7 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
+    <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\views.cpp" />

@@ -43,6 +43,7 @@
 struct CachedData;
 struct MatchParams;
 struct BestMatch;
+class Patch;
 
 class Settings; // forward declaration
 
@@ -76,9 +77,6 @@ protected:
 
 	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
 
-	/// Determines best match of 'patch' compared to the elements from 'symsSet'
-	void findBestMatch(const cv::Mat &patch, BestMatch &best);
-
 public:
 	MatchEngine(const Settings &cfg_, FontEngine &fe_);
 
@@ -91,16 +89,15 @@ public:
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
 	void getReady();		///< called before a series of approxPatch
 
-	/// returns the approximation of 'patch_' plus other details in 'best'
-	cv::Mat approxPatch(const cv::Mat &patch_, BestMatch &best);
+	/// Returns all details about the best match.
+	BestMatch approxPatch(const Patch &patch) const;
 
 	/// scores the match between a gray patch and a symbol based on all enabled aspects
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
 					   MatchParams &mp) const override; // IMatch override
-#ifdef _DEBUG
+
 	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
-#endif // _DEBUG
 };
 
 #endif

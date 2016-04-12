@@ -42,6 +42,8 @@
 // forward declarations
 struct SymData;
 struct CachedData;
+class Patch;
+class MatchSettings;
 
 /// Holds relevant data during patch&glyph matching
 struct MatchParams {
@@ -93,13 +95,18 @@ struct MatchParams {
 	void computeSsim(const cv::Mat &patch, const SymData &symData);
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
+	
 	static const std::wstring HEADER; ///< table header when values are serialized
 	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
-#endif
+
+#endif // defined _DEBUG || defined UNIT_TESTING
 
 #ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
+
 protected:
-#endif
+
+#endif // UNIT_TESTING
+
 	/// Both computeFg and computeBg simply call this
 	static void computeMean(const cv::Mat &patch, const cv::Mat &mask, boost::optional<double> &miu);
 
@@ -108,30 +115,82 @@ protected:
 							boost::optional<double> &miu, boost::optional<double> &sdev);
 };
 
-/// Holds the best grayscale match found at a given time
+/// A possible way to approximate the patch - average / blur / transformed glyph / hybrid
+struct ApproxVariant {
+	cv::Mat approx;			///< the approximation of the patch
+	MatchParams params;		///< parameters of the match (empty for blur-only approximations)
+
+	/// explicit constructor to avoid just passing directly a matrix and forgetting about the 2nd param
+	explicit ApproxVariant(const cv::Mat &approx_ = cv::Mat(), ///< a possible approximation of a patch
+						   const MatchParams &params_ = MatchParams() ///< the corresponding params of the match
+						   ) : approx(approx_), params(params_) {}
+};
+
+/// Holds the best match found at a given time
 struct BestMatch {
-	unsigned symIdx = UINT_MAX;			///< index within vector<PixMapSym>
-	unsigned long symCode = ULONG_MAX;	///< glyph code
+	const Patch &patch;			///< reference to the patch to approximate
+	
+	/// shouldn't assign, as 'patch' member is supposed to remain the same and assign can't guarantee it
+	void operator=(const BestMatch&) = delete;
 
-	double score = std::numeric_limits<double>::lowest(); ///< score of the best match
+	ApproxVariant bestVariant;	///< best approximating variant 
 
-	MatchParams params;		///< parameters of the match for the best approximating glyph
+	/**
+	Index within vector<SymData>.
+	none if patch approximation is blur-based only.
+	Useful during debug, but mainly during unit testing,
+	when verifying that some particular symbol can be recognized.
+	*/
+	boost::optional<unsigned> symIdx;
 
-	/// called when finding a better match
-	void update(double score_, unsigned symIdx_, unsigned long symCode_,
-				const MatchParams &params_);
+	/// pointer to vector<SymData>[symIdx] or null when patch approximation is blur-based only.
+	const SymData *pSymData = nullptr;
+
+	/// glyph code. none if patch approximation is blur-based only
+	boost::optional<unsigned long> symCode;
+
+	/// score of the best match. If patch approximation is blur-based only, score will remain -inf
+	double score = std::numeric_limits<double>::lowest();
+
+	/// Called when finding a better match. Returns itself
+	BestMatch& update(double score_, unsigned long symCode_, 
+					  unsigned symIdx_, const SymData &sd,
+					  const MatchParams &mp);
+
+	/**
+	It generates the approximation of the patch based on the rest of the fields.
+	
+	When pSymData is null, it approximates the patch with patch.blurredPatch.
+	
+	Otherwise it adapts the foreground and background of the original glyph to
+	be as close as possible to the patch.
+	For color patches, it does that for every channel.
+
+	For low-contrast images, it generates the average of the patch.
+
+	@param ms additional match settings that might be needed
+
+	@return reference to the updated object
+	*/
+	BestMatch& updatePatchApprox(const MatchSettings &ms);
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
+
 	static const std::wstring HEADER;
 	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
 
 	// Unicode symbols are logged in symbol format, while other encodings log their code
-	const bool unicode;					///< is the charmap in Unicode?
+	bool unicode = false;			///< is Unicode the charmap's encoding
 
-	BestMatch(bool isUnicode = true);
+	/// Updates unicode field and returns the updated BestMatch object
+	BestMatch& setUnicode(bool unicode_);
+
+#endif // defined _DEBUG || defined UNIT_TESTING
+
+	/// Constructor setting only 'patch'. The other fields need the setters or the 'update' method.
+	BestMatch(const Patch &patch_) : patch(patch_) {}
+
 	BestMatch(const BestMatch&) = default;
-	BestMatch& operator=(const BestMatch &other);
-#endif
 };
 
 #endif
