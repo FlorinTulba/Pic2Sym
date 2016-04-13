@@ -45,7 +45,7 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
-bool Img::reset(const cv::Mat &source_) {
+bool Img::reset(const Mat &source_) {
 	if(source_.empty())
 		return false;
 

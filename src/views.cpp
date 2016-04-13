@@ -103,7 +103,7 @@ void Comparator::setResult(const Mat &res_, int transparency/* = (int)round(defa
 		throw invalid_argument("Please provide a resulted image of the same size & type as the original image!");
 	result = res_;
 	if(trackPos != transparency)
-		cv::setTrackbarPos(transpTrackName, winName, transparency);
+		setTrackbarPos(transpTrackName, winName, transparency);
 	else
 		setTransparency(defaultTransparency);
 }

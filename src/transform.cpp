@@ -49,6 +49,7 @@
 
 using namespace std;
 using namespace boost::filesystem;
+using namespace cv;
 
 Transformer::Transformer(const Controller &ctrler_, const Settings &cfg_, MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
@@ -61,7 +62,7 @@ void Transformer::run() {
 	// throws when no image
 	const ResizedImg resizedImg(img, cfg.imgSettings(), cfg.symSettings().getFontSz());
 	const_cast<Controller&>(ctrler).updateResizedImg(resizedImg);
-	const cv::Mat &resized = resizedImg.get();
+	const Mat &resized = resizedImg.get();
 	const MatchSettings &ms = cfg.matchSettings();
 	const bool isColor = img.isColor();
 	
@@ -77,7 +78,7 @@ void Transformer::run() {
 	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
 
 	if(exists(resultFile)) {
-		result = cv::imread(resultFile.string(), cv::ImreadModes::IMREAD_UNCHANGED);
+		result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
 		timer.release();
 		ctrler.reportTransformationProgress(1.);
 
@@ -92,26 +93,26 @@ void Transformer::run() {
 	const unsigned sz = cfg.symSettings().getFontSz();
 	TransformTrace tt(studiedCase, sz, me.usesUnicode()); // log support (DEBUG mode only)
 
-	result = cv::Mat(resized.rows, resized.cols, resized.type());
-	cv::Mat resizedBlurred;
-	cv::GaussianBlur(resized, resizedBlurred,
+	result = Mat(resized.rows, resized.cols, resized.type());
+	Mat resizedBlurred;
+	GaussianBlur(resized, resizedBlurred,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 
 	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
 		ctrler.reportTransformationProgress((double)r/h);
 
-		const cv::Range rowRange(r, r+sz);
+		const Range rowRange(r, r+sz);
 
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
-			const cv::Range colRange(c, c+sz);
-			const cv::Mat patch(resized, rowRange, colRange),
+			const Range colRange(c, c+sz);
+			const Mat patch(resized, rowRange, colRange),
 						blurredPatch(resizedBlurred, rowRange, colRange);
 
 			Patch p(patch, blurredPatch, isColor);
 			const BestMatch best = p.approximate(ms, me);
-			const cv::Mat &approximation = best.bestVariant.approx;
-			cv::Mat destRegion(result, rowRange, colRange);
+			const Mat &approximation = best.bestVariant.approx;
+			Mat destRegion(result, rowRange, colRange);
 			approximation.copyTo(destRegion);
 
 			tt.newEntry(r, c, best); // log the data about best match (DEBUG mode only)

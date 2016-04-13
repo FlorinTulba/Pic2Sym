@@ -45,16 +45,16 @@ using namespace std;
 using namespace cv;
 
 namespace {
-	/// Conversion PixMapSym -> cv::Mat of type double with range [0..1] instead of [0..255]
-	cv::Mat toMat(const PixMapSym &pms, unsigned fontSz) {
-		cv::Mat result((int)fontSz, (int)fontSz, CV_8UC1, cv::Scalar(0U));
+	/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
+	Mat toMat(const PixMapSym &pms, unsigned fontSz) {
+		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
 
 		int firstRow = (int)fontSz-(int)pms.top-1;
-		cv::Mat region(result,
-					   cv::Range(firstRow, firstRow+(int)pms.rows),
-					   cv::Range((int)pms.left, (int)(pms.left+pms.cols)));
+		Mat region(result,
+					   Range(firstRow, firstRow+(int)pms.rows),
+					   Range((int)pms.left, (int)(pms.left+pms.cols)));
 
-		const cv::Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
+		const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
 		pmsData.copyTo(region);
 
 		static const double INV_255 = 1./255;
@@ -89,13 +89,13 @@ void MatchEngine::updateSymbols() {
 	double minVal, maxVal;
 	const unsigned sz = cfg.symSettings().getFontSz();
 	for(const auto &pms : fe.symsSet()) {
-		cv::Mat negGlyph, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-		const cv::Mat glyph = toMat(pms, sz);
+		Mat negGlyph, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
+		const Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
 		minMaxIdx(glyph, &minVal, &maxVal);
-		const cv::Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
+		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
 			fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
 			bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
@@ -103,12 +103,12 @@ void MatchEngine::updateSymbols() {
 		// Storing a blurred version of the grounded glyph for structural similarity match aspect
 		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 
 		// Storing also the variance of the grounded glyph for structural similarity match aspect
 		GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		symsSet.emplace_back(pms.symCode,
@@ -172,7 +172,7 @@ BestMatch MatchEngine::approxPatch(const Patch &patch) const {
 	return best.updatePatchApprox(cfg.matchSettings());
 }
 
-double MatchEngine::assessMatch(const cv::Mat &patch,
+double MatchEngine::assessMatch(const Mat &patch,
 								const SymData &symData,
 								MatchParams &mp) const {
 	double score = 1.;

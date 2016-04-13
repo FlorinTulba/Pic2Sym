@@ -240,7 +240,7 @@ void Controller::reportGlyphProgress(double progress) const {}
 
 void Controller::reportTransformationProgress(double progress) const {}
 
-bool Controller::newImage(const cv::Mat &imgMat) {
+bool Controller::newImage(const Mat &imgMat) {
 	bool result = img.reset(imgMat);
 
 	if(result) {
@@ -269,7 +269,7 @@ bool Controller::newImage(const cv::Mat &imgMat) {
 void Transformer::createOutputFolder() {}
 
 SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
-				 const cv::Point2d &mc_, const SymData::IdxMatMap &relevantMats) :
+				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :
 				 code(code_), minVal(minVal_), diffMinMax(diffMinMax_),
 				 pixelSum(pixelSum_), mc(mc_),
 				 symAndMasks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {

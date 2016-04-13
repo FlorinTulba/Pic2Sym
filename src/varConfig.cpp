@@ -86,7 +86,7 @@ extern const double READ_DOUBLE_PROP(MatchEngine_updateSymbols_STILL_BG);
 extern const double READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
 static const int READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
-const cv::Size StructuralSimilarity::WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
+const Size StructuralSimilarity::WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
 const double READ_DOUBLE_PROP(StructuralSimilarity::SIGMA);
 const double READ_DOUBLE_PROP(StructuralSimilarity::C1);
 const double READ_DOUBLE_PROP(StructuralSimilarity::C2);

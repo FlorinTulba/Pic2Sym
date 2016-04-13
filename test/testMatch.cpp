@@ -617,10 +617,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
 		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -666,10 +666,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
 		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)

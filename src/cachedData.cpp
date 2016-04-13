@@ -39,6 +39,7 @@
 #include <numeric>
 
 using namespace std;
+using namespace cv;
 
 const double CachedData::sdevMaxFgBg = 127.5;
 const double CachedData::sdevMaxEdge = 255.;
@@ -50,9 +51,9 @@ void CachedData::useNewSymSize(unsigned sz_) {
 
 	preferredMaxMcDist = sz / 8.;
 	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = cv::Point2d(sz_1, sz_1) / 2.;
+	patchCenter = Point2d(sz_1, sz_1) / 2.;
 
-	consec = cv::Mat(1, sz, CV_64FC1);
+	consec = Mat(1, sz, CV_64FC1);
 	iota(consec.begin<double>(), consec.end<double>(), 0.);
 }
 

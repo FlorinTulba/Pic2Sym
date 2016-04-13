@@ -40,6 +40,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
+using namespace cv;
 
 /*
 Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .
@@ -47,7 +48,7 @@ Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70w
 Downsampling was not used, as the results normally get inspected by
 enlarging the regions of interest.
 */
-double StructuralSimilarity::assessMatch(const cv::Mat &patch,
+double StructuralSimilarity::assessMatch(const Mat &patch,
 										 const SymData &symData,
 										 MatchParams &mp) const {
 
@@ -61,18 +62,18 @@ double StructuralSimilarity::assessMatch(const cv::Mat &patch,
 	return pow((1. + mp.ssim.value()) / 2., k);
 }
 
-void MatchParams::computeBlurredPatch(const cv::Mat &patch) {
+void MatchParams::computeBlurredPatch(const Mat &patch) {
 	if(blurredPatch)
 		return;
 
-	cv::Mat blurredPatch_;
-	cv::GaussianBlur(patch, blurredPatch_,
+	Mat blurredPatch_;
+	GaussianBlur(patch, blurredPatch_,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 	blurredPatch = blurredPatch_;
 }
 
-void MatchParams::computeBlurredPatchSq(const cv::Mat &patch) {
+void MatchParams::computeBlurredPatchSq(const Mat &patch) {
 	if(blurredPatchSq)
 		return;
 
@@ -80,35 +81,35 @@ void MatchParams::computeBlurredPatchSq(const cv::Mat &patch) {
 	blurredPatchSq = blurredPatch.value().mul(blurredPatch.value());
 }
 
-void MatchParams::computeVariancePatch(const cv::Mat &patch) {
+void MatchParams::computeVariancePatch(const Mat &patch) {
 	if(variancePatch)
 		return;
 
 	computeBlurredPatchSq(patch);
 
-	cv::Mat variancePatch_;
-	cv::GaussianBlur(patch.mul(patch), variancePatch_,
+	Mat variancePatch_;
+	GaussianBlur(patch.mul(patch), variancePatch_,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 	variancePatch_ -= blurredPatchSq.value();
 	variancePatch = variancePatch_;
 }
 
-void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	if(ssim)
 		return;
 
-	cv::Mat covariance, ssimMap;
+	Mat covariance, ssimMap;
 
 	computeVariancePatch(patch);
 	computePatchApprox(patch, symData);
-	const cv::Mat &approxPatch = patchApprox.value();
+	const Mat &approxPatch = patchApprox.value();
 
 	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
 	const double diffRatio = contrast.value() / symData.diffMinMax;
-	const cv::Mat blurredPatchApprox = bg.value() + diffRatio *
+	const Mat blurredPatchApprox = bg.value() + diffRatio *
 		symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
 		blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
 		variancePatchApprox = diffRatio * diffRatio *
@@ -116,37 +117,37 @@ void MatchParams::computeSsim(const cv::Mat &patch, const SymData &symData) {
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	double minVal, maxVal;
-	cv::Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
+	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	cv::GaussianBlur(approxPatch, blurredPatchApprox_,
+	GaussianBlur(approxPatch, blurredPatchApprox_,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
 	assert(abs(maxVal) < EPS);
 
-	cv::GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
+	GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 	variancePatchApprox_ -= blurredPatchApproxSq;
 	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
 	assert(abs(maxVal) < EPS);
 #endif // checking the simplifications mentioned above
 
-	const cv::Mat productMats = patch.mul(approxPatch),
+	const Mat productMats = patch.mul(approxPatch),
 		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	cv::GaussianBlur(productMats, covariance,
+	GaussianBlur(productMats, covariance,
 					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 cv::BORDER_REPLICATE);
+					 BORDER_REPLICATE);
 	covariance -= productBlurredMats;
 
-	const cv::Mat numerator = (2.*productBlurredMats + StructuralSimilarity::C1).
+	const Mat numerator = (2.*productBlurredMats + StructuralSimilarity::C1).
 		mul(2.*covariance + StructuralSimilarity::C2),
 		denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity::C1).
 		mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity::C2);
 
-	cv::divide(numerator, denominator, ssimMap);
-	ssim = *cv::mean(ssimMap).val;
+	divide(numerator, denominator, ssimMap);
+	ssim = *mean(ssimMap).val;
 	assert(abs(*ssim) < 1.+EPS);
 }

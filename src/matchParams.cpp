@@ -42,6 +42,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace cv;
 
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
@@ -54,23 +55,23 @@ void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	}
 }
 
-void MatchParams::computeMean(const cv::Mat &patch, const cv::Mat &mask, optional<double> &miu) {
+void MatchParams::computeMean(const Mat &patch, const Mat &mask, optional<double> &miu) {
 	if(miu)
 		return;
 
-	miu = *cv::mean(patch, mask).val;
+	miu = *mean(patch, mask).val;
 	assert(*miu > -EPS && *miu < 255.+EPS);
 }
 
-void MatchParams::computeFg(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeFg(const Mat &patch, const SymData &symData) {
 	computeMean(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg);
 }
 
-void MatchParams::computeBg(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeBg(const Mat &patch, const SymData &symData) {
 	computeMean(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg);
 }
 
-void MatchParams::computeContrast(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeContrast(const Mat &patch, const SymData &symData) {
 	if(contrast)
 		return;
 
@@ -81,15 +82,15 @@ void MatchParams::computeContrast(const cv::Mat &patch, const SymData &symData) 
 	assert(abs(contrast.value()) < 255.5);
 }
 
-void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
+void MatchParams::computeSdev(const Mat &patch, const Mat &mask,
 							  optional<double> &miu, optional<double> &sdev) {
 	if(sdev)
 		return;
 
 	if(miu) {
-		sdev = cv::norm(patch - miu.value(), cv::NORM_L2, mask) / sqrt(countNonZero(mask));
+		sdev = norm(patch - miu.value(), NORM_L2, mask) / sqrt(countNonZero(mask));
 	} else {
-		cv::Scalar miu_, sdev_;
+		Scalar miu_, sdev_;
 		meanStdDev(patch, miu_, sdev_, mask);
 		miu = *miu_.val;
 		sdev = *sdev_.val;
@@ -97,22 +98,22 @@ void MatchParams::computeSdev(const cv::Mat &patch, const cv::Mat &mask,
 	assert(*sdev < CachedData::sdevMaxFgBg+EPS);
 }
 
-void MatchParams::computeSdevFg(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevFg(const Mat &patch, const SymData &symData) {
 	computeSdev(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg, sdevFg);
 }
 
-void MatchParams::computeSdevBg(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevBg(const Mat &patch, const SymData &symData) {
 	computeSdev(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg, sdevBg);
 }
 
-void MatchParams::computePatchApprox(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computePatchApprox(const Mat &patch, const SymData &symData) {
 	if(patchApprox)
 		return;
 
 	computeContrast(patch, symData);
 
 	if(contrast.value() == 0.) {
-		patchApprox = cv::Mat(patch.rows, patch.cols, CV_64FC1, cv::Scalar(bg.value()));
+		patchApprox = Mat(patch.rows, patch.cols, CV_64FC1, Scalar(bg.value()));
 		return;
 	}
 
@@ -120,7 +121,7 @@ void MatchParams::computePatchApprox(const cv::Mat &patch, const SymData &symDat
 		symData.symAndMasks[SymData::GROUNDED_SYM_IDX] * (contrast.value() / symData.diffMinMax);
 }
 
-void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) {
+void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 	if(sdevEdge)
 		return;
 
@@ -133,7 +134,7 @@ void MatchParams::computeSdevEdge(const cv::Mat &patch, const SymData &symData) 
 
 	computePatchApprox(patch, symData);
 
-	sdevEdge = cv::norm(patch, patchApprox.value(), cv::NORM_L2, edgeMask) / sqrt(cnz);
+	sdevEdge = norm(patch, patchApprox.value(), NORM_L2, edgeMask) / sqrt(cnz);
 	assert(*sdevEdge < CachedData::sdevMaxEdge+EPS);
 }
 
@@ -145,22 +146,22 @@ void MatchParams::computeSymDensity(const SymData &symData, const CachedData &ca
 	assert(*symDensity < 1.+EPS);
 }
 
-void MatchParams::computeMcPatch(const cv::Mat &patch, const CachedData &cachedData) {
+void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData) {
 	if(mcPatch)
 		return;
 
 	const double patchSum = *sum(patch).val;
-	cv::Mat temp, temp1;
+	Mat temp, temp1;
 	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 	reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
 
-	mcPatch = cv::Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
+	mcPatch = Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
 		/ patchSum;
 	assert(mcPatch->x > -EPS && mcPatch->x < cachedData.sz_1+EPS);
 	assert(mcPatch->y > -EPS && mcPatch->y < cachedData.sz_1+EPS);
 }
 
-void MatchParams::computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
+void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 									   const CachedData &cachedData) {
 	if(mcPatchApprox)
 		return;
@@ -175,12 +176,12 @@ void MatchParams::computeMcPatchApprox(const cv::Mat &patch, const SymData &symD
 	if(denominator == 0.)
 		mcPatchApprox = cachedData.patchCenter;
 	else
-		mcPatchApprox = (k * symData.mc + cv::Point2d(delta, delta)) / denominator;
+		mcPatchApprox = (k * symData.mc + Point2d(delta, delta)) / denominator;
 	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < cachedData.sz_1+EPS);
 	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < cachedData.sz_1+EPS);
 }
 
-void MatchParams::computeMcsOffset(const cv::Mat &patch, const SymData &symData,
+void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 								   const CachedData &cachedData) {
 	if(mcsOffset)
 		return;
@@ -188,7 +189,7 @@ void MatchParams::computeMcsOffset(const cv::Mat &patch, const SymData &symData,
 	computeMcPatch(patch, cachedData);
 	computeMcPatchApprox(patch, symData, cachedData);
 
-	mcsOffset = cv::norm(mcPatch.value() - mcPatchApprox.value());
+	mcsOffset = norm(mcPatch.value() - mcPatchApprox.value());
 	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
 }
 
@@ -211,23 +212,23 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 
 	const auto &dataOfBest = *pSymData;
 	const auto &matricesForBest = dataOfBest.symAndMasks;
-	const cv::Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
+	const Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
 
-	cv::Mat patchResult;
+	Mat patchResult;
 
 	if(patch.isColor) {
-		const cv::Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
+		const Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
 			&bgMask = matricesForBest[SymData::BG_MASK_IDX];
 
-		vector<cv::Mat> channels;
-		cv::split(patch.orig, channels);
+		vector<Mat> channels;
+		split(patch.orig, channels);
 
 		double miuFg, miuBg, newDiff, diffFgBg = 0.;
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
-			miuFg = *cv::mean(ch, fgMask).val;
-			miuBg = *cv::mean(ch, bgMask).val;
+			miuFg = *mean(ch, fgMask).val;
+			miuBg = *mean(ch, bgMask).val;
 			newDiff = miuFg - miuBg;
 
 			groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.diffMinMax, miuBg);
@@ -236,16 +237,16 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		}
 
 		if(diffFgBg < 3.*ms.getBlankThreshold())
-			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC3, cv::mean(patch.orig));
+			patchResult = Mat(patch.sz, patch.sz, CV_8UC3, mean(patch.orig));
 		else
-			cv::merge(channels, patchResult);
+			merge(channels, patchResult);
 
 	} else { // grayscale result
 		auto &params = bestVariant.params;
 		params.computeContrast(patch.orig, *pSymData);
 
 		if(abs(*params.contrast) < ms.getBlankThreshold())
-			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC1, cv::Scalar(*cv::mean(patch.orig).val));
+			patchResult = Mat(patch.sz, patch.sz, CV_8UC1, Scalar(*mean(patch.orig).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
 			*params.contrast / dataOfBest.diffMinMax,
@@ -261,7 +262,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	// Hybrid Result Mode - Combine the approximation with the blurred patch:
 	// the less satisfactory the approximation is,
 	// the more the weight of the blurred patch should be
-	cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
+	Scalar miu, sdevApproximation, sdevBlurredPatch;
 	meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
 	meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
@@ -272,7 +273,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	}
 	const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
 	const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
-	cv::Mat combination;
+	Mat combination;
 	addWeighted(patch.blurred, weight, bestVariant.approx, 1.-weight, 0., combination);
 	bestVariant.approx = combination;
 

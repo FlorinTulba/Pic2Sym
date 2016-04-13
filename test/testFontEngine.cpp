@@ -44,12 +44,13 @@
 
 using namespace std;
 using namespace boost;
+using namespace cv;
 
 namespace ut {
 	/// Fixture reducing some declarative effort from tests
 	class FontEngineFixtComputations : public Fixt {
 		unsigned sz;			///< patch side length. Use setSz and getSz to access it within tests
-		cv::Mat consec, revConsec;	///< column vectors of consecutive values (updated by setSz; getters available)
+		Mat consec, revConsec;	///< column vectors of consecutive values (updated by setSz; getters available)
 
 	protected:
 		vector<unsigned char> pixels;		///< Data defining the glyph. Uses ASCENDING vertical axis
@@ -58,18 +59,18 @@ namespace ut {
 
 	public:
 		double gs = 0.; ///< glyph sum to be computed within each test case
-		cv::Point2d mc;		///< mass-center to be computed within each test case
+		Point2d mc;		///< mass-center to be computed within each test case
 
-		const cv::Mat& getConsec() const { return consec; }
-		const cv::Mat& getRevConsec() const { return revConsec; }
+		const Mat& getConsec() const { return consec; }
+		const Mat& getRevConsec() const { return revConsec; }
 		unsigned getSz() const { return sz; }
 
 		/// Setter of sz. Updates consec and revConsec
 		void setSz(unsigned sz_) {
 			sz = sz_;
-			consec = cv::Mat(1, sz_, CV_64FC1);
+			consec = Mat(1, sz_, CV_64FC1);
 			iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..sz-1
-			cv::flip(consec, revConsec, 1);	// sz-1..0
+			flip(consec, revConsec, 1);	// sz-1..0
 		}
 
 		/// Creates a fixture with the provided sz value

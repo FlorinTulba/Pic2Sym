@@ -39,10 +39,11 @@
 #include "matchParams.h"
 
 using namespace std;
+using namespace cv;
 
 std::vector<MatchAspect*> MatchAspect::availAspects;
 
-double FgMatch::assessMatch(const cv::Mat &patch,
+double FgMatch::assessMatch(const Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevFg(patch, symData);
@@ -57,7 +58,7 @@ double FgMatch::assessMatch(const cv::Mat &patch,
 	return pow(1. - mp.sdevFg.value() / CachedData::sdevMaxFgBg, k);
 }
 
-double BgMatch::assessMatch(const cv::Mat &patch,
+double BgMatch::assessMatch(const Mat &patch,
 							const SymData &symData,
 							MatchParams &mp) const {
 	mp.computeSdevBg(patch, symData);
@@ -72,7 +73,7 @@ double BgMatch::assessMatch(const cv::Mat &patch,
 	return pow(1. - mp.sdevBg.value()/CachedData::sdevMaxFgBg, k);
 }
 
-double EdgeMatch::assessMatch(const cv::Mat &patch,
+double EdgeMatch::assessMatch(const Mat &patch,
 							  const SymData &symData,
 							  MatchParams &mp) const {
 	mp.computeSdevEdge(patch, symData);
@@ -87,7 +88,7 @@ double EdgeMatch::assessMatch(const cv::Mat &patch,
 	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMaxEdge, k);
 }
 
-double BetterContrast::assessMatch(const cv::Mat &patch,
+double BetterContrast::assessMatch(const Mat &patch,
 								   const SymData &symData,
 								   MatchParams &mp) const {
 	mp.computeContrast(patch, symData);
@@ -97,7 +98,7 @@ double BetterContrast::assessMatch(const cv::Mat &patch,
 	return pow( abs(mp.contrast.value()) / 255., k);
 }
 
-double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
+double GravitationalSmoothness::assessMatch(const Mat &patch,
 											const SymData &symData,
 											MatchParams &mp) const {
 	mp.computeMcsOffset(patch, symData, cachedData);
@@ -113,21 +114,21 @@ double GravitationalSmoothness::assessMatch(const cv::Mat &patch,
 			   cachedData.complPrefMaxMcDist, k);
 }
 
-double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
+double DirectionalSmoothness::assessMatch(const Mat &patch,
 										  const SymData &symData,
 										  MatchParams &mp) const {
 	static const double SQRT2 = sqrt(2), TWOmSQRT2 = 2. - SQRT2;
-	static const cv::Point2d ORIGIN; // (0, 0)
+	static const Point2d ORIGIN; // (0, 0)
 
 	mp.computeMcsOffset(patch, symData, cachedData);
 
-	const cv::Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
-	const cv::Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
+	const Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
+	const Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1	
 	double cosAngleMCs = 0.; // -1..1 range, best when 1
 	if(relMcGlyph != ORIGIN && relMcPatch != ORIGIN) // avoid DivBy0
-		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (cv::norm(relMcGlyph) * cv::norm(relMcPatch));
+		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (norm(relMcGlyph) * norm(relMcPatch));
 
 	// Penalizes large angle between mc-s, but no so much when they are close to each other.
 	// The mc-s are consider close when the distance between them is < preferredMaxMcDist
@@ -139,7 +140,7 @@ double DirectionalSmoothness::assessMatch(const cv::Mat &patch,
 			   cachedData.preferredMaxMcDist);
 }
 
-double LargerSym::assessMatch(const cv::Mat&,
+double LargerSym::assessMatch(const Mat&,
 							  const SymData &symData,
 							  MatchParams &mp) const {
 	mp.computeSymDensity(symData, cachedData);
