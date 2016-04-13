@@ -55,136 +55,90 @@ struct IMatch /*abstract*/ {
 	virtual ~IMatch() = 0 {}
 };
 
-/// Base class for all considered aspects of matching.
+/**
+Base class for all considered aspects of matching.
+
+Derived classes should have protected constructors and
+objects should be created only by the MatchAspectsFactory class.
+
+UNIT_TESTING should still have the constructors of the derived classes as public.
+*/
 class MatchAspect /*abstract*/ : public IMatch {
 protected:
-	static std::vector<MatchAspect*> availAspects; ///< every created aspect gets registered in here
+	/// Provides a list of names of the already registered aspects
+	static std::vector<const std::string>& registeredAspects();
+
+	/// Helper class to populate registeredAspects.
+	/// Define a static private field of this type in each subclass using
+	/// REGISTER_MATCH_ASPECT and REGISTERED_MATCH_ASPECT defined below
+	struct NameRegistrator {
+		/// adds a new aspect name to registeredAspects
+		NameRegistrator(const std::string &aspectType) {
+			registeredAspects().push_back(aspectType);
+		}
+	};
 
 	const CachedData &cachedData; ///< cached information from matching engine
 	const double &k; ///< cached coefficient from MatchSettings, corresponding to current aspect
 
-	/// Base class constructor registers each created aspect in availAspects
+	/// Base class constructor
 	MatchAspect(const CachedData &cachedData_, const double &k_) :
-			cachedData(cachedData_), k(k_) {
-		availAspects.push_back(this);
-	}
+			cachedData(cachedData_), k(k_) {}
 
 public:
+	virtual ~MatchAspect() = 0 {}
+
 	/// All aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
 	bool enabled() const { return k > 0.; }
 
-	/// Provides the list of created aspects
-	static const std::vector<MatchAspect*>& getAvailAspects() { return availAspects; }
-
-#ifdef UNIT_TESTING
-	/// There is a global fixture that sets up a test context free of previously created aspects
-	static void clearAvailAspects() { availAspects.clear(); }
-#endif
+	/// Provides the list of names of all registered aspects
+	static const std::vector<const std::string>& aspectNames() { return registeredAspects(); }
 };
 
-/**
-Selecting a symbol with best structural similarity.
+/// Place this call in a private region of an aspect class to register (HEADER file).
+/// This is only the declaration of 'nameRegistrator'.
+#define REGISTER_MATCH_ASPECT(AspectName) \
+	static const NameRegistrator nameRegistrator; /** Instance that registers this Aspect */ \
+	/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
+	friend class std::_Ref_count_obj<AspectName>
 
-See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
+/// Place this call in a SOURCE file, to define the declared static 'nameRegistrator'.
+/// This is the definition of 'nameRegistrator'.
+#define REGISTERED_MATCH_ASPECT(AspectName) \
+const AspectName::NameRegistrator AspectName::nameRegistrator(#AspectName)
+
+/*
+STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
+==================================================
+
+(1) Create a class for it using the template:
+
+	/// Class Details
+	class <NewAspect> : public MatchAspect {
+		REGISTER_MATCH_ASPECT(<NewAspect>);
+
+	public:
+		/// scores the match between a gray patch and a symbol based on current aspect
+		double assessMatch(const cv::Mat &patch,
+						   const SymData &symData,
+						   MatchParams &mp) const override; // IMatch override
+
+	#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
+	protected:
+	#endif
+		/// Constructor Details
+		<NewAspect>(const CachedData &cachedData_, const MatchSettings &ms);
+	};
+
+(2) Place following call in a cpp unit:
+
+	REGISTERED_MATCH_ASPECT(<NewAspect>)
+
+(3) Include the file declaring <NewAspect> in 'matchAspectsFactory.cpp' and
+	add the line below to 'MatchAspectsFactory::create()'.
+
+	HANDLE_MATCH_ASPECT(<NewAspect>);
+
 */
-class StructuralSimilarity : public MatchAspect {
-public:
-	static const cv::Size WIN_SIZE;	///< recommended window
-	static const double SIGMA;		///< recommended standard deviation
-	static const double C1;			///< the 1st used stabilizer coefficient
-	static const double C2;			///< the 2nd used stabilizer coefficient
-
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSsim()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Selecting a symbol with the scene underneath it as uniform as possible
-class FgMatch : public MatchAspect {
-public:
-	FgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSdevFg()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Aspect ensuring more uniform background scene around the selected symbol
-class BgMatch : public MatchAspect {
-public:
-	BgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSdevBg()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Aspect ensuring the edges of the selected symbol seem to appear also on the patch
-class EdgeMatch : public MatchAspect {
-public:
-	EdgeMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSdevEdge()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Discouraging barely visible symbols
-class BetterContrast : public MatchAspect {
-public:
-	BetterContrast(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kContrast()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Aspect concentrating on where's the center of gravity of the patch & its approximation
-class GravitationalSmoothness : public MatchAspect {
-public:
-	GravitationalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kMCsOffset()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Aspect encouraging more accuracy while approximating the direction of the patch
-class DirectionalSmoothness : public MatchAspect {
-public:
-	DirectionalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kCosAngleMCs()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
-
-/// Match aspect concerning user's preference for larger symbols as approximations
-class LargerSym : public MatchAspect {
-public:
-	LargerSym(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSymDensity()) {}
-
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat&,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-};
 
 #endif

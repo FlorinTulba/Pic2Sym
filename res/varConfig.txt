@@ -64,6 +64,10 @@ StructuralSimilarity::SIGMA	1.5
 StructuralSimilarity::C1	6.5025
 StructuralSimilarity::C2	58.5225
 
+; Typical Blur parameters
+BlurWindowSize	11
+BlurStandardDeviation	1.5
+
 ;==============================
 ; Configurable Texts or Labels
 ;==============================

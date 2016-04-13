@@ -36,6 +36,7 @@
 #include "controller.h"
 #include "controlPanel.h"
 #include "matchParams.h"
+#include "matchAspects.h"
 #include "misc.h"
 #include "propsReader.h"
 #include "settings.h"
@@ -90,6 +91,10 @@ const Size StructuralSimilarity::WIN_SIZE(StructuralSimilarity_RecommendedWindow
 const double READ_DOUBLE_PROP(StructuralSimilarity::SIGMA);
 const double READ_DOUBLE_PROP(StructuralSimilarity::C1);
 const double READ_DOUBLE_PROP(StructuralSimilarity::C2);
+
+static const int READ_INT_PROP(BlurWindowSize);
+extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
+extern const double READ_DOUBLE_PROP(BlurStandardDeviation);
 
 #ifndef UNIT_TESTING
 const int READ_INT_PROP(Comparator::trackMax);

@@ -57,6 +57,7 @@
 #include "structuralSimilarity.cpp"
 #include "propsReader.cpp"
 #include "transformTrace.cpp"
+#include "matchAspectsFactory.cpp"
 
 #include <ctime>
 #include <random>
@@ -74,8 +75,6 @@ namespace ut {
 		Controller::initImg = Controller::initFontEngine = Controller::initMatchEngine =
 		Controller::initTransformer = Controller::initComparator = Controller::initControlPanel =
 			true;
-
-		MatchAspect::clearAvailAspects();
 	}
 
 	Fixt::~Fixt() {

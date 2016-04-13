@@ -19,6 +19,7 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\matchAspects.h" />
     <ClInclude Include="src\cachedData.h" />
     <ClInclude Include="src\controller.h" />
     <ClInclude Include="src\controlPanel.h" />
@@ -27,6 +28,7 @@
     <ClInclude Include="src\img.h" />
     <ClInclude Include="src\imgSettings.h" />
     <ClInclude Include="src\match.h" />
+    <ClInclude Include="src\matchAspectsFactory.h" />
     <ClInclude Include="src\matchEngine.h" />
     <ClInclude Include="src\matchParams.h" />
     <ClInclude Include="src\matchSettingsManip.h" />
@@ -48,6 +50,7 @@
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
+    <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\img.cpp" />

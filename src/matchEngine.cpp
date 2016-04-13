@@ -34,6 +34,7 @@
  ****************************************************************************************/
 
 #include "matchEngine.h"
+#include "matchAspectsFactory.h"
 #include "matchParams.h"
 #include "patch.h"
 #include "settings.h"
@@ -64,12 +65,11 @@ namespace {
 	}
 }
 
-MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) :
-		cfg(cfg_), fe(fe_), strSimMatch(cachedData, cfg_.matchSettings()),
-		fgMatch(cachedData, cfg_.matchSettings()), bgMatch(cachedData, cfg_.matchSettings()),
-		edgeMatch(cachedData, cfg_.matchSettings()), conMatch(cachedData, cfg_.matchSettings()),
-		grMatch(cachedData, cfg_.matchSettings()), dirMatch(cachedData, cfg_.matchSettings()),
-		lsMatch(cachedData, cfg_.matchSettings()) {}
+MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_) {
+	for(const auto &aspectName: MatchAspect::aspectNames())
+		availAspects.push_back(
+			MatchAspectsFactory::create(aspectName, cachedData, cfg_.matchSettings()));
+}
 
 void MatchEngine::updateSymbols() {
 	const string idForSymsToUse = getIdForSymsToUse(); // throws for invalid cmap/size
@@ -101,13 +101,15 @@ void MatchEngine::updateSymbols() {
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 		// Storing a blurred version of the grounded glyph for structural similarity match aspect
+		extern const Size BlurWinSize;
+		extern const double BlurStandardDeviation;
 		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 BlurWinSize, BlurStandardDeviation, 0.,
 					 BORDER_REPLICATE);
 
 		// Storing also the variance of the grounded glyph for structural similarity match aspect
 		GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 BlurWinSize, BlurStandardDeviation, 0.,
 					 BORDER_REPLICATE);
 		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
@@ -150,10 +152,10 @@ void MatchEngine::getReady() {
 
 	cachedData.update(cfg.symSettings().getFontSz(), fe);
 
-	aspects.clear();
-	for(auto pAspect : MatchAspect::getAvailAspects())
+	enabledAspects.clear();
+	for(auto pAspect : availAspects)
 		if(pAspect->enabled())
-			aspects.push_back(pAspect);
+			enabledAspects.push_back(&*pAspect);
 }
 
 BestMatch MatchEngine::approxPatch(const Patch &patch) const {
@@ -176,7 +178,7 @@ double MatchEngine::assessMatch(const Mat &patch,
 								const SymData &symData,
 								MatchParams &mp) const {
 	double score = 1.;
-	for(auto pAspect : aspects)
+	for(auto pAspect : enabledAspects)
 		score *= pAspect->assessMatch(patch, symData, mp);
 	return score;
 }

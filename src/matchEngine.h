@@ -64,16 +64,8 @@ protected:
 	VSymData symsSet;			///< set of most information on each symbol
 
 	// matching aspects
-	StructuralSimilarity strSimMatch;
-	FgMatch fgMatch;
-	BgMatch bgMatch;
-	EdgeMatch edgeMatch;
-	BetterContrast conMatch;
-	GravitationalSmoothness grMatch;
-	DirectionalSmoothness dirMatch;
-	LargerSym lsMatch;
-
-	std::vector<MatchAspect*> aspects;	///< only the enabled aspects
+	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
+	std::vector<MatchAspect*> enabledAspects;				///< only the enabled aspects
 
 	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
 

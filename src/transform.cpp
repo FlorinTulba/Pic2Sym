@@ -95,9 +95,9 @@ void Transformer::run() {
 
 	result = Mat(resized.rows, resized.cols, resized.type());
 	Mat resizedBlurred;
-	GaussianBlur(resized, resizedBlurred,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
-					 BORDER_REPLICATE);
+	extern const Size BlurWinSize;
+	extern const double BlurStandardDeviation;
+	GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
 
 	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
 		ctrler.reportTransformationProgress((double)r/h);

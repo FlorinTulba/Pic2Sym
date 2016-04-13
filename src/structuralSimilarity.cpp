@@ -34,6 +34,7 @@
  ****************************************************************************************/
 
 #include "match.h"
+#include "matchAspects.h"
 #include "matchParams.h"
 #include "misc.h"
 
@@ -41,6 +42,8 @@
 
 using namespace std;
 using namespace cv;
+
+REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
 /*
 Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .

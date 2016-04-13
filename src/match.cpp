@@ -34,6 +34,7 @@
  ****************************************************************************************/
 
 #include "match.h"
+#include "matchAspects.h"
 #include "symData.h"
 #include "cachedData.h"
 #include "matchParams.h"
@@ -41,7 +42,18 @@
 using namespace std;
 using namespace cv;
 
-std::vector<MatchAspect*> MatchAspect::availAspects;
+REGISTERED_MATCH_ASPECT(FgMatch);
+REGISTERED_MATCH_ASPECT(BgMatch);
+REGISTERED_MATCH_ASPECT(EdgeMatch);
+REGISTERED_MATCH_ASPECT(BetterContrast);
+REGISTERED_MATCH_ASPECT(GravitationalSmoothness);
+REGISTERED_MATCH_ASPECT(DirectionalSmoothness);
+REGISTERED_MATCH_ASPECT(LargerSym);
+
+vector<const string>& MatchAspect::registeredAspects() {
+	static vector<const string> names;
+	return names;
+}
 
 double FgMatch::assessMatch(const Mat &patch,
 							const SymData &symData,
