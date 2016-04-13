@@ -68,17 +68,22 @@ std::wostream& operator<<(std::wostream &os, const BestMatch &bm) {
 	else {
 		unsigned long symCode = *bm.symCode;
 		if(bm.unicode) {
-			if(symCode == (unsigned long)',')
-				os<<L"COMMA";
-			else if(symCode == (unsigned long)'(')
-				os<<L"OPEN_PAR";
-			else if(symCode == (unsigned long)')')
-				os<<L"CLOSE_PAR";
-			else if(os<<(wchar_t)symCode)
-				os<<'('<<symCode<<')';
-			else {
-				os.clear();
-				os<<symCode;
+			switch(symCode) {
+				case (unsigned long)',':
+					os<<L"COMMA"; break;
+				case (unsigned long)'(':
+					os<<L"OPEN_PAR"; break;
+				case (unsigned long)')':
+					os<<L"CLOSE_PAR"; break;
+				default:
+					// for other characters, check if they can be displayed on the current console
+					if(os<<(wchar_t)symCode) {
+						// when they can be displayed, add in () their code
+						os<<'('<<symCode<<')';
+					} else { // when they can't be displayed, show just their code
+						os.clear(); // clear the error first
+						os<<symCode;
+					}
 			}
 		} else
 			os<<symCode;
