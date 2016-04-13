@@ -41,17 +41,17 @@
 using namespace std;
 using namespace cv;
 
-Patch::Patch(const Mat &patch_, const Mat &blurredPatch_, bool isColor_) :
-		patch(patch_), blurredPatch(blurredPatch_), sz(patch_.rows), isColor(isColor_) {
+Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
+		orig(orig_), blurred(blurred_), sz(orig_.rows), isColor(isColor_) {
 	// Don't approximate rather uniform patches
-	Mat grayBlurredPatch;
+	Mat grayBlurred;
 	if(isColor)
-		cv::cvtColor(blurredPatch, grayBlurredPatch, cv::COLOR_RGB2GRAY);
+		cv::cvtColor(blurred, grayBlurred, cv::COLOR_RGB2GRAY);
 	else
-		grayBlurredPatch = blurredPatch;
+		grayBlurred = blurred;
 
 	double minVal, maxVal;
-	cv::minMaxIdx(grayBlurredPatch, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
+	cv::minMaxIdx(grayBlurred, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
 	extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
 	if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED)
 		needsApproximation = false;
@@ -59,12 +59,12 @@ Patch::Patch(const Mat &patch_, const Mat &blurredPatch_, bool isColor_) :
 	// Configurable source of transformation - either the patch itself, or its blurred version:
 	extern const bool Transform_BlurredPatches_InsteadOf_Originals;
 	const cv::Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
-				blurredPatch : patch;
+				blurred : orig;
 	if(isColor)
-		cv::cvtColor(patch2Process, grayPatchD, cv::COLOR_RGB2GRAY);
+		cv::cvtColor(patch2Process, grayD, cv::COLOR_RGB2GRAY);
 	else
-		grayPatchD = patch2Process;
-	grayPatchD.convertTo(grayPatchD, CV_64FC1);
+		grayD = patch2Process;
+	grayD.convertTo(grayD, CV_64FC1);
 }
 
 const BestMatch Patch::approximate(const MatchSettings &ms, const MatchEngine &me) const {

@@ -49,25 +49,25 @@ Separates patch approximation logic from the rest.
 */
 class Patch {
 protected:
-	cv::Mat grayPatchD;				///< gray version of the patch with double values
+	cv::Mat grayD;					///< gray version of the patch to process with double values
 	bool needsApproximation = true;	///< patches that appear uniform use 'blurredPatch' as approximation
 
 public:
-	const cv::Mat &patch;			///< the patch to approximate
-	const unsigned sz;				///< patch size
-	const bool isColor;				///< is the patch color or grayscale
-	const cv::Mat &blurredPatch;	///< the blurred version of the patch
+	const cv::Mat &orig;	///< the patch to approximate
+	const unsigned sz;		///< patch size
+	const bool isColor;		///< is the patch color or grayscale
+	const cv::Mat &blurred;	///< the blurred version of the orig
 
 	/**
 	Performs the transformation of the patch.
-	@param patch_ patch to be approximated
-	@param blurredPatch_ blurred version of the patch
+	@param orig_ patch to be approximated
+	@param blurred_ blurred version of the patch
 	@param isColor_ type of image - color => true; grayscale => false
 	*/
-	Patch(const cv::Mat &patch_, const cv::Mat &blurredPatch_, bool isColor_);
+	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
 
 	/// specifies which matrix to use during the approximation process
-	const cv::Mat& matrixToApprox() const { return grayPatchD; }
+	const cv::Mat& matrixToApprox() const { return grayD; }
 
 	/// Returns the approximation of the patch
 	const BestMatch approximate(const MatchSettings &ms, const MatchEngine &me) const;

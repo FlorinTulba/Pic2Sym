@@ -205,7 +205,7 @@ BestMatch& BestMatch::update(double score_, unsigned long symCode_,
 
 BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	if(nullptr == pSymData) {
-		bestVariant.approx = patch.blurredPatch;
+		bestVariant.approx = patch.blurred;
 		return *this;
 	}
 
@@ -220,7 +220,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			&bgMask = matricesForBest[SymData::BG_MASK_IDX];
 
 		vector<cv::Mat> channels;
-		cv::split(patch.patch, channels);
+		cv::split(patch.orig, channels);
 
 		double miuFg, miuBg, newDiff, diffFgBg = 0.;
 		for(auto &ch : channels) {
@@ -236,16 +236,16 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		}
 
 		if(diffFgBg < 3.*ms.getBlankThreshold())
-			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC3, cv::mean(patch.patch));
+			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC3, cv::mean(patch.orig));
 		else
 			cv::merge(channels, patchResult);
 
 	} else { // grayscale result
 		auto &params = bestVariant.params;
-		params.computeContrast(patch.patch, *pSymData);
+		params.computeContrast(patch.orig, *pSymData);
 
 		if(abs(*params.contrast) < ms.getBlankThreshold())
-			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC1, cv::Scalar(*cv::mean(patch.patch).val));
+			patchResult = cv::Mat(patch.sz, patch.sz, CV_8UC1, cv::Scalar(*cv::mean(patch.orig).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
 			*params.contrast / dataOfBest.diffMinMax,
@@ -262,8 +262,8 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	// the less satisfactory the approximation is,
 	// the more the weight of the blurred patch should be
 	cv::Scalar miu, sdevApproximation, sdevBlurredPatch;
-	meanStdDev(patch.patch-bestVariant.approx, miu, sdevApproximation);
-	meanStdDev(patch.patch-patch.blurredPatch, miu, sdevBlurredPatch);
+	meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
+	meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;
 	if(patch.isColor) {
@@ -273,7 +273,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
 	const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
 	cv::Mat combination;
-	addWeighted(patch.blurredPatch, weight, bestVariant.approx, 1.-weight, 0., combination);
+	addWeighted(patch.blurred, weight, bestVariant.approx, 1.-weight, 0., combination);
 	bestVariant.approx = combination;
 
 	return *this;
