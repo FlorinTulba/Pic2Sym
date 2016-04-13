@@ -411,7 +411,7 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 	::MatchEngine::VSymDataCIt it, itEnd;
 	tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
 	const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
-	vector<std::tuple<const Mat, const Mat, const BestMatch>> mismatches;
+	vector<const BestMatch> mismatches;
 	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
 		if(idx % step == 0U) // report progress
 			cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
@@ -427,7 +427,7 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		const Mat &approximated = best.bestVariant.approx;
 
 		if(best.symIdx != idx) {
-			mismatches.emplace_back(patchD255, approximated, best);
+			mismatches.push_back(best);
 			MatchParams mp;
 			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
 			cerr<<"Approximation achieved score="

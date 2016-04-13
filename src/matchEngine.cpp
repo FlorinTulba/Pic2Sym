@@ -160,6 +160,9 @@ void MatchEngine::getReady() {
 
 BestMatch MatchEngine::approxPatch(const Patch &patch) const {
 	BestMatch best(patch);
+	if(!patch.needsApproximation)
+		return BestMatch(patch).updatePatchApprox(cfg.matchSettings());
+
 	MatchParams mp;
 	unsigned idx = 0U;
 	for(const auto &symData : symsSet) {

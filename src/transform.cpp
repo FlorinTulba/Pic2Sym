@@ -110,7 +110,7 @@ void Transformer::run() {
 						blurredPatch(resizedBlurred, rowRange, colRange);
 
 			Patch p(patch, blurredPatch, isColor);
-			const BestMatch best = p.approximate(ms, me);
+			const BestMatch best = me.approxPatch(p);
 			const Mat &approximation = best.bestVariant.approx;
 			Mat destRegion(result, rowRange, colRange);
 			approximation.copyTo(destRegion);

@@ -81,13 +81,13 @@ namespace ut {
 	}
 
 	void showMismatches(const string &testTitle,
-						const vector<std::tuple<const Mat, const Mat, const BestMatch>> &mismatches) {
+						const vector<const BestMatch> &mismatches) {
 		if(mismatches.empty())
 			return;
 		
 		const unsigned cases = (unsigned)mismatches.size();
 		const auto &firstItem = mismatches.front();
-		const auto &firstRefM = get<0>(firstItem);
+		const auto &firstRefM = firstItem.patch.orig;
 		const unsigned tileSz = (unsigned)firstRefM.rows;
 		const bool isColor = firstRefM.channels() > 1;
 		cerr<<"There were "<<cases<<" unexpected matches"<<endl;
@@ -144,8 +144,8 @@ namespace ut {
 			for(unsigned c = 0U; c<widthTiles && idx<cases; ++c, ++idx) {
 				Range colRange(c*tileSz, (c+1)*tileSz);
 				const auto &item = mismatches[idx];
-				get<0>(item).copyTo(Mat(mRef, rowRange, colRange)); // reference
-				get<1>(item).copyTo(Mat(mRes, rowRange, colRange)); // result
+				item.patch.orig.copyTo(Mat(mRef, rowRange, colRange)); // reference
+				item.bestVariant.approx.copyTo(Mat(mRes, rowRange, colRange)); // result
 
 				// optionally present info about corresponding BestMatch get<2>(item)
 			}

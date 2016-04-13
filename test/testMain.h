@@ -84,10 +84,10 @@ namespace ut {
 	@param testTitle the name of the test producing mismatches.
 	It's appended with a unique id to distinguish among homonym tests
 	from different unit testing sessions.
-	@param mismatches vector of [noisy reference symbol; guessed symbol; guess motives] tuples
+	@param mismatches vector of BestMatch objects
 	*/
 	void showMismatches(const std::string &testTitle,
-		const std::vector<std::tuple<const cv::Mat, const cv::Mat, const BestMatch>> &mismatches);
+		const std::vector<const BestMatch> &mismatches);
 }
 
 #endif

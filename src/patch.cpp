@@ -66,11 +66,3 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 		grayD = patch2Process;
 	grayD.convertTo(grayD, CV_64FC1);
 }
-
-const BestMatch Patch::approximate(const MatchSettings &ms, const MatchEngine &me) const {
-	if(!needsApproximation)
-		return BestMatch(*this).updatePatchApprox(ms);
-
-	// The patch is less uniform, so it needs approximation
-	return me.approxPatch(*this);
-}

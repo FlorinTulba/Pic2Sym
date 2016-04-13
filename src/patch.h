@@ -36,8 +36,6 @@
 #ifndef H_PATCH
 #define H_PATCH
 
-#include "matchParams.h"
-
 #include <opencv2/core/core.hpp>
 
 // forward declarations
@@ -50,13 +48,13 @@ Separates patch approximation logic from the rest.
 class Patch {
 protected:
 	cv::Mat grayD;					///< gray version of the patch to process with double values
-	bool needsApproximation = true;	///< patches that appear uniform use 'blurredPatch' as approximation
 
 public:
-	const cv::Mat &orig;	///< the patch to approximate
+	bool needsApproximation = true;	///< patches that appear uniform use 'blurredPatch' as approximation
+	const cv::Mat orig;		///< the patch to approximate
 	const unsigned sz;		///< patch size
 	const bool isColor;		///< is the patch color or grayscale
-	const cv::Mat &blurred;	///< the blurred version of the orig
+	const cv::Mat blurred;	///< the blurred version of the orig
 
 	/**
 	Performs the transformation of the patch.
@@ -68,9 +66,6 @@ public:
 
 	/// specifies which matrix to use during the approximation process
 	const cv::Mat& matrixToApprox() const { return grayD; }
-
-	/// Returns the approximation of the patch
-	const BestMatch approximate(const MatchSettings &ms, const MatchEngine &me) const;
 };
 
 #endif

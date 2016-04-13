@@ -36,13 +36,14 @@
 #ifndef H_MATCH_PARAMS
 #define H_MATCH_PARAMS
 
+#include "patch.h"
+
 #include <boost/optional/optional.hpp>
 #include <opencv2/core/core.hpp>
 
 // forward declarations
 struct SymData;
 struct CachedData;
-class Patch;
 class MatchSettings;
 
 /// Holds relevant data during patch&glyph matching
@@ -128,7 +129,7 @@ struct ApproxVariant {
 
 /// Holds the best match found at a given time
 struct BestMatch {
-	const Patch &patch;			///< reference to the patch to approximate
+	const Patch patch;			///< the patch to approximate, together with some other details
 	
 	/// shouldn't assign, as 'patch' member is supposed to remain the same and assign can't guarantee it
 	void operator=(const BestMatch&) = delete;
