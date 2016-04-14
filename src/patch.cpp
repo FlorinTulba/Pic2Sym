@@ -41,6 +41,18 @@
 using namespace std;
 using namespace cv;
 
+static Mat blurredVersionOf(const Mat &orig_) {
+	extern const Size BlurWinSize;
+	extern const double BlurStandardDeviation;
+	Mat blurred;
+	GaussianBlur(orig_, blurred,
+				 BlurWinSize, BlurStandardDeviation, 0.,
+				 BORDER_REPLICATE);
+	return blurred;
+}
+
+Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
+
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 		orig(orig_), blurred(blurred_), sz(orig_.rows), isColor(isColor_) {
 	// Don't approximate rather uniform patches

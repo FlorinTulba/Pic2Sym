@@ -422,7 +422,7 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		alterFgBg(patchD255, it->minVal, it->diffMinMax);
 		addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
 
-		Patch thePatch(patchD255, patchD255, false);
+		Patch thePatch(patchD255);
 		BestMatch best = me.approxPatch(thePatch);
 		const Mat &approximated = best.bestVariant.approx;
 
