@@ -39,13 +39,21 @@
 #include "imgSettings.h"
 #include "views.h"
 #include "transform.h"
+#include "controlPanelActions.h"
+#include "presentCmap.h"
+#include "validateFont.h"
+#include "glyphsProgressTracker.h"
+#include "picTransformProgressTracker.h"
+#include "misc.h"
 
 #include <chrono>
 
 class ControlPanel; // forward declaration
 
 /// Manager of the views and data.
-class Controller {
+class Controller :
+	public IControlPanelActions, public IPresentCmap, public IValidateFont,
+	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
 protected:
 	// Data
 	Img &img;			///< original image to process after resizing
@@ -75,19 +83,9 @@ protected:
 	const std::string textForCmapOverlay(double elapsed) const; ///< Glyph loading duration
 	const std::string textForComparatorOverlay(double elapsed) const; ///< Transformation duration
 	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress
-	static const std::string PREFIX_GLYPH_PROGRESS; ///< Starting text for glyph progress reports
-	static const std::string PREFIX_TRANSFORMATION_PROGRESS; ///< Starting text for image transformation progress reports
 
 	void updateCmapStatusBar() const;	///< updates information about font family, encoding and size
 	void symbolsChanged();				///< triggered by new font family / encoding / size
-
-	/// called by FontEngine::newFont after installing a new font to update SymSettings
-	void selectedFontFile(const std::string &fName) const;
-	friend bool FontEngine::newFont(const std::string&);
-
-	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
-	void selectedEncoding(const std::string &encName) const;
-	friend bool FontEngine::setNthUniqueEncoding(unsigned);
 
 	/**
 	Shows a 'Please wait' window and reports progress.
@@ -96,12 +94,6 @@ protected:
 	@param title details about the ongoing operation
 	*/
 	void hourGlass(double progress, const std::string &title = "") const;
-
-	/// Called by friend class Timer from below when starting and ending the update of the symbol set
-	void symsSetUpdate(bool done = false, double elapsed = 0.) const;
-
-	/// Called by friend class Timer from below when starting and ending the image transformation
-	void imgTransform(bool done = false, double elapsed = 0.) const;
 
 	// Next 3 private methods do the ground work for their public correspondent methods
 	bool _newFontFamily(const std::string &fontFile, bool forceUpdate = false);
@@ -123,33 +115,31 @@ public:
 	Controller(Settings &s);	///< Initializes controller with Settings object s
 	~Controller();				///< destroys the windows
 
-	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
-	void restoreUserDefaultMatchSettings();		
-	void setUserDefaultMatchSettings() const; ///< saving current MatchSettings to 'initMatchSettings.cfg'
-
-	void loadSettings();		///< updating the Settings object
-	void saveSettings() const;	///< saving the Settings object
-
 	/// Waits for the user to press ESC and confirm he wants to leave
 	static void handleRequests();
 
-	// Settings from view passed to model
-	void newImage(const std::string &imgPath);
-	void newFontFamily(const std::string &fontFile);
-	void newFontEncoding(int encodingIdx);
-	bool newFontEncoding(const std::string &encName);
-	void newFontSize(int fontSz);
-	void newStructuralSimilarityFactor(double k);
-	void newUnderGlyphCorrectnessFactor(double k);
-	void newGlyphEdgeCorrectnessFactor(double k);
-	void newAsideGlyphCorrectnessFactor(double k);
-	void newContrastFactor(double k);
-	void newGravitationalSmoothnessFactor(double k);
-	void newDirectionalSmoothnessFactor(double k);
-	void newGlyphWeightFactor(double k);
-	void newThreshold4BlanksFactor(unsigned t);
-	void newHmaxSyms(int maxSyms);
-	void newVmaxSyms(int maxSyms);
+	// IControlPanelActions implementation below
+	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
+	void restoreUserDefaultMatchSettings() override;
+	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
+	void loadSettings() override;		///< updating the Settings object
+	void saveSettings() const override;	///< saving the Settings object
+	void newImage(const std::string &imgPath) override;
+	void newFontFamily(const std::string &fontFile) override;
+	void newFontEncoding(int encodingIdx) override;
+	bool newFontEncoding(const std::string &encName) override;
+	void newFontSize(int fontSz) override;
+	void newStructuralSimilarityFactor(double k) override;
+	void newUnderGlyphCorrectnessFactor(double k) override;
+	void newGlyphEdgeCorrectnessFactor(double k) override;
+	void newAsideGlyphCorrectnessFactor(double k) override;
+	void newContrastFactor(double k) override;
+	void newGravitationalSmoothnessFactor(double k) override;
+	void newDirectionalSmoothnessFactor(double k) override;
+	void newGlyphWeightFactor(double k) override;
+	void newThreshold4BlanksFactor(unsigned t) override;
+	void newHmaxSyms(int maxSyms) override;
+	void newVmaxSyms(int maxSyms) override;
 	/**
 	Sets the result mode:
 	- approximations only (actual result) - patches become symbols, with no cosmeticizing.
@@ -157,44 +147,64 @@ public:
 
 	@param hybrid boolean: when true, establishes the cosmeticized mode; otherwise leaves the actual result as it is
 	*/
-	void setResultMode(bool hybrid);
+	void setResultMode(bool hybrid) override;
+	bool performTransformation() override;
+	void showAboutDlg(const std::string &title, const std::wstring &content) override;
+	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
 
-	// Settings passed from model to view
-	unsigned getFontSize() const;
-	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const;
+	// Implementation of IPresentCmap below
+	unsigned getFontSize() const override;
+	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 
+	// Implementation of IValidateFont below
+	/// called by FontEngine::newFont after installing a new font to update SymSettings
+	void selectedFontFile(const std::string &fName) const override;
+	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
+	void selectedEncoding(const std::string &encName) const override;
+
+	// Implementation of IGlyphsProgressTracker below
 	/// Report progress about loading, adapting glyphs
-	void reportGlyphProgress(double progress) const;
+	void reportGlyphProgress(double progress) const override;
+	/// Called by TimerActions_SymSetUpdate from below when starting and ending the update of the symbol set
+	void symsSetUpdate(bool done = false, double elapsed = 0.) const override;
+	Timer createTimerForGlyphs() const override; ///< Creates the monitor to time the glyph loading and preprocessing
 
-	// Transformer
-	void updateResizedImg(const ResizedImg &resizedImg_);
-	bool performTransformation();
-	void reportTransformationProgress(double progress) const;
+	// Implementation of IPicTransformProgressTracker below
+	void updateResizedImg(const ResizedImg &resizedImg_) override;
+	void reportTransformationProgress(double progress) const override;
+	/// Called by TimerActions_ImgTransform from below when starting and ending the image transformation
+	void imgTransform(bool done = false, double elapsed = 0.) const override;
+	Timer createTimerForImgTransform() const override; ///< Creates the monitor to time the picture approximation process
 
-	/// Timing cmap updates and also image transformations
-	class Timer {
-	public:
-		enum struct ComputationType : unsigned char {
-			SYM_SET_UPDATE,	// used when updating the symbols set
-			IMG_TRANSFORM	// used when transforming an image
-		};
-	private:
-		const Controller &ctrler;
-		const ComputationType compType;
+	/// Base class for TimerActions_SymSetUpdate and TimerActions_ImgTransform
+	struct TimerActions_Controller : ITimerActions {
+	protected:
+		const Controller &ctrler; ///< actual manager of the events
 
-		/// the moment when computation started
-		const std::chrono::time_point<std::chrono::high_resolution_clock> start;
-
-		bool active = true;		///< true as long as not released
-
-	public:
-		Timer(const Controller &ctrler_, ComputationType compType_);	///< initializes start
-		~Timer();				///< if not released, reports duration
-
-		void release();			///< stops the timer
+		TimerActions_Controller(const Controller &ctrler_);
 	};
 
-	friend class Timer;
+	/// Actions for start & stop chronometer while timing glyphs loading & preprocessing
+	struct TimerActions_SymSetUpdate : TimerActions_Controller {
+		TimerActions_SymSetUpdate(const Controller &ctrler_);
+
+		void onStart() override;	///< action to be performed when the timer is started
+
+		/// action to be performed when the timer is released/deleted
+		/// @param elapsedS total elapsed time in seconds
+		void onRelease(double elapsedS) override;
+	};
+
+	/// Actions for start & stop chronometer while timing the approximation of the picture
+	struct TimerActions_ImgTransform : TimerActions_Controller {
+		TimerActions_ImgTransform(const Controller &ctrler_);
+
+		void onStart() override;	///< action to be performed when the timer is started
+
+		/// action to be performed when the timer is released/deleted
+		/// @param elapsedS total elapsed time in seconds
+		void onRelease(double elapsedS) override;
+	};
 
 #ifdef UNIT_TESTING
 	// Method available only in Unit Testing mode

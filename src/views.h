@@ -69,6 +69,9 @@ public:
 	void resize(int w, int h) const;
 };
 
+extern const int Comparator_trackMax;
+extern const double Comparator_defaultTransparency;
+
 /**
 View which permits comparing the original image with the transformed one.
 
@@ -77,9 +80,6 @@ so that the original can be more or less visible.
 */
 class Comparator : public CvWin {
 protected:
-	static const cv::String transpTrackName;	///< slider's handle
-	static const double defaultTransparency;	///< used transparency when the result appears
-	static const int trackMax;					///< transparency range 0..trackMax
 	static const cv::Mat noImage;				///< image to display initially (not for processing)
 
 	cv::Mat initial, result;	///< Compared items
@@ -106,13 +106,14 @@ public:
 
 	void setReference(const cv::Mat &reference_);
 	void setResult(const cv::Mat &result_,
-				   int transparency = (int)round(defaultTransparency * trackMax));
+				   int transparency =
+						(int)round(Comparator_defaultTransparency * Comparator_trackMax));
 	
 	using CvWin::resize; // to remain visible after declaring an overload below
 	void resize() const;
 };
 
-class Controller; // forward declaration
+struct IPresentCmap; // forward declaration
 
 /**
 Class for displaying the symbols from the current charmap (cmap).
@@ -122,10 +123,7 @@ can be browsed using the page slider.
 */
 class CmapInspect : public CvWin {
 protected:
-	static const cv::String pageTrackName;	///< page slider handle
-	static const cv::Size pageSz;			///< size of the window
-
-	const Controller &ctrler;	///< window manager
+	const IPresentCmap &cmapPresenter;	///< window manager
 
 	cv::Mat grid;				///< the symbols' `hive`
 	int page = 0;				///< page slider position
@@ -148,7 +146,7 @@ protected:
 	unsigned computeSymsPerPage() const;	///< determines how many symbols fit on a single page
 
 public:
-	CmapInspect(const Controller &ctrler_);
+	CmapInspect(const IPresentCmap &cmapPresenter_);
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
 

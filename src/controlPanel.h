@@ -42,7 +42,7 @@
 
 // forward declarations
 class Settings;
-class Controller;
+struct IControlPanelActions;
 class ImgSettings;
 class MatchSettings;
 
@@ -75,69 +75,42 @@ protected:
 
 		/// used for the slider controlling the structural similarity
 		struct StructuralSim {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double ssim);
 			static double fromSlider(int ssim);
 		};
 
 		/// used for the 3 sliders controlling the correctness
 		struct Correctness {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double correctness);
 			static double fromSlider(int correctness);
 		};
 
 		/// used for the slider controlling the contrast
 		struct Contrast {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double contrast);
 			static double fromSlider(int contrast);
 		};
 
 		/// used for the slider controlling the 'gravitational' smoothness
 		struct Gravity {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double gravity);
 			static double fromSlider(int gravity);
 		};
 
 		/// used for the slider controlling the directional smoothness
 		struct Direction {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double direction);
 			static double fromSlider(int direction);
 		};
 
 		/// used for the slider controlling the preference for larger symbols
 		struct LargerSym {
-			static const int maxSlider;
-			static const double maxReal;
 			static int toSlider(double largerSym);
 			static double fromSlider(int largerSym);
 		};
 	};
 
-	// Configuration buttons names
-	static const cv::String selectImgLabel, transformImgLabel, selectFontLabel,
-		restoreDefaultsLabel, saveAsDefaultsLabel,
-		aboutLabel, instructionsLabel, loadSettingsLabel, saveSettingsLabel;
-
-	// Texts for About and Instructions
-	static const std::wstring aboutText, instructionsText;
-
-	// Configuration sliders' handles
-	static const cv::String fontSzTrName, encodingTrName, outWTrName, outHTrName;
-	static const cv::String hybridResultTrName, structuralSimTrName,
-		underGlyphCorrectnessTrName, glyphEdgeCorrectnessTrName, asideGlyphCorrectnessTrName,
-		moreContrastTrName;
-	static const cv::String gravityTrName, directionTrName, largerSymTrName, thresh4BlanksTrName;
-
-	Controller &ctrler;	// window manager
+	IControlPanelActions &actions;	// window manager
 
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
@@ -155,7 +128,7 @@ protected:
 	bool updatingEncMax = false;
 
 public:
-	ControlPanel(Controller &ctrler_, const Settings &cfg);
+	ControlPanel(IControlPanelActions &actions_, const Settings &cfg);
 
 	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above

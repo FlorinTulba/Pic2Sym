@@ -33,7 +33,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "controller.h"
+#include "views.h"
+#include "presentCmap.h"
 
 #include <opencv2/highgui.hpp>
 
@@ -76,6 +77,10 @@ void CvWin::resize(int w, int h) const {
 	resizeWindow(winName, w, h);
 }
 
+extern const int Comparator_trackMax;
+extern const double Comparator_defaultTransparency;
+extern const String Comparator_transpTrackName;
+
 void Comparator::setTransparency(double transparency) {
 	if(!initial.empty() && !result.empty()) {
 		content.release(); // seems to be mandatory
@@ -90,32 +95,35 @@ void Comparator::setReference(const Mat &ref_) {
 	initial = content = ref_;
 	if(!result.empty())
 		result.release();
-	if(trackPos != trackMax)
-		setTrackbarPos(transpTrackName, winName, trackMax);
+	if(trackPos != Comparator_trackMax)
+		setTrackbarPos(Comparator_transpTrackName, winName, Comparator_trackMax);
 	else
 		setTransparency(1.);
 }
 
-void Comparator::setResult(const Mat &res_, int transparency/* = (int)round(defaultTransparency * trackMax)*/) {
+void Comparator::setResult(const Mat &res_, int transparency/* = (int)round(Comparator_defaultTransparency * Comparator_trackMax)*/) {
 	if(initial.empty())
 		throw logic_error("Please call " __FUNCTION__ " after Comparator::setReference()!");
 	if(initial.type() != res_.type() || initial.size != res_.size)
 		throw invalid_argument("Please provide a resulted image of the same size & type as the original image!");
 	result = res_;
 	if(trackPos != transparency)
-		setTrackbarPos(transpTrackName, winName, transparency);
+		setTrackbarPos(Comparator_transpTrackName, winName, transparency);
 	else
-		setTransparency(defaultTransparency);
+		setTransparency(Comparator_defaultTransparency);
 }
 
 void Comparator::updateTransparency(int newTransp, void *userdata) {
 	Comparator *pComp = reinterpret_cast<Comparator*>(userdata);
-	pComp->setTransparency((double)newTransp/trackMax);
+	pComp->setTransparency((double)newTransp/Comparator_trackMax);
 }
 
+extern const String CmapInspect_pageTrackName;
+
 unsigned CmapInspect::computeSymsPerPage() const {
-	const int cellSide = 1+ctrler.getFontSize();
-	return (pageSz.width / cellSide) * (pageSz.height / cellSide);
+	const int cellSide = 1+cmapPresenter.getFontSize();
+	extern const Size CmapInspect_pageSz;
+	return (CmapInspect_pageSz.width / cellSide) * (CmapInspect_pageSz.height / cellSide);
 }
 
 void CmapInspect::updateGrid() {
@@ -126,13 +134,13 @@ void CmapInspect::updatePagesCount(unsigned cmapSize) {
 	updatingPageMax = true;
 	symsPerPage = computeSymsPerPage();
 	pagesCount = (unsigned)ceil(cmapSize / (double)symsPerPage);
-	setTrackbarMax(pageTrackName, winName, max(1, (int)pagesCount-1));
+	setTrackbarMax(CmapInspect_pageTrackName, winName, max(1, (int)pagesCount-1));
 
 	// Sequence from below is required to really update the trackbar max & pos
 	// The controller should prevent them to trigger CmapInspect::updatePageIdx
-	setTrackbarPos(pageTrackName, winName, 1);
+	setTrackbarPos(CmapInspect_pageTrackName, winName, 1);
 	updatingPageMax = false;
-	setTrackbarPos(pageTrackName, winName, 0); // => page = 0
+	setTrackbarPos(CmapInspect_pageTrackName, winName, 0); // => page = 0
 }
 
 void CmapInspect::showPage(unsigned pageIdx) {
@@ -142,9 +150,9 @@ void CmapInspect::showPage(unsigned pageIdx) {
 		return;
 
 	if((unsigned)page != pageIdx)
-		setTrackbarPos(pageTrackName, winName, pageIdx); // => page = pageIdx
+		setTrackbarPos(CmapInspect_pageTrackName, winName, pageIdx); // => page = pageIdx
 
-	populateGrid(ctrler.getFontFaces(symsPerPage*pageIdx, symsPerPage));
+	populateGrid(cmapPresenter.getFontFaces(symsPerPage*pageIdx, symsPerPage));
 	imshow(winName, content);
 }
 

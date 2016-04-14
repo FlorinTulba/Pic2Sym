@@ -33,7 +33,9 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "controller.h"
+#include "fontEngine.h"
+#include "validateFont.h"
+#include "glyphsProgressTracker.h"
 #include "settings.h"
 #include "misc.h"
 
@@ -176,8 +178,10 @@ namespace {
 	}
 } // anonymous namespace
 
-FontEngine::FontEngine(const Controller &ctrler_, const SymSettings &ss_) :
-		ctrler(ctrler_), ss(ss_) {
+FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
+					   fontValidator(dynamic_cast<const IValidateFont&>(ctrler_)),
+					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
+					   ss(ss_) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
@@ -242,7 +246,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 
 	symsCont.reset();
 
-	ctrler.selectedEncoding(encName);
+	fontValidator.selectedEncoding(encName);
 
 	return true;
 }
@@ -314,7 +318,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 	
 	setFace(face_, fontPath.string());
 	
-	ctrler.selectedFontFile(fontFile_);
+	fontValidator.selectedFontFile(fontFile_);
 
 	return true;
 }
@@ -346,7 +350,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.horiResolution = req.vertResolution = 72U;
 
 	double progress = 0.;
-	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::SYM_SET_UPDATE);
+	Timer timer = glyphsProgress.createTimerForGlyphs();
 
 	// 2% for this stage, no reports
 	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
@@ -362,7 +366,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	for(FT_ULong c = FT_Get_First_Char(face, &idx), i = (FT_ULong)round((symsCount*2.)/90);
 				idx != 0;  c=FT_Get_Next_Char(face, c, &idx), ++i) {
 		if(i % tick == 0)
-			ctrler.reportGlyphProgress(progress+=.05);
+			glyphsProgress.reportGlyphProgress(progress+=.05);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
@@ -379,7 +383,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	int i = 0;
 	for(const auto &item : toResize) {
 		if(i++ == reportI)
-			ctrler.reportGlyphProgress(.95);
+			glyphsProgress.reportGlyphProgress(.95);
 
 		FT_ULong c;
 		double hRatio, vRatio;
@@ -395,6 +399,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	symsCont.setAsReady();
 
 #ifdef _DEBUG
+	timer.pause();
+
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
@@ -413,6 +419,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	}
 
 	cout<<endl;
+
+	timer.resume();
 #endif // _DEBUG
 }
 

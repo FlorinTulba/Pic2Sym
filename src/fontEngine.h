@@ -44,13 +44,17 @@
 #include <boost/bimap/bimap.hpp>
 
 // forward declarations
-class Controller;
+struct IController;
+struct IGlyphsProgressTracker;
+struct IValidateFont;
 class SymSettings;
 
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine {
 protected:
-	const Controller &ctrler;		///< data & views manager
+	const IController &ctrler;	///< font validation and glyph preprocessing monitor aspects of the Controller
+	const IValidateFont &fontValidator;		///< font validation aspect of the Controller
+	const IGlyphsProgressTracker &glyphsProgress;		///< glyph preprocessing monitor  aspect of the Controller
 
 	FT_Library library	= nullptr;	///< the FreeType lib
 	FT_Face face		= nullptr;	///< a loaded font
@@ -72,7 +76,13 @@ protected:
 	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/); ///< Installs a new font
 
 public:
-	FontEngine(const Controller &ctrler_, const SymSettings &ss_);
+	/**
+	Constructs a FontEngine
+
+	@param ctrler_ font validation and glyph preprocessing monitor aspects of the Controller
+	@param ss_ font data
+	*/
+	FontEngine(const IController &ctrler_, const SymSettings &ss_);
 	~FontEngine();
 	
 	bool newFont(const std::string &fontFile_);		///< Tries to use the font from <fontFile_>

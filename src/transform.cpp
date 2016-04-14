@@ -33,8 +33,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "controller.h"
-
+#include "transform.h"
+#include "picTransformProgressTracker.h"
 #include "misc.h"
 #include "settings.h"
 #include "matchSettingsManip.h"
@@ -51,7 +51,8 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
-Transformer::Transformer(const Controller &ctrler_, const Settings &cfg_, MatchEngine &me_, Img &img_) :
+Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
+						 MatchEngine &me_, Img &img_) :
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
 	createOutputFolder();
 }
@@ -61,13 +62,12 @@ void Transformer::run() {
 
 	// throws when no image
 	const ResizedImg resizedImg(img, cfg.imgSettings(), cfg.symSettings().getFontSz());
-	const_cast<Controller&>(ctrler).updateResizedImg(resizedImg);
+	const_cast<IPicTransformProgressTracker&>(ctrler).updateResizedImg(resizedImg);
 	const Mat &resized = resizedImg.get();
-	const MatchSettings &ms = cfg.matchSettings();
 	const bool isColor = img.isColor();
 	
-	// keep it after ResizedImg, to display updated resized version as comparing image
-	Controller::Timer timer(ctrler, Controller::Timer::ComputationType::IMG_TRANSFORM);
+	// keep this after ResizedImg, to display updated resized version as comparing image
+	Timer timer = ctrler.createTimerForImgTransform();
 
 	const string &studiedCase = textStudiedCase(resized.rows, resized.cols);
 
@@ -109,6 +109,7 @@ void Transformer::run() {
 			const Mat patch(resized, rowRange, colRange),
 						blurredPatch(resizedBlurred, rowRange, colRange);
 
+			// Building a Patch with the blurred patch computed for its actual borders
 			Patch p(patch, blurredPatch, isColor);
 			const BestMatch best = me.approxPatch(p);
 			const Mat &approximation = best.bestVariant.approx;
@@ -120,8 +121,12 @@ void Transformer::run() {
 	}
 
 #ifndef UNIT_TESTING
+	timer.pause();
+
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
+
+	timer.resume();
 #endif
 }
 

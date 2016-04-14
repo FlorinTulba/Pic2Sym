@@ -55,9 +55,36 @@ using namespace boost::filesystem;
 using namespace boost::archive;
 using namespace cv;
 
-Settings::Settings(const MatchSettings &ms_) : ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms(ms_) {}
+extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
+extern const unsigned Settings_MIN_H_SYMS;
+extern const unsigned Settings_MAX_H_SYMS;
+extern const unsigned Settings_MIN_V_SYMS;
+extern const unsigned Settings_MAX_V_SYMS;
+extern const unsigned Settings_MIN_FONT_SIZE;
+extern const unsigned Settings_MAX_FONT_SIZE;
+extern const unsigned Settings_DEF_FONT_SIZE;
 
-Settings::Settings() : ss(DEF_FONT_SIZE), is(MAX_H_SYMS, MAX_V_SYMS), ms() {}
+bool Settings::isBlanksThresholdOk(unsigned t) {
+	return t < Settings_MAX_THRESHOLD_FOR_BLANKS;
+}
+
+bool Settings::isHmaxSymsOk(unsigned syms) {
+	return syms>=Settings_MIN_H_SYMS && syms<=Settings_MAX_H_SYMS;
+}
+
+bool Settings::isVmaxSymsOk(unsigned syms) {
+	return syms>=Settings_MIN_V_SYMS && syms<=Settings_MAX_V_SYMS;
+}
+
+bool Settings::isFontSizeOk(unsigned fs) {
+	return fs>=Settings_MIN_FONT_SIZE && fs<=Settings_MAX_FONT_SIZE;
+}
+
+Settings::Settings(const MatchSettings &ms_) :
+	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms(ms_) {}
+
+Settings::Settings() :
+	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
 	if(((imageOk && hMaxSymsOk && vMaxSymsOk) || !imageRequired) &&
@@ -189,7 +216,7 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 	if(!Settings::isFontSizeOk(fontSz)) {
 		fontSzOk = false;
 		ostringstream oss;
-		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Settings::MIN_FONT_SIZE<<'.';
+		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
 		errMsg(oss.str());
 		return false;
 	}
@@ -217,7 +244,7 @@ void Controller::newHmaxSyms(int maxSymbols) {
 	if(!Settings::isHmaxSymsOk(maxSymbols)) {
 		hMaxSymsOk = false;
 		ostringstream oss;
-		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Settings::MIN_H_SYMS<<'.';
+		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_H_SYMS<<'.';
 		errMsg(oss.str());
 		return;
 	}
@@ -235,7 +262,7 @@ void Controller::newVmaxSyms(int maxSymbols) {
 	if(!Settings::isVmaxSymsOk(maxSymbols)) {
 		vMaxSymsOk = false;
 		ostringstream oss;
-		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Settings::MIN_V_SYMS<<'.';
+		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_V_SYMS<<'.';
 		errMsg(oss.str());
 		return;
 	}
@@ -334,6 +361,10 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 	}
 }
 
+Timer Controller::createTimerForGlyphs() const {
+	return std::move(Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)));
+}
+
 void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
 	if(done) {
 		reportTransformationProgress(1.);
@@ -345,6 +376,10 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 	} else {
 		reportTransformationProgress(0.);
 	}
+}
+
+Timer Controller::createTimerForImgTransform() const {
+	return std::move(Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)));
 }
 
 void Controller::restoreUserDefaultMatchSettings() {
@@ -430,37 +465,29 @@ void Controller::saveSettings() const {
 	}
 }
 
-Controller::Timer::Timer(const Controller &ctrler_, ComputationType compType_) :
-		ctrler(ctrler_), compType(compType_), start(high_resolution_clock::now()) {
-	switch(compType) {
-		case ComputationType::SYM_SET_UPDATE:
-			ctrler.symsSetUpdate();
-			break;
-		case ComputationType::IMG_TRANSFORM:
-			ctrler.imgTransform();
-			break;
-		default:;
-	}
+Controller::TimerActions_Controller::TimerActions_Controller(const Controller &ctrler_) :
+	ctrler(ctrler_) {}
+
+Controller::TimerActions_SymSetUpdate::TimerActions_SymSetUpdate(const Controller &ctrler_) :
+		TimerActions_Controller(ctrler_) {}
+
+void Controller::TimerActions_SymSetUpdate::onStart() {
+	ctrler.symsSetUpdate();
 }
 
-Controller::Timer::~Timer() {
-	if(!active)
-		return;
-
-	duration<double> elapsedS = high_resolution_clock::now() - start;
-	switch(compType) {
-		case ComputationType::SYM_SET_UPDATE:
-			ctrler.symsSetUpdate(true, elapsedS.count());
-			break;
-		case ComputationType::IMG_TRANSFORM:
-			ctrler.imgTransform(true, elapsedS.count());
-			break;
-		default:;
-	}
+void Controller::TimerActions_SymSetUpdate::onRelease(double elapsedS) {
+	ctrler.symsSetUpdate(true, elapsedS);
 }
 
-void Controller::Timer::release() {
-	active = false;
+Controller::TimerActions_ImgTransform::TimerActions_ImgTransform(const Controller &ctrler_) :
+		TimerActions_Controller(ctrler_) {}
+
+void Controller::TimerActions_ImgTransform::onStart() {
+	ctrler.imgTransform();
+}
+
+void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
+	ctrler.imgTransform(true, elapsedS);
 }
 
 // Methods from below have different definitions for UnitTesting project
@@ -490,11 +517,13 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 }
 
 void Controller::reportGlyphProgress(double progress) const {
-	hourGlass(progress, PREFIX_GLYPH_PROGRESS);
+	extern const string Controller_PREFIX_GLYPH_PROGRESS;
+	hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS);
 }
 
 void Controller::reportTransformationProgress(double progress) const {
-	hourGlass(progress, PREFIX_TRANSFORMATION_PROGRESS);
+	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
+	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
 	if(0. == progress) {
 		if(nullptr == resizedImg)
 			throw logic_error("Please call Controller::updateResizedImg at the start of transformation!");

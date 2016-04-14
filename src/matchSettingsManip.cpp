@@ -36,7 +36,6 @@
 #ifndef UNIT_TESTING
 
 #include "matchSettingsManip.h"
-#include "controller.h"
 #include "settings.h"
 #include "propsReader.h"
 

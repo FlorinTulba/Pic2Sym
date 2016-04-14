@@ -47,11 +47,6 @@ class StructuralSimilarity : public MatchAspect {
 	REGISTER_MATCH_ASPECT(StructuralSimilarity);
 
 public:
-	static const cv::Size WIN_SIZE;	///< recommended window
-	static const double SIGMA;		///< recommended standard deviation
-	static const double C1;			///< the 1st used stabilizer coefficient
-	static const double C2;			///< the 2nd used stabilizer coefficient
-
 	/// scores the match between a gray patch and a symbol based on current aspect
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,

@@ -38,6 +38,7 @@
 #include "Windows.h"
 
 using namespace std;
+using namespace std::chrono;
 
 namespace {
 
@@ -111,4 +112,63 @@ wstring str2wstr(const string &str) {
 
 string wstr2str(const wstring &wstr) {
 	return std::move(string(CBOUNDS(wstr)));
+}
+
+Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
+		observers(observers_), lastStart(high_resolution_clock::now()) {
+	for(auto observer : observers)
+		observer->onStart();
+}
+
+Timer::Timer(std::shared_ptr<ITimerActions> observer) :
+	Timer(vector<std::shared_ptr<ITimerActions>> { observer } ) {}
+
+Timer::Timer(Timer &&other) : observers(std::move(other.observers)),
+		lastStart(std::move(other.lastStart)), elapsedS(std::move(other.elapsedS)),
+		paused(other.paused), valid(other.valid) {
+	other.valid = false;
+}
+
+Timer::~Timer() {
+	if(!valid)
+		return;
+
+	release();
+}
+
+void Timer::pause() {
+	if(!valid || paused)
+		return;
+
+	paused = true;
+
+	elapsedS += high_resolution_clock::now() - lastStart;
+
+	for(auto observer : observers)
+		observer->onPause(elapsedS.count());
+}
+
+void Timer::resume() {
+	if(!valid || !paused)
+		return;
+
+	paused = false;
+
+	lastStart = high_resolution_clock::now();
+
+	for(auto observer : observers)
+		observer->onResume();
+}
+
+void Timer::release() {
+	if(!valid)
+		return;
+
+	valid = false;
+
+	if(!paused)
+		elapsedS += high_resolution_clock::now() - lastStart;
+
+	for(auto observer : observers)
+		observer->onRelease(elapsedS.count());
 }

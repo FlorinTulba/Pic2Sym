@@ -117,8 +117,6 @@ struct PixMapSym {
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont {
 protected:
-	static const double SMALL_GLYPHS_PERCENT; ///< percentage of total glyphs considered small
-
 	bool ready = false;				///< is container ready to provide useful data?
 	unsigned fontSz = 0U;			///< bounding box size
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap

@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-1-8
+ This file was created on 2016-4-14
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -33,42 +33,22 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_TRANSFORM
-#define H_TRANSFORM
+#ifndef H_PRESENT_CMAP
+#define H_PRESENT_CMAP
 
 #include "matchEngine.h"
-#include "img.h"
+#include "controllerBase.h"
 
-#include <string>
-#include <vector>
+/**
+Provides read-only access to Cmap data.
+*/
+struct IPresentCmap /*abstract*/ : virtual IController {
+	virtual unsigned getFontSize() const = 0; ///< font size determines grid size
 
-#include <opencv2/imgcodecs.hpp>
+	/// Getting the fonts to fill currently displayed page
+	virtual MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
-class Settings;		// global settings
-struct IPicTransformProgressTracker;	// data & views manager
-
-/// Transformer allows images to be approximated as a table of colored symbols from font files.
-class Transformer {
-protected:
-	const IPicTransformProgressTracker &ctrler;	///< data & views manager
-
-	const Settings &cfg;		///< general configuration
-	MatchEngine &me;			///< approximating patches
-	Img &img;					///< current image to process
-
-	cv::Mat result;				///< the result of the transformation
-	
-	const std::string textStudiedCase(int rows, int cols) const;
-
-	void createOutputFolder();
-
-public:
-	Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
-				MatchEngine &me_, Img &img_);
-
-	void run();	///< applies the configured transformation onto current/new image
-
-	const cv::Mat& getResult() const { return result; }
+	virtual ~IPresentCmap() = 0 {}
 };
 
 #endif

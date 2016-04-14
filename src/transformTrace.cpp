@@ -112,8 +112,9 @@ TransformTrace::TransformTrace(const string &studiedCase_, unsigned sz_, bool is
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 
+	extern const wstring BestMatch_HEADER;
 	ofs = wofstream(traceFile.c_str());
-	ofs<<"#Row"<<COMMA<<"#Col"<<COMMA<<BestMatch::HEADER<<endl;
+	ofs<<"#Row"<<COMMA<<"#Col"<<COMMA<<BestMatch_HEADER<<endl;
 }
 
 TransformTrace::~TransformTrace() {

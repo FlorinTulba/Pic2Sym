@@ -33,16 +33,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "controller.h"
-#include "controlPanel.h"
-#include "matchParams.h"
-#include "matchAspects.h"
 #include "misc.h"
 #include "propsReader.h"
-#include "settings.h"
-#include "views.h"
 
 #include <boost/algorithm/string/replace.hpp>
+#include <opencv2/core/core.hpp>
 
 using namespace std;
 using namespace cv;
@@ -73,92 +68,93 @@ static PropsReader varConfig("res/varConfig.txt");
 // Reading data
 extern const bool READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
 
-const unsigned READ_UINT_PROP(Settings::MIN_FONT_SIZE);
-const unsigned READ_UINT_PROP(Settings::MAX_FONT_SIZE);
-const unsigned READ_UINT_PROP(Settings::DEF_FONT_SIZE);
-const unsigned READ_UINT_PROP(Settings::MAX_THRESHOLD_FOR_BLANKS);
-const unsigned READ_UINT_PROP(Settings::MIN_H_SYMS);
-const unsigned READ_UINT_PROP(Settings::MAX_H_SYMS);
-const unsigned READ_UINT_PROP(Settings::MIN_V_SYMS);
-const unsigned READ_UINT_PROP(Settings::MAX_V_SYMS);
+extern const unsigned READ_UINT_PROP(Settings_MIN_FONT_SIZE);
+extern const unsigned READ_UINT_PROP(Settings_MAX_FONT_SIZE);
+extern const unsigned READ_UINT_PROP(Settings_DEF_FONT_SIZE);
+extern const unsigned READ_UINT_PROP(Settings_MAX_THRESHOLD_FOR_BLANKS);
+extern const unsigned READ_UINT_PROP(Settings_MIN_H_SYMS);
+extern const unsigned READ_UINT_PROP(Settings_MAX_H_SYMS);
+extern const unsigned READ_UINT_PROP(Settings_MIN_V_SYMS);
+extern const unsigned READ_UINT_PROP(Settings_MAX_V_SYMS);
 
-const double READ_DOUBLE_PROP(PmsCont::SMALL_GLYPHS_PERCENT);
+extern const double READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT);
 extern const double READ_DOUBLE_PROP(MatchEngine_updateSymbols_STILL_BG);
 extern const double READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
 static const int READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
-const Size StructuralSimilarity::WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
-const double READ_DOUBLE_PROP(StructuralSimilarity::SIGMA);
-const double READ_DOUBLE_PROP(StructuralSimilarity::C1);
-const double READ_DOUBLE_PROP(StructuralSimilarity::C2);
+extern const Size StructuralSimilarity_WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
+extern const double READ_DOUBLE_PROP(StructuralSimilarity_SIGMA);
+extern const double READ_DOUBLE_PROP(StructuralSimilarity_C1);
+extern const double READ_DOUBLE_PROP(StructuralSimilarity_C2);
 
 static const int READ_INT_PROP(BlurWindowSize);
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
 extern const double READ_DOUBLE_PROP(BlurStandardDeviation);
 
 #ifndef UNIT_TESTING
-const int READ_INT_PROP(Comparator::trackMax);
-const double READ_DOUBLE_PROP(Comparator::defaultTransparency);
+extern const int READ_INT_PROP(Comparator_trackMax);
+extern const double READ_DOUBLE_PROP(Comparator_defaultTransparency);
 
 static const int READ_INT_PROP(CmapInspect_width);
 static const int READ_INT_PROP(CmapInspect_height);
-const Size CmapInspect::pageSz(CmapInspect_width, CmapInspect_height);
+extern const Size CmapInspect_pageSz(CmapInspect_width, CmapInspect_height);
 
-const int READ_INT_PROP(ControlPanel::Converter::StructuralSim::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::StructuralSim::maxReal);
-const int READ_INT_PROP(ControlPanel::Converter::Correctness::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::Correctness::maxReal);
-const int READ_INT_PROP(ControlPanel::Converter::Contrast::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::Contrast::maxReal);
-const int READ_INT_PROP(ControlPanel::Converter::Gravity::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::Gravity::maxReal);
-const int READ_INT_PROP(ControlPanel::Converter::Direction::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::Direction::maxReal);
-const int READ_INT_PROP(ControlPanel::Converter::LargerSym::maxSlider);
-const double READ_DOUBLE_PROP(ControlPanel::Converter::LargerSym::maxReal);
-const String READ_STR_PROP(ControlPanel::selectImgLabel);
-const String READ_STR_PROP(ControlPanel::transformImgLabel);
-const String READ_STR_PROP(ControlPanel::selectFontLabel);
-const String READ_STR_PROP(ControlPanel::restoreDefaultsLabel);
-const String READ_STR_PROP(ControlPanel::saveAsDefaultsLabel);
-const String READ_STR_PROP(ControlPanel::aboutLabel);
-const String READ_STR_PROP(ControlPanel::instructionsLabel);
-const String READ_STR_PROP(ControlPanel::loadSettingsLabel);
-const String READ_STR_PROP(ControlPanel::saveSettingsLabel);
-const String READ_STR_PROP(ControlPanel::fontSzTrName);
-const String READ_STR_PROP(ControlPanel::encodingTrName);
-const String READ_STR_PROP(ControlPanel::hybridResultTrName);
-const String READ_STR_PROP(ControlPanel::structuralSimTrName);
-const String READ_STR_PROP(ControlPanel::underGlyphCorrectnessTrName);
-const String READ_STR_PROP(ControlPanel::glyphEdgeCorrectnessTrName);
-const String READ_STR_PROP(ControlPanel::asideGlyphCorrectnessTrName);
-const String READ_STR_PROP(ControlPanel::moreContrastTrName);
-const String READ_STR_PROP(ControlPanel::gravityTrName);
-const String READ_STR_PROP(ControlPanel::directionTrName);
-const String READ_STR_PROP(ControlPanel::largerSymTrName);
-const String READ_STR_PROP(ControlPanel::thresh4BlanksTrName);
-const String READ_STR_PROP(ControlPanel::outWTrName);
-const String READ_STR_PROP(ControlPanel::outHTrName);
+extern const int READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal);
+extern const int READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal);
+extern const int READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_Contrast_maxReal);
+extern const int READ_INT_PROP(ControlPanel_Converter_Gravity_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_Gravity_maxReal);
+extern const int READ_INT_PROP(ControlPanel_Converter_Direction_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_Direction_maxReal);
+extern const int READ_INT_PROP(ControlPanel_Converter_LargerSym_maxSlider);
+extern const double READ_DOUBLE_PROP(ControlPanel_Converter_LargerSym_maxReal);
 
-const String READ_STR_PROP(Comparator::transpTrackName);
+extern const String READ_STR_PROP(ControlPanel_selectImgLabel);
+extern const String READ_STR_PROP(ControlPanel_transformImgLabel);
+extern const String READ_STR_PROP(ControlPanel_selectFontLabel);
+extern const String READ_STR_PROP(ControlPanel_restoreDefaultsLabel);
+extern const String READ_STR_PROP(ControlPanel_saveAsDefaultsLabel);
+extern const String READ_STR_PROP(ControlPanel_aboutLabel);
+extern const String READ_STR_PROP(ControlPanel_instructionsLabel);
+extern const String READ_STR_PROP(ControlPanel_loadSettingsLabel);
+extern const String READ_STR_PROP(ControlPanel_saveSettingsLabel);
+extern const String READ_STR_PROP(ControlPanel_fontSzTrName);
+extern const String READ_STR_PROP(ControlPanel_encodingTrName);
+extern const String READ_STR_PROP(ControlPanel_hybridResultTrName);
+extern const String READ_STR_PROP(ControlPanel_structuralSimTrName);
+extern const String READ_STR_PROP(ControlPanel_underGlyphCorrectnessTrName);
+extern const String READ_STR_PROP(ControlPanel_glyphEdgeCorrectnessTrName);
+extern const String READ_STR_PROP(ControlPanel_asideGlyphCorrectnessTrName);
+extern const String READ_STR_PROP(ControlPanel_moreContrastTrName);
+extern const String READ_STR_PROP(ControlPanel_gravityTrName);
+extern const String READ_STR_PROP(ControlPanel_directionTrName);
+extern const String READ_STR_PROP(ControlPanel_largerSymTrName);
+extern const String READ_STR_PROP(ControlPanel_thresh4BlanksTrName);
+extern const String READ_STR_PROP(ControlPanel_outWTrName);
+extern const String READ_STR_PROP(ControlPanel_outHTrName);
 
-const String READ_STR_PROP(CmapInspect::pageTrackName);
+extern const String READ_STR_PROP(Comparator_transpTrackName);
 
-const wstring ControlPanel::aboutText = std::move(str2wstr(replacePlaceholder(varConfig.read<string>("ControlPanel::aboutText"))));
-const wstring READ_WSTR_PROP(ControlPanel::instructionsText);
+extern const String READ_STR_PROP(CmapInspect_pageTrackName);
+
+extern const wstring ControlPanel_aboutText = std::move(str2wstr(replacePlaceholder(varConfig.read<string>("ControlPanel_aboutText"))));
+extern const wstring READ_WSTR_PROP(ControlPanel_instructionsText);
 #endif
 
 extern const string Comparator_initial_title = replacePlaceholder(varConfig.read<string>("Comparator_initial_title"));
 extern const string READ_STR_PROP(Comparator_statusBar);
 
-const string READ_STR_PROP(Controller::PREFIX_GLYPH_PROGRESS);
-const string READ_STR_PROP(Controller::PREFIX_TRANSFORMATION_PROGRESS);
+extern const string READ_STR_PROP(Controller_PREFIX_GLYPH_PROGRESS);
+extern const string READ_STR_PROP(Controller_PREFIX_TRANSFORMATION_PROGRESS);
 
 extern const string READ_STR_PROP(copyrightText);
 
 #if defined _DEBUG || defined UNIT_TESTING
-const wstring READ_WSTR_PROP(MatchParams::HEADER);
-const wstring READ_WSTR_PROP(BestMatch::HEADER) + MatchParams::HEADER;
+extern const wstring READ_WSTR_PROP(MatchParams_HEADER);
+extern const wstring READ_WSTR_PROP(BestMatch_HEADER) + MatchParams_HEADER;
 #endif // _DEBUG || UNIT_TESTING
 
 #undef READ_PROP

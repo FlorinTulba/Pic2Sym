@@ -97,7 +97,6 @@ struct MatchParams {
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	
-	static const std::wstring HEADER; ///< table header when values are serialized
 	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
 
 #endif // defined _DEBUG || defined UNIT_TESTING
@@ -177,7 +176,6 @@ struct BestMatch {
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 
-	static const std::wstring HEADER;
 	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
 
 	// Unicode symbols are logged in symbol format, while other encodings log their code

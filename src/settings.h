@@ -64,16 +64,10 @@ class Settings {
 	friend class boost::serialization::access;
 
 public:
-	static const unsigned // Limits  
-		MIN_FONT_SIZE, MAX_FONT_SIZE, DEF_FONT_SIZE,
-		MAX_THRESHOLD_FOR_BLANKS,
-		MIN_H_SYMS, MAX_H_SYMS,
-		MIN_V_SYMS, MAX_V_SYMS;
-
-	static bool isBlanksThresholdOk(unsigned t) { return t < MAX_THRESHOLD_FOR_BLANKS; }
-	static bool isHmaxSymsOk(unsigned syms) { return syms>=MIN_H_SYMS && syms<=MAX_H_SYMS; }
-	static bool isVmaxSymsOk(unsigned syms) { return syms>=MIN_V_SYMS && syms<=MAX_V_SYMS; }
-	static bool isFontSizeOk(unsigned fs) { return fs>=MIN_FONT_SIZE && fs<=MAX_FONT_SIZE; }
+	static bool isBlanksThresholdOk(unsigned t);
+	static bool isHmaxSymsOk(unsigned syms);
+	static bool isVmaxSymsOk(unsigned syms);
+	static bool isFontSizeOk(unsigned fs);
 
 	/**
 	Creates a complete set of settings required during image transformations.

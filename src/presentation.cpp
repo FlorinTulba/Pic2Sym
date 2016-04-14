@@ -122,6 +122,16 @@ Controller::Controller(Settings &s) :
 	comp.setStatus(Comparator_statusBar);
 }
 
+void Controller::showAboutDlg(const string &title, const wstring &content) {
+	MessageBox(nullptr, content.c_str(),
+			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+}
+
+void Controller::showInstructionsDlg(const string &title, const wstring &content) {
+	MessageBox(nullptr, content.c_str(),
+			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+}
+
 const string Controller::textForCmapOverlay(double elapsed) const {
 	ostringstream oss;
 	oss<<"The update of the symbols set took "<<elapsed<<" s!";
@@ -189,10 +199,15 @@ const string Transformer::textStudiedCase(int rows, int cols) const {
 }
 
 #ifndef UNIT_TESTING
+
 Comparator::Comparator(void** /*hackParam = nullptr*/) : CvWin("Pic2Sym") {
 	content = noImage;
-	createTrackbar(transpTrackName, winName,
-				   &trackPos, trackMax,
+
+	extern const int Comparator_trackMax;
+	extern const String Comparator_transpTrackName;
+
+	createTrackbar(Comparator_transpTrackName, winName,
+				   &trackPos, Comparator_trackMax,
 				   &Comparator::updateTransparency, reinterpret_cast<void*>(this));
 	Comparator::updateTransparency(trackPos, reinterpret_cast<void*>(this)); // mandatory
 }
@@ -215,34 +230,37 @@ void Comparator::resize() const {
 	CvWin::resize(winWidth, winHeight);
 }
 
-CmapInspect::CmapInspect(const Controller &ctrler_) :
-		CvWin("Charmap View"), ctrler(ctrler_),
+extern const Size CmapInspect_pageSz;
+extern const String CmapInspect_pageTrackName;
+
+CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
+		CvWin("Charmap View"), cmapPresenter(cmapPresenter_),
 		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
-	createTrackbar(pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
+	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
 	CmapInspect::updatePageIdx(page, reinterpret_cast<void*>(this)); // mandatory
 }
 
 Mat CmapInspect::createGrid() const {
-	Mat result(pageSz, CV_8UC1, Scalar(255U));
+	Mat result(CmapInspect_pageSz, CV_8UC1, Scalar(255U));
 
 	// Draws horizontal & vertical cell borders
-	const int cellSide = 1+ctrler.getFontSize();
-	for(int i = cellSide-1; i < pageSz.width; i += cellSide)
-		line(result, Point(i, 0), Point(i, pageSz.height-1), 200);
-	for(int i = cellSide-1; i < pageSz.height; i += cellSide)
-		line(result, Point(0, i), Point(pageSz.width-1, i), 200);
+	const int cellSide = 1+cmapPresenter.getFontSize();
+	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
+		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
+	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
+		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
 	return result;
 }
 
 void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	content = grid.clone();
-	const int fontSz = ctrler.getFontSize(),
+	const int fontSz = cmapPresenter.getFontSize(),
 			fontSzM1 = fontSz - 1,
 			cellSide = 1 + fontSz,
-			height = pageSz.height,
-			width = pageSz.width;
+			height = CmapInspect_pageSz.height,
+			width = CmapInspect_pageSz.width;
 
 	// Convert each 'negative' glyph to 0..255 and place it within the grid
 	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
@@ -254,8 +272,13 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 	}
 }
 
-ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
-		ctrler(ctrler_),
+extern const wstring ControlPanel_aboutText;
+extern const wstring ControlPanel_instructionsText;
+extern const String ControlPanel_aboutLabel;
+extern const String ControlPanel_instructionsLabel;
+
+ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) :
+		actions(actions_),
 		maxHSyms(cfg.imgSettings().getMaxHSyms()), maxVSyms(cfg.imgSettings().getMaxVSyms()),
 		encoding(0U), fontSz(cfg.symSettings().getFontSz()),
 		hybridResult(cfg.matchSettings().isHybridResult() ? 1 : 0),
@@ -268,129 +291,162 @@ ControlPanel::ControlPanel(Controller &ctrler_, const Settings &cfg) :
 		direction(Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs())),
 		largerSym(Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity())),
 		thresh4Blanks(cfg.matchSettings().getBlankThreshold()) {
-	createButton(selectImgLabel,
+	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
+	extern const unsigned Settings_MAX_H_SYMS;
+	extern const unsigned Settings_MAX_V_SYMS;
+	extern const unsigned Settings_MAX_FONT_SIZE;
+	extern const int ControlPanel_Converter_StructuralSim_maxSlider;
+	extern const int ControlPanel_Converter_Contrast_maxSlider;
+	extern const int ControlPanel_Converter_Correctness_maxSlider;
+	extern const int ControlPanel_Converter_Direction_maxSlider;
+	extern const int ControlPanel_Converter_Gravity_maxSlider;
+	extern const int ControlPanel_Converter_LargerSym_maxSlider;
+
+	extern const String ControlPanel_selectImgLabel;
+	extern const String ControlPanel_transformImgLabel;
+	extern const String ControlPanel_selectFontLabel;
+	extern const String ControlPanel_restoreDefaultsLabel;
+	extern const String ControlPanel_saveAsDefaultsLabel;
+	extern const String ControlPanel_loadSettingsLabel;
+	extern const String ControlPanel_saveSettingsLabel;
+	extern const String ControlPanel_fontSzTrName;
+	extern const String ControlPanel_encodingTrName;
+	extern const String ControlPanel_hybridResultTrName;
+	extern const String ControlPanel_structuralSimTrName;
+	extern const String ControlPanel_underGlyphCorrectnessTrName;
+	extern const String ControlPanel_glyphEdgeCorrectnessTrName;
+	extern const String ControlPanel_asideGlyphCorrectnessTrName;
+	extern const String ControlPanel_moreContrastTrName;
+	extern const String ControlPanel_gravityTrName;
+	extern const String ControlPanel_directionTrName;
+	extern const String ControlPanel_largerSymTrName;
+	extern const String ControlPanel_thresh4BlanksTrName;
+	extern const String ControlPanel_outWTrName;
+	extern const String ControlPanel_outHTrName;
+
+	createButton(ControlPanel_selectImgLabel,
 				 [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		static ImgSelector is;
 		if(is.promptForUserChoice())
-			pCtrler->newImage(is.selection());
-	}, reinterpret_cast<void*>(&ctrler));
-	createButton(transformImgLabel,
+			pActions->newImage(is.selection());
+	}, reinterpret_cast<void*>(&actions));
+	createButton(ControlPanel_transformImgLabel,
 				 [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->performTransformation();
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->performTransformation();
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(outWTrName, nullptr, &maxHSyms, Settings::MAX_H_SYMS,
+	createTrackbar(ControlPanel_outWTrName, nullptr, &maxHSyms, Settings_MAX_H_SYMS,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newHmaxSyms(val);
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(outHTrName, nullptr, &maxVSyms, Settings::MAX_V_SYMS,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newHmaxSyms(val);
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_outHTrName, nullptr, &maxVSyms, Settings_MAX_V_SYMS,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newVmaxSyms(val);
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newVmaxSyms(val);
+	}, reinterpret_cast<void*>(&actions));
 
-	createButton(selectFontLabel,
+	createButton(ControlPanel_selectFontLabel,
 				 [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		static SelectFont sf;
 		if(sf.promptForUserChoice())
-			pCtrler->newFontFamily(sf.selection());
-	}, reinterpret_cast<void*>(&ctrler));
+			pActions->newFontFamily(sf.selection());
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(encodingTrName, nullptr, &encoding, 1,
+	createTrackbar(ControlPanel_encodingTrName, nullptr, &encoding, 1,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newFontEncoding(val);
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(fontSzTrName, nullptr, &fontSz, Settings::MAX_FONT_SIZE,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newFontEncoding(val);
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_fontSzTrName, nullptr, &fontSz, Settings_MAX_FONT_SIZE,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newFontSize(val);
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newFontSize(val);
+	}, reinterpret_cast<void*>(&actions));
 
-	createButton(restoreDefaultsLabel, [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->restoreUserDefaultMatchSettings();
-	}, reinterpret_cast<void*>(&ctrler));
-	createButton(saveAsDefaultsLabel, [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->setUserDefaultMatchSettings();
-	}, reinterpret_cast<void*>(&ctrler));
+	createButton(ControlPanel_restoreDefaultsLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->restoreUserDefaultMatchSettings();
+	}, reinterpret_cast<void*>(&actions));
+	createButton(ControlPanel_saveAsDefaultsLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->setUserDefaultMatchSettings();
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(hybridResultTrName, nullptr, &hybridResult, 1,
+	createTrackbar(ControlPanel_hybridResultTrName, nullptr, &hybridResult, 1,
 				   [] (int state, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->setResultMode(state != 0);
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->setResultMode(state != 0);
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(structuralSimTrName, nullptr, &structuralSim, Converter::StructuralSim::maxSlider,
+	createTrackbar(ControlPanel_structuralSimTrName, nullptr, &structuralSim, ControlPanel_Converter_StructuralSim_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newStructuralSimilarityFactor(Converter::StructuralSim::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, Converter::Correctness::maxSlider,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newStructuralSimilarityFactor(Converter::StructuralSim::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, ControlPanel_Converter_Correctness_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newUnderGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(glyphEdgeCorrectnessTrName, nullptr, &glyphEdgeCorrectness, Converter::Correctness::maxSlider,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newUnderGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_glyphEdgeCorrectnessTrName, nullptr, &glyphEdgeCorrectness, ControlPanel_Converter_Correctness_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newGlyphEdgeCorrectnessFactor(Converter::Correctness::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(asideGlyphCorrectnessTrName, nullptr, &asideGlyphCorrectness, Converter::Correctness::maxSlider,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newGlyphEdgeCorrectnessFactor(Converter::Correctness::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_asideGlyphCorrectnessTrName, nullptr, &asideGlyphCorrectness, ControlPanel_Converter_Correctness_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newAsideGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newAsideGlyphCorrectnessFactor(Converter::Correctness::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(moreContrastTrName, nullptr, &moreContrast, Converter::Contrast::maxSlider,
+	createTrackbar(ControlPanel_moreContrastTrName, nullptr, &moreContrast, ControlPanel_Converter_Contrast_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newContrastFactor(Converter::Contrast::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newContrastFactor(Converter::Contrast::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(gravityTrName, nullptr, &gravity, Converter::Gravity::maxSlider,
+	createTrackbar(ControlPanel_gravityTrName, nullptr, &gravity, ControlPanel_Converter_Gravity_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newGravitationalSmoothnessFactor(Converter::Gravity::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
-	createTrackbar(directionTrName, nullptr, &direction, Converter::Direction::maxSlider,
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newGravitationalSmoothnessFactor(Converter::Gravity::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
+	createTrackbar(ControlPanel_directionTrName, nullptr, &direction, ControlPanel_Converter_Direction_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newDirectionalSmoothnessFactor(Converter::Direction::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newDirectionalSmoothnessFactor(Converter::Direction::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(largerSymTrName, nullptr, &largerSym, Converter::LargerSym::maxSlider,
+	createTrackbar(ControlPanel_largerSymTrName, nullptr, &largerSym, ControlPanel_Converter_LargerSym_maxSlider,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newGlyphWeightFactor(Converter::LargerSym::fromSlider(val));
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newGlyphWeightFactor(Converter::LargerSym::fromSlider(val));
+	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(thresh4BlanksTrName, nullptr, &thresh4Blanks, Settings::MAX_THRESHOLD_FOR_BLANKS,
+	createTrackbar(ControlPanel_thresh4BlanksTrName, nullptr, &thresh4Blanks, Settings_MAX_THRESHOLD_FOR_BLANKS,
 				   [] (int val, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->newThreshold4BlanksFactor(val);
-	}, reinterpret_cast<void*>(&ctrler));
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newThreshold4BlanksFactor(val);
+	}, reinterpret_cast<void*>(&actions));
 
-	createButton(aboutLabel, [] (int, void*) {
-		MessageBox(nullptr, aboutText.c_str(),
-				   str2wstr(aboutLabel).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-	});
-	createButton(instructionsLabel, [] (int, void*) {
-		MessageBox(nullptr, instructionsText.c_str(),
-				   str2wstr(instructionsLabel).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-	});
-	createButton(loadSettingsLabel, [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->loadSettings();
-	}, reinterpret_cast<void*>(&ctrler));
-	createButton(saveSettingsLabel, [] (int, void *userdata) {
-		Controller *pCtrler = reinterpret_cast<Controller*>(userdata);
-		pCtrler->saveSettings();
-	}, reinterpret_cast<void*>(&ctrler));
+	createButton(ControlPanel_aboutLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->showAboutDlg(ControlPanel_aboutLabel, ControlPanel_aboutText);
+	}, reinterpret_cast<void*>(&actions));
+	createButton(ControlPanel_instructionsLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->showInstructionsDlg(ControlPanel_instructionsLabel, ControlPanel_instructionsText);
+	}, reinterpret_cast<void*>(&actions));
+	createButton(ControlPanel_loadSettingsLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->loadSettings();
+	}, reinterpret_cast<void*>(&actions));
+	createButton(ControlPanel_saveSettingsLabel, [] (int, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->saveSettings();
+	}, reinterpret_cast<void*>(&actions));
 }
 #endif // UNIT_TESTING not defined

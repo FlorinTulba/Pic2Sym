@@ -282,7 +282,8 @@ void PmsCont::setAsReady() {
 
 	// Determine below max box coverage for smallest glyphs from the kept symsSet.
 	// This will be used to favor using larger glyphs when this option is selected.
-	const auto smallGlyphsQty = (long)round(syms.size() * SMALL_GLYPHS_PERCENT);
+	extern const double PmsCont_SMALL_GLYPHS_PERCENT;
+	const auto smallGlyphsQty = (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
 	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
 				[] (const PixMapSym &first, const PixMapSym &second) -> bool {
 		return first.glyphSum < second.glyphSum;

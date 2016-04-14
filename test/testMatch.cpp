@@ -443,8 +443,9 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 	BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
 
 	if(!mismatches.empty()) {
+		extern const wstring MatchParams_HEADER;
 		wcerr<<"The parameters were displayed in this order:"<<endl;
-		wcerr<<MatchParams::HEADER<<endl<<endl;
+		wcerr<<MatchParams_HEADER<<endl<<endl;
 
 		showMismatches(nameOfTest, mismatches);
 	}
@@ -599,6 +600,9 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 	}
 BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
+extern const Size StructuralSimilarity_WIN_SIZE;
+extern const double StructuralSimilarity_SIGMA;
+
 BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 	BOOST_AUTO_TEST_CASE(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch) {
 		BOOST_TEST_MESSAGE("Running CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch");
@@ -617,10 +621,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
 		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 					 BORDER_REPLICATE);
 		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 					 BORDER_REPLICATE);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
@@ -666,10 +670,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
 		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 					 BORDER_REPLICATE);
 		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
-					 StructuralSimilarity::WIN_SIZE, StructuralSimilarity::SIGMA, 0.,
+					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 					 BORDER_REPLICATE);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
