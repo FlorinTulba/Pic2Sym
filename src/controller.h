@@ -45,6 +45,7 @@
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
 #include "misc.h"
+#include "timing.h"
 
 #include <chrono>
 

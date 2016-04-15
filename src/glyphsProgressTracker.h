@@ -37,7 +37,7 @@
 #define H_GLYPHS_PROGRESS_TRACKER
 
 #include "controllerBase.h"
-#include "misc.h"
+#include "timing.h"
 
 /**
 Interface to monitor the progress of loading and preprocessing a charmap.

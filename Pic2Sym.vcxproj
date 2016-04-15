@@ -45,6 +45,7 @@
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symSettings.h" />
+    <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\validateFont.h" />
@@ -71,6 +72,7 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
+    <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />

@@ -38,7 +38,7 @@
 
 #include "img.h"
 #include "controllerBase.h"
-#include "misc.h"
+#include "timing.h"
 
 /**
 Interface to monitor the progress of loading and preprocessing a charmap.

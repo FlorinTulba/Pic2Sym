@@ -36,6 +36,7 @@
 #include "transform.h"
 #include "picTransformProgressTracker.h"
 #include "misc.h"
+#include "timing.h"
 #include "settings.h"
 #include "matchSettingsManip.h"
 #include "matchParams.h"

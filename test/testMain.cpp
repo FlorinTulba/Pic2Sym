@@ -40,6 +40,7 @@
 // Including the CPP files allows parsing UNIT_TESTING guarded regions.
 // Disadvantage: namespace pollution
 #include "misc.cpp"
+#include "timing.cpp"
 #include "fontEngine.cpp"
 #include "matchEngine.cpp"
 #include "match.cpp"

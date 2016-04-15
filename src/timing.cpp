@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-1-8
+ This file was created on 2016-4-15
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -33,34 +33,66 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MISC
-#define H_MISC
+#include "timing.h"
 
-#include <iostream>
-#include <iomanip>
-#include <string>
+using namespace std;
+using namespace std::chrono;
 
-// Error margin
-const double EPS = 1e-6;
+Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
+observers(observers_), lastStart(high_resolution_clock::now()) {
+	for(auto observer : observers)
+		observer->onStart();
+}
 
-// Display an expression and its value
-#define PRINT(expr)			std::cout<<#expr " : "<<(expr)
-#define PRINTLN(expr)		PRINT(expr)<<std::endl
-#define PRINT_H(expr)		std::cout<<#expr " : 0x"<<std::hex<<(expr)<<std::dec
-#define PRINTLN_H(expr)		PRINT_H(expr)<<std::endl
+Timer::Timer(std::shared_ptr<ITimerActions> observer) :
+Timer(vector<std::shared_ptr<ITimerActions>> { observer }) {}
 
-// Oftentimes functions operating on ranges need the full range.
-// Example: copy(x.begin(), x.end(), ..) => copy(BOUNDS(x), ..)
-#define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
-#define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
+Timer::Timer(Timer &&other) : observers(std::move(other.observers)),
+lastStart(std::move(other.lastStart)), elapsedS(std::move(other.elapsedS)),
+paused(other.paused), valid(other.valid) {
+	other.valid = false;
+}
 
-// string <-> wstring conversions
-std::wstring str2wstr(const std::string &str);
-std::string wstr2str(const std::wstring &wstr);
+Timer::~Timer() {
+	if(!valid)
+		return;
 
-// Notifying the user
-void infoMsg(const std::string &text, const std::string &title = "");
-void warnMsg(const std::string &text, const std::string &title = "");
-void errMsg(const std::string &text, const std::string &title = "");
+	release();
+}
 
-#endif
+void Timer::pause() {
+	if(!valid || paused)
+		return;
+
+	paused = true;
+
+	elapsedS += high_resolution_clock::now() - lastStart;
+
+	for(auto observer : observers)
+		observer->onPause(elapsedS.count());
+}
+
+void Timer::resume() {
+	if(!valid || !paused)
+		return;
+
+	paused = false;
+
+	lastStart = high_resolution_clock::now();
+
+	for(auto observer : observers)
+		observer->onResume();
+}
+
+void Timer::release() {
+	if(!valid)
+		return;
+
+	valid = false;
+
+	if(!paused)
+		elapsedS += high_resolution_clock::now() - lastStart;
+
+	for(auto observer : observers)
+		observer->onRelease(elapsedS.count());
+}
