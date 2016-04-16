@@ -16,17 +16,23 @@ However, it *runs only under Windows*, as it uses Windows\-specific:
 
 The decision to offer *support only for 64bits machines* originated from the lengthy compilation of **OpenCV** from latest sources (*version 3.0.0 at that time*). There were no binaries yet for that version. Now [they exist](http://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/opencv-3.0.0.exe/download), but I prefer the binaries customized for my machine.
 
-If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization* and *Filesystem*), then link them within the project.
+If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System* and *Filesystem*), then link them within the project.
 
 The *class diagram* from below presents a *simplified* perspective of the application:<br>
 ![](ClassDiag.jpg)<br>
-The ***Controller*** manages the image transformation process through the following classes:
+The ***Controller*** manages the image transformation process through the following interfaces / classes:
+- Interfaces virtually extending ***IController***:
+	- ***IValidateFont*** \- checks if a *new font or encoding* is valid
+	- ***IPresentCmap*** \- support for *displaying a page of glyphs from current charmap*
+    - ***IControlPanelActions*** \- methods to *address each action from Control Panel*
+    - ***IGlyphsProgressTracker*** \- *timing for loading and preprocessing* of a new / updated set of glyphs
+    - ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process
 - ***Img*** \- the image to approximate with symbols
-- ***Transformer*** \- preprocesses the image and approximates it patch by patch
-- ***FontEngine*** \- involved in loading a new font file and using from it a given encoding of a certain size
+- ***Transformer*** \- preprocesses the image (resizes it - ***ResizedImg***) and demands its approximation  ***Patch*** by patch from ***MatchEngine***
+- ***FontEngine*** \- involved in loading a new font file from which to use a given encoding of a certain size
 	- ***PmsCont*** \- simple container holding each loaded glyph and some related data (part of ***FontEngine***)
 		- ***PixMapSym*** \- a particular loaded symbol (item in ***PmsCont***)
-- ***MatchEngine*** \- the responsible of finding the best symbol approximating a patch; also a **composite** holding match aspects
+- ***MatchEngine*** \- the responsible of finding ***BestMatch***, the best symbol approximating a patch; also a **composite** referring match aspects
 	- ***MatchAspect*** \- base class for all 8 implemented match aspects
 	- ***CachedData*** \- generic values needed during transformations
 	- ***SymData*** \- symbol\-specific values needed during transformations
@@ -35,12 +41,29 @@ The ***Controller*** manages the image transformation process through the follow
 	- ***SymSettings*** \- which font family, style, encoding and size tto use for the approximating symbols
 	- ***MatchSettings*** \- how to adjust the matching aspects during approximation
 
-While comparing the symbol set with a patch, there are values which can be reused among the employed ***MatchAspect***s. Such shareable values are grouped by the ***MatchParams*** class.
+While comparing the symbol set with a Patch, there are values which can be reused among the employed ***MatchAspect***s. Such shareable values are grouped by the ***MatchParams*** class.
 
 ***BestMatch*** holds the index of the most similar symbol to a patch, found at a given time, while investigating sequentially all the glyphs.
 
+Each symbol compared to a match produces a possible approximation ***ApproxVariant*** of the patch. Thus, *ApproxVariant* could be an *association class between Patch and one SymData item from MatchEngine*.
 
-The ***GUI\-related classes*** were omitted from the diagram. They simply interact with the ***Controller***. Their role is setting or getting data and initiating requests or reporting errors.
+Timing is provided by ***Timer*** class which expects a realization class of ***ITimerActions*** interface.
+
+Logging preserves the reasons behind the approximation of each patch with a certain glyph - ***TransformTrace*** makes that possible.
+
+***ControlPanel*** class configures and updates the sliders from the dialog.
+
+***Comparator*** and ***CmapInspect*** share ***CvWin*** interface and provide support for comparing original images with results, and displaying the symbols from a charmap.
+
+***MatchSettingsManip*** facilitates version management coupled with external configuration (see *res/defaultMatchSettings.txt*) for ***MatchSettings***.
+
+***PropsReader*** provides the application with configuration items found in:
+- *res/defaultMatchSettings.txt* \- used by ***MatchSettings***
+- *res/varConfig.txt* \- adjustable constants grouped to **permit no-recompilation changes**
+
+Classes *omitted from the diagram*:
+- ***Dialog classes*** which appear when choosing a new image / font / settings file
+- ***FontFinder*** class who searches for a new font file
 
 The comments within the code provide more explanations.
 
@@ -65,6 +88,7 @@ The comments within the code provide more explanations.
     - 2 small free *font files* (***BPmonoBold.ttf*** and ***vga855.fon***) used by Unit Tests
     - ***NoImage.jpg*** that appears when the application starts
     - ***defaultMatchSettings.txt*** \- configuration file used for the first start
+	- ***varConfig.txt*** \- configurable constants controlling look and behavior of the application
 - **src**/ contains the *sources* of the project
 - **test**/ contains *Unit Test* files
 

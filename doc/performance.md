@@ -1,6 +1,22 @@
 ## Performance ##
 [Back to start page](../ReadMe.md)
 
+The changes in **version 1.1** of Pic2Sym impact the performance as follows:
+- Using the **Hybrid Result** mode incurs *additional cost*:
+	- first deciding *which is a better approximation* of the patch: *a selected symbol* or *the blurred version of that patch*
+	- secondly \- *combining the 2 versions* based on the *weights resulted from previous step*
+- **Uniform patches** are *approximated by their blurred form*, instead of the normal transformation process from version 1.0. This extra logic generally **reduces overall processing time**, except for the case when there are very few uniform patches. It also means it&#39;s more difficult to provide accurate estimation formulae
+- **Refactorization incurred minor penalty** for *splitting old classes* and *runtime allocation and handling of some (more / larger / polymorphic) objects*
+
+Based on the notations from below, and adding **uc** \- the *number of uniform patches*, **hybrid mode cost** for a *color image* is:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c-uc) \* (9\*s^2 + 12)<br>
+
+Since the changes don&#39;t affect the matching aspects, the analysis for version 1.0 from below should be still mostly valid.
+
+* * *
+
+### Analysis for Pic2Sym version 1.0
+
 Profiling results show that during image approximation under default settings, 80% from the time the processor is busy computing [structural similarity][] (*StructuralSimilarity::assessMatch* \-\> *MatchParams::computeSsim*):<br>
 ![](ProfileSummary.jpg)<br>
 The 2 dll\-s from the image are **imgproc**, which provides an *image blur* function, and **core**, used for *basic matrix operations*, like addition and element\-wise multiplication.
