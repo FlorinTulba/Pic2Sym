@@ -53,6 +53,13 @@ static Mat blurredVersionOf(const Mat &orig_) {
 
 Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
 
+const Mat& Patch::matrixToApprox() const {
+	if(needsApproximation)
+		return grayD;
+
+	throw logic_error(__FUNCTION__ " shouldn't be called when needsApproximation is false!");
+}
+
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 		orig(orig_), blurred(blurred_), sz(orig_.rows), isColor(isColor_) {
 	// Don't approximate rather uniform patches
@@ -65,8 +72,10 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 	double minVal, maxVal;
 	minMaxIdx(grayBlurred, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
 	extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
-	if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED)
+	if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED) {
 		needsApproximation = false;
+		return;
+	}
 
 	// Configurable source of transformation - either the patch itself, or its blurred version:
 	extern const bool Transform_BlurredPatches_InsteadOf_Originals;
