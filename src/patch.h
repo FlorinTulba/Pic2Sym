@@ -73,7 +73,7 @@ public:
 	Patch(const cv::Mat &orig_);
 
 	/// specifies which matrix to use during the approximation process
-	const cv::Mat& matrixToApprox() const { return grayD; }
+	const cv::Mat& matrixToApprox() const;
 };
 
 #endif
