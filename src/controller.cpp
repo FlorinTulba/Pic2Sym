@@ -55,14 +55,12 @@ using namespace boost::filesystem;
 using namespace boost::archive;
 using namespace cv;
 
-extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
-extern const unsigned Settings_MIN_H_SYMS;
-extern const unsigned Settings_MAX_H_SYMS;
-extern const unsigned Settings_MIN_V_SYMS;
-extern const unsigned Settings_MAX_V_SYMS;
-extern const unsigned Settings_MIN_FONT_SIZE;
-extern const unsigned Settings_MAX_FONT_SIZE;
-extern const unsigned Settings_DEF_FONT_SIZE;
+extern const unsigned
+	Settings_MAX_THRESHOLD_FOR_BLANKS,
+	Settings_MIN_H_SYMS, Settings_MAX_H_SYMS,
+	Settings_MIN_V_SYMS, Settings_MAX_V_SYMS,
+	Settings_MIN_FONT_SIZE, Settings_MAX_FONT_SIZE,
+	Settings_DEF_FONT_SIZE;
 
 bool Settings::isBlanksThresholdOk(unsigned t) {
 	return t < Settings_MAX_THRESHOLD_FOR_BLANKS;

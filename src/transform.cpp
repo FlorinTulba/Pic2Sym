@@ -104,7 +104,6 @@ void Transformer::run() {
 		ctrler.reportTransformationProgress((double)r/h);
 
 		const Range rowRange(r, r+sz);
-
 		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
 			const Range colRange(c, c+sz);
 			const Mat patch(resized, rowRange, colRange),
@@ -113,11 +112,17 @@ void Transformer::run() {
 			// Building a Patch with the blurred patch computed for its actual borders
 			Patch p(patch, blurredPatch, isColor);
 			const BestMatch best = me.approxPatch(p);
-			const Mat &approximation = best.bestVariant.approx;
-			Mat destRegion(result, rowRange, colRange);
-			approximation.copyTo(destRegion);
-
-			tt.newEntry(r, c, best); // log the data about best match (DEBUG mode only)
+#pragma omp parallel sections
+			{
+#pragma omp section
+				{
+					const Mat &approximation = best.bestVariant.approx;
+					Mat destRegion(result, rowRange, colRange);
+					approximation.copyTo(destRegion);
+				}
+#pragma omp section
+				tt.newEntry(r, c, best); // log the data about best match (DEBUG mode only)
+			}
 		}
 	}
 

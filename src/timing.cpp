@@ -39,7 +39,7 @@ using namespace std;
 using namespace std::chrono;
 
 Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
-observers(observers_), lastStart(high_resolution_clock::now()) {
+		observers(observers_), lastStart(high_resolution_clock::now()) {
 	for(auto observer : observers)
 		observer->onStart();
 }
@@ -48,8 +48,8 @@ Timer::Timer(std::shared_ptr<ITimerActions> observer) :
 Timer(vector<std::shared_ptr<ITimerActions>> { observer }) {}
 
 Timer::Timer(Timer &&other) : observers(std::move(other.observers)),
-lastStart(std::move(other.lastStart)), elapsedS(std::move(other.elapsedS)),
-paused(other.paused), valid(other.valid) {
+		lastStart(std::move(other.lastStart)), elapsedS(std::move(other.elapsedS)),
+		paused(other.paused), valid(other.valid) {
 	other.valid = false;
 }
 

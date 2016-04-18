@@ -95,12 +95,21 @@ namespace {
 
 		// Compute some means and standard deviations
 		Vec<double, 1> avgHeight, sdHeight, avgWidth, sdWidth, avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
-		meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+#pragma omp parallel sections
+		{
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+#pragma omp section
+			meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+		}
 
 		const double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
 

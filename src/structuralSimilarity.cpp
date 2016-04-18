@@ -74,8 +74,8 @@ void MatchParams::computeBlurredPatch(const Mat &patch) {
 
 	Mat blurredPatch_;
 	GaussianBlur(patch, blurredPatch_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+				 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
+				 BORDER_REPLICATE);
 	blurredPatch = blurredPatch_;
 }
 
@@ -95,8 +95,8 @@ void MatchParams::computeVariancePatch(const Mat &patch) {
 
 	Mat variancePatch_;
 	GaussianBlur(patch.mul(patch), variancePatch_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+				 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
+				 BORDER_REPLICATE);
 	variancePatch_ -= blurredPatchSq.value();
 	variancePatch = variancePatch_;
 }
@@ -105,54 +105,97 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	if(ssim)
 		return;
 
-	Mat covariance, ssimMap;
+	Mat covariance, ssimMap, blurredPatchApprox, blurredPatchApproxSq, variancePatchApprox;
+	double diffRatio;
 
-	computeVariancePatch(patch);
-	computePatchApprox(patch, symData);
+#pragma omp parallel sections
+	{
+#pragma omp section
+		computeVariancePatch(patch);
+#pragma omp section
+		{
+			computePatchApprox(patch, symData);
+			diffRatio = contrast.value() / symData.diffMinMax;
+		}
+	}
 	const Mat &approxPatch = patchApprox.value();
 
 	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-	const double diffRatio = contrast.value() / symData.diffMinMax;
-	const Mat blurredPatchApprox = bg.value() + diffRatio *
-		symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
-		blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
+#pragma omp parallel sections
+	{
+#pragma omp section
+		{
+			blurredPatchApprox = bg.value() + diffRatio *
+									symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX];
+			blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox);
+		}
+#pragma omp section
 		variancePatchApprox = diffRatio * diffRatio *
-		symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+							symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+	}
 
 #ifdef _DEBUG // checking the simplifications mentioned above
-	double minVal, maxVal;
 	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	GaussianBlur(approxPatch, blurredPatchApprox_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
-	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+#pragma omp parallel sections
+	{
+#pragma omp section
+		{
+			double minVal, maxVal;
+			GaussianBlur(approxPatch, blurredPatchApprox_,
+						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
+						 BORDER_REPLICATE);
+			minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
+			assert(abs(minVal) < EPS);
+			assert(abs(maxVal) < EPS);
+		}
 
-	GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
-	variancePatchApprox_ -= blurredPatchApproxSq;
-	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+#pragma omp section
+		{
+			double minVal, maxVal;
+			GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
+						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
+						 BORDER_REPLICATE);
+			variancePatchApprox_ -= blurredPatchApproxSq;
+			minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
+			assert(abs(minVal) < EPS);
+			assert(abs(maxVal) < EPS);
+		}
+	}
 #endif // checking the simplifications mentioned above
 
-	const Mat productMats = patch.mul(approxPatch),
-		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	GaussianBlur(productMats, covariance,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
-	covariance -= productBlurredMats;
-
 	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;
-	const Mat numerator = (2.*productBlurredMats + StructuralSimilarity_C1).
-		mul(2.*covariance + StructuralSimilarity_C2),
-		denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
-		mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);
+	Mat productMats, productBlurredMats, numerator1stFactor, numerator2ndFactor, denominator;
+
+#pragma omp parallel sections
+	{
+#pragma omp section
+		productMats = patch.mul(approxPatch);
+#pragma omp section
+		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
+	}
+
+#pragma omp parallel sections
+	{
+#pragma omp section
+		{
+			GaussianBlur(productMats, covariance,
+						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
+						 BORDER_REPLICATE);
+			covariance -= productBlurredMats;
+			numerator2ndFactor = 2.*covariance + StructuralSimilarity_C2;
+		}
+#pragma omp section
+		{
+			numerator1stFactor = 2.*productBlurredMats + StructuralSimilarity_C1;
+			denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
+						mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);
+		}
+	}
+
+	const Mat numerator = numerator1stFactor.mul(numerator2ndFactor);
 
 	divide(numerator, denominator, ssimMap);
 	ssim = *mean(ssimMap).val;

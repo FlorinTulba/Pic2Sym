@@ -250,6 +250,7 @@ class FontFinder {
 			cout<<idx++<<" : "<<choice.first<<" -> "<<choice.second<<endl;
 
 		//idx is here choicesCount
+
 		while(idx>=choicesCount) {
 			cout<<"Enter correct index: ";
 			cin>>idx;
@@ -270,6 +271,7 @@ public:
 		wstring wFontName(CBOUNDS(fontName));
 
 		RegistryHelper rh;
+#pragma loop(no_vector) // unknown repeat count
 		while(rh.extractNextFont(wCurFontName, wCurFontFileName))
 			if(relevantFontName(wCurFontName, wFontName, isBold, isItalic))
 				choices[wstr2str(wCurFontName)] =

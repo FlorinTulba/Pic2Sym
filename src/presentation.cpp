@@ -116,9 +116,9 @@ Controller::Controller(Settings &s) :
 		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
-	extern const string Comparator_initial_title;
+
+	extern const string Comparator_initial_title, Comparator_statusBar;
 	comp.setTitle(Comparator_initial_title);
-	extern const string Comparator_statusBar;
 	comp.setStatus(Comparator_statusBar);
 }
 
@@ -233,6 +233,20 @@ void Comparator::resize() const {
 extern const Size CmapInspect_pageSz;
 extern const String CmapInspect_pageTrackName;
 
+static void populateRow(const int row, const int symsPerRow, const int availSyms,
+						const int cellSide, const int fontSz,
+						Mat &content, MatchEngine::VSymDataCIt it) {
+	int symsOnPrevRows = row * symsPerRow;
+	const int rStart = row * cellSide, rEnd = rStart + fontSz;
+	Range rowRange(rStart, rEnd);
+#pragma omp parallel for schedule(static, 1)
+	for(int col = 0; col < availSyms; ++col) {
+		const int cStart = col * cellSide, cEnd = cStart + fontSz;
+		Mat region(content, rowRange, Range(cStart, cEnd));
+		next(it, symsOnPrevRows + col)->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
+	}
+}
+
 CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
 		CvWin("Charmap View"), cmapPresenter(cmapPresenter_),
 		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
@@ -246,8 +260,10 @@ Mat CmapInspect::createGrid() const {
 
 	// Draws horizontal & vertical cell borders
 	const int cellSide = 1+cmapPresenter.getFontSize();
+#pragma omp parallel for schedule(static, 1)
 	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
 		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
+#pragma omp parallel for schedule(static, 1)
 	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
 		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
 	return result;
@@ -256,26 +272,22 @@ Mat CmapInspect::createGrid() const {
 void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	content = grid.clone();
-	const int fontSz = cmapPresenter.getFontSize(),
-			fontSzM1 = fontSz - 1,
-			cellSide = 1 + fontSz,
-			height = CmapInspect_pageSz.height,
-			width = CmapInspect_pageSz.width;
+	const auto symsCountToDisplay = distance(it, itEnd);
+	const int fontSz = cmapPresenter.getFontSize(), fontSzM1 = fontSz - 1, cellSide = 1 + fontSz,
+			height = CmapInspect_pageSz.height, width = CmapInspect_pageSz.width,
+			symsPerRow = width / cellSide;
+	const div_t fullRowsAndRest = div((int)symsCountToDisplay, symsPerRow);
+	const int fullRows = fullRowsAndRest.quot, rest = fullRowsAndRest.rem;
 
-	// Convert each 'negative' glyph to 0..255 and place it within the grid
-	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
-		Range rowRange(r - fontSzM1, r + 1);
-		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
-			Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
-			it->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
-		}
-	}
+	for(int row = 0; row < fullRows; ++row)
+		populateRow(row, symsPerRow, symsPerRow, cellSide, fontSz, content, it);
+
+	if(rest > 0)
+		populateRow(fullRows, symsPerRow, rest, cellSide, fontSz, content, it);
 }
 
-extern const wstring ControlPanel_aboutText;
-extern const wstring ControlPanel_instructionsText;
-extern const String ControlPanel_aboutLabel;
-extern const String ControlPanel_instructionsLabel;
+extern const wstring ControlPanel_aboutText, ControlPanel_instructionsText;
+extern const String ControlPanel_aboutLabel, ControlPanel_instructionsLabel;
 
 ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) :
 		actions(actions_),
@@ -291,38 +303,36 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 		direction(Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs())),
 		largerSym(Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity())),
 		thresh4Blanks(cfg.matchSettings().getBlankThreshold()) {
-	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
-	extern const unsigned Settings_MAX_H_SYMS;
-	extern const unsigned Settings_MAX_V_SYMS;
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	extern const int ControlPanel_Converter_StructuralSim_maxSlider;
-	extern const int ControlPanel_Converter_Contrast_maxSlider;
-	extern const int ControlPanel_Converter_Correctness_maxSlider;
-	extern const int ControlPanel_Converter_Direction_maxSlider;
-	extern const int ControlPanel_Converter_Gravity_maxSlider;
-	extern const int ControlPanel_Converter_LargerSym_maxSlider;
-
-	extern const String ControlPanel_selectImgLabel;
-	extern const String ControlPanel_transformImgLabel;
-	extern const String ControlPanel_selectFontLabel;
-	extern const String ControlPanel_restoreDefaultsLabel;
-	extern const String ControlPanel_saveAsDefaultsLabel;
-	extern const String ControlPanel_loadSettingsLabel;
-	extern const String ControlPanel_saveSettingsLabel;
-	extern const String ControlPanel_fontSzTrName;
-	extern const String ControlPanel_encodingTrName;
-	extern const String ControlPanel_hybridResultTrName;
-	extern const String ControlPanel_structuralSimTrName;
-	extern const String ControlPanel_underGlyphCorrectnessTrName;
-	extern const String ControlPanel_glyphEdgeCorrectnessTrName;
-	extern const String ControlPanel_asideGlyphCorrectnessTrName;
-	extern const String ControlPanel_moreContrastTrName;
-	extern const String ControlPanel_gravityTrName;
-	extern const String ControlPanel_directionTrName;
-	extern const String ControlPanel_largerSymTrName;
-	extern const String ControlPanel_thresh4BlanksTrName;
-	extern const String ControlPanel_outWTrName;
-	extern const String ControlPanel_outHTrName;
+	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS,
+		Settings_MAX_H_SYMS, Settings_MAX_V_SYMS,
+		Settings_MAX_FONT_SIZE;
+	extern const int ControlPanel_Converter_StructuralSim_maxSlider,
+		ControlPanel_Converter_Contrast_maxSlider,
+		ControlPanel_Converter_Correctness_maxSlider,
+		ControlPanel_Converter_Direction_maxSlider,
+		ControlPanel_Converter_Gravity_maxSlider,
+		ControlPanel_Converter_LargerSym_maxSlider;
+	extern const String ControlPanel_selectImgLabel,
+		ControlPanel_transformImgLabel,
+		ControlPanel_selectFontLabel,
+		ControlPanel_restoreDefaultsLabel,
+		ControlPanel_saveAsDefaultsLabel,
+		ControlPanel_loadSettingsLabel,
+		ControlPanel_saveSettingsLabel,
+		ControlPanel_fontSzTrName,
+		ControlPanel_encodingTrName,
+		ControlPanel_hybridResultTrName,
+		ControlPanel_structuralSimTrName,
+		ControlPanel_underGlyphCorrectnessTrName,
+		ControlPanel_glyphEdgeCorrectnessTrName,
+		ControlPanel_asideGlyphCorrectnessTrName,
+		ControlPanel_moreContrastTrName,
+		ControlPanel_gravityTrName,
+		ControlPanel_directionTrName,
+		ControlPanel_largerSymTrName,
+		ControlPanel_thresh4BlanksTrName,
+		ControlPanel_outWTrName,
+		ControlPanel_outHTrName;
 
 	createButton(ControlPanel_selectImgLabel,
 				 [] (int, void *userdata) {

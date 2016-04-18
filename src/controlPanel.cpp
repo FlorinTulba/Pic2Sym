@@ -41,42 +41,41 @@
 using namespace std;
 using namespace cv;
 
-extern const int ControlPanel_Converter_StructuralSim_maxSlider;
-extern const double ControlPanel_Converter_StructuralSim_maxReal;
-extern const int ControlPanel_Converter_Contrast_maxSlider;
-extern const double ControlPanel_Converter_Contrast_maxReal;
-extern const int ControlPanel_Converter_Correctness_maxSlider;
-extern const double ControlPanel_Converter_Correctness_maxReal;
-extern const int ControlPanel_Converter_Direction_maxSlider;
-extern const double ControlPanel_Converter_Direction_maxReal;
-extern const int ControlPanel_Converter_Gravity_maxSlider;
-extern const double ControlPanel_Converter_Gravity_maxReal;
-extern const int ControlPanel_Converter_LargerSym_maxSlider;
-extern const double ControlPanel_Converter_LargerSym_maxReal;
-
-extern const String ControlPanel_selectImgLabel;
-extern const String ControlPanel_transformImgLabel;
-extern const String ControlPanel_selectFontLabel;
-extern const String ControlPanel_restoreDefaultsLabel;
-extern const String ControlPanel_saveAsDefaultsLabel;
-extern const String ControlPanel_aboutLabel;
-extern const String ControlPanel_instructionsLabel;
-extern const String ControlPanel_loadSettingsLabel;
-extern const String ControlPanel_saveSettingsLabel;
-extern const String ControlPanel_fontSzTrName;
-extern const String ControlPanel_encodingTrName;
-extern const String ControlPanel_hybridResultTrName;
-extern const String ControlPanel_structuralSimTrName;
-extern const String ControlPanel_underGlyphCorrectnessTrName;
-extern const String ControlPanel_glyphEdgeCorrectnessTrName;
-extern const String ControlPanel_asideGlyphCorrectnessTrName;
-extern const String ControlPanel_moreContrastTrName;
-extern const String ControlPanel_gravityTrName;
-extern const String ControlPanel_directionTrName;
-extern const String ControlPanel_largerSymTrName;
-extern const String ControlPanel_thresh4BlanksTrName;
-extern const String ControlPanel_outWTrName;
-extern const String ControlPanel_outHTrName;
+extern const int ControlPanel_Converter_StructuralSim_maxSlider,
+	ControlPanel_Converter_Contrast_maxSlider,
+	ControlPanel_Converter_Correctness_maxSlider,
+	ControlPanel_Converter_Direction_maxSlider,
+	ControlPanel_Converter_Gravity_maxSlider,
+	ControlPanel_Converter_LargerSym_maxSlider;
+extern const double ControlPanel_Converter_StructuralSim_maxReal,
+	ControlPanel_Converter_Contrast_maxReal,
+	ControlPanel_Converter_Correctness_maxReal,
+	ControlPanel_Converter_Direction_maxReal,
+	ControlPanel_Converter_Gravity_maxReal,
+	ControlPanel_Converter_LargerSym_maxReal;
+extern const String ControlPanel_selectImgLabel,
+	ControlPanel_transformImgLabel,
+	ControlPanel_selectFontLabel,
+	ControlPanel_restoreDefaultsLabel,
+	ControlPanel_saveAsDefaultsLabel,
+	ControlPanel_aboutLabel,
+	ControlPanel_instructionsLabel,
+	ControlPanel_loadSettingsLabel,
+	ControlPanel_saveSettingsLabel,
+	ControlPanel_fontSzTrName,
+	ControlPanel_encodingTrName,
+	ControlPanel_hybridResultTrName,
+	ControlPanel_structuralSimTrName,
+	ControlPanel_underGlyphCorrectnessTrName,
+	ControlPanel_glyphEdgeCorrectnessTrName,
+	ControlPanel_asideGlyphCorrectnessTrName,
+	ControlPanel_moreContrastTrName,
+	ControlPanel_gravityTrName,
+	ControlPanel_directionTrName,
+	ControlPanel_largerSymTrName,
+	ControlPanel_thresh4BlanksTrName,
+	ControlPanel_outWTrName,
+	ControlPanel_outHTrName;
 
 double ControlPanel::Converter::proportionRule(double x, double xMax, double yMax) {
 	return x * yMax / xMax;

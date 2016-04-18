@@ -76,6 +76,9 @@ void MatchEngine::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
+	extern const Size BlurWinSize;
+	extern const double BlurStandardDeviation;
+
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
@@ -101,8 +104,6 @@ void MatchEngine::updateSymbols() {
 		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 		// Storing a blurred version of the grounded glyph for structural similarity match aspect
-		extern const Size BlurWinSize;
-		extern const double BlurStandardDeviation;
 		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
 					 BlurWinSize, BlurStandardDeviation, 0.,
 					 BORDER_REPLICATE);

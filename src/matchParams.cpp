@@ -75,8 +75,13 @@ void MatchParams::computeContrast(const Mat &patch, const SymData &symData) {
 	if(contrast)
 		return;
 
-	computeFg(patch, symData);
-	computeBg(patch, symData);
+#pragma omp parallel sections
+	{
+#pragma omp section
+		computeFg(patch, symData);
+#pragma omp section
+		computeBg(patch, symData);
+	}
 
 	contrast = fg.value() - bg.value();
 	assert(abs(contrast.value()) < 255.5);
@@ -150,10 +155,17 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	if(mcPatch)
 		return;
 
-	const double patchSum = *sum(patch).val;
+	double patchSum;
 	Mat temp, temp1;
-	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
-	reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+#pragma omp parallel sections
+	{
+#pragma omp section
+		patchSum = *sum(patch).val;
+#pragma omp section
+		reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+#pragma omp section
+		reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+	}
 
 	mcPatch = Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
 		/ patchSum;
@@ -166,8 +178,13 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 	if(mcPatchApprox)
 		return;
 
-	computeContrast(patch, symData);
-	computeSymDensity(symData, cachedData);
+#pragma omp parallel sections
+	{
+#pragma omp section
+		computeContrast(patch, symData);
+#pragma omp section
+		computeSymDensity(symData, cachedData);
+	}
 
 	// Obtaining glyph's mass center
 	const double k = symDensity.value() * contrast.value(),
@@ -186,8 +203,13 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	if(mcsOffset)
 		return;
 
-	computeMcPatch(patch, cachedData);
-	computeMcPatchApprox(patch, symData, cachedData);
+#pragma omp parallel sections
+	{
+#pragma omp section
+		computeMcPatch(patch, cachedData);
+#pragma omp section
+		computeMcPatchApprox(patch, symData, cachedData);
+	}
 
 	mcsOffset = norm(mcPatch.value() - mcPatchApprox.value());
 	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
@@ -227,8 +249,13 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
-			miuFg = *mean(ch, fgMask).val;
-			miuBg = *mean(ch, bgMask).val;
+#pragma omp parallel sections
+			{
+#pragma omp section
+				miuFg = *mean(ch, fgMask).val;
+#pragma omp section
+				miuBg = *mean(ch, bgMask).val;
+			}
 			newDiff = miuFg - miuBg;
 
 			groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.diffMinMax, miuBg);
@@ -249,8 +276,8 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			patchResult = Mat(patch.sz, patch.sz, CV_8UC1, Scalar(*mean(patch.orig).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
-			*params.contrast / dataOfBest.diffMinMax,
-			*params.bg);
+								*params.contrast / dataOfBest.diffMinMax,
+								*params.bg);
 	}
 
 	bestVariant.approx = patchResult;
@@ -262,9 +289,14 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	// Hybrid Result Mode - Combine the approximation with the blurred patch:
 	// the less satisfactory the approximation is,
 	// the more the weight of the blurred patch should be
-	Scalar miu, sdevApproximation, sdevBlurredPatch;
-	meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
-	meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
+	Scalar miu1, miu2, sdevApproximation, sdevBlurredPatch;
+#pragma omp parallel sections
+	{
+#pragma omp section
+		meanStdDev(patch.orig-bestVariant.approx, miu1, sdevApproximation);
+#pragma omp section
+		meanStdDev(patch.orig-patch.blurred, miu2, sdevBlurredPatch);
+	}
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;
 	if(patch.isColor) {
