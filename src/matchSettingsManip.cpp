@@ -67,7 +67,7 @@ MatchSettingsManip& MatchSettingsManip::instance() {
 
 void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
 	// Ensure ms.initialized is true when leaving the method
-	BOOST_SCOPE_EXIT(ms) {
+	BOOST_SCOPE_EXIT(&ms) {
 		if(!ms.initialized)
 			ms.initialized = true;
 	} BOOST_SCOPE_EXIT_END;
@@ -75,7 +75,6 @@ void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
 	if(exists(cfgPath.append("initMatchSettings.cfg"))) {
 		if(last_write_time(cfgPath) > last_write_time(defCfgPath)) { // newer
 			try {
-				ms.initialized = false;
 				loadUserDefaults(ms); // throws invalid_argument for older versions
 
 				return;
@@ -113,7 +112,7 @@ void MatchSettingsManip::createUserDefaults(MatchSettings &ms) {
 void MatchSettingsManip::loadUserDefaults(MatchSettings &ms) {
 	ifstream ifs(cfgPath.string(), ios::binary);
 	binary_iarchive ia(ifs);
-	ia>>ms; // throws invalid_argument for obsolete 'initMatchSettings.cfg'
+	ia>>ms; // when ms.initialized==false, throws invalid_argument for obsolete 'initMatchSettings.cfg'
 }
 
 void MatchSettingsManip::saveUserDefaults(const MatchSettings &ms) const {
