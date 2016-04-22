@@ -44,6 +44,10 @@ using namespace std;
 using namespace boost;
 using namespace cv;
 
+extern const bool ParallelizeMp_FgBgMeans, ParallelizeMp_GlyphSumAndReductions,
+				ParallelizeMp_ContrastAndDensity, ParallelizeMp_MassCenters,
+				ParallelizeBm_ColorPatchFgBgMeans, ParallelizeBm_HybridStdDevs;
+
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
 	patchApprox = none;
@@ -75,7 +79,7 @@ void MatchParams::computeContrast(const Mat &patch, const SymData &symData) {
 	if(contrast)
 		return;
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_FgBgMeans) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		computeFg(patch, symData);
@@ -157,7 +161,7 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 
 	double patchSum;
 	Mat temp, temp1;
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_GlyphSumAndReductions) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		patchSum = *sum(patch).val;
@@ -178,7 +182,7 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 	if(mcPatchApprox)
 		return;
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_ContrastAndDensity) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		computeContrast(patch, symData);
@@ -203,7 +207,7 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	if(mcsOffset)
 		return;
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_MassCenters) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		computeMcPatch(patch, cachedData);
@@ -249,7 +253,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeBm_ColorPatchFgBgMeans) // Nested parallel regions are serialized by default
 			{
 #pragma omp section
 				miuFg = *mean(ch, fgMask).val;
@@ -289,13 +293,13 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	// Hybrid Result Mode - Combine the approximation with the blurred patch:
 	// the less satisfactory the approximation is,
 	// the more the weight of the blurred patch should be
-	Scalar miu1, miu2, sdevApproximation, sdevBlurredPatch;
-#pragma omp parallel sections
+	Scalar miu, sdevApproximation, sdevBlurredPatch;
+#pragma omp parallel sections private(miu) if(ParallelizeBm_HybridStdDevs) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
-		meanStdDev(patch.orig-bestVariant.approx, miu1, sdevApproximation);
+		meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
 #pragma omp section
-		meanStdDev(patch.orig-patch.blurred, miu2, sdevBlurredPatch);
+		meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
 	}
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;

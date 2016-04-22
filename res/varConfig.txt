@@ -9,6 +9,29 @@
 ; Switch to choose between transforming the original, or its blurred version
 Transform_BlurredPatches_InsteadOf_Originals	false
 
+; Switches for OpenMP - parallelizing operations / loops (Nested parallel regions are serialized by default):
+UsingOMP	false
+ParallelizePixMapStatistics	true
+ParallelizeGlyphMasks	false
+PrepareMoreGlyphsAtOnce	false
+ParallelizeTr_PatchRowLoops	true
+ParallelizeTr_PatchColLoops	true
+ParallelizeMp_FgBgMeans	true
+ParallelizeMp_GlyphSumAndReductions	true
+ParallelizeMp_ContrastAndDensity	true
+ParallelizeMp_MassCenters	true
+ParallelizeMp_VarianceAndPatchApprox	true
+ParallelizeMp_BPAS_VPA	true
+ParallelizeMp_CheckBPA_VPA	true
+ParallelizeMp_PAP_BPBPA	true
+ParallelizeMp_ssimFactors	true
+ParallelizeBm_ColorPatchFgBgMeans	true
+ParallelizeBm_HybridStdDevs	true
+ParallelizeGlyphBitmapExtraction	true
+ParallelizeGridCreation	true
+ParallelizeGridPopulation	true
+ParallelizeLoggingAndResultAssembly	true
+
 ; Constants for the sliders controlling the range of each matching aspect
 ControlPanel_Converter_StructuralSim_maxSlider	100
 ControlPanel_Converter_StructuralSim_maxReal	2.5

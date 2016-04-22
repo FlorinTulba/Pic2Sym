@@ -45,24 +45,22 @@
 using namespace std;
 using namespace cv;
 
-namespace {
-	/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
-	Mat toMat(const PixMapSym &pms, unsigned fontSz) {
-		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
+/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
+static Mat toMat(const PixMapSym &pms, unsigned fontSz) {
+	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
 
-		int firstRow = (int)fontSz-(int)pms.top-1;
-		Mat region(result,
-					   Range(firstRow, firstRow+(int)pms.rows),
-					   Range((int)pms.left, (int)(pms.left+pms.cols)));
+	int firstRow = (int)fontSz-(int)pms.top-1;
+	Mat region(result,
+					Range(firstRow, firstRow+(int)pms.rows),
+					Range((int)pms.left, (int)(pms.left+pms.cols)));
 
-		const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
-		pmsData.copyTo(region);
+	const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
+	pmsData.copyTo(region);
 
-		static const double INV_255 = 1./255;
-		result.convertTo(result, CV_64FC1, INV_255); // convert to double
+	static const double INV_255 = 1./255;
+	result.convertTo(result, CV_64FC1, INV_255); // convert to double
 
-		return result;
-	}
+	return result;
 }
 
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_) {
@@ -78,6 +76,7 @@ void MatchEngine::updateSymbols() {
 
 	extern const Size BlurWinSize;
 	extern const double BlurStandardDeviation;
+	extern const bool PrepareMoreGlyphsAtOnce, ParallelizeGlyphMasks;
 
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
@@ -87,31 +86,46 @@ void MatchEngine::updateSymbols() {
 	extern const double MatchEngine_updateSymbols_STILL_BG;					// darkest shades
 	static const double STILL_FG = 1. - MatchEngine_updateSymbols_STILL_BG;	// brightest shades
 	symsSet.clear();
-	symsSet.reserve(fe.symsSet().size());
+	const auto &rawSyms = fe.symsSet();
+	const int symsCount = (int)rawSyms.size();
+	symsSet.reserve(symsCount);
 
 	double minVal, maxVal;
 	const unsigned sz = cfg.symSettings().getFontSz();
-	for(const auto &pms : fe.symsSet()) {
-		Mat negGlyph, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
+#pragma omp parallel for schedule(dynamic) if(PrepareMoreGlyphsAtOnce)
+	for(int i = 0; i<symsCount; ++i) {
+		const auto &pms = rawSyms[i];
+		Mat negGlyph, fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		const Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
 		minMaxIdx(glyph, &minVal, &maxVal);
-		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
-			fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
-			bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
-		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
+		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
+#pragma omp parallel sections if(ParallelizeGlyphMasks) // Nested parallel regions are serialized by default
+		{
+#pragma omp section
+			{
+				fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal)));
+				bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
 
-		// Storing a blurred version of the grounded glyph for structural similarity match aspect
-		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
-					 BlurWinSize, BlurStandardDeviation, 0.,
-					 BORDER_REPLICATE);
+				// Storing a blurred version of the grounded glyph for structural similarity match aspect
+				GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
+							 BlurWinSize, BlurStandardDeviation, 0.,
+							 BORDER_REPLICATE);
+			}
+#pragma omp section
+			{
+				// edgeMask selects all pixels that are not minVal, nor maxVal
+				inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
-		// Storing also the variance of the grounded glyph for structural similarity match aspect
-		GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
-					 BlurWinSize, BlurStandardDeviation, 0.,
-					 BORDER_REPLICATE);
+				// Storing also the variance of the grounded glyph for structural similarity match aspect
+				// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
+				GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
+							 BlurWinSize, BlurStandardDeviation, 0.,
+							 BORDER_REPLICATE);
+			}
+		}
 		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		symsSet.emplace_back(pms.symCode,

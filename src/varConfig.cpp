@@ -68,6 +68,28 @@ static PropsReader varConfig("res/varConfig.txt");
 // Reading data
 extern const bool READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
 
+extern const bool READ_BOOL_PROP(UsingOMP); // global OpenMP switch
+extern const bool READ_BOOL_PROP(ParallelizePixMapStatistics) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeGlyphMasks) && UsingOMP;
+extern const bool READ_BOOL_PROP(PrepareMoreGlyphsAtOnce) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeTr_PatchRowLoops) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeTr_PatchColLoops) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_FgBgMeans) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_GlyphSumAndReductions) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_ContrastAndDensity) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_MassCenters) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_VarianceAndPatchApprox) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_BPAS_VPA) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_PAP_BPBPA) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_ssimFactors) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeMp_CheckBPA_VPA) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeBm_ColorPatchFgBgMeans) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeBm_HybridStdDevs) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeGlyphBitmapExtraction) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeGridCreation) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeGridPopulation) && UsingOMP;
+extern const bool READ_BOOL_PROP(ParallelizeLoggingAndResultAssembly) && UsingOMP;
+
 extern const unsigned READ_UINT_PROP(Settings_MIN_FONT_SIZE);
 extern const unsigned READ_UINT_PROP(Settings_MAX_FONT_SIZE);
 extern const unsigned READ_UINT_PROP(Settings_DEF_FONT_SIZE);

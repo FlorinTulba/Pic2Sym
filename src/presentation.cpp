@@ -41,6 +41,8 @@
 #include "dlgs.h"
 #include "misc.h"
 
+#include <omp.h>
+
 #include <iomanip>
 
 #include <opencv2/highgui.hpp>
@@ -232,18 +234,23 @@ void Comparator::resize() const {
 
 extern const Size CmapInspect_pageSz;
 extern const String CmapInspect_pageTrackName;
+extern const bool ParallelizeGridCreation, ParallelizeGridPopulation;
 
-static void populateRow(const int row, const int symsPerRow, const int availSyms,
+static void populateRow(const int row, const int fullRows,
+						const int symsPerRow, const int availSyms,
 						const int cellSide, const int fontSz,
-						Mat &content, MatchEngine::VSymDataCIt it) {
-	int symsOnPrevRows = row * symsPerRow;
+						Mat &content, const MatchEngine::VSymDataCIt &it) {
+	const int symsOnPrevRows = row * symsPerRow;
 	const int rStart = row * cellSide, rEnd = rStart + fontSz;
-	Range rowRange(rStart, rEnd);
-#pragma omp parallel for schedule(static, 1)
+	const Range rowRange(rStart, rEnd);
+
+#pragma omp parallel for schedule(static) if(ParallelizeGridPopulation && (row == fullRows)) // Nested parallel regions are serialized by default
 	for(int col = 0; col < availSyms; ++col) {
 		const int cStart = col * cellSide, cEnd = cStart + fontSz;
 		Mat region(content, rowRange, Range(cStart, cEnd));
-		next(it, symsOnPrevRows + col)->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
+		printf("%d handled by thread %d\n", symsOnPrevRows + col, omp_get_thread_num());
+		auto symData = next(it, symsOnPrevRows + col);
+		symData->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
 	}
 }
 
@@ -260,17 +267,17 @@ Mat CmapInspect::createGrid() const {
 
 	// Draws horizontal & vertical cell borders
 	const int cellSide = 1+cmapPresenter.getFontSize();
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static) if(ParallelizeGridCreation)
 	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
 		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static) if(ParallelizeGridCreation)
 	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
 		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
 	return result;
 }
 
 void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
-	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
+	const auto &it = itPair.first, &itEnd = itPair.second;
 	content = grid.clone();
 	const auto symsCountToDisplay = distance(it, itEnd);
 	const int fontSz = cmapPresenter.getFontSize(), fontSzM1 = fontSz - 1, cellSide = 1 + fontSz,
@@ -279,11 +286,13 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 	const div_t fullRowsAndRest = div((int)symsCountToDisplay, symsPerRow);
 	const int fullRows = fullRowsAndRest.quot, rest = fullRowsAndRest.rem;
 
-	for(int row = 0; row < fullRows; ++row)
-		populateRow(row, symsPerRow, symsPerRow, cellSide, fontSz, content, it);
+#pragma omp parallel for schedule(static) if(ParallelizeGridPopulation)
+	for(int row = 0; row < fullRows; ++row) {
+		populateRow(row, fullRows, symsPerRow, symsPerRow, cellSide, fontSz, content, it);
+	}
 
 	if(rest > 0)
-		populateRow(fullRows, symsPerRow, rest, cellSide, fontSz, content, it);
+		populateRow(fullRows, fullRows, symsPerRow, rest, cellSide, fontSz, content, it);
 }
 
 extern const wstring ControlPanel_aboutText, ControlPanel_instructionsText;

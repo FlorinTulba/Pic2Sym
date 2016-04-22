@@ -43,6 +43,8 @@
 #include "patch.h"
 #include "transformTrace.h"
 
+#include <omp.h>
+
 #include <sstream>
 #include <numeric>
 
@@ -93,18 +95,23 @@ void Transformer::run() {
 
 	const unsigned sz = cfg.symSettings().getFontSz();
 	TransformTrace tt(studiedCase, sz, me.usesUnicode()); // log support (DEBUG mode only)
+	extern const bool ParallelizeTr_PatchRowLoops, ParallelizeTr_PatchColLoops,
+					ParallelizeLoggingAndResultAssembly;
 
 	result = Mat(resized.rows, resized.cols, resized.type());
 	Mat resizedBlurred;
 	extern const Size BlurWinSize;
 	extern const double BlurStandardDeviation;
 	GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
+	const int h = resized.rows, w = resized.cols;
+	volatile int finalizedRows = 0;
 
-	for(unsigned r = 0U, h = (unsigned)resized.rows; r<h; r += sz) {
-		ctrler.reportTransformationProgress((double)r/h);
-
+#pragma omp parallel for schedule(dynamic) if(ParallelizeTr_PatchRowLoops)
+	for(int r = 0; r<h; r += sz) {
 		const Range rowRange(r, r+sz);
-		for(unsigned c = 0U, w = (unsigned)resized.cols; c<w; c += sz) {
+
+#pragma omp parallel for schedule(dynamic) if(ParallelizeTr_PatchColLoops) // Nested parallel regions are serialized by default
+		for(int c = 0; c<w; c += sz) {
 			const Range colRange(c, c+sz);
 			const Mat patch(resized, rowRange, colRange),
 						blurredPatch(resizedBlurred, rowRange, colRange);
@@ -112,7 +119,7 @@ void Transformer::run() {
 			// Building a Patch with the blurred patch computed for its actual borders
 			Patch p(patch, blurredPatch, isColor);
 			const BestMatch best = me.approxPatch(p);
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeLoggingAndResultAssembly) // Nested parallel regions are serialized by default
 			{
 #pragma omp section
 				{
@@ -120,10 +127,14 @@ void Transformer::run() {
 					Mat destRegion(result, rowRange, colRange);
 					approximation.copyTo(destRegion);
 				}
-#pragma omp section
-				tt.newEntry(r, c, best); // log the data about best match (DEBUG mode only)
+#pragma omp section // ordered clause wasn't used, so the entries might not appear in natural order
+				tt.newEntry((unsigned)r, (unsigned)c, best); // log the data about best match (DEBUG mode only)
 			}
 		}
+#pragma omp atomic
+		++finalizedRows;
+		if(omp_get_thread_num() % omp_get_num_threads() == 0) // only master thread reports progress
+			ctrler.reportTransformationProgress((double)finalizedRows/h);
 	}
 
 #ifndef UNIT_TESTING

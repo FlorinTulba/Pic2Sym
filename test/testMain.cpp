@@ -63,6 +63,16 @@
 #include <ctime>
 #include <random>
 
+#pragma warning(disable:4273)
+int omp_get_thread_num() {
+	return 0;
+}
+
+int omp_get_num_threads() {
+	return 1;
+}
+#pragma warning(default:4273)
+
 namespace ut {
 	bool Controller::initImg = false;
 	bool Controller::initFontEngine = false;

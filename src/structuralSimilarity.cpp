@@ -47,6 +47,8 @@ REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
 extern const Size StructuralSimilarity_WIN_SIZE;
 extern const double StructuralSimilarity_SIGMA;
+extern const bool ParallelizeMp_VarianceAndPatchApprox, ParallelizeMp_BPAS_VPA,
+				ParallelizeMp_CheckBPA_VPA, ParallelizeMp_PAP_BPBPA, ParallelizeMp_ssimFactors;
 
 /*
 Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .
@@ -108,7 +110,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	Mat covariance, ssimMap, blurredPatchApprox, blurredPatchApproxSq, variancePatchApprox;
 	double diffRatio;
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_VarianceAndPatchApprox) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		computeVariancePatch(patch);
@@ -123,7 +125,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_BPAS_VPA) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		{
@@ -138,12 +140,12 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
+	double minVal, maxVal;
 
-#pragma omp parallel sections
+#pragma omp parallel sections private(minVal) private(maxVal) if(ParallelizeMp_CheckBPA_VPA) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		{
-			double minVal, maxVal;
 			GaussianBlur(approxPatch, blurredPatchApprox_,
 						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 						 BORDER_REPLICATE);
@@ -154,7 +156,6 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 
 #pragma omp section
 		{
-			double minVal, maxVal;
 			GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
 						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 						 BORDER_REPLICATE);
@@ -169,7 +170,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;
 	Mat productMats, productBlurredMats, numerator1stFactor, numerator2ndFactor, denominator;
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_PAP_BPBPA) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		productMats = patch.mul(approxPatch);
@@ -177,7 +178,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
 	}
 
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizeMp_ssimFactors) // Nested parallel regions are serialized by default
 	{
 #pragma omp section
 		{

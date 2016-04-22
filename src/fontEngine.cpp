@@ -51,6 +51,8 @@ using namespace cv;
 using namespace boost::filesystem;
 using namespace boost::bimaps;
 
+extern const bool ParallelizePixMapStatistics;
+
 namespace {
 	/**
 	adjustScaling enforces sz as vertical size and determines an optimal horizontal size,
@@ -95,7 +97,7 @@ namespace {
 
 		// Compute some means and standard deviations
 		Vec<double, 1> avgHeight, sdHeight, avgWidth, sdWidth, avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
-#pragma omp parallel sections
+#pragma omp parallel sections if(ParallelizePixMapStatistics)
 		{
 #pragma omp section
 			meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);

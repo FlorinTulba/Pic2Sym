@@ -103,7 +103,8 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	if(rows_ > 0 && cols_ > 0) {
 		pixels.resize(rows_ * cols_);
 
-#pragma omp parallel for schedule(static, 1)
+		extern const bool ParallelizeGlyphBitmapExtraction;
+#pragma omp parallel for schedule(static) if(ParallelizeGlyphBitmapExtraction) // Nested parallel regions are serialized by default
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
 			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
 					&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
