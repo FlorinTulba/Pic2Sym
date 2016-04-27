@@ -141,7 +141,6 @@ void Controller::symbolsChanged() {
 
 	updateCmapStatusBar();
 	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
-	pCmi->showPage(0U);
 }
 
 bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
