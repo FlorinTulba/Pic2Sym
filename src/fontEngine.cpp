@@ -373,7 +373,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	const FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
 
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
-	// Preserve the symbols that don't feet to resize them first, then add them too to pixmaps.
+	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
 	for(FT_ULong c = FT_Get_First_Char(face, &idx), i = (FT_ULong)round((symsCount*2.)/90);
 				idx != 0;  c=FT_Get_Next_Char(face, c, &idx), ++i) {
 		if(i % tick == 0)
