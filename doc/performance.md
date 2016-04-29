@@ -3,7 +3,7 @@
 
 **Version 1.2** uses **OpenMP** for parallelism (*Visual C++ implementation of OpenMP version 2.0 from March 2002*).
 
-The code from *version **1.1*** required some *minor rearranging and adjustments* to accomodate the *pragma clauses providing concurrency support*:
+The code from *version __1.1__* required some *minor rearranging and adjustments* to accomodate the *pragma clauses providing concurrency support*:
 - most adaptations dealt with *loops* that previously were using *iterators* and had to switch to loop counters
 - the introduced pragma clauses transformed into *code for managing eventual requests to parallelize any following code*
 

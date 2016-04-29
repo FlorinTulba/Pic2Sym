@@ -19,7 +19,7 @@ The decision to offer *support only for 64bits machines* originated from the len
 
 If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System* and *Filesystem*), then link them within the project.
 
-The ***parallelization switches*** from *version **1.2***, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global* *UsingOMP* *switch* is *on* and they *don&#39;t trigger* ***nested parallelism***.
+The ***parallelization switches*** from _version **1.2**_, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global UsingOMP switch* is *on* and they _don&#39;t trigger **nested parallelism**_.
 
 The *class diagram* from below presents a *simplified* perspective of the application:<br>
 ![](ClassDiag.jpg)<br>
