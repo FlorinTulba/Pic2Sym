@@ -50,7 +50,7 @@ namespace ut {
 	/// Fixture reducing some declarative effort from tests
 	class FontEngineFixtComputations : public Fixt {
 		unsigned sz;			///< patch side length. Use setSz and getSz to access it within tests
-		Mat consec, revConsec;	///< column vectors of consecutive values (updated by setSz; getters available)
+		Mat consec, revConsec;	///< column/row vectors of consecutive values (updated by setSz; getters available)
 
 	protected:
 		vector<unsigned char> pixels;		///< Data defining the glyph. Uses ASCENDING vertical axis
@@ -71,6 +71,7 @@ namespace ut {
 			consec = Mat(1, sz_, CV_64FC1);
 			iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..sz-1
 			flip(consec, revConsec, 1);	// sz-1..0
+			revConsec = revConsec.t();
 		}
 
 		/// Creates a fixture with the provided sz value

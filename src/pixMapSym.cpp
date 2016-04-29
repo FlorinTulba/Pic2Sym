@@ -41,48 +41,46 @@
 using namespace std;
 using namespace cv;
 
-namespace {
-	/// Minimal glyph shifting and cropping or none to fit the bounding box
-	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
-					   int leftBound, int topBound, int sz,
-					   int& rows_, int& cols_, int& left_, int& top_,
-					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
-		rows_ = (int)bm.rows; cols_ = (int)bm.width;
-		left_ = leftBound; top_ = topBound;
+/// Minimal glyph shifting and cropping or none to fit the bounding box
+static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
+						  int leftBound, int topBound, int sz,
+						  int& rows_, int& cols_, int& left_, int& top_,
+						  int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
+	rows_ = (int)bm.rows; cols_ = (int)bm.width;
+	left_ = leftBound; top_ = topBound;
 
-		diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
-		if(diffLeft < 0) { // cropping left_ side?
-			if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
-				cols_ -= min(cols_-sz, -diffLeft);
-			left_ = bb.xMin;
-		}
-		diffLeft = 0;
-
-		if(diffRight < 0) { // cropping right side?
-			if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
-				cols_ -= min(cols_-sz, -diffRight);
-			left_ = bb.xMax - cols_ + 1;
-		}
-
-		diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
-		if(diffTop < 0) { // cropping top_ side?
-			if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
-				rows_ -= min(rows_-sz, -diffTop);
-			top_ = bb.yMax;
-		}
-		diffTop = 0;
-
-		if(diffBottom < 0) { // cropping bottom side?
-			if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
-				rows_ -= min(rows_-sz, -diffBottom);
-			top_ = bb.yMin + rows_ - 1;
-		}
-
-		assert(top_>=bb.yMin && top_<=bb.yMax);
-		assert(left_>=bb.xMin && left_<=bb.xMax);
-		assert(rows_>=0 && rows_<=sz);
-		assert(cols_>=0 && cols_<=sz);
+	diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
+	if(diffLeft < 0) { // cropping left_ side?
+		if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
+			cols_ -= min(cols_-sz, -diffLeft);
+		left_ = bb.xMin;
 	}
+	diffLeft = 0;
+
+	if(diffRight < 0) { // cropping right side?
+		if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
+			cols_ -= min(cols_-sz, -diffRight);
+		left_ = bb.xMax - cols_ + 1;
+	}
+
+	diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
+	if(diffTop < 0) { // cropping top_ side?
+		if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
+			rows_ -= min(rows_-sz, -diffTop);
+		top_ = bb.yMax;
+	}
+	diffTop = 0;
+
+	if(diffBottom < 0) { // cropping bottom side?
+		if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
+			rows_ -= min(rows_-sz, -diffBottom);
+		top_ = bb.yMin + rows_ - 1;
+	}
+
+	assert(top_>=bb.yMin && top_<=bb.yMax);
+	assert(left_>=bb.xMin && left_<=bb.xMax);
+	assert(rows_>=0 && rows_<=sz);
+	assert(cols_>=0 && cols_<=sz);
 }
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
@@ -247,6 +245,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 
 	iota(consec.begin<double>(), consec.end<double>(), (double)0.);
 	flip(consec, revConsec, 1);
+	revConsec = revConsec.t();
 }
 
 void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
