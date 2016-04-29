@@ -11,12 +11,15 @@ Following *open\-source* and *platform\-independent* libraries were employed in 
 - **[OpenCV](http://opencv.org/)** for a minimal *graphical interface* and the provided *matrix and image processing capabilities*
 
 However, it *runs only under Windows*, as it uses Windows\-specific:
+- **[OpenMP](https://msdn.microsoft.com/en-us/library/tt15eb9t.aspx)** (*its Visual C++ implementation*) for simple *multi\-threading support*
 - *Open / Save Dialog*
 - *Select Font Dialog* and also *reads the registries* to find the *font file for the chosen font* (**FreeType** needs that file).
 
 The decision to offer *support only for 64bits machines* originated from the lengthy compilation of **OpenCV** from latest sources (*version 3.0.0 at that time*). There were no binaries yet for that version. Now [they exist](http://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/opencv-3.0.0.exe/download), but I prefer the binaries customized for my machine.
 
 If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System* and *Filesystem*), then link them within the project.
+
+The ***parallelization switches*** from *version **1.2***, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global* *UsingOMP* *switch* is *on* and they *don&#39;t trigger* ***nested parallelism***.
 
 The *class diagram* from below presents a *simplified* perspective of the application:<br>
 ![](ClassDiag.jpg)<br>

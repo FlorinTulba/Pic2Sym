@@ -1,6 +1,36 @@
 ## Performance ##
 [Back to start page](../ReadMe.md)
 
+**Version 1.2** uses **OpenMP** for parallelism (*Visual C++ implementation of OpenMP version 2.0 from March 2002*).
+
+The code from *version **1.1*** required some *minor rearranging and adjustments* to accomodate the *pragma clauses providing concurrency support*:
+- most adaptations dealt with *loops* that previously were using *iterators* and had to switch to loop counters
+- the introduced pragma clauses transformed into *code for managing eventual requests to parallelize any following code*
+
+Outcome:
+- around a ***5 \- 15% time penalty*** for *handling possible parallelization requests, even when there are none*.
+	That&#39;s why *version 1.2 is slower than v1.1 on single\-core machines or when the parallelization is disabled*
+- on multi\-core machines and when parallelizing transformation of consecutive rows of patches, version 1.2 needs *less than 65% image transformation time* compared to v1.1.
+	Selecting other regions for parallelization or increasing the cores count would generate different durations
+
+Below I&#39;ll present **most time\-consuming functions** while performing image transformation with *2 threads tackling consecutive rows of image patches*:<br>
+![](ProfileFunctionDetails1.2_SSimWeight.jpg)<br>
+Most time is spent in ***MatchEngine::assessMatch*** (98.1%). Largest chunk of the previous percent is consumed by ***StructuralSimilarity::assessMatch*** (79.5%). Next one is ***EdgeMatch::assessMatch*** (8.6%).
+
+Therefore it&#39;s worth investigating **StructuralSimilarity**:<br>
+![](ProfileFunctionDetails1.2_BlurWeight.jpg)<br>
+From the 79.5% observed earlier, 47.7% is required by the block:<br>
+***&#35;pragma omp parallel if(ParallelizeMp_ssimFactors)*** \- transformed into ***MatchParams::computeSsim&#36;omp&#36;4*** (**4\-th** active ***omp parallel*** clause from ***MatchParams::computeSsim***)
+
+**Red** marks the *most expensive call*: ***GaussianBlur*** from *opencv_imgproc.dll* (27.1%).<br>
+**Green** covers the remaining 18.5% spent performing ***basic matrix operations*** from *opencv_core.dll*.
+
+So, ***GaussianBlur*** calls alone (27.1%) represent **1/4 of total transformation time** and consume more time than evaluating *all other match aspects together* (&#126;19%).
+
+* * *
+
+### Analysis for Pic2Sym version 1.1
+
 The changes in **version 1.1** of Pic2Sym impact the performance as follows:
 - Using the **Hybrid Result** mode incurs *additional cost*:
 	- first deciding *which is a better approximation* of the patch: *a selected symbol* or *the blurred version of that patch*

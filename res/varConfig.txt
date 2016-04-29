@@ -9,28 +9,31 @@
 ; Switch to choose between transforming the original, or its blurred version
 Transform_BlurredPatches_InsteadOf_Originals	false
 
-; Switches for OpenMP - parallelizing operations / loops (Nested parallel regions are serialized by default):
-UsingOMP	false
+; Switches & thresholds for OpenMP - parallelizing operations / loops:
+UsingOMP	true
 ParallelizePixMapStatistics	true
-ParallelizeGlyphMasks	false
-PrepareMoreGlyphsAtOnce	false
-ParallelizeTr_PatchRowLoops	true
-ParallelizeTr_PatchColLoops	true
-ParallelizeMp_FgBgMeans	true
-ParallelizeMp_GlyphSumAndReductions	true
-ParallelizeMp_ContrastAndDensity	true
-ParallelizeMp_MassCenters	true
-ParallelizeMp_VarianceAndPatchApprox	true
-ParallelizeMp_BPAS_VPA	true
-ParallelizeMp_CheckBPA_VPA	true
-ParallelizeMp_PAP_BPBPA	true
-ParallelizeMp_ssimFactors	true
-ParallelizeBm_ColorPatchFgBgMeans	true
-ParallelizeBm_HybridStdDevs	true
-ParallelizeGlyphBitmapExtraction	true
+ParallelizeHorVertGlyphFitting	true
+ParallelizeHorVertGlyphReductions	true
 ParallelizeGridCreation	true
 ParallelizeGridPopulation	true
-ParallelizeLoggingAndResultAssembly	true
+MinRowsToParallelizeGlyphBitmapExtraction	16
+PrepareMoreGlyphsAtOnce	true
+ParallelizeTr_PatchRowLoops	true
+ParallelizeGlyphMasks	false
+ParallelizeTr_PatchColLoops	false
+ParallelizeMp_FgBgMeans	false
+ParallelizeMp_GlyphSumAndReductions	false
+ParallelizeMp_ContrastAndDensity	false
+ParallelizeMp_MassCenters	false
+ParallelizeMp_VarianceAndPatchApprox	false
+ParallelizeMp_BPAS_VPA	false
+ParallelizeMp_CheckBPA_VPA	false
+ParallelizeMp_PAP_BPBPA	false
+ParallelizeMp_ssimFactors	false
+ParallelizeBm_ColorPatchApprox	false
+ParallelizeBm_ColorPatchFgBgMeans	false
+ParallelizeBm_HybridStdDevs	false
+ParallelizeLoggingAndResultAssembly	false
 
 ; Constants for the sliders controlling the range of each matching aspect
 ControlPanel_Converter_StructuralSim_maxSlider	100

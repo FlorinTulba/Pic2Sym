@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
+ This file was created on 2016-4-10
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -39,6 +42,7 @@
 #include "cachedData.h"
 #include "patch.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 using namespace std;
 using namespace boost;
@@ -46,7 +50,8 @@ using namespace cv;
 
 extern const bool ParallelizeMp_FgBgMeans, ParallelizeMp_GlyphSumAndReductions,
 				ParallelizeMp_ContrastAndDensity, ParallelizeMp_MassCenters,
-				ParallelizeBm_ColorPatchFgBgMeans, ParallelizeBm_HybridStdDevs;
+				ParallelizeBm_ColorPatchApprox, ParallelizeBm_ColorPatchFgBgMeans,
+				ParallelizeBm_HybridStdDevs;
 
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
@@ -79,12 +84,19 @@ void MatchParams::computeContrast(const Mat &patch, const SymData &symData) {
 	if(contrast)
 		return;
 
-#pragma omp parallel sections if(ParallelizeMp_FgBgMeans) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_FgBgMeans) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
-		computeFg(patch, symData);
+		{
+			ompPrintf(ParallelizeMp_FgBgMeans, "fg mean");
+			computeFg(patch, symData);
+		}
 #pragma omp section
-		computeBg(patch, symData);
+		{
+			ompPrintf(ParallelizeMp_FgBgMeans, "bg mean");
+			computeBg(patch, symData);
+		}
 	}
 
 	contrast = fg.value() - bg.value();
@@ -159,20 +171,31 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	if(mcPatch)
 		return;
 
-	double patchSum;
-	Mat temp, temp1;
-#pragma omp parallel sections if(ParallelizeMp_GlyphSumAndReductions) // Nested parallel regions are serialized by default
+	Mat temp;
+	double patchSum, mcX, mcY;
+#pragma omp parallel if(ParallelizeMp_GlyphSumAndReductions) // Nested parallel regions are serialized by default
+#pragma omp sections private(temp) nowait
 	{
 #pragma omp section
-		patchSum = *sum(patch).val;
+		{
+			ompPrintf(ParallelizeMp_GlyphSumAndReductions, "Patch Sum");
+			patchSum = *sum(patch).val;
+		}
 #pragma omp section
-		reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+		{
+			ompPrintf(ParallelizeMp_GlyphSumAndReductions, "Horiz Reduce");
+			reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+			mcX = temp.dot(cachedData.consec);
+		}
 #pragma omp section
-		reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+		{
+			ompPrintf(ParallelizeMp_GlyphSumAndReductions, "Vert Reduce");
+			reduce(patch, temp, 1, CV_REDUCE_SUM);	// sum all columns
+			mcY = temp.t().dot(cachedData.consec);
+		}
 	}
 
-	mcPatch = Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
-		/ patchSum;
+	mcPatch = Point2d(mcX, mcY) / patchSum;
 	assert(mcPatch->x > -EPS && mcPatch->x < cachedData.sz_1+EPS);
 	assert(mcPatch->y > -EPS && mcPatch->y < cachedData.sz_1+EPS);
 }
@@ -182,12 +205,19 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 	if(mcPatchApprox)
 		return;
 
-#pragma omp parallel sections if(ParallelizeMp_ContrastAndDensity) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_ContrastAndDensity) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
-		computeContrast(patch, symData);
+		{
+			ompPrintf(ParallelizeMp_ContrastAndDensity, "Contrast");
+			computeContrast(patch, symData);
+		}
 #pragma omp section
-		computeSymDensity(symData, cachedData);
+		{
+			ompPrintf(ParallelizeMp_ContrastAndDensity, "Sym Density");
+			computeSymDensity(symData, cachedData);
+		}
 	}
 
 	// Obtaining glyph's mass center
@@ -207,12 +237,19 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	if(mcsOffset)
 		return;
 
-#pragma omp parallel sections if(ParallelizeMp_MassCenters) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_MassCenters) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
-		computeMcPatch(patch, cachedData);
+		{
+			ompPrintf(ParallelizeMp_MassCenters, "mc for patch");
+			computeMcPatch(patch, cachedData);
+		}
 #pragma omp section
-		computeMcPatchApprox(patch, symData, cachedData);
+		{
+			ompPrintf(ParallelizeMp_MassCenters, "mc for approximated patch");
+			computeMcPatchApprox(patch, symData, cachedData);
+		}
 	}
 
 	mcsOffset = norm(mcPatch.value() - mcPatchApprox.value());
@@ -249,16 +286,29 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		vector<Mat> channels;
 		split(patch.orig, channels);
 
-		double miuFg, miuBg, newDiff, diffFgBg = 0.;
-		for(auto &ch : channels) {
+		double diffFgBg = 0.;
+		const int channelsCount = (int)channels.size();
+#pragma omp parallel if(ParallelizeBm_ColorPatchApprox) // Nested parallel regions are serialized by default
+#pragma omp for schedule(static, 1) nowait reduction(+:diffFgBg)
+		for(int chIdx = 0; chIdx < channelsCount; ++chIdx) {
+			ompPrintf(ParallelizeBm_ColorPatchApprox, "channel %d", chIdx);
+			auto &ch = channels[chIdx];
 			ch.convertTo(ch, CV_64FC1); // processing double values
-
-#pragma omp parallel sections if(ParallelizeBm_ColorPatchFgBgMeans) // Nested parallel regions are serialized by default
+			
+			double miuFg, miuBg, newDiff;
+#pragma omp parallel if(ParallelizeBm_ColorPatchFgBgMeans) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 			{
 #pragma omp section
-				miuFg = *mean(ch, fgMask).val;
+				{
+					ompPrintf(ParallelizeBm_ColorPatchFgBgMeans, "fg mean channel");
+					miuFg = *mean(ch, fgMask).val;
+				}
 #pragma omp section
-				miuBg = *mean(ch, bgMask).val;
+				{
+					ompPrintf(ParallelizeBm_ColorPatchFgBgMeans, "bg mean channel");
+					miuBg = *mean(ch, bgMask).val;
+				}
 			}
 			newDiff = miuFg - miuBg;
 
@@ -267,7 +317,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			diffFgBg += abs(newDiff);
 		}
 
-		if(diffFgBg < 3.*ms.getBlankThreshold())
+		if(diffFgBg < channelsCount * ms.getBlankThreshold())
 			patchResult = Mat(patch.sz, patch.sz, CV_8UC3, mean(patch.orig));
 		else
 			merge(channels, patchResult);
@@ -294,12 +344,19 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	// the less satisfactory the approximation is,
 	// the more the weight of the blurred patch should be
 	Scalar miu, sdevApproximation, sdevBlurredPatch;
-#pragma omp parallel sections private(miu) if(ParallelizeBm_HybridStdDevs) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeBm_HybridStdDevs) // Nested parallel regions are serialized by default
+#pragma omp sections private(miu) nowait
 	{
 #pragma omp section
-		meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
+		{
+			ompPrintf(ParallelizeBm_HybridStdDevs, "Best Variant");
+			meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
+		}
 #pragma omp section
-		meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
+		{
+			ompPrintf(ParallelizeBm_HybridStdDevs, "Blurred");
+			meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
+		}
 	}
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;

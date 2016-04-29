@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-1-8
+ This file was created on 2016-3-1
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -38,6 +41,7 @@
 #include "glyphsProgressTracker.h"
 #include "settings.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 #include <sstream>
 #include <set>
@@ -97,20 +101,39 @@ namespace {
 
 		// Compute some means and standard deviations
 		Vec<double, 1> avgHeight, sdHeight, avgWidth, sdWidth, avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
-#pragma omp parallel sections if(ParallelizePixMapStatistics)
+#pragma omp parallel if(ParallelizePixMapStatistics)
+#pragma omp sections nowait
 		{
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "height");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
+			}
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "width");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
+			}
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "top");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+			}
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "bottom");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+			}
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "left");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+			}
 #pragma omp section
-			meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+			{
+				ompPrintf(ParallelizePixMapStatistics, "right");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+			}
 		}
 
 		const double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data

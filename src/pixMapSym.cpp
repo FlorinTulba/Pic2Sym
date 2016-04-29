@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
+ This file was created on 2016-4-10
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -35,6 +38,7 @@
 
 #include "pixMapSym.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 #include <numeric>
 
@@ -46,41 +50,53 @@ static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 						  int leftBound, int topBound, int sz,
 						  int& rows_, int& cols_, int& left_, int& top_,
 						  int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
-	rows_ = (int)bm.rows; cols_ = (int)bm.width;
-	left_ = leftBound; top_ = topBound;
+	extern const bool ParallelizeHorVertGlyphFitting;
+#pragma omp parallel if(ParallelizeHorVertGlyphFitting)
+#pragma omp sections nowait
+	{
+#pragma omp section
+		{
+			ompPrintf(ParallelizeHorVertGlyphFitting, "Horizontally");
+			cols_ = (int)bm.width; left_ = leftBound;
+			diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
+			if(diffLeft < 0) { // cropping left_ side?
+				if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
+					cols_ -= min(cols_-sz, -diffLeft);
+				left_ = bb.xMin;
+			}
+			diffLeft = 0;
 
-	diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
-	if(diffLeft < 0) { // cropping left_ side?
-		if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffLeft);
-		left_ = bb.xMin;
+			if(diffRight < 0) { // cropping right side?
+				if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
+					cols_ -= min(cols_-sz, -diffRight);
+				left_ = bb.xMax - cols_ + 1;
+			}
+
+			assert(left_>=bb.xMin && left_<=bb.xMax);
+			assert(cols_>=0 && cols_<=sz);
+		}
+#pragma omp section
+		{
+			ompPrintf(ParallelizeHorVertGlyphFitting, "Vertically");
+			rows_ = (int)bm.rows; top_ = topBound;
+			diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
+			if(diffTop < 0) { // cropping top_ side?
+				if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
+					rows_ -= min(rows_-sz, -diffTop);
+				top_ = bb.yMax;
+			}
+			diffTop = 0;
+
+			if(diffBottom < 0) { // cropping bottom side?
+				if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
+					rows_ -= min(rows_-sz, -diffBottom);
+				top_ = bb.yMin + rows_ - 1;
+			}
+
+			assert(top_>=bb.yMin && top_<=bb.yMax);
+			assert(rows_>=0 && rows_<=sz);
+		}
 	}
-	diffLeft = 0;
-
-	if(diffRight < 0) { // cropping right side?
-		if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffRight);
-		left_ = bb.xMax - cols_ + 1;
-	}
-
-	diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
-	if(diffTop < 0) { // cropping top_ side?
-		if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffTop);
-		top_ = bb.yMax;
-	}
-	diffTop = 0;
-
-	if(diffBottom < 0) { // cropping bottom side?
-		if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffBottom);
-		top_ = bb.yMin + rows_ - 1;
-	}
-
-	assert(top_>=bb.yMin && top_<=bb.yMax);
-	assert(left_>=bb.xMin && left_<=bb.xMax);
-	assert(rows_>=0 && rows_<=sz);
-	assert(cols_>=0 && cols_<=sz);
 }
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
@@ -101,12 +117,15 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	if(rows_ > 0 && cols_ > 0) {
 		pixels.resize(rows_ * cols_);
 
-		extern const bool ParallelizeGlyphBitmapExtraction;
-#pragma omp parallel for schedule(static) if(ParallelizeGlyphBitmapExtraction) // Nested parallel regions are serialized by default
-		for(int r = 0U; r<rows_; ++r) // copy a row at a time
+		extern const int MinRowsToParallelizeGlyphBitmapExtraction;
+#pragma omp parallel if(rows_ > MinRowsToParallelizeGlyphBitmapExtraction)
+#pragma omp for schedule(static, MinRowsToParallelizeGlyphBitmapExtraction) nowait
+		for(int r = 0; r<rows_; ++r) { // copy a row
+			ompPrintf((rows_ > MinRowsToParallelizeGlyphBitmapExtraction), "row %d", r);
 			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
-					&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
-					cols_);
+						&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
+						cols_);
+		}
 	}
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
@@ -177,14 +196,26 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 
 	const Mat glyph((int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data());
 	Mat sumPerColumn, sumPerRow;
+	double sumX, sumY, divider = 255. * glyphSum_;
+	extern const bool ParallelizeHorVertGlyphReductions;
+#pragma omp parallel if(ParallelizeHorVertGlyphReductions)
+#pragma omp sections nowait
+	{
+#pragma omp section
+		{
+			ompPrintf(ParallelizeHorVertGlyphReductions, "Horizontally");
+			reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
+			sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left_, left_+cols_))) / divider;
+		}
+#pragma omp section
+		{
+			ompPrintf(ParallelizeHorVertGlyphReductions, "Vertically");
+			reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
+			sumY = sumPerRow.dot(Mat(revConsec, Range(top_+1-rows_, top_+1))) / divider;
+		}
+	}
 
-	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
-	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
-
-	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left_, left_+cols_))),
-		sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top_+1-rows_, top_+1)));
-
-	return Point2d(sumX, sumY) / (255. * glyphSum_);
+	return Point2d(sumX, sumY);
 }
 
 unsigned PmsCont::getFontSz() const {

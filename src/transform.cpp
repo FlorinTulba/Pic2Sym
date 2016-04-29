@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-1-8
+ This file was created on 2016-3-1
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -42,6 +45,7 @@
 #include "matchParams.h"
 #include "patch.h"
 #include "transformTrace.h"
+#include "ompTrace.h"
 
 #include <omp.h>
 
@@ -106,12 +110,16 @@ void Transformer::run() {
 	const int h = resized.rows, w = resized.cols;
 	volatile int finalizedRows = 0;
 
-#pragma omp parallel for schedule(dynamic) if(ParallelizeTr_PatchRowLoops)
+#pragma omp parallel if(ParallelizeTr_PatchRowLoops)
+#pragma omp for schedule(static, 1) nowait
 	for(int r = 0; r<h; r += sz) {
+		ompPrintf(ParallelizeTr_PatchRowLoops, "r = %d", r);
 		const Range rowRange(r, r+sz);
 
-#pragma omp parallel for schedule(dynamic) if(ParallelizeTr_PatchColLoops) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeTr_PatchColLoops) // Nested parallel regions are serialized by default
+#pragma omp for schedule(static, 1) nowait
 		for(int c = 0; c<w; c += sz) {
+			ompPrintf(ParallelizeTr_PatchColLoops, "r = %d, c = %d", r, c);
 			const Range colRange(c, c+sz);
 			const Mat patch(resized, rowRange, colRange),
 						blurredPatch(resizedBlurred, rowRange, colRange);
@@ -119,23 +127,31 @@ void Transformer::run() {
 			// Building a Patch with the blurred patch computed for its actual borders
 			Patch p(patch, blurredPatch, isColor);
 			const BestMatch best = me.approxPatch(p);
-#pragma omp parallel sections if(ParallelizeLoggingAndResultAssembly) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeLoggingAndResultAssembly) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 			{
 #pragma omp section
 				{
+					ompPrintf(ParallelizeLoggingAndResultAssembly, "Assembly");
 					const Mat &approximation = best.bestVariant.approx;
 					Mat destRegion(result, rowRange, colRange);
 					approximation.copyTo(destRegion);
 				}
 #pragma omp section // ordered clause wasn't used, so the entries might not appear in natural order
-				tt.newEntry((unsigned)r, (unsigned)c, best); // log the data about best match (DEBUG mode only)
-			}
-		}
+				{
+					ompPrintf(ParallelizeLoggingAndResultAssembly, "Logging");
+					tt.newEntry((unsigned)r, (unsigned)c, best); // log the data about best match (DEBUG mode only)
+				}
+			} // sections
+		} // columns loop
+
 #pragma omp atomic
 		++finalizedRows;
-		if(omp_get_thread_num() % omp_get_num_threads() == 0) // only master thread reports progress
-			ctrler.reportTransformationProgress((double)finalizedRows/h);
-	}
+
+		// Only master thread reports progress
+		if(omp_get_thread_num() == 0) // #pragma omp master not allowed in for
+			ctrler.reportTransformationProgress((double)sz*finalizedRows/h);
+	} // rows loop
 
 #ifndef UNIT_TESTING
 	timer.pause();
@@ -143,7 +159,7 @@ void Transformer::run() {
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
 
-	timer.resume();
+	timer.resume(); // optional, since the function returns after the #endif
 #endif
 }
 

@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
+ This file was created on 2016-4-10
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -37,6 +40,7 @@
 #include "matchAspects.h"
 #include "matchParams.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -110,12 +114,17 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	Mat covariance, ssimMap, blurredPatchApprox, blurredPatchApproxSq, variancePatchApprox;
 	double diffRatio;
 
-#pragma omp parallel sections if(ParallelizeMp_VarianceAndPatchApprox) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_VarianceAndPatchApprox) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
-		computeVariancePatch(patch);
+		{
+			ompPrintf(ParallelizeMp_VarianceAndPatchApprox, "VariancePatch");
+			computeVariancePatch(patch);
+		}
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_VarianceAndPatchApprox, "PatchApprox");
 			computePatchApprox(patch, symData);
 			diffRatio = contrast.value() / symData.diffMinMax;
 		}
@@ -125,27 +134,34 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-#pragma omp parallel sections if(ParallelizeMp_BPAS_VPA) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_BPAS_VPA) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_BPAS_VPA, "blurredPatchApproxSq");
 			blurredPatchApprox = bg.value() + diffRatio *
 									symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX];
 			blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox);
 		}
 #pragma omp section
-		variancePatchApprox = diffRatio * diffRatio *
-							symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+		{
+			ompPrintf(ParallelizeMp_BPAS_VPA, "variancePatchApprox");
+			variancePatchApprox = diffRatio * diffRatio *
+						symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+		}
 	}
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 	double minVal, maxVal;
 
-#pragma omp parallel sections private(minVal) private(maxVal) if(ParallelizeMp_CheckBPA_VPA) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_CheckBPA_VPA) // Nested parallel regions are serialized by default
+#pragma omp sections private(minVal, maxVal) nowait
 	{
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_CheckBPA_VPA, "blurredPatchApprox");
 			GaussianBlur(approxPatch, blurredPatchApprox_,
 						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 						 BORDER_REPLICATE);
@@ -156,6 +172,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_CheckBPA_VPA, "variancePatchApprox");
 			GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
 						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 						 BORDER_REPLICATE);
@@ -170,18 +187,27 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;
 	Mat productMats, productBlurredMats, numerator1stFactor, numerator2ndFactor, denominator;
 
-#pragma omp parallel sections if(ParallelizeMp_PAP_BPBPA) // Nested parallel regions are serialized by default
-	{
-#pragma omp section
-		productMats = patch.mul(approxPatch);
-#pragma omp section
-		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	}
-
-#pragma omp parallel sections if(ParallelizeMp_ssimFactors) // Nested parallel regions are serialized by default
+#pragma omp parallel if(ParallelizeMp_PAP_BPBPA) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 	{
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_PAP_BPBPA, "productMats");
+			productMats = patch.mul(approxPatch);
+		}
+#pragma omp section
+		{
+			ompPrintf(ParallelizeMp_PAP_BPBPA, "productBlurredMats");
+			productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
+		}
+	}
+
+#pragma omp parallel if(ParallelizeMp_ssimFactors) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
+	{
+#pragma omp section
+		{
+			ompPrintf(ParallelizeMp_ssimFactors, "covariance");
 			GaussianBlur(productMats, covariance,
 						 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
 						 BORDER_REPLICATE);
@@ -190,6 +216,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 		}
 #pragma omp section
 		{
+			ompPrintf(ParallelizeMp_ssimFactors, "denominator");
 			numerator1stFactor = 2.*productBlurredMats + StructuralSimilarity_C1;
 			denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
 						mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);

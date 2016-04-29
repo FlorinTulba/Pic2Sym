@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
+ This file was created on 2016-4-10
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -39,6 +42,7 @@
 #include "patch.h"
 #include "settings.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -51,8 +55,8 @@ static Mat toMat(const PixMapSym &pms, unsigned fontSz) {
 
 	int firstRow = (int)fontSz-(int)pms.top-1;
 	Mat region(result,
-					Range(firstRow, firstRow+(int)pms.rows),
-					Range((int)pms.left, (int)(pms.left+pms.cols)));
+			   Range(firstRow, firstRow+(int)pms.rows),
+			   Range((int)pms.left, (int)(pms.left+pms.cols)));
 
 	const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
 	pmsData.copyTo(region);
@@ -90,49 +94,59 @@ void MatchEngine::updateSymbols() {
 	const int symsCount = (int)rawSyms.size();
 	symsSet.reserve(symsCount);
 
-	double minVal, maxVal;
 	const unsigned sz = cfg.symSettings().getFontSz();
-#pragma omp parallel for schedule(dynamic) if(PrepareMoreGlyphsAtOnce)
+
+#pragma omp parallel if(PrepareMoreGlyphsAtOnce)
+#pragma omp for schedule(static, 1) nowait ordered
 	for(int i = 0; i<symsCount; ++i) {
+		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
+
 		const auto &pms = rawSyms[i];
 		Mat negGlyph, fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		const Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
+		double minVal, maxVal;
 		minMaxIdx(glyph, &minVal, &maxVal);
 		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
-#pragma omp parallel sections if(ParallelizeGlyphMasks) // Nested parallel regions are serialized by default
+
+#pragma omp parallel if(ParallelizeGlyphMasks) // Nested parallel regions are serialized by default
+#pragma omp sections nowait
 		{
 #pragma omp section
 			{
+				ompPrintf(ParallelizeGlyphMasks, "glyph %d - masks: fg, bg, grounded", i);
 				fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal)));
 				bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
 
 				// Storing a blurred version of the grounded glyph for structural similarity match aspect
 				GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
-							 BlurWinSize, BlurStandardDeviation, 0.,
-							 BORDER_REPLICATE);
+								BlurWinSize, BlurStandardDeviation, 0.,
+								BORDER_REPLICATE);
 			}
 #pragma omp section
 			{
+				ompPrintf(ParallelizeGlyphMasks, "glyph %d - masks: edge, varianceOfGrounded", i);
 				// edgeMask selects all pixels that are not minVal, nor maxVal
 				inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 				// Storing also the variance of the grounded glyph for structural similarity match aspect
 				// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
 				GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
-							 BlurWinSize, BlurStandardDeviation, 0.,
-							 BORDER_REPLICATE);
+								BlurWinSize, BlurStandardDeviation, 0.,
+								BORDER_REPLICATE);
 			}
 		}
 		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
+#pragma omp ordered
+//#pragma omp critical - implied by ordered from above
 		symsSet.emplace_back(pms.symCode,
 							 minVal, maxVal-minVal,
 							 pms.glyphSum, pms.mc,
 							 SymData::MatArray { {
-									 fgMask,					// FG_MASK_IDX 
+									 fgMask,					// FG_MASK_IDX
 									 bgMask,					// BG_MASK_IDX
 									 edgeMask,					// EDGE_MASK_IDX
 									 negGlyph,					// NEG_SYM_IDX
@@ -186,7 +200,7 @@ BestMatch MatchEngine::approxPatch(const Patch &patch) const {
 		if(score > best.score)
 			best.update(score, symData.code, idx, symData, mp);
 
-		mp.reset();
+		mp.reset(); // preserves some fields common => parallelization would require separating those fields
 		++idx;
 	}
 	return best.updatePatchApprox(cfg.matchSettings());
@@ -198,6 +212,8 @@ double MatchEngine::assessMatch(const Mat &patch,
 	double score = 1.;
 	for(auto pAspect : enabledAspects)
 		score *= pAspect->assessMatch(patch, symData, mp);
+	// parallelization would require 'mp' fields to be guarded by locks
+
 	return score;
 }
 

@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
+ This file was created on 2016-4-10
  and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
@@ -15,6 +15,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -40,8 +43,7 @@
 #include "views.h"
 #include "dlgs.h"
 #include "misc.h"
-
-#include <omp.h>
+#include "ompTrace.h"
 
 #include <iomanip>
 
@@ -161,6 +163,7 @@ const string Controller::textHourGlass(const std::string &prefix, double progres
 }
 
 #ifndef UNIT_TESTING
+
 void Controller::handleRequests() {
 	for(;;) {
 		// When pressing ESC, prompt the user if he wants to exit
@@ -170,7 +173,8 @@ void Controller::handleRequests() {
 		   break;
 	}
 }
-#endif
+
+#endif // UNIT_TESTING not defined
 
 string MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.symSettings().getFontSz();
@@ -236,22 +240,13 @@ extern const Size CmapInspect_pageSz;
 extern const String CmapInspect_pageTrackName;
 extern const bool ParallelizeGridCreation, ParallelizeGridPopulation;
 
-static void populateRow(const int row, const int fullRows,
-						const int symsPerRow, const int availSyms,
-						const int cellSide, const int fontSz,
-						Mat &content, const MatchEngine::VSymDataCIt &it) {
-	const int symsOnPrevRows = row * symsPerRow;
-	const int rStart = row * cellSide, rEnd = rStart + fontSz;
-	const Range rowRange(rStart, rEnd);
-
-#pragma omp parallel for schedule(static) if(ParallelizeGridPopulation && (row == fullRows)) // Nested parallel regions are serialized by default
-	for(int col = 0; col < availSyms; ++col) {
-		const int cStart = col * cellSide, cEnd = cStart + fontSz;
-		Mat region(content, rowRange, Range(cStart, cEnd));
-		printf("%d handled by thread %d\n", symsOnPrevRows + col, omp_get_thread_num());
-		auto symData = next(it, symsOnPrevRows + col);
-		symData->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
-	}
+static void populateCell(Mat &content, const Range &rowRange, const int col,
+						 const int cellSide, const int fontSz, const int symsOnPrevRows,
+						 const MatchEngine::VSymDataCIt &it) {
+	const int cStart = col * cellSide, cEnd = cStart + fontSz;
+	Mat region(content, rowRange, Range(cStart, cEnd));
+	auto symData = next(it, symsOnPrevRows + col);
+	symData->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
 }
 
 CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
@@ -267,12 +262,19 @@ Mat CmapInspect::createGrid() const {
 
 	// Draws horizontal & vertical cell borders
 	const int cellSide = 1+cmapPresenter.getFontSize();
-#pragma omp parallel for schedule(static) if(ParallelizeGridCreation)
-	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
-		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
-#pragma omp parallel for schedule(static) if(ParallelizeGridCreation)
-	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
-		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
+#pragma omp parallel if(ParallelizeGridCreation)
+	{
+#pragma omp for schedule(static, 5) nowait
+		for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide) {
+			ompPrintf(ParallelizeGridCreation, "hLine %d", (i/cellSide));
+			line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
+		}
+#pragma omp for schedule(static, 5) nowait
+		for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide) {
+			ompPrintf(ParallelizeGridCreation, "vLine %d", (i/cellSide));
+			line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
+		}
+	}
 	return result;
 }
 
@@ -286,13 +288,30 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 	const div_t fullRowsAndRest = div((int)symsCountToDisplay, symsPerRow);
 	const int fullRows = fullRowsAndRest.quot, rest = fullRowsAndRest.rem;
 
-#pragma omp parallel for schedule(static) if(ParallelizeGridPopulation)
+#pragma omp parallel if(ParallelizeGridPopulation)
+#pragma omp for schedule(static, 1) nowait
 	for(int row = 0; row < fullRows; ++row) {
-		populateRow(row, fullRows, symsPerRow, symsPerRow, cellSide, fontSz, content, it);
+		ompPrintf(ParallelizeGridPopulation, "(populateGrid) row %d", row);
+		const int symsOnPrevRows = row * symsPerRow;
+		const int rStart = row * cellSide, rEnd = rStart + fontSz;
+		const Range rowRange(rStart, rEnd);
+
+		for(int col = 0; col < symsPerRow; ++col)
+			populateCell(content, rowRange, col, cellSide, fontSz, symsOnPrevRows, it);
 	}
 
-	if(rest > 0)
-		populateRow(fullRows, fullRows, symsPerRow, rest, cellSide, fontSz, content, it);
+	if(rest > 0) {
+		const int symsOnPrevRows = fullRows * symsPerRow;
+		const int rStart = fullRows * cellSide, rEnd = rStart + fontSz;
+		const Range rowRange(rStart, rEnd);
+
+#pragma omp parallel if(ParallelizeGridPopulation)
+#pragma omp for schedule(static, 3) nowait
+		for(int col = 0; col < rest; ++col) {
+			ompPrintf(ParallelizeGridPopulation, "(populateCell) glyph %d", (symsOnPrevRows + col));
+			populateCell(content, rowRange, col, cellSide, fontSz, symsOnPrevRows, it);
+		}
+	}
 }
 
 extern const wstring ControlPanel_aboutText, ControlPanel_instructionsText;
