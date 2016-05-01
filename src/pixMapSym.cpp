@@ -179,7 +179,7 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
 
 	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left_, left_+cols_))),
-		sumY = sumPerRow.t().dot(Mat(revConsec, Range::all(), Range(top_+1-rows_, top_+1)));
+		sumY = sumPerRow.dot(Mat(revConsec, Range(top_+1-rows_, top_+1)));
 
 	return Point2d(sumX, sumY) / (255. * glyphSum_);
 }
