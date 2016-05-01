@@ -62,6 +62,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests, ut::Fixt)
 			revConsec;	// 9..0
 		iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..9
 		flip(consec, revConsec, 1);	// 9..0
+		revConsec = revConsec.t();
 
 		// Test EMPTY PATCH => glyphSum = 0, massCenter = (4.5, 4.5)
 		vector<unsigned char> pixels; // uses ASCENDING vertical axis
