@@ -35,8 +35,8 @@ The changes in **version 1.1** of Pic2Sym impact the performance as follows:
 - Using the **Hybrid Result** mode incurs *additional cost*:
 	- first deciding *which is a better approximation* of the patch: *a selected symbol* or *the blurred version of that patch*
 	- secondly \- *combining the 2 versions* based on the *weights resulted from previous step*
-- **Uniform patches** are *approximated by their blurred form*, instead of the normal transformation process from version 1.0. This extra logic generally **reduces overall processing time**, except for the case when there are very few uniform patches. It also means it&#39;s more difficult to provide accurate estimation formulae
-- **Refactorization incurred minor penalty** for *splitting old classes* and *runtime allocation and handling of some (more / larger / polymorphic) objects*
+- **Uniform patches** are *approximated by their blurred form*, instead of the normal transformation process from version 1.0. This extra logic generally **reduces overall processing time**, except for the case when there are very few uniform patches. It also means it&#39;s more difficult to provide accurate time-estimation formulae
+- **Refactorization incurred minor penalty** for *splitting old classes*, *runtime allocations and handling of some (more / larger / polymorphic) objects*
 
 Based on the notations from below, and adding **uc** \- the *number of uniform patches*, **hybrid mode cost** for a *color image* is:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c-uc) \* (9\*s^2 + 12)<br>

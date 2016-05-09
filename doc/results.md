@@ -97,7 +97,7 @@ For better understanding how to configure the application, read the [Control Pan
 ##### Several conclusions:
 **Hybrid result mode** introduced in **version 1.1** *preserves image meaningfulness* **no matter the patch and its context**. However, the generated image won&#39;t deliver same impression as non\-hybrid results. Instead, such transformations *appear to be an interesting way of hiding symbols within pictures*.
 
-*Non-hybrid transformations* of images are **better suitable** when:
+*Non-hybrid transformations* of images are **more suitable** when:
 
 - the images have *large\-enough uniform regions* and *clear contours* (***more clarity***)
 - the *irrelevant parts from the scene are sufficiently dark and/or uniform* (***less focus shift***)
@@ -117,7 +117,7 @@ Cases **to avoid**:
 
 Version **1.2** (which introduced *thread-parallelism*) is suited for *multi-core machines*. Version **1.1** performs better than **1.2** for *sequential runs*.
 
-These initial versions are useful for determining what problems, limitations and also opportunities exist and which solutions are best.
+These initial versions are useful for determining what problems, limitations, as well as opportunities exist and which solutions are best.
 
 Next major versions will focus on more complex optimizations.
 
