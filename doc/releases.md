@@ -1,7 +1,7 @@
 ## Released Versions:
 
 [**Version 1.2**](../../version_1.2/ReadMe.md):
-- provides ***improved speed*** compared to v1.1 for **multi\-core machines**. For that, it offers several **parallelization switches** configurable in [res/varConfig.txt](../res/varConfig.txt) (*no recompilation needed when modified*).
+- provides ***improved speed*** compared to v1.1 for **multi\-core machines**. For that, it offers several **parallelization switches** configurable in [res/varConfig.txt](../../version_1.2/res/varConfig.txt) (*no recompilation needed when modified*).
  	There is a **global UsingOMP switch**, which *disables parallelization completely when false*.<br>
     The other parallelization switches command *sequential / concurrent behavior in different regions of the application*. The only **restriction** is these areas *shouldn&#39;t be contained in parent zones that must be parallel, too*, that is *nested parallelism is disabled*.
 - is a bit slower than v1.1 on single\-core machines or when the parallelism is disabled.
