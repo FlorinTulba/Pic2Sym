@@ -7,8 +7,8 @@
 1. [Example results](doc/results.md)
 1. [Performance](doc/performance.md)
 1. [Conclusions and further directions](doc/conclusions.md)
-1. [Testing the Provided Binary](doc/testBinary.md) \(*Windows 64bits only*\)
-1. [Released versions](../version_1.0/doc/releases.md)
+1. [Testing the provided binary](doc/testBinary.md) \(*Windows 64bits only*\)
+1. [Other released versions](../version_1.0/doc/releases.md)
 1. [Appendix](doc/appendix.md) \(*various technical details*\)
 
 ## Description of the application ##
