@@ -1,4 +1,4 @@
-# Pic2Sym #
+# Pic2Sym v1.2 #
 
 **Topics:**
 
@@ -21,6 +21,8 @@ The symbols used for approximation are **scalable**, *preferably* **fixed\-width
 
 The resulted grid has **square cells** and *the symbols are preprocessed* to fit such cells by widening them all. Therefore the **output is simply a new image**, and cannot be saved as a char table in html or as a text file, like in similar applications.
 Console output is also ruled out, first because there are only a couple of font sizes available and secondly, because consoles usually provide only 16 colors.
+
+**Version 1.2** implemented parallelization on top of v1.1, so it will be faster on **multi\-core machines** and a bit slower than v1.1 on single\-core machines or when the parallelism is disabled.
 
 - - -
 

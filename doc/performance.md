@@ -1,4 +1,4 @@
-## Performance ##
+## Performance of Pic2Sym &#60;&#61; v1.2 ##
 [Back to start page](../ReadMe.md)
 
 **Version 1.2** uses **OpenMP** for parallelism (*Visual C++ implementation of OpenMP version 2.0 from March 2002*).
