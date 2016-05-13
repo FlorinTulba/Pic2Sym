@@ -2,8 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
- and belongs to the Pic2Sym project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -15,6 +14,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -39,6 +41,7 @@
 #include "cachedData.h"
 #include "patch.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 using namespace std;
 using namespace boost;
@@ -150,13 +153,18 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	if(mcPatch)
 		return;
 
-	const double patchSum = *sum(patch).val;
-	Mat temp, temp1;
-	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
-	reduce(patch, temp1, 1, CV_REDUCE_SUM);	// sum all columns
+	Mat temp;
+	double patchSum, mcX, mcY;
 
-	mcPatch = Point2d(temp.dot(cachedData.consec), temp1.t().dot(cachedData.consec))
-		/ patchSum;
+	patchSum = *sum(patch).val;
+
+	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
+	mcX = temp.dot(cachedData.consec);
+
+	reduce(patch, temp, 1, CV_REDUCE_SUM);	// sum all columns
+	mcY = temp.t().dot(cachedData.consec);
+
+	mcPatch = Point2d(mcX, mcY) / patchSum;
 	assert(mcPatch->x > -EPS && mcPatch->x < cachedData.sz_1+EPS);
 	assert(mcPatch->y > -EPS && mcPatch->y < cachedData.sz_1+EPS);
 }
@@ -223,10 +231,12 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		vector<Mat> channels;
 		split(patch.orig, channels);
 
-		double miuFg, miuBg, newDiff, diffFgBg = 0.;
+		double diffFgBg = 0.;
+		const size_t channelsCount = channels.size();
 		for(auto &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
-
+			
+			double miuFg, miuBg, newDiff;
 			miuFg = *mean(ch, fgMask).val;
 			miuBg = *mean(ch, bgMask).val;
 			newDiff = miuFg - miuBg;
@@ -236,7 +246,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			diffFgBg += abs(newDiff);
 		}
 
-		if(diffFgBg < 3.*ms.getBlankThreshold())
+		if(diffFgBg < channelsCount * ms.getBlankThreshold())
 			patchResult = Mat(patch.sz, patch.sz, CV_8UC3, mean(patch.orig));
 		else
 			merge(channels, patchResult);
@@ -249,8 +259,8 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			patchResult = Mat(patch.sz, patch.sz, CV_8UC1, Scalar(*mean(patch.orig).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
-			*params.contrast / dataOfBest.diffMinMax,
-			*params.bg);
+								*params.contrast / dataOfBest.diffMinMax,
+								*params.bg);
 	}
 
 	bestVariant.approx = patchResult;
@@ -265,6 +275,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	Scalar miu, sdevApproximation, sdevBlurredPatch;
 	meanStdDev(patch.orig-bestVariant.approx, miu, sdevApproximation);
 	meanStdDev(patch.orig-patch.blurred, miu, sdevBlurredPatch);
+
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;
 	if(patch.isColor) {

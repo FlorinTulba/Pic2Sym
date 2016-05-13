@@ -2,7 +2,8 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the Pic2Sym project.
+ This file was created on 2016-4-27
+ and belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -35,34 +36,32 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MISC
-#define H_MISC
+#ifndef H_OMP_TRACE
+#define H_OMP_TRACE
 
-#include <iostream>
-#include <iomanip>
-#include <string>
-
-// Error margin
-const double EPS = 1e-6;
-
-// Display an expression and its value
-#define PRINT(expr)			std::cout<<#expr " : "<<(expr)
-#define PRINTLN(expr)		PRINT(expr)<<std::endl
-#define PRINT_H(expr)		std::cout<<#expr " : 0x"<<std::hex<<(expr)<<std::dec
-#define PRINTLN_H(expr)		PRINT_H(expr)<<std::endl
-
-// Oftentimes functions operating on ranges need the full range.
-// Example: copy(x.begin(), x.end(), ..) => copy(BOUNDS(x), ..)
-#define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
-#define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
-
-// string <-> wstring conversions
-std::wstring str2wstr(const std::string &str);
-std::string wstr2str(const std::wstring &wstr);
-
-// Notifying the user
-void infoMsg(const std::string &text, const std::string &title = "");
-void warnMsg(const std::string &text, const std::string &title = "");
-void errMsg(const std::string &text, const std::string &title = "");
-
+#ifndef UNIT_TESTING
+#include <omp.h>
 #endif
+
+#if defined _DEBUG && !defined UNIT_TESTING
+
+#include <cstdio>
+
+extern omp_lock_t ompTraceLock;
+
+/// Defines 'ompPrintf' function as 'printf' in Debug mode for original thread's team
+#define ompPrintf(cond, formatText, ...) \
+	if(cond) { \
+			omp_set_lock(&ompTraceLock); \
+			printf("[Thread %d] " #cond " : " formatText " (" __FILE__ ":%d)\n", \
+				omp_get_thread_num(), __VA_ARGS__, __LINE__); \
+			omp_unset_lock(&ompTraceLock); \
+		}
+
+#else // _DEBUG not defined or in UNIT_TESTING mode
+
+#define ompPrintf(...)
+
+#endif // _DEBUG
+
+#endif // H_OMP_TRACE

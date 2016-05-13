@@ -2,8 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
- and belongs to the Pic2Sym project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -15,6 +14,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -39,30 +41,29 @@
 #include "patch.h"
 #include "settings.h"
 #include "misc.h"
+#include "ompTrace.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
 using namespace cv;
 
-namespace {
-	/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
-	Mat toMat(const PixMapSym &pms, unsigned fontSz) {
-		Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
+/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
+static Mat toMat(const PixMapSym &pms, unsigned fontSz) {
+	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
 
-		int firstRow = (int)fontSz-(int)pms.top-1;
-		Mat region(result,
-					   Range(firstRow, firstRow+(int)pms.rows),
-					   Range((int)pms.left, (int)(pms.left+pms.cols)));
+	int firstRow = (int)fontSz-(int)pms.top-1;
+	Mat region(result,
+			   Range(firstRow, firstRow+(int)pms.rows),
+			   Range((int)pms.left, (int)(pms.left+pms.cols)));
 
-		const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
-		pmsData.copyTo(region);
+	const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
+	pmsData.copyTo(region);
 
-		static const double INV_255 = 1./255;
-		result.convertTo(result, CV_64FC1, INV_255); // convert to double
+	static const double INV_255 = 1./255;
+	result.convertTo(result, CV_64FC1, INV_255); // convert to double
 
-		return result;
-	}
+	return result;
 }
 
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_) {
@@ -76,6 +77,10 @@ void MatchEngine::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
+	extern const Size BlurWinSize;
+	extern const double BlurStandardDeviation;
+	extern const bool PrepareMoreGlyphsAtOnce;
+
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
@@ -84,40 +89,53 @@ void MatchEngine::updateSymbols() {
 	extern const double MatchEngine_updateSymbols_STILL_BG;					// darkest shades
 	static const double STILL_FG = 1. - MatchEngine_updateSymbols_STILL_BG;	// brightest shades
 	symsSet.clear();
-	symsSet.reserve(fe.symsSet().size());
+	const auto &rawSyms = fe.symsSet();
+	const int symsCount = (int)rawSyms.size();
+	symsSet.reserve(symsCount);
 
-	double minVal, maxVal;
 	const unsigned sz = cfg.symSettings().getFontSz();
-	for(const auto &pms : fe.symsSet()) {
-		Mat negGlyph, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
+
+#pragma omp parallel if(PrepareMoreGlyphsAtOnce)
+#pragma omp for schedule(static, 1) nowait ordered
+	for(int i = 0; i<symsCount; ++i) {
+		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
+
+		const auto &pms = rawSyms[i];
+		Mat negGlyph, fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		const Mat glyph = toMat(pms, sz);
 		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
+		double minVal, maxVal;
 		minMaxIdx(glyph, &minVal, &maxVal);
-		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)), // min val on 0
-			fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal))),
-			bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
-		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
+		const Mat groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
+
+		fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal)));
+		bgMask = (glyph <= (minVal + MatchEngine_updateSymbols_STILL_BG * (maxVal-minVal)));
 
 		// Storing a blurred version of the grounded glyph for structural similarity match aspect
-		extern const Size BlurWinSize;
-		extern const double BlurStandardDeviation;
 		GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
-					 BlurWinSize, BlurStandardDeviation, 0.,
-					 BORDER_REPLICATE);
+						BlurWinSize, BlurStandardDeviation, 0.,
+						BORDER_REPLICATE);
+
+		// edgeMask selects all pixels that are not minVal, nor maxVal
+		inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 		// Storing also the variance of the grounded glyph for structural similarity match aspect
+		// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
 		GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
-					 BlurWinSize, BlurStandardDeviation, 0.,
-					 BORDER_REPLICATE);
+						BlurWinSize, BlurStandardDeviation, 0.,
+						BORDER_REPLICATE);
+
 		varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
+#pragma omp ordered
+//#pragma omp critical - implied by ordered from above
 		symsSet.emplace_back(pms.symCode,
 							 minVal, maxVal-minVal,
 							 pms.glyphSum, pms.mc,
 							 SymData::MatArray { {
-									 fgMask,					// FG_MASK_IDX 
+									 fgMask,					// FG_MASK_IDX
 									 bgMask,					// BG_MASK_IDX
 									 edgeMask,					// EDGE_MASK_IDX
 									 negGlyph,					// NEG_SYM_IDX
@@ -171,7 +189,7 @@ BestMatch MatchEngine::approxPatch(const Patch &patch) const {
 		if(score > best.score)
 			best.update(score, symData.code, idx, symData, mp);
 
-		mp.reset();
+		mp.reset(); // preserves some fields common => parallelization would require separating those fields
 		++idx;
 	}
 	return best.updatePatchApprox(cfg.matchSettings());
@@ -183,6 +201,8 @@ double MatchEngine::assessMatch(const Mat &patch,
 	double score = 1.;
 	for(auto pAspect : enabledAspects)
 		score *= pAspect->assessMatch(patch, symData, mp);
+	// parallelization would require 'mp' fields to be guarded by locks
+
 	return score;
 }
 

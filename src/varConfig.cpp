@@ -2,8 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-4-9
- and belongs to the Pic2Sym project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -15,6 +14,9 @@
  - (c) 2015 OpenCV (www.opencv.org)
    License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -92,6 +94,16 @@ static PropsReader varConfig("res/varConfig.txt");
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
+
+extern READ_BOOL_PROP(UsingOMP); // global OpenMP switch
+extern READ_BOOL_PROP_COND(ParallelizePixMapStatistics, UsingOMP);
+extern READ_BOOL_PROP_COND(ParallelizeHorVertGlyphFitting, UsingOMP);
+extern READ_BOOL_PROP_COND(ParallelizeHorVertGlyphReductions, UsingOMP);
+extern READ_BOOL_PROP_COND(ParallelizeGridCreation, UsingOMP);
+extern READ_BOOL_PROP_COND(ParallelizeGridPopulation, UsingOMP);
+extern READ_INT_PROP_COND(MinRowsToParallelizeGlyphBitmapExtraction, UsingOMP, INT_MAX);
+extern READ_BOOL_PROP_COND(PrepareMoreGlyphsAtOnce, UsingOMP);
+extern READ_BOOL_PROP_COND(ParallelizeTr_PatchRowLoops, UsingOMP);
 
 extern READ_UINT_PROP(Settings_MIN_FONT_SIZE);
 extern READ_UINT_PROP(Settings_MAX_FONT_SIZE);

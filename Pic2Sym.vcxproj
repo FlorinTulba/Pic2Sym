@@ -37,6 +37,7 @@
     <ClInclude Include="src\matchSettingsManip.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\matchSettings.h" />
+    <ClInclude Include="src\ompTrace.h" />
     <ClInclude Include="src\patch.h" />
     <ClInclude Include="src\picTransformProgressTracker.h" />
     <ClInclude Include="src\pixMapSym.h" />
@@ -123,6 +124,8 @@
     <Image Include="doc\MismatchesUnitTesting.jpg" />
     <Image Include="doc\ProfileCallerCallee.jpg" />
     <Image Include="doc\ProfileFunctionDetails.jpg" />
+    <Image Include="doc\ProfileFunctionDetails1.2_BlurWeight.jpg" />
+    <Image Include="doc\ProfileFunctionDetails1.2_SSimWeight.jpg" />
     <Image Include="doc\ProfileSummary.jpg" />
     <Image Include="res\NoImage.jpg" />
   </ItemGroup>
@@ -176,12 +179,14 @@
       <PreprocessorDefinitions>WIN32;PIC2SYM_VERSION="$(Pic2SymVersion)";_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
+      <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>/Qpar-report:2 /Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -199,6 +204,8 @@
       <PreprocessorDefinitions>WIN32;PIC2SYM_VERSION="$(Pic2SymVersion)";NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
+      <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>/Qpar-report:2 /Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -206,7 +213,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>

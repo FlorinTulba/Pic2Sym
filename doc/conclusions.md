@@ -1,7 +1,7 @@
 ## Conclusions and further directions ##
 [Back to start page](../ReadMe.md)
 
-By now, the application:
+By now (v1.2), the application:
 - offers *various match aspects* for deciding which symbol will approximate an image patch
 - provides either *raw image approximations*, or a satisfactory *hybrid result* for more complex content
 - lets the user select *which critical paths to parallelize* on *multi\-core machines*

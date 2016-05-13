@@ -1,7 +1,7 @@
 ## Appendix ##
 [Back to start page](../ReadMe.md)
 
-#### A.	Technical Details
+#### A.	Technical Details of Pic2Sym v1.2
 
 The application was tested on *Windows 7 64 bits* and developed in *C++*.
 
@@ -11,12 +11,15 @@ Following *open\-source* and *platform\-independent* libraries were employed in 
 - **[OpenCV](http://opencv.org/)** for a minimal *graphical interface* and the provided *matrix and image processing capabilities*
 
 However, it *runs only under Windows*, as it uses Windows\-specific:
+- **[OpenMP](https://msdn.microsoft.com/en-us/library/tt15eb9t.aspx)** (*its Visual C++ implementation*) for simple *multi\-threading support*
 - *Open / Save Dialog*
 - *Select Font Dialog* and also *reads the registries* to find the *font file for the chosen font* (**FreeType** needs that file).
 
 The decision to offer *support only for 64bits machines* originated from the lengthy compilation of **OpenCV** from latest sources (*version 3.0.0 at that time*). There were no binaries yet for that version. Now [they exist](http://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/opencv-3.0.0.exe/download), but I prefer the binaries customized for my machine.
 
 If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System* and *Filesystem*), then link them within the project.
+
+The ***parallelization switches*** from _version **1.2**_, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global UsingOMP switch* is *on* and they _don&#39;t trigger **nested parallelism**_.
 
 The *class diagram* from below presents a *simplified* perspective of the application:<br>
 ![](ClassDiag.jpg)<br>
@@ -67,7 +70,7 @@ Classes *omitted from the diagram*:
 
 The comments within the code provide more explanations.
 
-#### B.	Installation
+#### B.	Installation of Pic2Sym v1.2
 
 1.	Download the repository files
 2.	Copy ***Common.props***, ***Debug.props*** and ***Release.props*** from **install/** folder to the solution folder
@@ -75,7 +78,7 @@ The comments within the code provide more explanations.
 4.	Open the solution file and build it for **64bits** platform
 5.	*Optionally* install the free font file ***BPmonoBold.ttf*** from the **res/** folder or from [here][1], in order to be visible while running the application
 
-#### C.	Directory Structure
+#### C.	Directory Structure for Pic2Sym v1.2
 
 - **bin**/ contains the archieve ***Pic2Sym.zip*** with the *executable* and *required dll\-s*
 - **doc**/ contains the *documentation of the project* and 2 subfolders:
