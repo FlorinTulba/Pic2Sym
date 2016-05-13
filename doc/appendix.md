@@ -1,7 +1,7 @@
 ## Appendix ##
 [Back to start page](../ReadMe.md)
 
-#### A.	Technical Details of Pic2Sym v1.0
+#### A.	Technical Details of Pic2Sym v1.1
 
 The application was tested on *Windows 7 64 bits* and developed in *C++*.
 
