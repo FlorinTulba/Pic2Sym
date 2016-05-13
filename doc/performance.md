@@ -1,4 +1,4 @@
-## Performance ##
+## Performance of Pic2Sym v1.0 and v1.1 ##
 [Back to start page](../ReadMe.md)
 
 The changes in **version 1.1** of Pic2Sym impact the performance as follows:
