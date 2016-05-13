@@ -82,8 +82,7 @@ void Transformer::run() {
 	if(exists(resultFile)) {
 		result = cv::imread(resultFile.string(), cv::ImreadModes::IMREAD_UNCHANGED);
 		timer.release();
-		ctrler.reportTransformationProgress(1.);
-
+		
 		infoMsg("This image has already been transformed under these settings.\n"
 				"Displaying the available result");
 		return;
