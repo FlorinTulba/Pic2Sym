@@ -53,6 +53,17 @@
 
 #include <boost/filesystem/operations.hpp>
 
+/// Checks if the user wants to cancel the image transformation by pressing ESC
+static bool checkCancellationRequest();
+
+#ifndef UNIT_TESTING
+#include <opencv2/highgui.hpp>
+
+bool checkCancellationRequest() {
+	return cv::waitKey(1) == 27; // cancel if the user presses ESC
+}
+#endif // UNIT_TESTING not defined
+
 using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
@@ -85,10 +96,8 @@ void Transformer::run() {
 
 	if(exists(resultFile)) {
 		result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
-		timer.release();
-		
-		infoMsg("This image has already been transformed under these settings.\n"
-				"Displaying the available result");
+		timer.cancel("This image has already been transformed under these settings.\n"
+					 "Displaying the available result!");
 		return;
 	}
 #endif
@@ -106,10 +115,14 @@ void Transformer::run() {
 	GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
 	const int h = resized.rows, w = resized.cols;
 	volatile int finalizedRows = 0;
+	volatile bool isCanceled = false;
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
 	for(int r = 0; r<h; r += sz) {
+		if(isCanceled)
+			continue; // OpenMP doesn't accept break, so just continue with empty iterations
+
 		ompPrintf(ParallelizeTr_PatchRowLoops, "r = %d", r);
 		const Range rowRange(r, r+sz);
 
@@ -132,10 +145,18 @@ void Transformer::run() {
 #pragma omp atomic
 		++finalizedRows;
 
-		// Only master thread reports progress
-		if(omp_get_thread_num() == 0) // #pragma omp master not allowed in for
+		// Only master thread reports progress and checks cancellation status
+		if(omp_get_thread_num() == 0) { // #pragma omp master not allowed in for
 			ctrler.reportTransformationProgress((double)sz*finalizedRows/h);
+			if(checkCancellationRequest())
+				isCanceled = true;
+		}
 	} // rows loop
+
+	if(isCanceled) {
+		timer.cancel("Image transformation was canceled!");
+		return;
+	}
 
 #ifndef UNIT_TESTING
 	timer.pause();

@@ -207,6 +207,10 @@ public:
 		/// action to be performed when the timer is released/deleted
 		/// @param elapsedS total elapsed time in seconds
 		void onRelease(double elapsedS) override;
+
+		/// action to be performed when the timer is canceled
+		/// @param reason explanation for cancellation
+		void onCancel(const std::string &reason = "") override;
 	};
 
 #ifdef UNIT_TESTING

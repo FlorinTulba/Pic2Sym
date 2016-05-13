@@ -71,6 +71,10 @@ int omp_get_thread_num() {
 }
 #pragma warning(default:4273)
 
+bool checkCancellationRequest() {
+	return false;
+}
+
 namespace ut {
 	bool Controller::initImg = false;
 	bool Controller::initFontEngine = false;

@@ -466,6 +466,8 @@ void Controller::saveSettings() const {
 	}
 }
 
+extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
+
 Controller::TimerActions_Controller::TimerActions_Controller(const Controller &ctrler_) :
 	ctrler(ctrler_) {}
 
@@ -489,6 +491,11 @@ void Controller::TimerActions_ImgTransform::onStart() {
 
 void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
 	ctrler.imgTransform(true, elapsedS);
+}
+
+void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
+	ctrler.reportTransformationProgress(1.);
+	infoMsg(reason);
 }
 
 // Methods from below have different definitions for UnitTesting project
@@ -523,7 +530,6 @@ void Controller::reportGlyphProgress(double progress) const {
 }
 
 void Controller::reportTransformationProgress(double progress) const {
-	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
 	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
 	if(0. == progress) {
 		if(nullptr == resizedImg)

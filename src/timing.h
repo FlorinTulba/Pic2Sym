@@ -41,6 +41,7 @@
 #include <chrono>
 #include <vector>
 #include <memory>
+#include <string>
 
 // Timing jobs:
 /// Interface for any observer of a timer (see below the Timer class)
@@ -57,6 +58,10 @@ struct ITimerActions /*abstract*/ {
 	/// @param elapsedS total elapsed time in seconds
 	virtual void onRelease(double /*elapsedS*/) {}
 
+	/// action to be performed when the timer is canceled
+	/// @param reason explanation for cancellation
+	virtual void onCancel(const std::string &reason = "") {}
+
 	virtual ~ITimerActions() = 0 {}
 };
 
@@ -72,7 +77,7 @@ protected:
 	std::chrono::duration<double> elapsedS;
 
 	bool paused = false;	///< true as long as not paused
-	bool valid = true;		///< true as long as not released
+	bool valid = true;		///< true as long as not canceled / released
 
 public:
 	/// Initializes lastStart and notifies all observers
@@ -90,11 +95,15 @@ public:
 	void operator=(const Timer&) = delete;
 	void operator=(Timer&&) = delete;
 
-	virtual ~Timer();				///< if not released, reports duration to all observers
+	virtual ~Timer();				///< if not canceled / released, reports duration to all observers
 
 	virtual void pause();			///< pauses the timer and reports duration to all observers
 	virtual void resume();			///< resumes the timer
 	virtual void release();			///< stops the timer and reports duration to all observers
+
+	/// Cancels a timing task.
+	/// @param reason explanation for cancellation
+	virtual void cancel(const std::string &reason = "The task was canceled");
 };
 
 #endif
