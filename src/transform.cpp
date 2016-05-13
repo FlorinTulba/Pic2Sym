@@ -109,7 +109,7 @@ void Transformer::run() {
 	volatile int finalizedRows = 0;
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
-#pragma omp for schedule(static, 1) nowait
+#pragma omp for schedule(dynamic) nowait
 	for(int r = 0; r<h; r += sz) {
 		ompPrintf(ParallelizeTr_PatchRowLoops, "r = %d", r);
 		const Range rowRange(r, r+sz);
