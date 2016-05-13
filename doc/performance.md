@@ -1,4 +1,4 @@
-## Performance ##
+## Performance of Pic2Sym v1.0 ##
 [Back to start page](../ReadMe.md)
 
 Profiling results show that during image approximation under default settings, 80% from the time the processor is busy computing [structural similarity][] (*StructuralSimilarity::assessMatch* \-\> *MatchParams::computeSsim*):<br>

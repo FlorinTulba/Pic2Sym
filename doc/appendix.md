@@ -1,7 +1,7 @@
 ## Appendix ##
 [Back to start page](../ReadMe.md)
 
-#### A.	Technical Details
+#### A.	Technical Details of Pic2Sym v1.0
 
 The application was tested on *Windows 7 64 bits* and developed in *C++*.
 
@@ -44,7 +44,7 @@ The ***GUI\-related classes*** were omitted from the diagram. They simply intera
 
 The comments within the code provide more explanations.
 
-#### B.	Installation
+#### B.	Installation of Pic2Sym v1.0
 
 1.	Download the repository files
 2.	Copy ***Common.props***, ***Debug.props*** and ***Release.props*** from **install/** folder to the solution folder
@@ -52,7 +52,7 @@ The comments within the code provide more explanations.
 4.	Open the solution file and build it for **64bits** platform
 5.	*Optionally* install the free font file ***BPmonoBold.ttf*** from the **res/** folder or from [here][1], in order to be visible while running the application
 
-#### C.	Directory Structure
+#### C.	Directory Structure for Pic2Sym v1.0
 
 - **bin**/ contains the archieve ***Pic2Sym.zip*** with the *executable* and *required dll\-s*
 - **doc**/ contains the *documentation of the project* and 2 subfolders:

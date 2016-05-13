@@ -1,4 +1,4 @@
-# Pic2Sym #
+# Pic2Sym v1.0 #
 
 **Topics:**
 
@@ -7,8 +7,8 @@
 1. [Example results](doc/results.md)
 1. [Performance](doc/performance.md)
 1. [Conclusions and further directions](doc/conclusions.md)
-1. [Testing the Provided Binary](doc/testBinary.md) \(*Windows 64bits only*\)
-1. [Released versions](doc/releases.md)
+1. [Testing the provided binary](doc/testBinary.md) \(*Windows 64bits only*\)
+1. [Other released versions](doc/releases.md)
 1. [Appendix](doc/appendix.md) \(*various technical details*\)
 
 ## Description of the application ##
@@ -21,6 +21,10 @@ The symbols used for approximation are **scalable**, *preferably* **fixed\-width
 
 The resulted grid has **square cells** and *the symbols are preprocessed* to fit such cells by widening them all. Therefore the **output is simply a new image**, and cannot be saved as a char table in html or as a text file, like in similar applications.
 Console output is also ruled out, first because there are only a couple of font sizes available and secondly, because consoles usually provide only 16 colors.
+
+**Version 1.0**
+- provides a set of simple operations involved in the image approximation workflow
+- generates ***prettier results*** using *small, bold symbols and for images with large mild\-texture regions with clear and long contours*
 
 - - -
 

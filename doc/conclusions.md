@@ -1,7 +1,7 @@
 ## Conclusions and further directions ##
 [Back to start page](../ReadMe.md)
 
-This first release provides a set of simple operations involved in the image approximation workflow.
+This first release \(v1.0\) provides a set of simple operations involved in the image approximation workflow.
 It generates *prettier results* using *small, bold symbols and for images with large mild\-texture regions with clear and long contours* (like large faces, buildings and clouds).
 
 *Next versions* should focus on *faster transformation* and *more meaningful results*. Image and symbols preprocessing, parallelization of critical paths might be worth investigating.
