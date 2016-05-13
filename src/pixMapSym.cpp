@@ -305,7 +305,7 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 				++duplicates;
 				return;
 			}
-		syms.emplace_back(move(pmc));
+		syms.push_back(move(pmc));
 	}
 }
 
