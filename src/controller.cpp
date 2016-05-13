@@ -352,7 +352,7 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 	if(done) {
 		reportGlyphProgress(1.);
 
-		const string &cmapOverlayText = textForCmapOverlay(elapsed);
+		const string cmapOverlayText = textForCmapOverlay(elapsed);
 		cout<<cmapOverlayText<<endl<<endl;
 		if(pCmi)
 			pCmi->setOverlay(cmapOverlayText, 3000);
@@ -370,7 +370,7 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 	if(done) {
 		reportTransformationProgress(1.);
 
-		const string &comparatorOverlayText = textForComparatorOverlay(elapsed);
+		const string comparatorOverlayText = textForComparatorOverlay(elapsed);
 		cout<<comparatorOverlayText <<endl<<endl;
 		comp.setOverlay(comparatorOverlayText, 3000);
 
@@ -512,7 +512,7 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 			oss<<waitWin;
 		else
 			oss<<title;
-		const string &hourGlassText = textHourGlass(oss.str(), progress);
+		const string hourGlassText = textHourGlass(oss.str(), progress);
 		setWindowTitle(waitWin, hourGlassText);
 	}
 }
