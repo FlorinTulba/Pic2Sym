@@ -363,7 +363,7 @@ void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) c
 }
 
 Timer Controller::createTimerForGlyphs() const {
-	return std::move(Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)));
+	return Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)); // RVO
 }
 
 void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
@@ -380,7 +380,7 @@ void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) co
 }
 
 Timer Controller::createTimerForImgTransform() const {
-	return std::move(Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)));
+	return Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)); // RVO
 }
 
 void Controller::restoreUserDefaultMatchSettings() {

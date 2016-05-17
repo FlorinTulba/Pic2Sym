@@ -108,9 +108,9 @@ void errMsg(const string &text, const string &title/* = ""*/) {
 }
 
 wstring str2wstr(const string &str) {
-	return std::move(wstring(CBOUNDS(str)));
+	return wstring(CBOUNDS(str)); // RVO
 }
 
 string wstr2str(const wstring &wstr) {
-	return std::move(string(CBOUNDS(wstr)));
+	return string(CBOUNDS(wstr)); // RVO
 }

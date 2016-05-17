@@ -52,7 +52,7 @@ static string replacePlaceholder(const string &text,	///< initial text
 								 ) {
 	string text_(text);
 	replace_all(text_, placeholder, replacement);
-	return std::move(text_);
+	return text_; // NRVO
 }
 
 /// parser for reading various texts and constants customizing the runtime look and behavior
@@ -178,7 +178,7 @@ extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 
 extern READ_STR_PROP_CONVERT(CmapInspect_pageTrackName, String);
 
-extern const wstring ControlPanel_aboutText = std::move(str2wstr(replacePlaceholder(varConfig.read<string>("ControlPanel_aboutText"))));
+extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfig.read<string>("ControlPanel_aboutText")));
 extern READ_WSTR_PROP(ControlPanel_instructionsText);
 
 #endif // ifndef UNIT_TESTING
