@@ -150,7 +150,7 @@ const string Controller::textForCmapStatusBar() const {
 	ostringstream oss;
 	oss<<"Font type '"<<fe.getFamily()<<' '<<fe.getStyle()
 		<<"', size "<<cfg.ss.getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
-		<<" : "<<me.getSymsCount()<<" symbols";
+		<<" : "<<fe.symsSet().size()<<" symbols";
 	return oss.str();
 }
 
