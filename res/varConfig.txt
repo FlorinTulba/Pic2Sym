@@ -12,8 +12,6 @@ Transform_BlurredPatches_InsteadOf_Originals	false
 ; Switches & thresholds for OpenMP - parallelizing operations / loops:
 UsingOMP	true
 ParallelizePixMapStatistics	true
-ParallelizeHorVertGlyphFitting	true
-ParallelizeHorVertGlyphReductions	true
 ParallelizeGridCreation	true
 ParallelizeGridPopulation	true
 MinRowsToParallelizeGlyphBitmapExtraction	16

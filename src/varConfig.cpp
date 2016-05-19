@@ -97,8 +97,6 @@ extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
 
 extern READ_BOOL_PROP(UsingOMP); // global OpenMP switch
 extern READ_BOOL_PROP_COND(ParallelizePixMapStatistics, UsingOMP);
-extern READ_BOOL_PROP_COND(ParallelizeHorVertGlyphFitting, UsingOMP);
-extern READ_BOOL_PROP_COND(ParallelizeHorVertGlyphReductions, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeGridCreation, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeGridPopulation, UsingOMP);
 extern READ_INT_PROP_COND(MinRowsToParallelizeGlyphBitmapExtraction, UsingOMP, INT_MAX);
