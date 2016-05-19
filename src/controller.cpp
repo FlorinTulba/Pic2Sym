@@ -135,15 +135,10 @@ void Controller::newImage(const string &imgPath) {
 	comp.resize();
 }
 
-void Controller::updateCmapStatusBar() const {
-	pCmi->setStatus(textForCmapStatusBar());
-}
-
 void Controller::symbolsChanged() {
 	fe.setFontSz(cfg.ss.getFontSz());
 	me.updateSymbols();
-
-	updateCmapStatusBar();
+	pCmi->setStatus(textForCmapStatusBar());
 	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
 }
 

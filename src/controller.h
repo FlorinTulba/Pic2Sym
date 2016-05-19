@@ -87,7 +87,6 @@ protected:
 	const std::string textForComparatorOverlay(double elapsed) const; ///< Transformation duration
 	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress
 
-	void updateCmapStatusBar() const;	///< updates information about font family, encoding and size
 	void symbolsChanged();				///< triggered by new font family / encoding / size
 
 	/**
