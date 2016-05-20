@@ -96,6 +96,12 @@ struct PixMapSym {
 
 	bool operator==(const PixMapSym &other) const; ///< useful to detect duplicates
 
+	/// Inverse of this within a square of fontSz x fontSz
+	cv::Mat invToMat(unsigned fontSz) const;
+	
+	/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
+	cv::Mat toMatD01(unsigned fontSz) const;
+
 	/**
 	Computes the sum of the pixel values divided by 255.
 

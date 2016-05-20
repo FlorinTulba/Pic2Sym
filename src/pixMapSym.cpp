@@ -157,6 +157,36 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		equal(CBOUNDS(pixels), cbegin(other.pixels));
 }
 
+Mat PixMapSym::invToMat(unsigned fontSz) const {
+	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(255U));
+
+	const int firstRow = (int)fontSz-(int)top-1;
+	Mat region(result,
+			   Range(firstRow, firstRow+(int)rows),
+			   Range((int)left, (int)(left+cols)));
+	const Mat pmsData = 255U - Mat((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+	pmsData.copyTo(region);
+
+	return result;
+}
+
+Mat PixMapSym::toMatD01(unsigned fontSz) const {
+	static const double INV_255 = 1./255;
+
+	Mat result((int)fontSz, (int)fontSz, CV_64FC1, Scalar(0.));
+
+	const int firstRow = (int)fontSz-(int)top-1;
+	Mat region(result,
+			   Range(firstRow, firstRow+(int)rows),
+			   Range((int)left, (int)(left+cols)));
+
+	Mat pmsData((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+	pmsData.convertTo(pmsData, CV_64FC1, INV_255); // convert to double
+	pmsData.copyTo(region);
+
+	return result;
+}
+
 double PixMapSym::computeGlyphSum(unsigned char rows_, unsigned char cols_,
 								  const vector<unsigned char> &pixels_) {
 	if(rows_ == 0U || cols_ == 0U)

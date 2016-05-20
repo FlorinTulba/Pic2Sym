@@ -48,24 +48,6 @@
 using namespace std;
 using namespace cv;
 
-/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
-static Mat toMat(const PixMapSym &pms, unsigned fontSz) {
-	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(0U));
-
-	int firstRow = (int)fontSz-(int)pms.top-1;
-	Mat region(result,
-			   Range(firstRow, firstRow+(int)pms.rows),
-			   Range((int)pms.left, (int)(pms.left+pms.cols)));
-
-	const Mat pmsData((int)pms.rows, (int)pms.cols, CV_8UC1, (void*)pms.pixels.data());
-	pmsData.copyTo(region);
-
-	static const double INV_255 = 1./255;
-	result.convertTo(result, CV_64FC1, INV_255); // convert to double
-
-	return result;
-}
-
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_) {
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(
@@ -101,9 +83,9 @@ void MatchEngine::updateSymbols() {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
 		const auto &pms = rawSyms[i];
-		Mat negGlyph, fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-		const Mat glyph = toMat(pms, sz);
-		glyph.convertTo(negGlyph, CV_8UC1, -255., 255.);
+		const Mat glyph = pms.toMatD01(sz),
+				negGlyph = pms.invToMat(sz);
+		Mat fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255
 		double minVal, maxVal;
