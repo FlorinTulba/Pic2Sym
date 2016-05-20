@@ -520,6 +520,7 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/) const 
 	static const String waitWin = "Please Wait!";
 	if(progress == 0.) {
 		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
+		moveWindow(waitWin, 0, 400);
 #ifndef _DEBUG // destroyWindow in Debug mode triggers deallocation of invalid block
 	} else if(progress == 1.) {
 		destroyWindow(waitWin);
