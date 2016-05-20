@@ -85,6 +85,8 @@ static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 	assert(cols_>=0 && cols_<=sz);
 }
 
+extern const unsigned Settings_MAX_FONT_SIZE;
+
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 const FT_Bitmap &bm,			// the bitmap to process
 					 int leftBound, int topBound,	// initial position of the symbol
@@ -199,7 +201,8 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 								   unsigned char rows_, unsigned char cols_,
 								   unsigned char left_, unsigned char top_,
 								   double glyphSum_, const Mat &consec, const Mat &revConsec) {
-	if(rows_ == 0U || cols_ == 0U || glyphSum_ < .9/(255U*sz*sz)) {
+	static const double NO_PIXELS_SET_THRESHOLD = .9/(255U*Settings_MAX_FONT_SIZE*Settings_MAX_FONT_SIZE);
+	if(rows_ == 0U || cols_ == 0U || glyphSum_ < NO_PIXELS_SET_THRESHOLD) {
 		const double centerCoord = (sz-1U)/2.;
 		return Point2d(centerCoord, centerCoord);
 	}
@@ -217,6 +220,7 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 }
 
 PmsCont::PmsCont(const ICmapViewUpdater &cmapViewUpdater_) :
+		// methods from ICmapViewUpdater are non-const => removing const:
 		cmapViewUpdater(const_cast<ICmapViewUpdater&>(cmapViewUpdater_)) {}
 
 unsigned PmsCont::getFontSz() const {
