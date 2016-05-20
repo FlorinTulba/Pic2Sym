@@ -80,6 +80,9 @@ public:
 	void updatePagesCount(unsigned) {}
 	void updateGrid() {}
 	void showPage(unsigned) {}
+	unsigned getSymsPerPage() { return 0U; }
+	void reset() {}
+	void showUnofficial1stPage(const std::vector<const cv::Mat>&&) {}
 };
 
 class ControlPanel final {

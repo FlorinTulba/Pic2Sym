@@ -281,6 +281,22 @@ unsigned Controller::getFontSize() const {
 	return cfg.ss.getFontSz();
 }
 
+void Controller::resetCmapView() {
+	if(pCmi)
+		pCmi->reset();
+}
+
+void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
+	if((unsigned)syms.size() != pCmi->getSymsPerPage())
+		return;
+
+	const auto fontSz = getFontSize();
+	vector<const Mat> matSyms;
+	for(const auto &pms : syms)
+		matSyms.emplace_back(pms.invToMat(fontSz));
+	
+	pCmi->showUnofficial1stPage(std::move(matSyms));
+}
 
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if((unsigned)threshold != cfg.ms.getBlankThreshold())

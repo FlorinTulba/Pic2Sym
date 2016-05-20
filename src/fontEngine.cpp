@@ -38,6 +38,7 @@
 #include "fontEngine.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
+#include "cmapViewUpdater.h"
 #include "settings.h"
 #include "misc.h"
 #include "ompTrace.h"
@@ -211,10 +212,12 @@ namespace {
 	}
 } // anonymous namespace
 
+
+
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
 					   fontValidator(dynamic_cast<const IValidateFont&>(ctrler_)),
 					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
-					   ss(ss_) {
+					   ss(ss_), symsCont(dynamic_cast<const ICmapViewUpdater&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;

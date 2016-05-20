@@ -43,6 +43,7 @@
 #include "transform.h"
 #include "controlPanelActions.h"
 #include "presentCmap.h"
+#include "cmapViewUpdater.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
@@ -55,7 +56,7 @@ class ControlPanel; // forward declaration
 
 /// Manager of the views and data.
 class Controller :
-	public IControlPanelActions, public IPresentCmap, public IValidateFont,
+	public IControlPanelActions, public IPresentCmap, public ICmapViewUpdater, public IValidateFont,
 	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
 protected:
 	// Data
@@ -157,6 +158,10 @@ public:
 	// Implementation of IPresentCmap below
 	unsigned getFontSize() const override;
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
+
+	// Implementation of ICmapViewUpdater below
+	void resetCmapView() override;
+	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
 
 	// Implementation of IValidateFont below
 	/// called by FontEngine::newFont after installing a new font to update SymSettings

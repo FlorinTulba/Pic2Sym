@@ -140,17 +140,24 @@ protected:
 	*/
 	bool updatingPageMax = false;
 
+	unsigned computeSymsPerPage() const;	///< determines how many symbols fit on a single page
+
 	cv::Mat createGrid() const;				///< generates the grid that separates the glyphs
 
 	/// content = grid + glyphs for current page specified by a pair of iterators
 	void populateGrid(const MatchEngine::VSymDataCItPair &itPair);
 
-	unsigned computeSymsPerPage() const;	///< determines how many symbols fit on a single page
-
 public:
 	CmapInspect(const IPresentCmap &cmapPresenter_);
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
+
+	void reset();
+
+	unsigned getSymsPerPage() const { return symsPerPage; }
+
+	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view
+	void showUnofficial1stPage(const std::vector<const cv::Mat> &&symsOn1stPage);
 
 	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
 	void updateGrid();							///< Changing font size must update also the grid

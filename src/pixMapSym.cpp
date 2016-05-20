@@ -35,7 +35,7 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "pixMapSym.h"
+#include "cmapViewUpdater.h"
 #include "misc.h"
 
 #include <numeric>
@@ -216,6 +216,9 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 	return Point2d(sumX, sumY) / (255. * glyphSum_);
 }
 
+PmsCont::PmsCont(const ICmapViewUpdater &cmapViewUpdater_) :
+		cmapViewUpdater(const_cast<ICmapViewUpdater&>(cmapViewUpdater_)) {}
+
 unsigned PmsCont::getFontSz() const {
 	if(!ready) {
 		cerr<<__FUNCTION__  " cannot be called before setAsReady"<<endl;
@@ -271,6 +274,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	syms.clear();
 	if(symsCount != 0U)
 		syms.reserve(symsCount);
+	cmapViewUpdater.resetCmapView();
 
 	consec = Mat(1, fontSz_, CV_64FC1);
 	revConsec.release();
@@ -304,6 +308,8 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 				return;
 			}
 		syms.push_back(move(pmc));
+
+		cmapViewUpdater.display1stPageIfFull(syms);
 	}
 }
 

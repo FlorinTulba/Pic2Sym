@@ -122,6 +122,8 @@ struct PixMapSym {
 									   const cv::Mat &revConsec);
 };
 
+struct ICmapViewUpdater; // forward declaration
+
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont {
 protected:
@@ -137,7 +139,11 @@ protected:
 	cv::Mat revConsec;				///< consec reversed
 	double sz2;						///< fontSz^2
 
+	ICmapViewUpdater &cmapViewUpdater;	///< updates Cmap View as soon as there are enough symbols for 1 page
+
 public:
+	PmsCont(const ICmapViewUpdater &cmapViewUpdater_);
+
 	bool isReady() const { return ready; }
 	unsigned getFontSz() const;
 	unsigned getBlanksCount() const;

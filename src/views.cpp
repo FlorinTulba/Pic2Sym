@@ -134,7 +134,6 @@ void CmapInspect::updateGrid() {
 
 void CmapInspect::updatePagesCount(unsigned cmapSize) {
 	updatingPageMax = true;
-	symsPerPage = computeSymsPerPage();
 	pagesCount = (unsigned)ceil(cmapSize / (double)symsPerPage);
 	setTrackbarMax(CmapInspect_pageTrackName, winName, max(1, (int)pagesCount-1));
 

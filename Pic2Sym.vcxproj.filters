@@ -135,6 +135,12 @@
     <ClInclude Include="src\timing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ompTrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cmapViewUpdater.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -345,6 +351,12 @@
     </Image>
     <Image Include="doc\ProfileSummary.jpg">
       <Filter>doc</Filter>
+    </Image>
+    <Image Include="doc\ProfileFunctionDetails1.2_BlurWeight.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="doc\ProfileFunctionDetails1.2_SSimWeight.jpg">
+      <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
 </Project>

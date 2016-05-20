@@ -44,6 +44,7 @@
 #include "misc.h"
 
 #include <iomanip>
+#include <functional>
 
 #include <opencv2/highgui.hpp>
 
@@ -235,12 +236,55 @@ void Comparator::resize() const {
 extern const Size CmapInspect_pageSz;
 extern const String CmapInspect_pageTrackName;
 
+template<typename Iterator>
+static void populateGrid(Iterator it, Iterator itEnd,
+						 function<const cv::Mat(const Iterator&)> negSym, ///< function extracting the negative mask from an iterator
+						 Mat &content, const Mat &grid, const IPresentCmap &cmapPresenter) {
+	content = grid.clone();
+	const int fontSz = cmapPresenter.getFontSize(),
+		fontSzM1 = fontSz - 1,
+		cellSide = 1 + fontSz,
+		height = CmapInspect_pageSz.height,
+		width = CmapInspect_pageSz.width;
+
+	// Place each 'negative' glyph within the grid
+	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
+		Range rowRange(r - fontSzM1, r + 1);
+		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
+			Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
+			negSym(it).copyTo(region);
+		}
+	}
+}
+
+void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
+	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
+	::populateGrid(it, itEnd,
+				   (function<const cv::Mat(const MatchEngine::VSymDataCIt&)>) // conversion
+				   [](const MatchEngine::VSymDataCIt &iter) { return iter->symAndMasks[SymData::NEG_SYM_IDX]; },
+				   content, grid, cmapPresenter);
+}
+
+void CmapInspect::showUnofficial1stPage(const vector<const Mat> &&symsOn1stPage) {
+	::populateGrid(CBOUNDS(symsOn1stPage),
+				   (function<const cv::Mat(const vector<const Mat>::const_iterator&)>) // conversion
+				   [](const vector<const Mat>::const_iterator &iter) { return *iter; },
+				   content, grid, cmapPresenter);
+	imshow(winName, content);
+	waitKey(1); // ensures the page does get displayed
+}
+
 CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
-		CvWin("Charmap View"), cmapPresenter(cmapPresenter_),
-		grid(content = createGrid()), symsPerPage(computeSymsPerPage()) {
+		CvWin("Charmap View"), cmapPresenter(cmapPresenter_), grid(content = createGrid()) {
+	reset();
+
 	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
 	CmapInspect::updatePageIdx(page, reinterpret_cast<void*>(this)); // mandatory
+}
+
+void CmapInspect::reset() {
+	symsPerPage = computeSymsPerPage();
 }
 
 Mat CmapInspect::createGrid() const {
@@ -253,25 +297,6 @@ Mat CmapInspect::createGrid() const {
 	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
 		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
 	return result;
-}
-
-void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
-	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
-	content = grid.clone();
-	const int fontSz = cmapPresenter.getFontSize(),
-			fontSzM1 = fontSz - 1,
-			cellSide = 1 + fontSz,
-			height = CmapInspect_pageSz.height,
-			width = CmapInspect_pageSz.width;
-
-	// Convert each 'negative' glyph to 0..255 and place it within the grid
-	for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
-		Range rowRange(r - fontSzM1, r + 1);
-		for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
-			Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
-			it->symAndMasks[SymData::NEG_SYM_IDX].copyTo(region);
-		}
-	}
 }
 
 extern const wstring ControlPanel_aboutText;
