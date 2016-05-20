@@ -83,7 +83,7 @@ protected:
 	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageRequired = true) const;
 
-	const std::string textForCmapStatusBar() const; ///< status bar with font information
+	const std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
 	const std::string textForCmapOverlay(double elapsed) const; ///< Glyph loading duration
 	const std::string textForComparatorOverlay(double elapsed) const; ///< Transformation duration
 	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress

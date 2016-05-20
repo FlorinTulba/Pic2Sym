@@ -290,6 +290,8 @@ void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
 	if((unsigned)syms.size() != pCmi->getSymsPerPage())
 		return;
 
+	pCmi->setStatus(textForCmapStatusBar(fe.upperSymsCount()));
+
 	const auto fontSz = getFontSize();
 	vector<const Mat> matSyms;
 	for(const auto &pms : syms)

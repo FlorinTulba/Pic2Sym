@@ -281,6 +281,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	cout<<"Using encoding "<<encName<<" (index "<<encodingIndex<<')'<<endl;
 
 	symsCont.reset();
+	symsCount = 0U;
 
 	fontValidator.selectedEncoding(encName);
 
@@ -328,6 +329,7 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 	}
 
 	symsCont.reset();
+	symsCount = 0U;
 	uniqueEncs.clear();
 	face = face_;
 
@@ -378,7 +380,6 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	const double sz = fontSz_;
 	vector<tuple<FT_ULong, double, double>> toResize;
 	double factorH, factorV;
-	unsigned symsCount;
 	FT_BBox bb;
 	FT_UInt idx;
 	FT_Size_RequestRec  req;
@@ -477,6 +478,14 @@ unsigned FontEngine::uniqueEncodings() const {
 		throw logic_error(__FUNCTION__  " called before selecting a font.");
 	}
 	return (unsigned)uniqueEncs.size();
+}
+
+unsigned FontEngine::upperSymsCount() const {
+	if(face == nullptr) {
+		cerr<<"No Font yet! Please select one first and then call " __FUNCTION__  "!"<<endl;
+		throw logic_error(__FUNCTION__  " called before selecting a font.");
+	}
+	return symsCount;
 }
 
 const vector<const PixMapSym>& FontEngine::symsSet() const {

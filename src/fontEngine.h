@@ -68,6 +68,7 @@ protected:
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
 	PmsCont symsCont;				///< Container with the PixMapSym-s of current charmap
+	unsigned symsCount = 0U;		///< Count of glyphs within current charmap (blanks & duplicates included)
 
 	/**
 	checkFontFile Validates a new font file.
@@ -93,6 +94,7 @@ public:
 	bool setEncoding(const std::string &encName, bool forceUpdate = false);	///< Sets an encoding by name
 	bool setNthUniqueEncoding(unsigned idx);		///< Switches to nth unique encoding
 
+	unsigned upperSymsCount() const;				///< upper bound of symbols count in the cmap
 	const std::vector<const PixMapSym>& symsSet() const;	///< get the symsSet
 	double smallGlyphsCoverage() const;				///< get coverageOfSmallGlyphs
 
