@@ -43,20 +43,21 @@
 #include "transform.h"
 #include "controlPanelActions.h"
 #include "presentCmap.h"
-#include "cmapViewUpdater.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
+#include "updateSymsActions.h"
 #include "misc.h"
 #include "timing.h"
 
 #include <chrono>
+#include <atomic>
 
 class ControlPanel; // forward declaration
 
 /// Manager of the views and data.
 class Controller :
-	public IControlPanelActions, public IPresentCmap, public ICmapViewUpdater, public IValidateFont,
+	public IControlPanelActions, public IPresentCmap, public IValidateFont,
 	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
 protected:
 	// Data
@@ -78,6 +79,14 @@ protected:
 	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
 	bool hMaxSymsOk, vMaxSymsOk;
 	bool fontSzOk;
+
+	// synchronization items necessary while updating symbols
+	mutable LockFreeQueueSz23 updateSymsActionsQueue;
+	std::atomic_flag updatingSymbols;	///< stays true while updating the symbols
+	std::atomic_flag updating1stCmapPage;	///< controls concurrent attempts to update 1st page
+	/// Stores the events occurred while updating the symbols.
+	/// queue requires template param with trivial destructor and assign operator,
+	/// so shared_ptr isn't useful here
 
 	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
@@ -156,12 +165,12 @@ public:
 	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
 
 	// Implementation of IPresentCmap below
-	unsigned getFontSize() const override;
-	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
-
-	// Implementation of ICmapViewUpdater below
 	void resetCmapView() override;
 	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
+	unsigned getFontSize() const override;
+	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
+	void showUnofficialSymDetails(unsigned symsCount) const override;
+	void reportSymsUpdateDuration(double elapsed) const override;
 
 	// Implementation of IValidateFont below
 	/// called by FontEngine::newFont after installing a new font to update SymSettings

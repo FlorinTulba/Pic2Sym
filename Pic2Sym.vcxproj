@@ -46,10 +46,10 @@
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symSettings.h" />
-    <ClInclude Include="src\cmapViewUpdater.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
+    <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\validateFont.h" />
     <ClInclude Include="src\views.h" />
   </ItemGroup>

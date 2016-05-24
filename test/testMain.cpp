@@ -69,6 +69,11 @@
 int omp_get_thread_num() {
 	return 0;
 }
+
+namespace cv {
+	int __cdecl waitKey(int) { return 0; }
+}
+
 #pragma warning(default:4273)
 
 bool checkCancellationRequest() {

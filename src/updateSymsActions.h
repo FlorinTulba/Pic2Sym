@@ -35,18 +35,19 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CMAP_VIEW_UPDATER
-#define H_CMAP_VIEW_UPDATER
+#ifndef H_UPDATE_SYMS_ACTIONS
+#define H_UPDATE_SYMS_ACTIONS
 
-#include "controllerBase.h"
-#include "pixMapSym.h"
+#include <boost/lockfree/queue.hpp>
 
-/// Used to update Cmap View when resizing a font as soon as there are enough symbols for the 1st page.
-struct ICmapViewUpdater /*abstract*/ : virtual IController {
-	virtual void resetCmapView() = 0; ///< prepares for a new font resize operation
-	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0; ///< called after each append
+/// Allows separating the GUI actions related to updating the symbols
+struct IUpdateSymsAction /*abstract*/ {
+	virtual void perform() = 0; ///< executes the action
 
-	virtual ~ICmapViewUpdater() = 0 {}
+	virtual ~IUpdateSymsAction() = 0 {}
 };
+
+/// Lock-free queue of size 23 (20 progress notifications + 3 cmap update actions)
+typedef boost::lockfree::queue<IUpdateSymsAction*, boost::lockfree::capacity<23>> LockFreeQueueSz23;
 
 #endif

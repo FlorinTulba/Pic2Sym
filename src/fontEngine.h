@@ -49,14 +49,16 @@
 struct IController;
 struct IGlyphsProgressTracker;
 struct IValidateFont;
+struct IPresentCmap;
 class SymSettings;
 
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine {
 protected:
-	const IController &ctrler;	///< font validation and glyph preprocessing monitor aspects of the Controller
+	const IController &ctrler;	///< cmap presenting, font validation and glyph preprocessing monitor aspects of the Controller
 	const IValidateFont &fontValidator;		///< font validation aspect of the Controller
 	const IGlyphsProgressTracker &glyphsProgress;		///< glyph preprocessing monitor  aspect of the Controller
+	const IPresentCmap &cmapPresenter;		///< cmap presenting aspect of the Controller
 
 	FT_Library library	= nullptr;	///< the FreeType lib
 	FT_Face face		= nullptr;	///< a loaded font

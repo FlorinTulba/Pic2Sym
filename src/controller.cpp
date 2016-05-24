@@ -48,14 +48,12 @@
 
 #ifndef UNIT_TESTING
 #	include "matchSettingsManip.h"
-#	include <opencv2/highgui.hpp>
+#	include <opencv2/core/core.hpp>
 #endif
 
 using namespace std;
-using namespace std::chrono;
 using namespace boost::filesystem;
 using namespace boost::archive;
-using namespace cv;
 
 extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
 extern const unsigned Settings_MIN_H_SYMS;
@@ -129,17 +127,10 @@ void Controller::newImage(const string &imgPath) {
 		imageOk = true;
 	}
 
-	const Mat &orig = img.original();
+	const cv::Mat &orig = img.original();
 	comp.setReference(orig); // displays the image
 
 	comp.resize();
-}
-
-void Controller::symbolsChanged() {
-	fe.setFontSz(cfg.ss.getFontSz());
-	me.updateSymbols();
-	pCmi->setStatus(textForCmapStatusBar());
-	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
 }
 
 bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
@@ -158,8 +149,6 @@ bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = fal
 	if(!fontFamilyOk) {
 		fontFamilyOk = true;
 		pCmi = std::make_shared<CmapInspect>(*this);
-		pCmi->setPos(424, 0);		// Place cmap window on x axis between 424..1064
-		pCmi->permitResize(false);	// Ensure the user sees the symbols exactly their size
 	}
 
 	return true;
@@ -281,25 +270,6 @@ unsigned Controller::getFontSize() const {
 	return cfg.ss.getFontSz();
 }
 
-void Controller::resetCmapView() {
-	if(pCmi)
-		pCmi->reset();
-}
-
-void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
-	if((unsigned)syms.size() != pCmi->getSymsPerPage())
-		return;
-
-	pCmi->setStatus(textForCmapStatusBar(fe.upperSymsCount()));
-
-	const auto fontSz = getFontSize();
-	vector<const Mat> matSyms;
-	for(const auto &pms : syms)
-		matSyms.emplace_back(pms.invToMat(fontSz));
-	
-	pCmi->showUnofficial1stPage(std::move(matSyms));
-}
-
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if((unsigned)threshold != cfg.ms.getBlankThreshold())
 		cfg.ms.setBlankThreshold(threshold);
@@ -345,10 +315,6 @@ void Controller::newGlyphWeightFactor(double k) {
 		cfg.ms.set_kSymDensity(k);
 }
 
-MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
-	return me.getSymsRange(from, maxCount);
-}
-
 void Controller::updateResizedImg(const ResizedImg &resizedImg_) {
 	resizedImg = &resizedImg_;
 }
@@ -359,41 +325,6 @@ bool Controller::performTransformation() {
 
 	t.run();
 	return true;
-}
-
-void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) const {
-	if(done) {
-		reportGlyphProgress(1.);
-
-		const string cmapOverlayText = textForCmapOverlay(elapsed);
-		cout<<cmapOverlayText<<endl<<endl;
-		if(pCmi)
-			pCmi->setOverlay(cmapOverlayText, 3000);
-
-	} else {
-		reportGlyphProgress(0.);
-	}
-}
-
-Timer Controller::createTimerForGlyphs() const {
-	return Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)); // RVO
-}
-
-void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
-	if(done) {
-		reportTransformationProgress(1.);
-
-		const string comparatorOverlayText = textForComparatorOverlay(elapsed);
-		cout<<comparatorOverlayText <<endl<<endl;
-		comp.setOverlay(comparatorOverlayText, 3000);
-
-	} else {
-		reportTransformationProgress(0.);
-	}
-}
-
-Timer Controller::createTimerForImgTransform() const {
-	return Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)); // RVO
 }
 
 void Controller::restoreUserDefaultMatchSettings() {
@@ -479,80 +410,8 @@ void Controller::saveSettings() const {
 	}
 }
 
-extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
-
-Controller::TimerActions_Controller::TimerActions_Controller(const Controller &ctrler_) :
-	ctrler(ctrler_) {}
-
-Controller::TimerActions_SymSetUpdate::TimerActions_SymSetUpdate(const Controller &ctrler_) :
-		TimerActions_Controller(ctrler_) {}
-
-void Controller::TimerActions_SymSetUpdate::onStart() {
-	ctrler.symsSetUpdate();
-}
-
-void Controller::TimerActions_SymSetUpdate::onRelease(double elapsedS) {
-	ctrler.symsSetUpdate(true, elapsedS);
-}
-
-Controller::TimerActions_ImgTransform::TimerActions_ImgTransform(const Controller &ctrler_) :
-		TimerActions_Controller(ctrler_) {}
-
-void Controller::TimerActions_ImgTransform::onStart() {
-	ctrler.imgTransform();
-}
-
-void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
-	ctrler.imgTransform(true, elapsedS);
-}
-
-void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
-	ctrler.reportTransformationProgress(1.);
-	infoMsg(reason);
-}
-
 // Methods from below have different definitions for UnitTesting project
 #ifndef UNIT_TESTING
-
-Controller::~Controller() {
-	destroyAllWindows();
-}
-
-void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
-	static const String waitWin = "Please Wait!";
-	if(progress == 0.) {
-		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
-		moveWindow(waitWin, 0, 400);
-#ifndef _DEBUG // destroyWindow in Debug mode triggers deallocation of invalid block
-	} else if(progress == 1.) {
-		destroyWindow(waitWin);
-#endif // in Debug mode, leaving the hourGlass window visible, but with 100% as title
-	} else {
-		ostringstream oss;
-		if(title.empty())
-			oss<<waitWin;
-		else
-			oss<<title;
-		const string hourGlassText = textHourGlass(oss.str(), progress);
-		setWindowTitle(waitWin, hourGlassText);
-	}
-}
-
-void Controller::reportGlyphProgress(double progress) const {
-	extern const string Controller_PREFIX_GLYPH_PROGRESS;
-	hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS);
-}
-
-void Controller::reportTransformationProgress(double progress) const {
-	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
-	if(0. == progress) {
-		if(nullptr == resizedImg)
-			throw logic_error("Please call Controller::updateResizedImg at the start of transformation!");
-		comp.setReference(resizedImg->get()); // display 'original' when starting transformation
-	} else if(1. == progress) {
-		comp.setResult(t.getResult()); // display the result at the end of the transformation
-	}
-}
 
 #define GET_FIELD(FieldType, ...) \
 	static FieldType field(__VA_ARGS__); \

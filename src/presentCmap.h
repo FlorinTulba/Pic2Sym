@@ -50,6 +50,18 @@ struct IPresentCmap /*abstract*/ : virtual IController {
 	/// Getting the fonts to fill currently displayed page
 	virtual MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
+	/// Prepares for a new font resize operation
+	virtual void resetCmapView() = 0;
+
+	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
+	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;
+
+	/// Updates the Cmap View status bar with the details about the symbols
+	virtual void showUnofficialSymDetails(unsigned symsCount) const = 0;
+
+	/// Reports the duration of the update of the symbols. elapsed is in seconds
+	virtual void reportSymsUpdateDuration(double elapsed) const = 0;
+
 	virtual ~IPresentCmap() = 0 {}
 };
 

@@ -38,7 +38,7 @@
 #include "fontEngine.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
-#include "cmapViewUpdater.h"
+#include "presentCmap.h"
 #include "settings.h"
 #include "misc.h"
 #include "ompTrace.h"
@@ -212,12 +212,11 @@ namespace {
 	}
 } // anonymous namespace
 
-
-
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
 					   fontValidator(dynamic_cast<const IValidateFont&>(ctrler_)),
 					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
-					   ss(ss_), symsCont(dynamic_cast<const ICmapViewUpdater&>(ctrler_)) {
+					   cmapPresenter(dynamic_cast<const IPresentCmap&>(ctrler_)),
+					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) {
 		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
@@ -377,6 +376,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	cout<<"Setting font size "<<fontSz_<<endl;
 
+	double progress = 0.;
+
 	const double sz = fontSz_;
 	vector<tuple<FT_ULong, double, double>> toResize;
 	double factorH, factorV;
@@ -386,14 +387,11 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
 	req.horiResolution = req.vertResolution = 72U;
 
-	double progress = 0.;
-	Timer timer = glyphsProgress.createTimerForGlyphs();
-
 	// 2% for this stage, no reports
 	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
 	symsCont.reset(fontSz_, symsCount);
 
-	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
+	cmapPresenter.showUnofficialSymDetails(symsCount);
 
 	// 90% for this stage, report every 5%
 	const FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
@@ -436,8 +434,6 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	symsCont.setAsReady();
 
 #ifdef _DEBUG
-	timer.pause();
-
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
@@ -456,8 +452,6 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	}
 
 	cout<<endl;
-
-	timer.resume();
 #endif // _DEBUG
 }
 

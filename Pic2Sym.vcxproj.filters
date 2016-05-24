@@ -138,7 +138,7 @@
     <ClInclude Include="src\ompTrace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\cmapViewUpdater.h">
+    <ClInclude Include="src\updateSymsActions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

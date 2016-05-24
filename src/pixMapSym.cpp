@@ -35,7 +35,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cmapViewUpdater.h"
+#include "presentCmap.h"
+#include "pixMapSym.h"
 #include "misc.h"
 
 #include <numeric>
@@ -219,9 +220,9 @@ const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pix
 	return Point2d(sumX, sumY) / (255. * glyphSum_);
 }
 
-PmsCont::PmsCont(const ICmapViewUpdater &cmapViewUpdater_) :
-		// methods from ICmapViewUpdater are non-const => removing const:
-		cmapViewUpdater(const_cast<ICmapViewUpdater&>(cmapViewUpdater_)) {}
+PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
+		// Some methods from IPresentCmap are non-const => removing const:
+		cmapViewUpdater(cmapViewUpdater_) {}
 
 unsigned PmsCont::getFontSz() const {
 	if(!ready) {
@@ -278,7 +279,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	syms.clear();
 	if(symsCount != 0U)
 		syms.reserve(symsCount);
-	cmapViewUpdater.resetCmapView();
+	const_cast<IPresentCmap&>(cmapViewUpdater).resetCmapView();
 
 	consec = Mat(1, fontSz_, CV_64FC1);
 	revConsec.release();
@@ -313,7 +314,7 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 			}
 		syms.push_back(move(pmc));
 
-		cmapViewUpdater.display1stPageIfFull(syms);
+		const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
 	}
 }
 

@@ -42,57 +42,49 @@
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif
 
-#include "../src/settings.h"
-#include "../src/img.h"
-#include "../src/controller.h"
-
-#include <opencv2/core.hpp>
-
-class Controller; // The views defined below interact with this class
-
 class CvWin /*abstract*/ {
 protected:
-	CvWin(const cv::String&) {}
+	CvWin(...) {}
 
 public:
-	void setTitle(const std::string&) const {}
-	void setOverlay(const std::string&, int = 0) const {}
-	void setStatus(const std::string&, int = 0) const {}
-	void setPos(int, int) const {}
-	void permitResize(bool = true) const {}
+	void setTitle(...) const {}
+	void setOverlay(...) const {}
+	void setStatus(...) const {}
+	void setPos(...) const {}
+	void permitResize(...) const {}
+	void resize(...) const {}
+};
+
+class Comparator : public CvWin {
+public:
+	Comparator(...) : CvWin(nullptr) {}
+	static void updateTransparency(...) {}
+	void setReference(...) {}
+	void setResult(...) {}
+	using CvWin::resize; // to remain visible after declaring an overload below
 	void resize(int, int) const {}
 };
 
-class Comparator final : public CvWin {
+class CmapInspect : public CvWin {
 public:
-	Comparator(void** /*hackParam*/ = nullptr) : CvWin("") {}
-	static void updateTransparency(int, void*) {}
-	void setReference(const cv::Mat&) {}
-	void setResult(const cv::Mat&,int=0) {}
-	using CvWin::resize; // to remain visible after declaring an overload below
-	void resize() const {}
-};
-
-class CmapInspect final : public CvWin {
-public:
-	CmapInspect(const Controller &c) : CvWin("") {}
-	static void updatePageIdx(int, void*) {}
-	void updatePagesCount(unsigned) {}
+	CmapInspect(...) : CvWin(nullptr) {}
+	static void updatePageIdx(...) {}
+	void updatePagesCount(...) {}
 	void updateGrid() {}
-	void showPage(unsigned) {}
+	void showPage(...) {}
 	unsigned getSymsPerPage() { return 0U; }
 	void reset() {}
-	void showUnofficial1stPage(const std::vector<const cv::Mat>&&) {}
+	void showUnofficial1stPage(...) {}
 };
 
-class ControlPanel final {
+class ControlPanel {
 public:
-	ControlPanel(Controller&, const Settings&) {}
-	void updateEncodingsCount(unsigned) {}
+	ControlPanel(...) {}
+	void updateEncodingsCount(...) {}
 	bool encMaxHack() const { return false; }
-	void updateMatchSettings(const MatchSettings&) {}
-	void updateImgSettings(const ImgSettings&) {}
-	void updateSymSettings(unsigned, unsigned) {}
+	void updateMatchSettings(...) {}
+	void updateImgSettings(...) {}
+	void updateSymSettings(...) {}
 };
 
 #endif

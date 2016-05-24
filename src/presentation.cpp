@@ -39,17 +39,21 @@
 #include "settings.h"
 #include "matchParams.h"
 #include "controlPanel.h"
+#include "updateSymsActions.h"
 #include "views.h"
 #include "dlgs.h"
 #include "misc.h"
 
 #include <iomanip>
 #include <functional>
+#include <thread>
 
 #include <opencv2/highgui.hpp>
 
 using namespace std;
+using namespace std::chrono;
 using namespace boost;
+using namespace boost::lockfree;
 using namespace cv;
 
 void pauseAfterError() {
@@ -110,6 +114,24 @@ ostream& operator<<(ostream &os, const MatchSettings &c) {
 	return os;
 }
 
+namespace {
+	/// Common realization of IUpdateSymsAction
+	struct UpdateSymsAction : IUpdateSymsAction {
+	protected:
+		std::function<void()> fn; ///< the function to be called by perform, that has access to private fields & methods
+
+	public:
+		/// Creating an action object that performs the tasks described in fn_
+		UpdateSymsAction(std::function<void()> fn_) : fn(fn_) {}
+
+		void perform() override {
+			fn();
+		}
+	};
+}
+
+extern const string Controller_PREFIX_GLYPH_PROGRESS;
+
 Controller::Controller(Settings &s) :
 		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
 		me(getMatchEngine(s)), t(getTransformer(s)),
@@ -161,7 +183,162 @@ const string Controller::textHourGlass(const std::string &prefix, double progres
 	return oss.str();
 }
 
+void Controller::resetCmapView() {
+	if(pCmi)
+		pCmi->reset();
+}
+
+MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
+	return me.getSymsRange(from, maxCount);
+}
+
+void Controller::showUnofficialSymDetails(unsigned symsCount) const {
+	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
+
+	// placing a task in the queue for the GUI updating thread
+	updateSymsActionsQueue.push(new UpdateSymsAction([&, symsCount] {
+		pCmi->setStatus(textForCmapStatusBar(symsCount));
+	}));
+}
+
+void Controller::reportSymsUpdateDuration(double elapsed) const {
+	const string cmapOverlayText = textForCmapOverlay(elapsed);
+	cout<<cmapOverlayText<<endl<<endl;
+	pCmi->setOverlay(cmapOverlayText, 3000);
+}
+
+void Controller::symbolsChanged() {
+	// Timing the update.
+	// timer's destructor will report duration and will close the hourglass window.
+	// These actions will be launched in this GUI updating thread,
+	// after processing all previously registered actions.
+	Timer timer = createTimerForGlyphs();
+
+	updatingSymbols.test_and_set();
+	updating1stCmapPage.clear();
+
+	// Starting a thread to perform the actual change of the symbols,
+	// while preserving this thread for GUI updating
+	auto pCtrler = this; // Used to be passed by value to the action pushed in the updateSymsActionsQueue
+	thread([&, pCtrler] {
+		fe.setFontSz(cfg.ss.getFontSz());
+		me.updateSymbols();
+
+		// Symbols have been changed in the model. Only GUI must be updated
+		// The GUI will display the 1st cmap page.
+		// This must happen after an eventual early preview of it:
+		// - we need to wait for the preview to finish if it started before this point
+		// - we have to prevent an available preview to be displayed after the official version
+		while(updating1stCmapPage.test_and_set())
+			this_thread::sleep_for(milliseconds(1));
+
+		auto pCmiCopy = pCmi;
+		updateSymsActionsQueue.push(new UpdateSymsAction([&, pCtrler, pCmiCopy] {
+			// Official versions of the status bar and the 1st cmap page
+			pCmiCopy->setStatus(pCtrler->textForCmapStatusBar());
+			pCmiCopy->updatePagesCount((unsigned)pCtrler->fe.symsSet().size());
+		}));
+
+		updatingSymbols.clear(); // signal that the work has finished
+	}).detach(); // termination captured by updatingSymbols flag
+
+	IUpdateSymsAction *evt = nullptr;
+	auto performRegisteredActions = [&] { // lambda used twice below
+		while(updateSymsActionsQueue.pop(evt)) { // perform available actions
+			evt->perform();
+			delete evt;
+			waitKey(1);
+		}
+	};
+
+	while(updatingSymbols.test_and_set()) // loop while work is carried out
+		performRegisteredActions();
+	performRegisteredActions(); // perform any remaining actions
+}
+
+void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
+	if((unsigned)syms.size() != pCmi->getSymsPerPage())
+		return;
+
+	// Starting the thread that builds the 'pre-release' version of the 1st cmap page
+	thread([&, syms] {
+		vector<const Mat> matSyms;
+		const auto fontSz = getFontSize();
+		for(const auto &pms : syms)
+			matSyms.emplace_back(pms.invToMat(fontSz));
+		
+		const_cast<vector<const PixMapSym>&>(syms).clear(); // discard local copy of the vector
+
+		pCmi->showUnofficial1stPage(matSyms, updating1stCmapPage, updateSymsActionsQueue);
+	}).detach(); // termination doesn't matter
+}
+
+void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) const {
+	if(done) {
+		hourGlass(1., Controller_PREFIX_GLYPH_PROGRESS);
+		reportSymsUpdateDuration(elapsed);
+
+	} else {
+		reportGlyphProgress(0.);
+	}
+}
+
+Timer Controller::createTimerForGlyphs() const {
+	return Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)); // RVO
+}
+
+void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
+	if(done) {
+		reportTransformationProgress(1.);
+
+		const string comparatorOverlayText = textForComparatorOverlay(elapsed);
+		cout<<comparatorOverlayText <<endl<<endl;
+		comp.setOverlay(comparatorOverlayText, 3000);
+
+	} else {
+		reportTransformationProgress(0.);
+	}
+}
+
+Timer Controller::createTimerForImgTransform() const {
+	return Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)); // RVO
+}
+
+Controller::TimerActions_Controller::TimerActions_Controller(const Controller &ctrler_) :
+		ctrler(ctrler_) {}
+
+Controller::TimerActions_SymSetUpdate::TimerActions_SymSetUpdate(const Controller &ctrler_) :
+		TimerActions_Controller(ctrler_) {}
+
+void Controller::TimerActions_SymSetUpdate::onStart() {
+	ctrler.symsSetUpdate();
+}
+
+void Controller::TimerActions_SymSetUpdate::onRelease(double elapsedS) {
+	ctrler.symsSetUpdate(true, elapsedS);
+}
+
+Controller::TimerActions_ImgTransform::TimerActions_ImgTransform(const Controller &ctrler_) :
+TimerActions_Controller(ctrler_) {}
+
+void Controller::TimerActions_ImgTransform::onStart() {
+	ctrler.imgTransform();
+}
+
+void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
+	ctrler.imgTransform(true, elapsedS);
+}
+
+void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
+	ctrler.reportTransformationProgress(1.);
+	infoMsg(reason);
+}
+
 #ifndef UNIT_TESTING
+Controller::~Controller() {
+	destroyAllWindows();
+}
+
 void Controller::handleRequests() {
 	for(;;) {
 		// When pressing ESC, prompt the user if he wants to exit
@@ -171,6 +348,45 @@ void Controller::handleRequests() {
 		   break;
 	}
 }
+
+void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
+	static const String waitWin = "Please Wait!";
+	if(progress == 0.) {
+		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
+		moveWindow(waitWin, 0, 400);
+#ifndef _DEBUG // destroyWindow in Debug mode triggers deallocation of invalid block
+	} else if(progress == 1.) {
+		destroyWindow(waitWin);
+#endif // in Debug mode, leaving the hourGlass window visible, but with 100% as title
+	} else {
+		ostringstream oss;
+		if(title.empty())
+			oss<<waitWin;
+		else
+			oss<<title;
+		const string hourGlassText = textHourGlass(oss.str(), progress);
+		setWindowTitle(waitWin, hourGlassText);
+	}
+}
+
+void Controller::reportGlyphProgress(double progress) const {
+	updateSymsActionsQueue.push(new UpdateSymsAction([&, progress] {
+		hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS);
+	}));
+}
+
+void Controller::reportTransformationProgress(double progress) const {
+	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
+	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
+	if(0. == progress) {
+		if(nullptr == resizedImg)
+			throw logic_error("Please call Controller::updateResizedImg at the start of transformation!");
+		comp.setReference(resizedImg->get()); // display 'original' when starting transformation
+	} else if(1. == progress) {
+		comp.setResult(t.getResult()); // display the result at the end of the transformation
+	}
+}
+
 #endif
 
 string MatchEngine::getIdForSymsToUse() {
@@ -234,13 +450,12 @@ void Comparator::resize() const {
 }
 
 extern const Size CmapInspect_pageSz;
-extern const String CmapInspect_pageTrackName;
 
 namespace {
 
 	/// type of a function extracting the negative mask from an iterator
 	template<typename Iterator>
-	using NegSymExtractor = function<const Mat(const typename Iterator&)>;
+	using NegSymExtractor = std::function<const Mat(const typename Iterator&)>;
 
 	/**
 	Creates a page from the cmap to be displayed within the Cmap View.
@@ -281,22 +496,44 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 				   content, grid, cmapPresenter);
 }
 
-void CmapInspect::showUnofficial1stPage(const vector<const Mat> &&symsOn1stPage) {
+void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
+										atomic_flag &updating1stCmapPage,
+										LockFreeQueueSz23 &updateSymsActionsQueue) {
+	std::shared_ptr<Mat> unofficial = std::make_shared<Mat>();
 	::populateGrid(CBOUNDS(symsOn1stPage),
 				   (NegSymExtractor<vector<const Mat>::const_iterator>) // conversion
 				   [](const vector<const Mat>::const_iterator &iter) { return *iter; },
-				   content, grid, cmapPresenter);
-	imshow(winName, content);
-	waitKey(1); // ensures the page does get displayed
+				   *unofficial, grid, cmapPresenter);
+
+	symsOn1stPage.clear(); // discard values now
+
+	// If the main worker didn't register its intention to render already the official 1st cmap page
+	// display the unofficial early version.
+	// Otherwise just leave
+	if(!updating1stCmapPage.test_and_set()) { // holds the value on true after acquiring it
+		// Creating local copies that can be passed by value to Unofficial1stPageCmap's parameter
+		auto *pUpdating1stCmapPage = &updating1stCmapPage;
+		const auto winNameCopy = winName;
+
+		updateSymsActionsQueue.push(new UpdateSymsAction([pUpdating1stCmapPage, winNameCopy, unofficial] {
+			imshow(winNameCopy, *unofficial);
+
+			pUpdating1stCmapPage->clear(); // puts its value on false, to be acquired by the official version publisher
+		}));
+	}
 }
 
 CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
 		CvWin("Charmap View"), cmapPresenter(cmapPresenter_), grid(content = createGrid()) {
 	reset();
 
+	extern const String CmapInspect_pageTrackName;
 	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
 	CmapInspect::updatePageIdx(page, reinterpret_cast<void*>(this)); // mandatory
+
+	setPos(424, 0);			// Place cmap window on x axis between 424..1064
+	permitResize(false);	// Ensure the user sees the symbols exactly their size
 }
 
 void CmapInspect::reset() {

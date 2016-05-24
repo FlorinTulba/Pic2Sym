@@ -45,6 +45,9 @@
 
 #include "matchEngine.h"
 #include "img.h"
+#include "updateSymsActions.h"
+
+#include <atomic>
 
 #include <opencv2/core.hpp>
 
@@ -156,8 +159,10 @@ public:
 
 	unsigned getSymsPerPage() const { return symsPerPage; }
 
-	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view
-	void showUnofficial1stPage(const std::vector<const cv::Mat> &&symsOn1stPage);
+	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
+	void showUnofficial1stPage(std::vector<const cv::Mat> &symsOn1stPage,
+							   std::atomic_flag &updating1stCmapPage,
+							   LockFreeQueueSz23 &updateSymsActionsQueue);
 
 	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
 	void updateGrid();							///< Changing font size must update also the grid
