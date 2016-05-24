@@ -38,6 +38,8 @@
 
 #include "symSettings.h"
 
+#include <iostream>
+
 using namespace std;
 
 void SymSettings::setFontFile(const std::string &fontFile_) {
