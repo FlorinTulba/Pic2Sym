@@ -42,6 +42,7 @@
 #include "propsReader.h"
 
 #include <fstream>
+#include <iostream>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/scope_exit.hpp>

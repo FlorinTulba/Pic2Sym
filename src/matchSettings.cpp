@@ -37,6 +37,8 @@
 
 #include "matchSettingsManip.h"
 
+#include <iostream>
+
 using namespace std;
 
 #ifndef UNIT_TESTING
