@@ -81,7 +81,7 @@ protected:
 	bool fontSzOk;
 
 	// synchronization items necessary while updating symbols
-	mutable LockFreeQueueSz23 updateSymsActionsQueue;
+	mutable LockFreeQueueSz22 updateSymsActionsQueue;
 	std::atomic_flag updatingSymbols;	///< stays true while updating the symbols
 	std::atomic_flag updating1stCmapPage;	///< controls concurrent attempts to update 1st page
 	/// Stores the events occurred while updating the symbols.

@@ -162,7 +162,7 @@ public:
 	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
 	void showUnofficial1stPage(std::vector<const cv::Mat> &symsOn1stPage,
 							   std::atomic_flag &updating1stCmapPage,
-							   LockFreeQueueSz23 &updateSymsActionsQueue);
+							   LockFreeQueueSz22 &updateSymsActionsQueue);
 
 	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
 	void updateGrid();							///< Changing font size must update also the grid

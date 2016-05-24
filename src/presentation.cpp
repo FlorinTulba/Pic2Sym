@@ -219,8 +219,7 @@ void Controller::symbolsChanged() {
 
 	// Starting a thread to perform the actual change of the symbols,
 	// while preserving this thread for GUI updating
-	auto pCtrler = this; // Used to be passed by value to the action pushed in the updateSymsActionsQueue
-	thread([&, pCtrler] {
+	thread([&] {
 		fe.setFontSz(cfg.ss.getFontSz());
 		me.updateSymbols();
 
@@ -231,14 +230,6 @@ void Controller::symbolsChanged() {
 		// - we have to prevent an available preview to be displayed after the official version
 		while(updating1stCmapPage.test_and_set())
 			this_thread::sleep_for(milliseconds(1));
-
-		auto pCmiCopy = pCmi;
-		updateSymsActionsQueue.push(new UpdateSymsAction([&, pCtrler, pCmiCopy] {
-			// Official versions of the status bar and the 1st cmap page
-			pCmiCopy->setStatus(pCtrler->textForCmapStatusBar());
-			pCmiCopy->updatePagesCount((unsigned)pCtrler->fe.symsSet().size());
-		}));
-
 		updatingSymbols.clear(); // signal that the work has finished
 	}).detach(); // termination captured by updatingSymbols flag
 
@@ -254,6 +245,10 @@ void Controller::symbolsChanged() {
 	while(updatingSymbols.test_and_set()) // loop while work is carried out
 		performRegisteredActions();
 	performRegisteredActions(); // perform any remaining actions
+
+	// Official versions of the status bar and the 1st cmap page
+	pCmi->setStatus(textForCmapStatusBar());
+	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
 }
 
 void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
@@ -498,7 +493,7 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
 
 void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 										atomic_flag &updating1stCmapPage,
-										LockFreeQueueSz23 &updateSymsActionsQueue) {
+										LockFreeQueueSz22 &updateSymsActionsQueue) {
 	std::shared_ptr<Mat> unofficial = std::make_shared<Mat>();
 	::populateGrid(CBOUNDS(symsOn1stPage),
 				   (NegSymExtractor<vector<const Mat>::const_iterator>) // conversion
