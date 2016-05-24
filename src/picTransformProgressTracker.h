@@ -42,16 +42,21 @@
 #include "controllerBase.h"
 #include "timing.h"
 
-/**
-Interface to monitor the progress of loading and preprocessing a charmap.
-*/
+/// Interface to monitor the progress of loading and preprocessing a charmap.
 struct IPicTransformProgressTracker /*abstract*/ : virtual IController {
 	virtual void updateResizedImg(const ResizedImg &resizedImg_) = 0;
 
+	/// An hourglass window displays the progress (0..1) of the transformation in %.
 	virtual void reportTransformationProgress(double progress) const = 0;
-	
-	/// Called by TimerActions_ImgTransform from below when starting and ending the image transformation
-	virtual void imgTransform(bool done = false, double elapsed = 0.) const = 0;
+
+	/**
+	Present the partial / final result after the transformation has been canceled / has finished.
+	When the transformation completes, there'll be a report about the duration of the process.
+	Otherwise, durationS will have its default negative value and no duration report will be issued.
+
+	@param durationS the duration of the transformation in seconds or a negative value for aborted transformations
+	*/
+	virtual void presentTransformationResults(double durationS = -1.) const = 0;
 
 	/// Creates the monitor to time the picture approximation process
 	virtual Timer createTimerForImgTransform() const = 0;

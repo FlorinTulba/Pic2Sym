@@ -268,31 +268,8 @@ void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
 	}).detach(); // termination doesn't matter
 }
 
-void Controller::symsSetUpdate(bool done/* = false*/, double elapsed/* = 0.*/) const {
-	if(done) {
-		hourGlass(1., Controller_PREFIX_GLYPH_PROGRESS);
-		reportSymsUpdateDuration(elapsed);
-
-	} else {
-		reportGlyphProgress(0.);
-	}
-}
-
 Timer Controller::createTimerForGlyphs() const {
 	return Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)); // RVO
-}
-
-void Controller::imgTransform(bool done/* = false*/, double elapsed/* = 0.*/) const {
-	if(done) {
-		reportTransformationProgress(1.);
-
-		const string comparatorOverlayText = textForComparatorOverlay(elapsed);
-		cout<<comparatorOverlayText <<endl<<endl;
-		comp.setOverlay(comparatorOverlayText, 3000);
-
-	} else {
-		reportTransformationProgress(0.);
-	}
 }
 
 Timer Controller::createTimerForImgTransform() const {
@@ -306,26 +283,28 @@ Controller::TimerActions_SymSetUpdate::TimerActions_SymSetUpdate(const Controlle
 		TimerActions_Controller(ctrler_) {}
 
 void Controller::TimerActions_SymSetUpdate::onStart() {
-	ctrler.symsSetUpdate();
+	ctrler.reportGlyphProgress(0.);
 }
 
 void Controller::TimerActions_SymSetUpdate::onRelease(double elapsedS) {
-	ctrler.symsSetUpdate(true, elapsedS);
+	ctrler.updateSymsDone(elapsedS);
 }
 
 Controller::TimerActions_ImgTransform::TimerActions_ImgTransform(const Controller &ctrler_) :
-TimerActions_Controller(ctrler_) {}
+		TimerActions_Controller(ctrler_) {}
 
 void Controller::TimerActions_ImgTransform::onStart() {
-	ctrler.imgTransform();
+	ctrler.reportTransformationProgress(0.);
 }
 
 void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
-	ctrler.imgTransform(true, elapsedS);
+	ctrler.reportTransformationProgress(1.);
+	ctrler.presentTransformationResults(elapsedS);
 }
 
 void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
 	ctrler.reportTransformationProgress(1.);
+	ctrler.presentTransformationResults();
 	infoMsg(reason);
 }
 
@@ -370,15 +349,22 @@ void Controller::reportGlyphProgress(double progress) const {
 	}));
 }
 
+void Controller::updateSymsDone(double durationS) const {
+	hourGlass(1., Controller_PREFIX_GLYPH_PROGRESS);
+	reportSymsUpdateDuration(durationS);
+}
+
 void Controller::reportTransformationProgress(double progress) const {
 	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
 	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
-	if(0. == progress) {
-		if(nullptr == resizedImg)
-			throw logic_error("Please call Controller::updateResizedImg at the start of transformation!");
-		comp.setReference(resizedImg->get()); // display 'original' when starting transformation
-	} else if(1. == progress) {
-		comp.setResult(t.getResult()); // display the result at the end of the transformation
+}
+
+void Controller::presentTransformationResults(double durationS/* = -1.*/) const {
+	comp.setResult(t.getResult()); // display the result at the end of the transformation
+	if(durationS > 0.) {
+		const string comparatorOverlayText = textForComparatorOverlay(durationS);
+		cout<<comparatorOverlayText <<endl<<endl;
+		comp.setOverlay(comparatorOverlayText, 3000);
 	}
 }
 

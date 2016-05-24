@@ -48,8 +48,8 @@ struct IGlyphsProgressTracker /*abstract*/ : virtual IController {
 	/// Report progress about loading, adapting glyphs
 	virtual void reportGlyphProgress(double progress) const = 0;
 
-	/// Called when starting and ending the update of the symbol set
-	virtual void symsSetUpdate(bool done = false, double elapsed = 0.) const = 0;
+	/// Report duration of the update of the symbols and close the hourglass
+	virtual void updateSymsDone(double durationS) const = 0;
 
 	/// Creates the monitor to time the glyph loading and preprocessing
 	virtual Timer createTimerForGlyphs() const = 0;

@@ -251,11 +251,15 @@ Controller::~Controller() {}
 
 void Controller::handleRequests() {}
 
-void Controller::hourGlass(double progress, const string &title/* = ""*/) const {}
+void Controller::hourGlass(double, const string&) const {}
 
-void Controller::reportGlyphProgress(double progress) const {}
+void Controller::reportGlyphProgress(double) const {}
 
-void Controller::reportTransformationProgress(double progress) const {}
+void Controller::updateSymsDone(double) const {}
+
+void Controller::reportTransformationProgress(double) const {}
+
+void Controller::presentTransformationResults(double) const {}
 
 bool Controller::newImage(const Mat &imgMat) {
 	bool result = img.reset(imgMat);

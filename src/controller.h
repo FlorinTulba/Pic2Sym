@@ -181,15 +181,13 @@ public:
 	// Implementation of IGlyphsProgressTracker below
 	/// Report progress about loading, adapting glyphs
 	void reportGlyphProgress(double progress) const override;
-	/// Called by TimerActions_SymSetUpdate from below when starting and ending the update of the symbol set
-	void symsSetUpdate(bool done = false, double elapsed = 0.) const override;
+	void updateSymsDone(double durationS) const override;
 	Timer createTimerForGlyphs() const override; ///< Creates the monitor to time the glyph loading and preprocessing
 
 	// Implementation of IPicTransformProgressTracker below
 	void updateResizedImg(const ResizedImg &resizedImg_) override;
 	void reportTransformationProgress(double progress) const override;
-	/// Called by TimerActions_ImgTransform from below when starting and ending the image transformation
-	void imgTransform(bool done = false, double elapsed = 0.) const override;
+	void presentTransformationResults(double durationS = -1.) const override;
 	Timer createTimerForImgTransform() const override; ///< Creates the monitor to time the picture approximation process
 
 	/// Base class for TimerActions_SymSetUpdate and TimerActions_ImgTransform

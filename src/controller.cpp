@@ -317,6 +317,7 @@ void Controller::newGlyphWeightFactor(double k) {
 
 void Controller::updateResizedImg(const ResizedImg &resizedImg_) {
 	resizedImg = &resizedImg_;
+	comp.setReference(resizedImg->get());
 }
 
 bool Controller::performTransformation() {

@@ -75,6 +75,8 @@ Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Sett
 }
 
 void Transformer::run() {
+	Timer timer = ctrler.createTimerForImgTransform();
+
 	me.updateSymbols(); // throws for invalid cmap/size
 
 	// throws when no image
@@ -82,9 +84,6 @@ void Transformer::run() {
 	const_cast<IPicTransformProgressTracker&>(ctrler).updateResizedImg(resizedImg);
 	const Mat &resized = resizedImg.get();
 	const bool isColor = img.isColor();
-	
-	// keep this after ResizedImg, to display updated resized version as comparing image
-	Timer timer = ctrler.createTimerForImgTransform();
 
 	const string &studiedCase = textStudiedCase(resized.rows, resized.cols);
 
@@ -162,12 +161,12 @@ void Transformer::run() {
 			concat("_").concat(to_string(time(nullptr))).concat(".jpg");
 	}
 
-	timer.pause(); // pause and resume have no effect when timer is canceled
+	timer.pause(); // pause has no effect when timer is canceled
 
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
 
-	timer.resume(); // optional, since the function returns after the #endif
+	timer.resume(); // resume has no effect when timer is canceled
 #endif
 }
 
