@@ -153,13 +153,16 @@ void Transformer::run() {
 		}
 	} // rows loop
 
+#ifndef UNIT_TESTING
 	if(isCanceled) {
 		timer.cancel("Image transformation was canceled!");
-		return;
+		
+		// still saving the partial result, but with a timestamp before the jpg extension
+		resultFile = resultFile.replace_extension().
+			concat("_").concat(to_string(time(nullptr))).concat(".jpg");
 	}
 
-#ifndef UNIT_TESTING
-	timer.pause();
+	timer.pause(); // pause and resume have no effect when timer is canceled
 
 	cout<<"Writing result to "<<resultFile<<endl<<endl;
 	imwrite(resultFile.string(), result);
