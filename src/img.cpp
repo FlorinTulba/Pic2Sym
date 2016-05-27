@@ -93,7 +93,8 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 	vMaxSyms = syms;
 }
 
-ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz) : original(img) {
+ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_) :
+		patchSz(patchSz_), original(img) {
 	const Mat &source = img.original();
 	if(source.empty()) {
 		cerr<<"No image set yet"<<endl;
@@ -123,4 +124,12 @@ ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz) 
 	}
 
 	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
+}
+
+bool ResizedImg::operator==(const ResizedImg &other) const {
+	return (this == &other) ||
+			(patchSz == other.patchSz && res.size == other.res.size &&
+			res.channels() == other.res.channels() &&
+			res.type() == other.res.type() &&
+			sum(res != other.res) == Scalar());
 }

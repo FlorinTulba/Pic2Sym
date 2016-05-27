@@ -126,7 +126,12 @@ static READ_INT_PROP(BlurWindowSize);
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
 extern READ_DOUBLE_PROP(BlurStandardDeviation);
 
+extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement);
+
 #ifndef UNIT_TESTING
+
+extern READ_UINT_PROP(SymsBatch_trackMax);
+extern READ_UINT_PROP(SymsBatch_defaultSz);
 
 extern READ_INT_PROP(Comparator_trackMax);
 extern READ_DOUBLE_PROP(Comparator_defaultTransparency);
@@ -159,6 +164,7 @@ extern READ_STR_PROP_CONVERT(ControlPanel_loadSettingsLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_saveSettingsLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_fontSzTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_encodingTrName, String);
+extern READ_STR_PROP_CONVERT(ControlPanel_symsBatchSzTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_hybridResultTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_structuralSimTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_underGlyphCorrectnessTrName, String);

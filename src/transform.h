@@ -46,8 +46,10 @@
 
 #include <opencv2/imgcodecs.hpp>
 
+// forward declarations
 class Settings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
+class Timer;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
@@ -58,11 +60,28 @@ protected:
 	MatchEngine &me;			///< approximating patches
 	Img &img;					///< current image to process
 
+	volatile bool isCanceled = false;	///< has the process been canceled?
 	cv::Mat result;				///< the result of the transformation
-	
-	const std::string textStudiedCase(int rows, int cols) const;
 
-	void createOutputFolder();
+	std::string studiedCase;	///< unique id for the studied case
+	cv::Mat resized;			///< resize of the original
+	cv::Mat resizedBlurred;		///< blurred version of the resized original
+	bool isColor = false;		///< is the image to approximate color?
+	int w = 0;					///< width of the resized image
+	int h = 0;					///< height of the resized image
+	unsigned sz = 0U;			///< font size used during transformation
+	unsigned symsCount = 0U;	///< symbols count within the used cmap
+	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
+	volatile unsigned symsBatchSz;	///< runtime control of how large next symbol batches are
+
+	void updateStudiedCase(int rows, int cols); ///< Updates the unique id for the studied case
+
+	/// Makes sure draftMatches will be computed for correct resized img
+	void initDraftMatches(bool newResizedImg, const cv::Mat &resizedVersion,
+						  unsigned patchesPerCol, unsigned patchesPerRow);
+
+	/// Improves the result by analyzing the symbols in range [fromIdx, upperIdx).
+	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx);
 
 public:
 	Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
@@ -71,6 +90,13 @@ public:
 	void run();	///< applies the configured transformation onto current/new image
 
 	const cv::Mat& getResult() const { return result; }
+
+	/**
+	Updates symsBatchSz.
+	@param symsBatchSz_ the value to set. If 0 is provided, batching symbols
+		gets disabled for the rest of the transformation, ignoring any new slider positions.
+	*/
+	void setSymsBatchSize(int symsBatchSz_);
 };
 
 #endif

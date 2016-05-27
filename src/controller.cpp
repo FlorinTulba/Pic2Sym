@@ -36,6 +36,7 @@
  ****************************************************************************************/
 
 #include "controller.h"
+#include "matchParams.h"
 #include "misc.h"
 #include "dlgs.h"
 #include "settings.h"
@@ -129,7 +130,6 @@ void Controller::newImage(const string &imgPath) {
 
 	const cv::Mat &orig = img.original();
 	comp.setReference(orig); // displays the image
-
 	comp.resize();
 }
 
@@ -225,6 +225,10 @@ void Controller::newFontSize(int fontSz) {
 	symbolsChanged();
 }
 
+void Controller::newSymsBatchSize(int symsBatchSz) {
+	t.setSymsBatchSize(symsBatchSz);
+}
+
 void Controller::newHmaxSyms(int maxSymbols) {
 	if(!Settings::isHmaxSymsOk(maxSymbols)) {
 		hMaxSymsOk = false;
@@ -315,9 +319,19 @@ void Controller::newGlyphWeightFactor(double k) {
 		cfg.ms.set_kSymDensity(k);
 }
 
-void Controller::updateResizedImg(const ResizedImg &resizedImg_) {
-	resizedImg = &resizedImg_;
+bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
+	if(!resizedImg_)
+		throw invalid_argument("Provided nullptr param to " __FUNCTION__);
+
+	const bool result = !resizedImg || (*resizedImg != *resizedImg_);
+
+	if(result)
+		resizedImg = resizedImg_;
 	comp.setReference(resizedImg->get());
+	if(result)
+		comp.resize();
+
+	return result;
 }
 
 bool Controller::performTransformation() {

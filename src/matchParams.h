@@ -154,6 +154,9 @@ struct BestMatch {
 	/// score of the best match. If patch approximation is blur-based only, score will remain -inf
 	double score = std::numeric_limits<double>::lowest();
 
+	/// Resets everything apart the patch
+	BestMatch& reset();
+
 	/// Called when finding a better match. Returns itself
 	BestMatch& update(double score_, unsigned long symCode_, 
 					  unsigned symIdx_, const SymData &sd,

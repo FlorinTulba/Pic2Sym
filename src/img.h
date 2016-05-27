@@ -90,7 +90,8 @@ public:
 /// ResizedImg is the version of the original image which is ready to be transformed
 class ResizedImg {
 protected:
-	cv::Mat res; ///< the resized image
+	unsigned patchSz;		///< patch / font size
+	cv::Mat res;			///< the resized image
 
 public:
 	const Img &original; ///< reference to initial image
@@ -100,9 +101,12 @@ public:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
-	ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz);
+	ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_);
 
 	const cv::Mat& get() const { return res; }
+
+	bool operator==(const ResizedImg &other) const;
+	bool operator!=(const ResizedImg &other) const { return !(*this == other); }
 };
 
 #endif

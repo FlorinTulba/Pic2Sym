@@ -44,19 +44,23 @@
 
 /// Interface to monitor the progress of loading and preprocessing a charmap.
 struct IPicTransformProgressTracker /*abstract*/ : virtual IController {
-	virtual void updateResizedImg(const ResizedImg &resizedImg_) = 0;
+	/// Returns true if transforming a new image or the last one, but under other image parameters
+	virtual bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) = 0;
 
-	/// An hourglass window displays the progress (0..1) of the transformation in %.
-	virtual void reportTransformationProgress(double progress) const = 0;
+	/**
+	An hourglass window displays the progress [0..1] of the transformation in %.
+	If showDraft is true, and a draft is available, it will be presented within Comparator window.
+	*/
+	virtual void reportTransformationProgress(double progress, bool showDraft = false) const = 0;
 
 	/**
 	Present the partial / final result after the transformation has been canceled / has finished.
 	When the transformation completes, there'll be a report about the duration of the process.
-	Otherwise, durationS will have its default negative value and no duration report will be issued.
+	Otherwise, completionDurationS will have its default negative value and no duration report will be issued.
 
-	@param durationS the duration of the transformation in seconds or a negative value for aborted transformations
+	@param completionDurationS the duration of the transformation in seconds or a negative value for aborted transformations
 	*/
-	virtual void presentTransformationResults(double durationS = -1.) const = 0;
+	virtual void presentTransformationResults(double completionDurationS = -1.) const = 0;
 
 	/// Creates the monitor to time the picture approximation process
 	virtual Timer createTimerForImgTransform() const = 0;

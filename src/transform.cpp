@@ -68,113 +68,228 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
+#ifndef UNIT_TESTING
+
+/// Tackles the problems related to saved results
+struct ResultFileManager {
+	volatile bool &isCanceled;	///< monitors if the process of the file was canceled
+	Mat &result;				///< reference to the result
+	path resultFile;			///< path of the result
+	Timer &timer;				///< reference to the timer used for the current transformation
+	bool alreadyProcessedCase = false;	///< previously studied cases don't need reprocessing
+
+	/// Creates 'Output' directory which stores generated results
+	static void createOutputFolder() {
+		// Ensure there is an Output folder
+		path outputFolder = MatchSettingsManip::instance().getWorkDir();
+		if(!exists(outputFolder.append("Output")))
+			create_directory(outputFolder);
+	}
+
+	bool detectedPreviouslyProcessedCase() const { return alreadyProcessedCase; }
+
+	ResultFileManager(const string &studiedCase, ///< unique id describing the transformation params
+					  volatile bool &isCanceled_,
+					  Mat &result_,
+					  Timer &timer_) :
+			isCanceled(isCanceled_), result(result_), timer(timer_) {
+		static bool outputFolderCreated = false;
+		if(!outputFolderCreated) {
+			createOutputFolder();
+			outputFolderCreated = true;
+		}
+
+		// Generating a JPG result file (minor quality loss, but less space)
+		resultFile = MatchSettingsManip::instance().getWorkDir();
+		resultFile.append("Output").append(studiedCase).concat(".jpg");
+	
+		if(exists(resultFile)) {
+			result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
+			timer.cancel("This image has already been transformed under these settings.\n"
+						 "Displaying the available result!");
+			alreadyProcessedCase = true;
+		}
+	}
+
+	~ResultFileManager() {
+		if(alreadyProcessedCase)
+			return;
+
+		const bool canceled = isCanceled;
+		if(canceled) {
+			timer.cancel("Image transformation was canceled!");
+
+			// Still saving the partial result, but with a timestamp before the jpg extension
+			resultFile = resultFile.replace_extension().
+				concat("_").concat(to_string(time(nullptr))).concat(".jpg");
+		
+		} else timer.pause(); // don't time result serialization
+
+		cout<<"Writing result to "<<resultFile<<endl<<endl;
+		imwrite(resultFile.string(), result);
+
+		if(!canceled)
+			timer.resume(); // let any further processing get timed
+	}
+};
+
+#endif // UNIT_TESTING not defined
+
+#if defined _DEBUG && !defined UNIT_TESTING
+/// In Debug mode (not UnitTesting), when the transformation wasn't canceled, log the parameters of the matches
+static void logDataForBestMatches(volatile bool &isCanceled,
+						   const string &studiedCase, unsigned sz, int h, int w, bool usesUnicode,
+						   const std::vector<std::vector<BestMatch>> &draftMatches) {
+	if(isCanceled)
+		return;
+	TransformTrace tt(studiedCase, sz, usesUnicode); // log support (DEBUG mode only)
+	for(int r = 0; r<h; r += sz) {
+		auto &draftRow = draftMatches[(unsigned)r/sz];
+		for(int c = 0; c<w; c += sz) {
+			const auto &draftMatch = draftRow[(unsigned)c/sz];
+			tt.newEntry((unsigned)r, (unsigned)c, draftMatch); // log the data about best match (DEBUG mode only)
+		}
+	}
+}
+#else // ignore the call to logDataForBestMatches
+#define logDataForBestMatches(...)
+#endif // _DEBUG && !UNIT_TESTING
+
+extern const Size BlurWinSize;
+extern const double BlurStandardDeviation;
+extern const bool ParallelizeTr_PatchRowLoops;
+extern const unsigned SymsBatch_defaultSz;
+
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 						 MatchEngine &me_, Img &img_) :
-		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {
-	createOutputFolder();
-}
+		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_), symsBatchSz(SymsBatch_defaultSz) {}
 
 void Transformer::run() {
+	isCanceled = false;
 	Timer timer = ctrler.createTimerForImgTransform();
 
 	me.updateSymbols(); // throws for invalid cmap/size
 
-	// throws when no image
-	const ResizedImg resizedImg(img, cfg.imgSettings(), cfg.symSettings().getFontSz());
-	const_cast<IPicTransformProgressTracker&>(ctrler).updateResizedImg(resizedImg);
-	const Mat &resized = resizedImg.get();
-	const bool isColor = img.isColor();
-
-	const string &studiedCase = textStudiedCase(resized.rows, resized.cols);
+	sz = cfg.symSettings().getFontSz();
+	
+	std::shared_ptr<const ResizedImg> resizedImg =
+		std::make_shared<const ResizedImg>(img, cfg.imgSettings(), sz); // throws when no image
+	const bool newResizedImg =
+		const_cast<IPicTransformProgressTracker&>(ctrler).updateResizedImg(resizedImg);
+	const Mat &resizedVersion = resizedImg->get();
+	h = resizedVersion.rows; w = resizedVersion.cols;
+	updateStudiedCase(h, w);
 
 #ifndef UNIT_TESTING
-	path resultFile(MatchSettingsManip::instance().getWorkDir());
-	resultFile.append("Output").append(studiedCase).
-		concat(".jpg");
-	// generating a JPG result file (minor quality loss, but significant space requirements reduction)
-
-	if(exists(resultFile)) {
-		result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
-		timer.cancel("This image has already been transformed under these settings.\n"
-					 "Displaying the available result!");
+	ResultFileManager rf(studiedCase, isCanceled, result, timer);
+	if(rf.detectedPreviouslyProcessedCase())
 		return;
-	}
 #endif
+	const unsigned patchesPerRow = (unsigned)w/sz, patchesPerCol = (unsigned)h/sz;
+	initDraftMatches(newResizedImg, resizedVersion, patchesPerCol, patchesPerRow);
 
 	me.getReady();
+	symsCount = me.getSymsCount();
 
-	const unsigned sz = cfg.symSettings().getFontSz();
-	TransformTrace tt(studiedCase, sz, me.usesUnicode()); // log support (DEBUG mode only)
-	extern const bool ParallelizeTr_PatchRowLoops;
+	result = resizedBlurred.clone(); // initialize the result with a simple blur. Mandatory clone!
+	ctrler.presentTransformationResults(); // show the blur as draft result
 
-	result = Mat(resized.rows, resized.cols, resized.type());
-	Mat resizedBlurred;
-	extern const Size BlurWinSize;
-	extern const double BlurStandardDeviation;
-	GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
-	const int h = resized.rows, w = resized.cols;
+	// symsBatchSz is volatile => every batch might have a different size
+	for(unsigned fromIdx = 0U, upperIdx = symsBatchSz;
+			!isCanceled && fromIdx < symsCount;
+			fromIdx = upperIdx, upperIdx = min(upperIdx + symsBatchSz, symsCount))
+		considerSymsBatch(fromIdx, upperIdx);
+
+	logDataForBestMatches(isCanceled, studiedCase, sz, h, w, me.usesUnicode(), draftMatches);
+}
+
+void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion,
+								   unsigned patchesPerCol, unsigned patchesPerRow) {
+	// processing new resized image
+	if(newResizedImg || draftMatches.empty()) {
+		resized = resizedVersion; isColor = img.isColor();
+		GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
+		
+		draftMatches.clear(); draftMatches.reserve(patchesPerCol);
+		for(int r = 0; r<h; r += sz) {
+			const Range rowRange(r, r+sz);
+
+			draftMatches.emplace_back();
+			auto &draftMatchesRow = draftMatches.back(); draftMatchesRow.reserve(patchesPerRow);
+			for(int c = 0; c<w; c += sz) {
+				const Range colRange(c, c+sz);
+				const Mat patch(resized, rowRange, colRange),
+					blurredPatch(resizedBlurred, rowRange, colRange);
+
+				// Building a Patch with the blurred patch computed for its actual borders
+				draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
+			}
+		}
+	} else { // processing same ResizedImg
+		for(unsigned r = 0U; r<patchesPerCol; ++r) {
+			auto &draftMatchesRow = draftMatches[r];
+			for(unsigned c = 0U; c<patchesPerRow; ++c) {
+				auto &draftMatch = draftMatchesRow[c];
+				draftMatch.reset(); // leave nothing but the Patch field
+			}
+		}
+	}
+}
+
+void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx) {
 	volatile int finalizedRows = 0;
-	volatile bool isCanceled = false;
+	extern const double Transform_ProgressReportsIncrement;
+	const double startProgress = fromIdx / (double)symsCount,
+			endProgress = upperIdx / (double)symsCount,
+			maxProgress = endProgress - startProgress;
+	double expectedProgressReport = startProgress + Transform_ProgressReportsIncrement;
 
-#pragma omp parallel if(ParallelizeTr_PatchRowLoops)
+#pragma omp parallel if(ParallelizeTr_PatchRowLoops) firstprivate(expectedProgressReport)
 #pragma omp for schedule(dynamic) nowait
 	for(int r = 0; r<h; r += sz) {
 		if(isCanceled)
 			continue; // OpenMP doesn't accept break, so just continue with empty iterations
 
-		ompPrintf(ParallelizeTr_PatchRowLoops, "r = %d", r);
+		ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: %d - %d; row = %d", fromIdx, upperIdx-1, r);
 		const Range rowRange(r, r+sz);
+		auto &draftMatchesRow = draftMatches[(unsigned)r/sz];
 
 		for(int c = 0; c<w; c += sz) {
 			const Range colRange(c, c+sz);
-			const Mat patch(resized, rowRange, colRange),
-						blurredPatch(resizedBlurred, rowRange, colRange);
 
-			// Building a Patch with the blurred patch computed for its actual borders
-			Patch p(patch, blurredPatch, isColor);
-			const BestMatch best = me.approxPatch(p);
-
-			const Mat &approximation = best.bestVariant.approx;
-			Mat destRegion(result, rowRange, colRange);
-			approximation.copyTo(destRegion);
-
-			tt.newEntry((unsigned)r, (unsigned)c, best); // log the data about best match (DEBUG mode only)
+			auto &draftMatch = draftMatchesRow[(unsigned)c/sz];
+			if(me.findBetterMatch(draftMatch, fromIdx, upperIdx)) {
+				const Mat &approximation = draftMatch.bestVariant.approx;
+				Mat destRegion(result, rowRange, colRange);
+				approximation.copyTo(destRegion);
+			}
 		} // columns loop
 
 #pragma omp atomic
 		++finalizedRows;
 
-		// Only master thread reports progress and checks cancellation status
-		if(omp_get_thread_num() == 0) { // #pragma omp master not allowed in for
-			ctrler.reportTransformationProgress((double)sz*finalizedRows/h);
+		// #pragma omp master not allowed in for
+		if((omp_get_thread_num() == 0) && (finalizedRows * (int)sz < h)) {
+			// Only master thread checks cancellation status
 			if(checkCancellationRequest())
 				isCanceled = true;
+			else {
+				const double newProgress = startProgress + maxProgress*sz*finalizedRows/h;
+				if(newProgress > expectedProgressReport) {
+					ctrler.reportTransformationProgress(newProgress);
+					expectedProgressReport = newProgress + Transform_ProgressReportsIncrement;
+				}
+			}
 		}
 	} // rows loop
-
-#ifndef UNIT_TESTING
-	if(isCanceled) {
-		timer.cancel("Image transformation was canceled!");
-		
-		// still saving the partial result, but with a timestamp before the jpg extension
-		resultFile = resultFile.replace_extension().
-			concat("_").concat(to_string(time(nullptr))).concat(".jpg");
-	}
-
-	timer.pause(); // pause has no effect when timer is canceled
-
-	cout<<"Writing result to "<<resultFile<<endl<<endl;
-	imwrite(resultFile.string(), result);
-
-	timer.resume(); // resume has no effect when timer is canceled
-#endif
+	
+	if(upperIdx < symsCount)
+		ctrler.reportTransformationProgress(endProgress, true);
 }
 
-#ifndef UNIT_TESTING // Unit Testing module has different implementations for these methods
-void Transformer::createOutputFolder() {
-	// Ensure there is an Output folder
-	path outputFolder = MatchSettingsManip::instance().getWorkDir();
-	if(!exists(outputFolder.append("Output")))
-		create_directory(outputFolder);
+void Transformer::setSymsBatchSize(int symsBatchSz_) {
+	if(symsBatchSz_ <= 0)
+		symsBatchSz = UINT_MAX;
+	else
+		symsBatchSz = (unsigned)symsBatchSz_;
 }
-#endif

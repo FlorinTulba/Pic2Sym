@@ -117,6 +117,7 @@ protected:
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
 	int encoding, fontSz;
+	int symsBatchSz;
 	int hybridResult;
 	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
 	int moreContrast, gravity, direction, largerSym, thresh4Blanks;

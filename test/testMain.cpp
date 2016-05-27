@@ -65,6 +65,8 @@
 #include <ctime>
 #include <random>
 
+const unsigned SymsBatch_defaultSz = 25U;
+
 #pragma warning(disable:4273)
 int omp_get_thread_num() {
 	return 0;
@@ -257,7 +259,7 @@ void Controller::reportGlyphProgress(double) const {}
 
 void Controller::updateSymsDone(double) const {}
 
-void Controller::reportTransformationProgress(double) const {}
+void Controller::reportTransformationProgress(double, bool) const {}
 
 void Controller::presentTransformationResults(double) const {}
 
@@ -286,8 +288,6 @@ bool Controller::newImage(const Mat &imgMat) {
 
 	return result;
 }
-
-void Transformer::createOutputFolder() {}
 
 SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :

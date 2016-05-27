@@ -158,23 +158,34 @@ void MatchEngine::getReady() {
 			enabledAspects.push_back(&*pAspect);
 }
 
-BestMatch MatchEngine::approxPatch(const Patch &patch) const {
-	BestMatch best(patch);
-	if(!patch.needsApproximation)
-		return BestMatch(patch).updatePatchApprox(cfg.matchSettings());
+bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const {
+	const auto &patch = draftMatch.patch;
+	if(!patch.needsApproximation) {
+		if(draftMatch.bestVariant.approx.empty()) {
+			// update PatchApprox for uniform Patch only during the compare with 1st sym 
+			draftMatch.updatePatchApprox(cfg.matchSettings());
+			return true;
+		}
+		return false;
+	}
 
-	MatchParams mp;
-	unsigned idx = 0U;
-	for(const auto &symData : symsSet) {
+	bool betterMatchFound = false;
+	MatchParams mp = draftMatch.bestVariant.params;
+	assert(upperSymIdx <= getSymsCount());
+	for(unsigned idx = fromSymIdx; idx < upperSymIdx; ++idx) {
+		mp.reset(); // preserves patch-invariant fields
+		const auto &symData = symsSet[idx];
 		double score = assessMatch(patch.matrixToApprox(), symData, mp);
 
-		if(score > best.score)
-			best.update(score, symData.code, idx, symData, mp);
-
-		mp.reset(); // preserves some fields common => parallelization would require separating those fields
-		++idx;
+		if(score > draftMatch.score) {
+			draftMatch.update(score, symData.code, idx, symData, mp);
+			betterMatchFound = true;
+		}
 	}
-	return best.updatePatchApprox(cfg.matchSettings());
+	if(betterMatchFound)
+		draftMatch.updatePatchApprox(cfg.matchSettings());
+
+	return betterMatchFound;
 }
 
 double MatchEngine::assessMatch(const Mat &patch,

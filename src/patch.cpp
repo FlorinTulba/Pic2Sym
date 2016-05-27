@@ -43,7 +43,7 @@
 using namespace std;
 using namespace cv;
 
-static Mat blurredVersionOf(const Mat &orig_) {
+static const Mat blurredVersionOf(const Mat &orig_) {
 	extern const Size BlurWinSize;
 	extern const double BlurStandardDeviation;
 	Mat blurred;
@@ -86,6 +86,6 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 	if(isColor)
 		cvtColor(patch2Process, grayD, COLOR_RGB2GRAY);
 	else
-		grayD = patch2Process;
+		grayD = patch2Process.clone();
 	grayD.convertTo(grayD, CV_64FC1);
 }

@@ -81,10 +81,10 @@ public:
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
-	void getReady();		///< called before a series of approxPatch
+	void getReady();		///< called before a series of findBetterMatch
 
-	/// Returns all details about the best match.
-	BestMatch approxPatch(const Patch &patch) const;
+	/// Returns true if a new better match was found.
+	bool findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const;
 
 	/// scores the match between a gray patch and a symbol based on all enabled aspects
 	double assessMatch(const cv::Mat &patch,

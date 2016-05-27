@@ -303,8 +303,7 @@ void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
 }
 
 void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
-	ctrler.reportTransformationProgress(1.);
-	ctrler.presentTransformationResults();
+	ctrler.reportTransformationProgress(1., true);
 	infoMsg(reason);
 }
 
@@ -354,15 +353,18 @@ void Controller::updateSymsDone(double durationS) const {
 	reportSymsUpdateDuration(durationS);
 }
 
-void Controller::reportTransformationProgress(double progress) const {
+void Controller::reportTransformationProgress(double progress, bool showDraft/* = false*/) const {
 	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
 	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
+
+	if(showDraft)
+		presentTransformationResults();
 }
 
-void Controller::presentTransformationResults(double durationS/* = -1.*/) const {
+void Controller::presentTransformationResults(double completionDurationS/* = -1.*/) const {
 	comp.setResult(t.getResult()); // display the result at the end of the transformation
-	if(durationS > 0.) {
-		const string comparatorOverlayText = textForComparatorOverlay(durationS);
+	if(completionDurationS > 0.) {
+		const string comparatorOverlayText = textForComparatorOverlay(completionDurationS);
 		cout<<comparatorOverlayText <<endl<<endl;
 		comp.setOverlay(comparatorOverlayText, 3000);
 	}
@@ -384,7 +386,7 @@ string MatchEngine::getIdForSymsToUse() {
 	return oss.str();
 }
 
-const string Transformer::textStudiedCase(int rows, int cols) const {
+void Transformer::updateStudiedCase(int rows, int cols) {
 	const auto &ss = cfg.matchSettings();
 	ostringstream oss;
 	oss<<img.name()<<'_'
@@ -395,7 +397,7 @@ const string Transformer::textStudiedCase(int rows, int cols) const {
 		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
 		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
 		<<cols<<'_'<<rows; // no extension yet
-	return oss.str(); // this text is included in the result & trace file names
+	studiedCase = oss.str(); // this text is included in the result & trace file names
 }
 
 #ifndef UNIT_TESTING
@@ -537,11 +539,13 @@ extern const wstring ControlPanel_aboutText;
 extern const wstring ControlPanel_instructionsText;
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
+extern const unsigned SymsBatch_defaultSz;
 
 ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) :
 		actions(actions_),
 		maxHSyms(cfg.imgSettings().getMaxHSyms()), maxVSyms(cfg.imgSettings().getMaxVSyms()),
 		encoding(0U), fontSz(cfg.symSettings().getFontSz()),
+		symsBatchSz((int)SymsBatch_defaultSz),
 		hybridResult(cfg.matchSettings().isHybridResult() ? 1 : 0),
 		structuralSim(Converter::StructuralSim::toSlider(cfg.matchSettings().get_kSsim())),
 		underGlyphCorrectness(Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevFg())),
@@ -556,6 +560,7 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 	extern const unsigned Settings_MAX_H_SYMS;
 	extern const unsigned Settings_MAX_V_SYMS;
 	extern const unsigned Settings_MAX_FONT_SIZE;
+	extern const unsigned SymsBatch_trackMax;
 	extern const int ControlPanel_Converter_StructuralSim_maxSlider;
 	extern const int ControlPanel_Converter_Contrast_maxSlider;
 	extern const int ControlPanel_Converter_Correctness_maxSlider;
@@ -572,6 +577,7 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 	extern const String ControlPanel_saveSettingsLabel;
 	extern const String ControlPanel_fontSzTrName;
 	extern const String ControlPanel_encodingTrName;
+	extern const String ControlPanel_symsBatchSzTrName;
 	extern const String ControlPanel_hybridResultTrName;
 	extern const String ControlPanel_structuralSimTrName;
 	extern const String ControlPanel_underGlyphCorrectnessTrName;
@@ -598,12 +604,12 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 		pActions->performTransformation();
 	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(ControlPanel_outWTrName, nullptr, &maxHSyms, Settings_MAX_H_SYMS,
+	createTrackbar(ControlPanel_outWTrName, nullptr, &maxHSyms, (int)Settings_MAX_H_SYMS,
 				   [] (int val, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newHmaxSyms(val);
 	}, reinterpret_cast<void*>(&actions));
-	createTrackbar(ControlPanel_outHTrName, nullptr, &maxVSyms, Settings_MAX_V_SYMS,
+	createTrackbar(ControlPanel_outHTrName, nullptr, &maxVSyms, (int)Settings_MAX_V_SYMS,
 				   [] (int val, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newVmaxSyms(val);
@@ -622,10 +628,16 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newFontEncoding(val);
 	}, reinterpret_cast<void*>(&actions));
-	createTrackbar(ControlPanel_fontSzTrName, nullptr, &fontSz, Settings_MAX_FONT_SIZE,
+	createTrackbar(ControlPanel_fontSzTrName, nullptr, &fontSz, (int)Settings_MAX_FONT_SIZE,
 				   [] (int val, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newFontSize(val);
+	}, reinterpret_cast<void*>(&actions));
+
+	createTrackbar(ControlPanel_symsBatchSzTrName, nullptr, &symsBatchSz, (int)SymsBatch_trackMax,
+				   [] (int val, void *userdata) {
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newSymsBatchSize(val);
 	}, reinterpret_cast<void*>(&actions));
 
 	createButton(ControlPanel_restoreDefaultsLabel, [] (int, void *userdata) {
@@ -687,7 +699,7 @@ ControlPanel::ControlPanel(IControlPanelActions &actions_, const Settings &cfg) 
 		pActions->newGlyphWeightFactor(Converter::LargerSym::fromSlider(val));
 	}, reinterpret_cast<void*>(&actions));
 
-	createTrackbar(ControlPanel_thresh4BlanksTrName, nullptr, &thresh4Blanks, Settings_MAX_THRESHOLD_FOR_BLANKS,
+	createTrackbar(ControlPanel_thresh4BlanksTrName, nullptr, &thresh4Blanks, (int)Settings_MAX_THRESHOLD_FOR_BLANKS,
 				   [] (int val, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newThreshold4BlanksFactor(val);

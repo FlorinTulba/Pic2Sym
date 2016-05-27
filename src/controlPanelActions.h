@@ -60,6 +60,7 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 	virtual void newFontEncoding(int encodingIdx) = 0;
 	virtual bool newFontEncoding(const std::string &encName) = 0;
 	virtual void newFontSize(int fontSz) = 0;
+	virtual void newSymsBatchSize(int symsBatchSz) = 0;
 	virtual void newStructuralSimilarityFactor(double k) = 0;
 	virtual void newUnderGlyphCorrectnessFactor(double k) = 0;
 	virtual void newGlyphEdgeCorrectnessFactor(double k) = 0;

@@ -103,7 +103,8 @@ void Comparator::setReference(const Mat &ref_) {
 		setTransparency(1.);
 }
 
-void Comparator::setResult(const Mat &res_, int transparency/* = (int)round(Comparator_defaultTransparency * Comparator_trackMax)*/) {
+void Comparator::setResult(const Mat &res_, int transparency
+						   /* = (int)round(Comparator_defaultTransparency * Comparator_trackMax)*/) {
 	if(initial.empty())
 		throw logic_error("Please call " __FUNCTION__ " after Comparator::setReference()!");
 	if(initial.type() != res_.type() || initial.size != res_.size)

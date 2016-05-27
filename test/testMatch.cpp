@@ -425,7 +425,10 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
 
 		Patch thePatch(patchD255);
-		BestMatch best = me.approxPatch(thePatch);
+		BestMatch best(thePatch);
+		const unsigned SymsBatchSz = 25U;
+		for(unsigned s = 0U; s < symsCount; s += SymsBatchSz)
+			me.findBetterMatch(best, s, min(s+SymsBatchSz, symsCount));
 		const Mat &approximated = best.bestVariant.approx;
 
 		if(best.symIdx != idx) {

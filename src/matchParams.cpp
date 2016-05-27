@@ -201,6 +201,15 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
 }
 
+BestMatch& BestMatch::reset() {
+	score = std::numeric_limits<double>::lowest();
+	symCode = none;
+	symIdx = none;
+	pSymData = nullptr;
+	bestVariant = ApproxVariant();
+	return *this;
+}
+
 BestMatch& BestMatch::update(double score_, unsigned long symCode_,
 							 unsigned symIdx_, const SymData &sd,
 							 const MatchParams &mp) {
@@ -226,7 +235,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 
 	if(patch.isColor) {
 		const Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
-			&bgMask = matricesForBest[SymData::BG_MASK_IDX];
+				&bgMask = matricesForBest[SymData::BG_MASK_IDX];
 
 		vector<Mat> channels;
 		split(patch.orig, channels);

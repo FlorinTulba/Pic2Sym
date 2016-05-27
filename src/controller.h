@@ -50,7 +50,6 @@
 #include "misc.h"
 #include "timing.h"
 
-#include <chrono>
 #include <atomic>
 
 class ControlPanel; // forward declaration
@@ -64,7 +63,7 @@ protected:
 	Img &img;			///< original image to process after resizing
 
 	/// pointer to the resized version of most recent image that had to be transformed
-	const ResizedImg *resizedImg = nullptr;
+	std::shared_ptr<const ResizedImg> resizedImg;
 	FontEngine &fe;		///< font engine
 	Settings &cfg;		///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
@@ -141,6 +140,7 @@ public:
 	void newFontEncoding(int encodingIdx) override;
 	bool newFontEncoding(const std::string &encName) override;
 	void newFontSize(int fontSz) override;
+	void newSymsBatchSize(int symsBatchSz) override;
 	void newStructuralSimilarityFactor(double k) override;
 	void newUnderGlyphCorrectnessFactor(double k) override;
 	void newGlyphEdgeCorrectnessFactor(double k) override;
@@ -185,9 +185,9 @@ public:
 	Timer createTimerForGlyphs() const override; ///< Creates the monitor to time the glyph loading and preprocessing
 
 	// Implementation of IPicTransformProgressTracker below
-	void updateResizedImg(const ResizedImg &resizedImg_) override;
-	void reportTransformationProgress(double progress) const override;
-	void presentTransformationResults(double durationS = -1.) const override;
+	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
+	void reportTransformationProgress(double progress, bool showDraft = false) const override;
+	void presentTransformationResults(double completionDurationS = -1.) const override;
 	Timer createTimerForImgTransform() const override; ///< Creates the monitor to time the picture approximation process
 
 	/// Base class for TimerActions_SymSetUpdate and TimerActions_ImgTransform
