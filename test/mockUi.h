@@ -2,8 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file was created on 2016-2-7
- and belongs to the UnitTesting project.
+ This file belongs to the UnitTesting project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
