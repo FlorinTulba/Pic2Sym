@@ -59,9 +59,6 @@ struct IPresentCmap /*abstract*/ : virtual IController {
 	/// Updates the Cmap View status bar with the details about the symbols
 	virtual void showUnofficialSymDetails(unsigned symsCount) const = 0;
 
-	/// Reports the duration of the update of the symbols. elapsed is in seconds
-	virtual void reportSymsUpdateDuration(double elapsed) const = 0;
-
 	virtual ~IPresentCmap() = 0 {}
 };
 

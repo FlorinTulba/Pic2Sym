@@ -170,7 +170,6 @@ public:
 	unsigned getFontSize() const override;
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 	void showUnofficialSymDetails(unsigned symsCount) const override;
-	void reportSymsUpdateDuration(double elapsed) const override;
 
 	// Implementation of IValidateFont below
 	/// called by FontEngine::newFont after installing a new font to update SymSettings
@@ -183,6 +182,7 @@ public:
 	void reportGlyphProgress(double progress) const override;
 	void updateSymsDone(double durationS) const override;
 	Timer createTimerForGlyphs() const override; ///< Creates the monitor to time the glyph loading and preprocessing
+	void reportSymsUpdateDuration(double elapsed) const override;
 
 	// Implementation of IPicTransformProgressTracker below
 	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
