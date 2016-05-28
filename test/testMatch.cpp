@@ -146,7 +146,7 @@ namespace ut {
 	@param sz patch side length
 	@param cd reference to cached data (reusing patch center computation)
 	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 rows mid height define a horizontal edge mask
-	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
+	@param sdWithVertEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
 	*/
 	void updateSymDataOfHalfFullGlyphs(unsigned sz, const CachedData &cd,
 									   std::shared_ptr<SymData> &sdWithHorizEdgeMask, 

@@ -90,7 +90,7 @@ public:
 	FontEngine(const IController &ctrler_, const SymSettings &ss_);
 	~FontEngine();
 	
-	bool newFont(const std::string &fontFile_);		///< Tries to use the font from <fontFile_>
+	bool newFont(const std::string &fontFile_);		///< Tries to use the font from 'fontFile_'
 	void setFontSz(unsigned fontSz_);				///< Sets the desired font height in pixels
 
 	bool setEncoding(const std::string &encName, bool forceUpdate = false);	///< Sets an encoding by name

@@ -88,11 +88,11 @@ struct ResultFileManager {
 
 	bool detectedPreviouslyProcessedCase() const { return alreadyProcessedCase; }
 
-	ResultFileManager(const string &studiedCase, ///< unique id describing the transformation params
-					  volatile bool &isCanceled_,
-					  Mat &result_,
-					  Timer &timer_) :
-			isCanceled(isCanceled_), result(result_), timer(timer_) {
+	ResultFileManager(const string &studiedCase,	///< unique id describing the transformation params
+					  volatile bool &isCanceled_,	///< reference to the cancel flag
+					  Mat &result_,					///< reference to the result
+					  Timer &timer_					///< reference to the timer used for the current transformation
+					  ) : isCanceled(isCanceled_), result(result_), timer(timer_) {
 		static bool outputFolderCreated = false;
 		if(!outputFolderCreated) {
 			createOutputFolder();

@@ -167,7 +167,7 @@ public:
 	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
 	void updateGrid();							///< Changing font size must update also the grid
 
-	void showPage(unsigned pageIdx);			///< displays page <pageIdx>
+	void showPage(unsigned pageIdx);			///< displays page 'pageIdx'
 };
 
 #endif // H_VIEWS

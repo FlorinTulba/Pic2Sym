@@ -63,6 +63,8 @@ namespace {
 	so that most symbols will widen enough to fill more of the drawing square,
 	while preserving the designer's placement.
 
+	@param face charmap providing the symbols whose size needs to be adjusted
+	@param sz desired size of these symbols
 	@param bb [out] estimated future bounding box
 	@param symsCount [out] count of glyphs within selected charmap
 

@@ -80,11 +80,13 @@ struct PixMapSym {
 
 	Any bitmap pitch is removed => storing pixels without gaps.
 	*/
-	PixMapSym(unsigned long symCode,		///< the symbol code
-			  const FT_Bitmap &bm,			///< the bitmap to process
-			  int leftBound, int topBound,	///< initial position of the symbol
-			  int sz, double sz2,			///< font size and squared of it
-			  const cv::Mat &consec,		///< vector of consecutive values 0 .. sz-1
+	PixMapSym(unsigned long symCode,	///< the symbol code
+			  const FT_Bitmap &bm,		///< the bitmap to process
+			  int leftBound,			///< initial position of the symbol considered from the left
+			  int topBound,				///< initial position of the symbol considered from the top
+			  int sz,					///< font size
+			  double sz2,				///< font size squared
+			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
 			  const cv::Mat &revConsec,	///< vector of consecutive values sz-1 .. 0
 			  const FT_BBox &bb			///< the bounding box to fit
 			  );
@@ -155,7 +157,7 @@ public:
 	void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U);
 
 	/**
-	appendSym puts valid glyphs into vector <syms>.
+	appendSym puts valid glyphs into vector 'syms'.
 
 	Space (empty / full) glyphs are invalid.
 	Also updates the count of blanks & duplicates.

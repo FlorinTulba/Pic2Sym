@@ -43,6 +43,8 @@
 #include <memory>
 #include <string>
 
+#define UNREFERENCED_PARAMETER(Par) (Par)
+
 // Timing jobs:
 /// Interface for any observer of a timer (see below the Timer class)
 struct ITimerActions /*abstract*/ {
@@ -50,17 +52,17 @@ struct ITimerActions /*abstract*/ {
 
 	/// action to be performed when the timer is paused
 	/// @param elapsedS time elapsed this far in seconds
-	virtual void onPause(double /*elapsedS*/) {}
+	virtual void onPause(double elapsedS) { UNREFERENCED_PARAMETER(elapsedS); }
 
 	virtual void onResume() {}	///< action to be performed when the timer is resumed
 
 	/// action to be performed when the timer is released/deleted
 	/// @param elapsedS total elapsed time in seconds
-	virtual void onRelease(double /*elapsedS*/) {}
+	virtual void onRelease(double elapsedS) { UNREFERENCED_PARAMETER(elapsedS); }
 
 	/// action to be performed when the timer is canceled
 	/// @param reason explanation for cancellation
-	virtual void onCancel(const std::string &reason = "") {}
+	virtual void onCancel(const std::string &reason = "") { UNREFERENCED_PARAMETER(reason); }
 
 	virtual ~ITimerActions() = 0 {}
 };
