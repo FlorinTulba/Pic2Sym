@@ -83,6 +83,7 @@ Obtained **durations**:
 - _v1.3_: **159 s** (_using **2 threads** with **symbol batching disabled**_)
 - _v1.2_: **180 s** (_using **2 threads**_); **314 s** (_using **1 thread**_)
 - _v1.1_: **291 s**
+
 _ _ _
 
 Still using only [Structural Similarity][]; 27405 patches to approximate using 219 symbols (*Consolas_Italic_APPLE_ROMAN_10*)<br>
@@ -97,6 +98,7 @@ Obtained **durations**:
 - _v1.3_: **101 s** (_using **2 threads** with **symbol batching disabled**_)
 - _v1.2_: **106 s** (_using **2 threads**_); **198 s** (_using **1 thread**_)
 - _v1.1_: **188 s**
+
 _ _ _
 
 Finally, [Structural Similarity][] disabled; 625 patches to approximate using 218 symbols (*Courier_New_Bold Italic_APPLE_ROMAN_10*)<br>
@@ -135,8 +137,8 @@ Cases **to avoid**:
 	* are *italic* when there are many regions with textures tilted differently
 	* contain *glyphs filling almost solid their square* (such symbols are very likely to approximate ambiguous patches and ***they appear rigid, despite they are correctly selected***)
 
-Version **1.3** allows *canceling transformations* and *visualizing drafts*, while preserving *most efficient multithreading switches* from **v1.2**. It performs better than v1.2 on multi-core machines as long as demanding only a few drafts.
-Version **1.2** introduced *thread-parallelism* and provides maximum number of parallelization combinations.
+Version **1.3** allows *canceling transformations* and *visualizing drafts*, while preserving *most efficient multithreading switches* from **v1.2**. It performs better than v1.2 on multi-core machines as long as demanding only a few drafts.<br>
+Version **1.2** introduced *thread-parallelism* and provides maximum number of parallelization combinations.<br>
 Version **1.1** performs better than **1.2** and **1.3** for *sequential runs*.
 
 These initial versions are useful for determining what problems, limitations, as well as opportunities exist and which solutions are best.
