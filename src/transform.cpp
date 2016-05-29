@@ -195,7 +195,7 @@ void Transformer::run() {
 	ctrler.presentTransformationResults(); // show the blur as draft result
 
 	// symsBatchSz is volatile => every batch might have a different size
-	for(unsigned fromIdx = 0U, upperIdx = symsBatchSz;
+	for(unsigned fromIdx = 0U, upperIdx = min(const_cast<unsigned&>(symsBatchSz), symsCount);
 			!isCanceled && fromIdx < symsCount;
 			fromIdx = upperIdx, upperIdx = min(upperIdx + symsBatchSz, symsCount))
 		considerSymsBatch(fromIdx, upperIdx);
