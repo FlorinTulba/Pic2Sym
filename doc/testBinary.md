@@ -8,7 +8,7 @@ Now the steps:
 
 1. Choose a directory for this test (*TestDir*)
 2. Download repository files to another folder.
-3. Unpack **bin/Pic2Sym.zip** in *TestDir*
+3. Unpack **bin/Pic2Sym.zip** and **bin/dlls.zip** in *TestDir*. Copy there **bin/agpl-3.0.txt**, as well.
 4. Copy the whole **res/** folder (*together with the folder*) to *TestDir*
 5. Launch ***TestDir*/Pic2Sym.exe**. If it starts, jump to **7**. For errors about *missing dll\-s*, continue below
 6. Non\-development machines might not have several *common dll-s*, so here are some links to **download them in _TestDir_**, if reported missing: [msvcp120.dll][], [msvcr120.dll][], [vcomp120.dll][], [comdlg32.dll][] or [advapi32.dll][]. _Make sure the application starts before continuing to **7**_
