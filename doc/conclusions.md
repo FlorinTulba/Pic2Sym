@@ -1,16 +1,14 @@
 ## Conclusions and further directions ##
 [Back to start page](../ReadMe.md)
 
-By now (v1.2), the application:
+By now (v1.3), the application:
 - offers *various match aspects* for deciding which symbol will approximate an image patch
 - provides either *raw image approximations*, or a satisfactory *hybrid result* for more complex content
 - lets the user select *which critical paths to parallelize* on *multi\-core machines*
-- tackles well font families with *less than 400 symbols*.
-
-A more pleasant user experience could come from:
-- allowing *tasks* to be *canceled*
-- presenting several *coarser drafts* while *refining the result*
-- *prioritizing jobs* to deliver first the *rapid feedback expected by user* and continue with remaining computations afterwards
+- allows *transformations* to be *canceled*, while saving the available draft result
+- presents several *coarser drafts* while *refining the result* and lets the user decide their frequency
+- displays *early previews* of *large font families* while they get loaded
+- tackles well transformations based on font families with *less than 400 symbols*.
 
 Using *larger symbol* sets would be possible only by *removing some undesired glyphs* and *clustering* the rest. *Patches* could be *similarly clustered*, at least for *draft results*.
 

@@ -1,5 +1,18 @@
-## Performance of Pic2Sym &#60;&#61; v1.2 ##
+## Performance of Pic2Sym &#60;&#61; v1.3 ##
 [Back to start page](../ReadMe.md)
+
+**Version 1.3** has put emphasis on *application responsiveness* and *efficiency*. The user was placed in charge of *how often to get feedback* from the application. For that:
+- it implemented _charmap **dynamic** partitioning_ with a better draft generated for every new batch of symbols from the entire set. The user might adjust on the spot the size of next batches, thus the draft frequency.
+- it delivers an *early preview of large charmaps* while they are loaded
+- it removed any *optional nested parallelism from image approximation code from v1.2*
+
+Outcome (compared to *v1.2*):
+- **faster transformation** if the user requires no drafts, or only a few. This is because there was a lot of OpenMP code involved in the removed *optional nested parallelism*
+- drafts computed based on charmap partitioning required holding a matrix of previous best matches, so this means **larger memory footprint**
+
+* * *
+
+### Analysis for Pic2Sym version 1.2
 
 **Version 1.2** uses **OpenMP** for parallelism (*Visual C++ implementation of OpenMP version 2.0 from March 2002*).
 

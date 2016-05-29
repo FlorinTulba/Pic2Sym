@@ -1,7 +1,23 @@
 ## Appendix ##
 [Back to start page](../ReadMe.md)
 
-#### A.	Technical Details of Pic2Sym v1.2
+##### A. Visualizing Draft Results in Pic2Sym v1.3
+
+Version **1.3** permits visualizing several *draft results* during the image approximation process. The user can adjust *dynamically* such feedback from the application using the **&#39;Batch syms&#39;** slider. The transformation uses dynamic charmap partitioning, so a new better draft is generated for each new lot of considered symbols. The mentioned slider dictates the size of next lots.<br>
+![](DraftsCmapPartitioning.jpg)<br>
+In this case, **&#39;Batch syms&#39;** was left from the beginning to the end of the transformation on value **5**. The *charmap* contains **125 symbols**, so there were 125 / 5 = **25 drafts** - *one generated every 4%*. Reported progress is **92%**, so the displayed draft is **23rd**. The application was just computing **24th** draft, based on the symbols with indeces *115 - 119* (the ones surrounded with *orange contour* in the image). None of the symbols 115-124 would appear in the 23rd draft, as they were not compared with the patches yet.
+
+Suppose at the captured instant the user moves the slider on value **1**. Then next batches (starting with index *120*) will have size **1**, so there will be **5** additional drafts following the one currently generated.
+
+Slider value **0** wouldn&#39;t make any sense, but since 0 is a *mandatory slider value in highgui library*, it was assigned a special meaning: **infinite batch size** - that is *next batch* should include **all remaining unprocessed glyphs**.
+
+While the last batch is considered (the one generating the final result), any changes of the **&#39;Batch syms&#39;** slider will no longer affect this transformation. So charmap partitioning is dynamic as long as there still are unprocessed batches left.
+
+Keep in mind that drafts are more visually appealing progress reports than simple completion percents, but they incur some time penalty. *Quickest approximation* is obtained with **&#39;Batch syms&#39;** slider on **0**. The *slowest* happens for **1**.
+
+The memory footprint of v1.3 is larger than v1.2 as it maintains a matrix of best matches, so that drafts are gradually improving.
+
+#### B.	Technical Details of Pic2Sym v1.3
 
 The application was tested on *Windows 7 64 bits* and developed in *C++*.
 
@@ -19,7 +35,11 @@ The decision to offer *support only for 64bits machines* originated from the len
 
 If *interested in the 32bits version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System* and *Filesystem*), then link them within the project.
 
-The ***parallelization switches*** from _version **1.2**_, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global UsingOMP switch* is *on* and they _don&#39;t trigger **nested parallelism**_.
+- - -
+
+The ***parallelization switches*** from _version **1.3**_, configurable from [res/varConfig.txt](../res/varConfig.txt) are *effective only when* the *global UsingOMP switch* is *on* and they _don&#39;t trigger **nested parallelism**_. The optional **nested** parallelism from the image transformation code from version **1.2** was *removed in v1.3*. It turns out this reduces OpenMP checks concerning eventual dynamic parallelization requests, so the performance improves.
+
+- - -
 
 The *class diagram* from below presents a *simplified* perspective of the application:<br>
 ![](ClassDiag.jpg)<br>
@@ -33,7 +53,7 @@ The ***Controller*** manages the image transformation process through the follow
 - ***Img*** \- the image to approximate with symbols
 - ***Transformer*** \- preprocesses the image (resizes it - ***ResizedImg***) and demands its approximation  ***Patch*** by patch from ***MatchEngine***
 - ***FontEngine*** \- involved in loading a new font file from which to use a given encoding of a certain size
-	- ***PmsCont*** \- simple container holding each loaded glyph and some related data (part of ***FontEngine***)
+	- ***PmsCont*** \- simple container holding each loaded glyph and some related data (part of ***FontEngine***). It is used to present an *early preview of the charmap* by simply *launching a preview thread* when there are *enough processed glyphs to fill a page*
 		- ***PixMapSym*** \- a particular loaded symbol (item in ***PmsCont***)
 - ***MatchEngine*** \- the responsible of finding ***BestMatch***, the best symbol approximating a patch; also a **composite** referring match aspects
 	- ***MatchAspect*** \- base class for all 8 implemented match aspects
@@ -46,23 +66,25 @@ The ***Controller*** manages the image transformation process through the follow
 
 While comparing the symbol set with a Patch, there are values which can be reused among the employed ***MatchAspect***s. Such shareable values are grouped by the ***MatchParams*** class.
 
-***BestMatch*** holds the index of the most similar symbol to a patch, found at a given time, while investigating sequentially all the glyphs.
+***BestMatch*** holds the index of the most similar symbol to a patch, found at a given time, while investigating sequentially all the glyphs, batch by batch. ***Transformer*** keeps a matrix of ***BestMatch***-es for all the ***Patch***-es of the ***ResizedImg***. It provides this matrix as starting reference for generating another draft based on a new batch of glyphs. Besides, subsequent transformations of the same image with different charmaps will reuse previously computed ***Patch***-related data.
 
 Each symbol compared to a match produces a possible approximation ***ApproxVariant*** of the patch. Thus, *ApproxVariant* could be an *association class between Patch and one SymData item from MatchEngine*.
 
-Timing is provided by ***Timer*** class which expects a realization class of ***ITimerActions*** interface.
+*Timing* is provided by ***Timer*** class which expects a realization class of ***ITimerActions*** interface.
 
-Logging preserves the reasons behind the approximation of each patch with a certain glyph - ***TransformTrace*** makes that possible.
+*Logging* preserves the reasons behind the approximation of each patch with a certain glyph - ***TransformTrace*** makes that possible in Debug mode for transformations not canceled.
+
+*Saving resulted approximations* (completed or only partial) is the responsibility of ***ResultFileManager***, which also *detects redundant transformation requests*, when it displays the available results.
 
 ***ControlPanel*** class configures and updates the sliders from the dialog.
 
-***Comparator*** and ***CmapInspect*** share ***CvWin*** interface and provide support for comparing original images with results, and displaying the symbols from a charmap.
+***Comparator*** and ***CmapInspect*** share ***CvWin***&#39;s interface and provide support for *comparing original images with results*, and *displaying the symbols from a charmap*. ***CmapInspect*** will also attempt displaying an *early preview of a large charmap*, while it&#39;s loading. Throughout this load process, the GUI is updated based on action requests (instantiations of ***IUpdateSymsAction***) added / consumed from a queue.
 
-***MatchSettingsManip*** facilitates version management coupled with external configuration (see *res/defaultMatchSettings.txt*) for ***MatchSettings***.
+***MatchSettingsManip*** facilitates version management coupled with external configuration (see [*res/defaultMatchSettings.txt*](../res/defaultMatchSettings.txt)) for ***MatchSettings***.
 
 ***PropsReader*** provides the application with configuration items found in:
-- *res/defaultMatchSettings.txt* \- used by ***MatchSettings***
-- *res/varConfig.txt* \- adjustable constants grouped to **permit no-recompilation changes**
+- [*res/defaultMatchSettings.txt*](../res/defaultMatchSettings.txt) \- used by ***MatchSettings***
+- [*res/varConfig.txt*](../res/varConfig.txt) \- adjustable constants grouped to **permit no-recompilation changes**
 
 Classes *omitted from the diagram*:
 - ***Dialog classes*** which appear when choosing a new image / font / settings file
@@ -70,17 +92,20 @@ Classes *omitted from the diagram*:
 
 The comments within the code provide more explanations.
 
-#### B.	Installation of Pic2Sym v1.2
+#### C.	Installation of Pic2Sym v1.3
 
 1.	Download the repository files
-2.	Copy ***Common.props***, ***Debug.props*** and ***Release.props*** from **install/** folder to the solution folder
-3.	Unpack ***include.zip*** and ***lib.zip*** to the solution folder
-4.	Open the solution file and build it for **64bits** platform
-5.	*Optionally* install the free font file ***BPmonoBold.ttf*** from the **res/** folder or from [here][1], in order to be visible while running the application
+1.	Copy ***Common.props***, ***Debug.props*** and ***Release.props*** from **install/** folder to the solution folder
+1.	Unpack ***include.zip*** and ***lib.zip*** to the solution folder
+1.	Open the solution file and build it for **64bits** platform
+1.	*Optionally* install the free font file ***BPmonoBold.ttf*** from the **res/** folder or from [here][1], in order to be visible while running the application
 
-#### C.	Directory Structure for Pic2Sym v1.2
+#### D.	Directory Structure for Pic2Sym v1.3
 
-- **bin**/ contains the archieve ***Pic2Sym.zip*** with the *executable* and *required dll\-s*
+- **bin**/ contains:
+	- ***Pic2Sym.zip*** with the *executable*
+    - ***dlls.zip*** with the *required dll\-s*
+    - ***agpl-3.0.txt*** - the *license* of the application
 - **doc**/ contains the *documentation of the project* and 2 subfolders:
 	- **examples** with various results generated by the Pic2Sym project
 	- **licenses** with the *license files* from *Boost*, *FreeType* and *OpenCV*
