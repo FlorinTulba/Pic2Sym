@@ -1,10 +1,21 @@
 ## Released Versions:
 
+[**Version 1.3**](../../version_1.3/ReadMe.md):
+- allows **controlling** ***application&#39;s responsiveness***:
+	- the *approximation process* can be **canceled with ESC**, while the *available generated draft gets saved*
+	- the user can **dynamically select the size of next batches** of symbols used to generate new better drafts, thus setting *draft update rate*
+	- loading *large symbol sets* delivers an **early preview of those new glyphs**
+- uses **fewer** [**parallelization switches**](../../version_1.3/res/varConfig.txt) concerning the *image transformation process*. However, it&#39;s **faster than v1.2**, due to its obtained simplicity, as long as only a *few drafts* are to be generated.
+
+
+- - -
+
 [**Version 1.2**](../../version_1.2/ReadMe.md):
 - provides ***improved speed*** compared to v1.1 for **multi\-core machines**. For that, it offers several **parallelization switches** configurable in [res/varConfig.txt](../../version_1.2/res/varConfig.txt) (*no recompilation needed when modified*).
  	There is a **global UsingOMP switch**, which *disables parallelization completely when false*.<br>
     The other parallelization switches command *sequential / concurrent behavior in different regions of the application*. The only **restriction** is these areas *shouldn&#39;t be contained in parent zones that must be parallel, too*, that is *nested parallelism is disabled*.
 - is a bit slower than v1.1 on single\-core machines or when the parallelism is disabled.
+
 
 - - -
 
@@ -15,6 +26,7 @@
     **Superior approximations** will make the **blur less visible than the symbol**.<br>
     Thus, this method provides a *direct measure of how appropriate is approximation* for each patch, while *maintaining inter\-patch cohesion*
 - **skips uniform patches**, generating just a *blur result patch* for each such region
+
 
 - - -
 
