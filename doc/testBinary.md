@@ -7,18 +7,18 @@ It&#39;s *recommended* to read first the ***Conclusions*** from the bottom of th
 Now the steps:
 
 1. Choose a directory for this test (*TestDir*)
-2. Download repository files to another folder.
-3. Unpack **bin/Pic2Sym.zip** in *TestDir*
-4. Copy the whole **res/** folder (*together with the folder*) to *TestDir*
-5. Launch ***TestDir*/Pic2Sym.exe**. If it starts, jump to **7**. For errors about *missing dll\-s*, continue below
-6. Non\-development machines might not have several *common dll-s*, so here are some links to **download them in _TestDir_**, if reported missing: [msvcp120.dll][], [msvcr120.dll][], [comdlg32.dll][] or [advapi32.dll][]. _Make sure the application starts before continuing to **7**_
-7. *Optionally* install (*double\-clicking the file*) the *free* font ***BpMono bold*** from [here][1] or from  ***TestDir*/res/BpMonoBold.ttf** *to ensure your machine has at least one interesting font to work with*
-8. Activate the main window and press **Ctrl\+P** to display the *Control Panel*.
-9. Now some configurations for a *first* ***rapid*** transformation:
+1. Download repository files to another folder.
+1. Unpack **bin/Pic2Sym.zip** and **bin/dlls.zip** in *TestDir*. Copy there **bin/agpl-3.0.txt**, as well.
+1. Copy the whole **res/** folder (*together with the folder*) to *TestDir*
+1. Launch ***TestDir*/Pic2Sym.exe**. If it starts, jump to **7**. For errors about *missing dll\-s*, continue below
+1. Non\-development machines might not have several *common dll-s*, so here are some links to **download them in _TestDir_**, if reported missing: [msvcp120.dll][], [msvcr120.dll][], [comdlg32.dll][] or [advapi32.dll][]. _Make sure the application starts before continuing to **7**_
+1. *Optionally* install (*double\-clicking the file*) the *free* font ***BpMono bold*** from [here][1] or from  ***TestDir*/res/BpMonoBold.ttf** *to ensure your machine has at least one interesting font to work with*
+1. Activate the main window and press **Ctrl\+P** to display the *Control Panel*.
+1. Now some configurations for a *first* ***rapid*** transformation:
 	- select a **small image** to transform
     - select a *font family* to use. Suggestion not to underestimate: use a **bold style** font family with **less than 400 symbols**
     - bring **[Structural Similarity][] slider to 0**
-10. Finally hit **Transform**. At the end of the transformation you&#39;ll be able to *inspect the result* with the *Transparency slider* and the *Zoom feature* from the main window
+1. Finally hit **Transform**. At the end of the transformation you&#39;ll be able to *inspect the result* with the *Transparency slider* and the *Zoom feature* from the main window
 
 --------
 [Back to start page](../ReadMe.md)
