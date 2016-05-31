@@ -85,7 +85,6 @@ struct PixMapSym {
 			  int leftBound,			///< initial position of the symbol considered from the left
 			  int topBound,				///< initial position of the symbol considered from the top
 			  int sz,					///< font size
-			  double sz2,				///< font size squared
 			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
 			  const cv::Mat &revConsec,	///< vector of consecutive values sz-1 .. 0
 			  const FT_BBox &bb			///< the bounding box to fit

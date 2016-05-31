@@ -91,7 +91,7 @@ extern const unsigned Settings_MAX_FONT_SIZE;
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 const FT_Bitmap &bm,			// the bitmap to process
 					 int leftBound, int topBound,	// initial position of the symbol
-					 int sz, double sz2,				// font size and squared of it
+					 int sz,						// font size
 					 const Mat &consec,				// vector of consecutive values 0 .. sz-1
 					 const Mat &revConsec,			// vector of consecutive values sz-1 .. 0
 					 const FT_BBox &bb) :			// the bounding box to fit
@@ -303,19 +303,20 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 	}
 
 	const PixMapSym pmc(c, g->bitmap, g->bitmap_left, g->bitmap_top,
-						(int)fontSz, sz2, consec, revConsec, bb);
-	if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) // discard disguised Space characters
+						(int)fontSz, consec, revConsec, bb);
+	if(pmc.glyphSum < EPS || sz2 - pmc.glyphSum < EPS) { // discard disguised Space characters
 		++blanks;
-	else {
-		for(const auto &prevPmc : syms)
-			if(prevPmc == pmc) {
-				++duplicates;
-				return;
-			}
-		syms.push_back(move(pmc));
-
-		const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
+		return;
 	}
+
+	for(const auto &prevPmc : syms)
+		if(prevPmc == pmc) {
+			++duplicates;
+			return;
+		}
+	syms.push_back(move(pmc));
+
+	const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
 }
 
 void PmsCont::setAsReady() {
