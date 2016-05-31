@@ -66,6 +66,13 @@ struct PixMapSym {
 	/// 256-shades of gray rectangle describing the character (top-down, left-right traversal)
 	std::vector<unsigned char> pixels;
 
+	cv::Mat colSums;		///< row with the sums of the pixels of each column of the symbol
+	cv::Mat rowSums;		///< row with the sums of the pixels of each row of the symbol
+	cv::Mat backslashDiags;	///< row with the sums of the pixels of each '\'-oriented diagonal of the symbol
+	cv::Mat slashDiags;		///< row with the sums of the pixels of each '/'-oriented diagonal of the symbol
+
+	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
+
 	/**
 	Processes a FT_Bitmap object to store a faithful representation of the symCode
 	drawn within a bounding box (BBox).
@@ -97,30 +104,27 @@ struct PixMapSym {
 
 	bool operator==(const PixMapSym &other) const; ///< useful to detect duplicates
 
-	/// Inverse of this within a square of fontSz x fontSz
-	cv::Mat invToMat(unsigned fontSz) const;
-	
-	/// Conversion PixMapSym -> Mat of type double with range [0..1] instead of [0..255]
+	cv::Mat asNarrowMat() const;			///< a matrix with the symbol within its tight bounding box
+
+	/// the symbol within a square of fontSz x fontSz, either as is, or inversed
+	cv::Mat toMat(unsigned fontSz, bool inverse = false) const;
+
+	/// Conversion PixMapSym .. Mat of type double with range [0..1] instead of [0..255]
 	cv::Mat toMatD01(unsigned fontSz) const;
 
 	/**
-	Computes the sum of the pixel values divided by 255.
+	Computing the mass center (mc) and glyphSum of a given symbol.
+	When the parameters colSums, rowSums, backslashDiags and slashDiags
+	are not nullptr, the corresponding sum is returned.
 
-	It's static to perform Unit Testing easier.
+	It's static for easier Unit Testing.
 	*/
-	static double computeGlyphSum(unsigned char rows_, unsigned char cols_,
-								  const std::vector<unsigned char> &pixels_);
-
-	/**
-	Computing the mass center (mc) of a given glyph and its background.
-
-	It's static to perform Unit Testing easier.
-	*/
-	static const cv::Point2d computeMc(unsigned sz, const std::vector<unsigned char> &data,
-									   unsigned char rows, unsigned char cols,
-									   unsigned char left, unsigned char top,
-									   double glyphSum, const cv::Mat &consec,
-									   const cv::Mat &revConsec);
+	static void computeMcAndGlyphSum(unsigned sz, const std::vector<unsigned char> &data,
+									 unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
+									 const cv::Mat &consec, const cv::Mat &revConsec,
+									 cv::Point2d &mc, double &glyphSum,
+									 cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr,
+									 cv::Mat *backslashDiags = nullptr, cv::Mat *slashDiags = nullptr);
 };
 
 struct IPresentCmap; // forward declaration
@@ -133,6 +137,8 @@ protected:
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
 	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
 	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
+	unsigned uncutBlocks = 0U;		///< count of rather large rectangular, homogeneous, white symbols
+	unsigned unreadable = 0U;		///< count of glyphs squeezed into a way too small square
 	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
 
 	// Precomputed entities during reset
@@ -149,6 +155,8 @@ public:
 	unsigned getFontSz() const;
 	unsigned getBlanksCount() const;
 	unsigned getDuplicatesCount() const;
+	unsigned getUncutBlocksCount() const;
+	unsigned getUnreadableCount() const;
 	double getCoverageOfSmallGlyphs() const;
 	const std::vector<const PixMapSym>& getSyms() const;
 

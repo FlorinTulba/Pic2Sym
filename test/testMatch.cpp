@@ -385,7 +385,7 @@ BOOST_TEST_DONT_PRINT_LOG_VALUE(StrStrPair)
 BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 
 					// For Cartesian product (all combinations) use below '*'
-					// For zip (only the combinations formed by pairs with same indeces) use '^'
+					// For zip (only the combinations formed by pairs with same indices) use '^'
 					 boost::unit_test::data::make(msArray) * fonts,
 					 ms, font) {
 	Fixt fixt; // mandatory

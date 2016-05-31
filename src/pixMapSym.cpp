@@ -41,52 +41,205 @@
 
 #include <numeric>
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 using namespace std;
 using namespace cv;
 
-/// Minimal glyph shifting and cropping or none to fit the bounding box
-static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
-						  int leftBound, int topBound, int sz,
-						  int& rows_, int& cols_, int& left_, int& top_,
-						  int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
-	rows_ = (int)bm.rows; cols_ = (int)bm.width;
-	left_ = leftBound; top_ = topBound;
+extern const double MinAreaRatioForUncutBlocksBB;
+extern const double MinCoveredPixelsRatioForSmallUnreadableSymsBB;
+extern const double MinWhiteAreaForUncutBlocksBB;
+extern const double MinAreaRatioForUnreadableSymsBB;
+extern const double MaxAvgBrightnessForHatsSumOfUnreadableSyms;
+extern const double MinAvgBrightnessForUnreadableSyms;
 
-	diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
-	if(diffLeft < 0) { // cropping left_ side?
-		if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffLeft);
-		left_ = bb.xMin;
+namespace {
+	/// Minimal glyph shifting and cropping or none to fit the bounding box
+	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
+					   int leftBound, int topBound, int sz,
+					   int& rows_, int& cols_, int& left_, int& top_,
+					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
+		rows_ = (int)bm.rows; cols_ = (int)bm.width;
+		left_ = leftBound; top_ = topBound;
+
+		diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
+		if(diffLeft < 0) { // cropping left_ side?
+			if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffLeft);
+			left_ = bb.xMin;
+		}
+		diffLeft = 0;
+
+		if(diffRight < 0) { // cropping right side?
+			if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffRight);
+			left_ = bb.xMax - cols_ + 1;
+		}
+
+		diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
+		if(diffTop < 0) { // cropping top_ side?
+			if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffTop);
+			top_ = bb.yMax;
+		}
+		diffTop = 0;
+
+		if(diffBottom < 0) { // cropping bottom side?
+			if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffBottom);
+			top_ = bb.yMin + rows_ - 1;
+		}
+
+		assert(top_>=bb.yMin && top_<=bb.yMax);
+		assert(left_>=bb.xMin && left_<=bb.xMax);
+		assert(rows_>=0 && rows_<=sz);
+		assert(cols_>=0 && cols_<=sz);
 	}
-	diffLeft = 0;
 
-	if(diffRight < 0) { // cropping right side?
-		if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffRight);
-		left_ = bb.xMax - cols_ + 1;
+	/**
+	Analyzes a horizontal / vertical projection (reduction sum) of the glyph,
+	checking for clues of uncut rectangular blocks: a projection with several (at least 2)
+	adjacent indices holding the maximum value.
+
+	@param sums the projection (reduction sum) of the glyph in horizontal / vertical direction
+	@param sideLen height / width of glyph's bounding box
+	@param countOfMaxSums [out] determined side length of a possible rectangle: [1..sideLen]
+	
+	@return true if the projection denotes a valid uncut rectangular block
+	*/
+	bool checkProjectionForUncutBlock(const Mat &sums, unsigned sideLen, int &countOfMaxSums) {
+		static const Mat structuringElem(1, 3, CV_8U, Scalar(1U));
+
+		double maxVSums;
+		minMaxIdx(sums, nullptr, &maxVSums);
+		const Mat sumsOnMax = (sums==maxVSums); // these should be the white rows/columns
+		countOfMaxSums = countNonZero(sumsOnMax); // 1..sideLen
+		if(countOfMaxSums == (int)sideLen) // the white rows/columns are consecutive, for sure
+			return true;
+
+		if(countOfMaxSums == 1)
+			return false; // a single white row/column isn't an uncut block
+
+		if(countOfMaxSums == 2) {
+			// pad sumsOnMax and then dilate it
+			Mat paddedSumsOnMax(1, sumsOnMax.cols+2, CV_8U, Scalar(0U));
+			sumsOnMax.copyTo(Mat(paddedSumsOnMax, Range::all(), Range(1, sumsOnMax.cols+1)));
+			dilate(paddedSumsOnMax, paddedSumsOnMax, structuringElem);
+			if(countNonZero(paddedSumsOnMax) - countOfMaxSums > 2)
+				return false; // there was at least one gap, so dilation filled more than 2 pixels
+		} else { // countOfMaxSums is [3..sideLen)
+			erode(sumsOnMax, sumsOnMax, structuringElem);
+			if(countOfMaxSums - countNonZero(sumsOnMax) > 2)
+				return false; // there was at least one gap, so erosion teared down more than 2 pixels
+		}
+		return true;
 	}
 
-	diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
-	if(diffTop < 0) { // cropping top_ side?
-		if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffTop);
-		top_ = bb.yMax;
+	/// Determines whether pmc is an uncut block symbol
+	bool isAnUncutBlock(const PixMapSym &pmc, unsigned height, unsigned width, unsigned bbArea,
+						 double sz2) {
+		// uncut blocks usually are large (~>25% of square)
+		if(bbArea < MinAreaRatioForUncutBlocksBB * sz2) 
+			return false;
+
+		const Mat narrowGlyph = pmc.asNarrowMat();
+		const int whitePixels = countNonZero(narrowGlyph == 255U);
+		if(whitePixels < MinWhiteAreaForUncutBlocksBB * bbArea)
+			return false; // white pixels don't cover enough from the bounding box
+
+		int rowsWithMaxSum, colsWithMaxSum; // sides of a possible uncut block
+
+		// Analyze the horizontal and vertical projections of pmc, looking for signs of uncut blocks
+		if(!checkProjectionForUncutBlock(pmc.rowSums, height, rowsWithMaxSum)
+		   || !checkProjectionForUncutBlock(pmc.colSums, width, colsWithMaxSum)
+		   || whitePixels != colsWithMaxSum * rowsWithMaxSum) // rectangle's area should be the product of its sides
+			return false;
+
+
+		// By now, the symbol is for sure a white rectangle
+
+		// Now simply avoid to report symbols like '|', '_' and '-' as uncut blocks
+		// by recognizing that their thickness is usually less than 1/2.7 from their length
+		double lengthOverThickness = (double)colsWithMaxSum / rowsWithMaxSum;
+		if(colsWithMaxSum < rowsWithMaxSum)
+			lengthOverThickness = 1./lengthOverThickness;
+		return lengthOverThickness < 2.7; // for a smaller ratio, the sides are more balanced
 	}
-	diffTop = 0;
 
-	if(diffBottom < 0) { // cropping bottom side?
-		if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffBottom);
-		top_ = bb.yMin + rows_ - 1;
+	/**
+	Determines if symbol pmc appears unreadable.
+
+	Best approach would take size 50 of the glyph and compare its features with the ones found in the
+	current font size version of the symbol. However, this would still produce some mislabeled cases
+	and besides, humans do normally recognize many symbols even when some of their features are missing.
+
+	Supervised machine learning would be the ideal solution here, since:
+	- humans can label corner-cases
+	- font sizes are 7..50
+	- there are lots of mono-spaced font families, each with several encodings,
+	each with several styles (Regular, Italic, Bold) and each with 100..30000 symbols
+
+	A basic criteria for selecting unreadable symbols is avoiding the ones with compact
+	rectangular / elliptical areas, larger than 20 - 25% of the side of the enclosing square.
+	This would work for most well-known glyphs, but it fails for solid glyphs.
+
+	Apart from the ugly, various sizes rectangular monolithic glyphs, there are some interesting
+	solid symbols which could be preserved: filled triangles, circles, playing cards suits, smilies,
+	dices, arrows a.o.
+
+	Here's the adopted solution (by no means the best):
+	- large glyphs (>20) are readable
+	- so are those who occupy very little from their square
+	- small symbols (<10) need to be less dense, no matter their bounding box size, to be recognizable
+	- fonts with sizes 10..20 are more challenging:
+	They are usually readable if their pixels sum is small and have a fair amount of branches.
+	These branches should disappear when 'opening' the symbol with an appropriate-size structuring
+	element. They also might cause some gaps filling when 'closing' the glyph.
+	So, well-readable fonts would generate more such fillings and disappearing branches than compact
+	/ squeezed symbols.
+	Therefore, it makes sense adding the 'closed' and 'open' versions of the glyph and checking the
+	'energy' it contains. Large energy levels happen for distinct glyphs. Low levels correspond to
+	bulky, branch-scarce symbols.
+	Larger font size requires a larger structuring element.
+	*/
+	bool isAnUnreadableSym(const PixMapSym &pmc, unsigned fontSz, unsigned bbArea, double sz2) {
+		// Usually, fonts of size >= 20 are quite readable
+		if(fontSz >= 20)
+			return false;
+
+		// Unreadable syms usually are large (~>64% area from their square)
+		if(bbArea < MinAreaRatioForUnreadableSymsBB * sz2)
+			return false;
+
+		const bool isPixelSumLarge = 255.*pmc.glyphSum > sz2 * MinAvgBrightnessForUnreadableSyms;
+
+		// Fonts smaller than 10, who cover > MinCoveredPixelsRatioForSmallUnreadableSymsBB%
+		// of their bounding box are not that readable
+		if(fontSz < 10)
+			return isPixelSumLarge ||
+				countNonZero(pmc.asNarrowMat()) > MinCoveredPixelsRatioForSmallUnreadableSymsBB * bbArea;
+
+		if(!isPixelSumLarge)
+			return false;
+
+		const int winSideSE = (fontSz >= 15) ? 5 : 3;
+		const Mat structuringElem = getStructuringElement(MORPH_RECT, Size(winSideSE, winSideSE));
+		const Mat glyph = pmc.toMat((int)fontSz);
+		Mat closedG, openG, hatsSum;
+		morphologyEx(glyph, closedG, MORPH_CLOSE, structuringElem);
+		morphologyEx(glyph, openG, MORPH_OPEN, structuringElem);
+
+		// hatsSum: possible fillings together with prunnable branches
+		// The larger, the more visible symbol branches are;
+		// The smaller, the fewer the branches and the compacter the symbol
+		hatsSum = closedG - openG; // same as topHat + blackHat
+		// Tophat = glyph-openG ; Blackhat = closedG-glyph
+
+		const double avgHatsSum = *mean(hatsSum).val;
+
+		return avgHatsSum < MaxAvgBrightnessForHatsSumOfUnreadableSyms;
 	}
-
-	assert(top_>=bb.yMin && top_<=bb.yMax);
-	assert(left_>=bb.xMin && left_<=bb.xMax);
-	assert(rows_>=0 && rows_<=sz);
-	assert(cols_>=0 && cols_<=sz);
-}
-
-extern const unsigned Settings_MAX_FONT_SIZE;
+} // anonymous namespace
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 const FT_Bitmap &bm,			// the bitmap to process
@@ -118,8 +271,8 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	left = (unsigned char)left_;
 	top = (unsigned char)top_;
 
-	glyphSum = computeGlyphSum(rows, cols, pixels);
-	mc = computeMc((unsigned)sz, pixels, rows, cols, left, top, glyphSum, consec, revConsec);
+	computeMcAndGlyphSum((unsigned)sz, pixels, rows, cols, left, top, consec, revConsec,
+						 mc, glyphSum, &colSums, &rowSums, &backslashDiags, &slashDiags);
 }
 
 PixMapSym::PixMapSym(const PixMapSym &other) :
@@ -127,14 +280,21 @@ PixMapSym::PixMapSym(const PixMapSym &other) :
 		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
-		pixels(other.pixels) {}
+		pixels(other.pixels),
+		rowSums(other.rowSums), colSums(other.colSums),
+		backslashDiags(other.backslashDiags), slashDiags(other.slashDiags),
+		removable(other.removable) {}
 
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
 		symCode(other.symCode),
 		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
-		pixels(move(other.pixels)) {}
+		pixels(move(other.pixels)),
+		rowSums(other.rowSums), colSums(other.colSums),
+		backslashDiags(other.backslashDiags), slashDiags(other.slashDiags),
+		removable(other.removable) {
+}
 
 PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 	if(this != &other) {
@@ -144,6 +304,11 @@ PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 		rows = other.rows; cols = other.cols;
 		left = other.left; top = other.top;
 		pixels = move(other.pixels);
+		rowSums = other.rowSums;
+		colSums = other.colSums;
+		backslashDiags = other.backslashDiags;
+		slashDiags = other.slashDiags;
+		removable = other.removable;
 	}
 	return *this;
 }
@@ -160,14 +325,18 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		equal(CBOUNDS(pixels), cbegin(other.pixels));
 }
 
-Mat PixMapSym::invToMat(unsigned fontSz) const {
-	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(255U));
+Mat PixMapSym::asNarrowMat() const {
+	return Mat((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+}
+
+Mat PixMapSym::toMat(unsigned fontSz, bool inverse/* = false*/) const {
+	Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(inverse ? 255U : 0U));
 
 	const int firstRow = (int)fontSz-(int)top-1;
 	Mat region(result,
 			   Range(firstRow, firstRow+(int)rows),
 			   Range((int)left, (int)(left+cols)));
-	const Mat pmsData = 255U - Mat((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+	const Mat pmsData = inverse ? (255U - asNarrowMat()) : asNarrowMat();
 	pmsData.copyTo(region);
 
 	return result;
@@ -183,41 +352,79 @@ Mat PixMapSym::toMatD01(unsigned fontSz) const {
 			   Range(firstRow, firstRow+(int)rows),
 			   Range((int)left, (int)(left+cols)));
 
-	Mat pmsData((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+	Mat pmsData = asNarrowMat();
 	pmsData.convertTo(pmsData, CV_64FC1, INV_255); // convert to double
 	pmsData.copyTo(region);
 
 	return result;
 }
 
-double PixMapSym::computeGlyphSum(unsigned char rows_, unsigned char cols_,
-								  const vector<unsigned char> &pixels_) {
-	if(rows_ == 0U || cols_ == 0U)
-		return 0.;
+void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &pixels_,
+									 unsigned char rows_, unsigned char cols_,
+									 unsigned char left_, unsigned char top_,
+									 const Mat &consec, const Mat &revConsec,
+									 Point2d &mc, double &glyphSum,
+									 Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/,
+									 Mat *backslashDiags/* = nullptr*/, Mat *slashDiags/* = nullptr*/) {
+	const int diagsCount = (int)(sz<<1) | 1;
+	const double centerCoord = (sz-1U)/2.;
+	const Point2d center(centerCoord, centerCoord);
+	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
+	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
+	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
+	if(backslashDiags) *backslashDiags = Mat::zeros(1, diagsCount, CV_64FC1);
+	if(slashDiags) *slashDiags = Mat::zeros(1, diagsCount, CV_64FC1);
 
-	return  *sum(Mat(1, (int)rows_*cols_, CV_8UC1, (void*)pixels_.data())).val / 255.;
-}
-
-const Point2d PixMapSym::computeMc(unsigned sz, const vector<unsigned char> &pixels_,
-								   unsigned char rows_, unsigned char cols_,
-								   unsigned char left_, unsigned char top_,
-								   double glyphSum_, const Mat &consec, const Mat &revConsec) {
-	static const double NO_PIXELS_SET_THRESHOLD = .9/(255U*Settings_MAX_FONT_SIZE*Settings_MAX_FONT_SIZE);
-	if(rows_ == 0U || cols_ == 0U || glyphSum_ < NO_PIXELS_SET_THRESHOLD) {
-		const double centerCoord = (sz-1U)/2.;
-		return Point2d(centerCoord, centerCoord);
+	if(rows_ == 0U || cols_ == 0U) {
+		mc = center; glyphSum = 0.;
+		return;
 	}
 
 	const Mat glyph((int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data());
 	Mat sumPerColumn, sumPerRow;
 
 	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
+	glyphSum = *sum(sumPerColumn).val / 255.;
+	
+	extern const unsigned Settings_MAX_FONT_SIZE;
+	static const double NO_PIXELS_SET_THRESHOLD = .9/(255U*Settings_MAX_FONT_SIZE*Settings_MAX_FONT_SIZE);
+	if(glyphSum < NO_PIXELS_SET_THRESHOLD) {
+		mc = center; glyphSum = 0.;
+		return;
+	}
+
 	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
+	Range leftRange((int)left_, (int)(left_+cols_)), topRange((int)(top_-rows_)+1, (int)top_+1);
+	if(rowSums) {
+		Mat sumPerRowTransposed = sumPerRow.t()/255.,
+			destRegion(*rowSums, Range::all(), topRange);
+		sumPerRowTransposed.copyTo(destRegion);
+	}
+	if(colSums) {
+		Mat destRegion(*colSums, Range::all(), leftRange);
+		Mat(sumPerColumn/255.).copyTo(destRegion);
+	}
+	if(backslashDiags) {
+		for(int diagIdx = 1 - (int)rows_, i = diagIdx + (int)(top_+ left_);
+				diagIdx < (int)cols_; ++diagIdx, ++i) {
+			const Mat backslashDiag = glyph.diag(diagIdx);
+			backslashDiags->at<double>(i) = *sum(backslashDiag).val/255.;
+		}
+	}
+	if(slashDiags) {
+		Mat horizFlippedGlyph;
+		flip(glyph, horizFlippedGlyph, 1); // flip around vertical axis
+		for(int diagIdx = 1 - (int)rows_, i = diagIdx + (int)(top_+ sz) - (int)(left_ + cols_);
+				diagIdx < (int)cols_; ++diagIdx, ++i) {
+			const Mat slashDiag = horizFlippedGlyph.diag(diagIdx);
+			slashDiags->at<double>(i) = *sum(slashDiag).val/255.;
+		}
+	}
 
-	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), Range(left_, left_+cols_))),
-		sumY = sumPerRow.dot(Mat(revConsec, Range(top_+1-rows_, top_+1)));
+	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
+				sumY = sumPerRow.dot(Mat(revConsec, topRange));
 
-	return Point2d(sumX, sumY) / (255. * glyphSum_);
+	mc = Point2d(sumX, sumY) / (255. * glyphSum);
 }
 
 PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
@@ -251,6 +458,24 @@ unsigned PmsCont::getDuplicatesCount() const {
 	return duplicates;
 }
 
+unsigned PmsCont::getUncutBlocksCount() const {
+	if(!ready) {
+		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
+		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
+	}
+
+	return uncutBlocks;
+}
+
+unsigned PmsCont::getUnreadableCount() const {
+	if(!ready) {
+		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
+		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
+	}
+
+	return unreadable;
+}
+
 double PmsCont::getCoverageOfSmallGlyphs() const {
 	if(!ready) {
 		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
@@ -272,7 +497,7 @@ const vector<const PixMapSym>& PmsCont::getSyms() const {
 void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	ready = false;
 	fontSz = fontSz_;
-	blanks = duplicates = 0U;
+	blanks = duplicates = uncutBlocks = unreadable = 0U;
 	sz2 = (double)fontSz_ * fontSz_;
 	coverageOfSmallGlyphs = 0.;
 
@@ -295,9 +520,13 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 		throw logic_error("Cannot " __FUNCTION__ " after setAsReady without reset-ing");
 	}
 
+	extern const bool PreserveRemovableSymbolsForExamination;
+
 	const FT_Bitmap b = g->bitmap;
 	const unsigned height = b.rows, width = b.width;
-	if(height==0U || width==0U) { // skip Space character
+
+	// Skip Space characters
+	if(height==0U || width==0U) {
 		++blanks;
 		return;
 	}
@@ -309,11 +538,36 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb) {
 		return;
 	}
 
+	// Exclude duplicates, as well
 	for(const auto &prevPmc : syms)
 		if(prevPmc == pmc) {
 			++duplicates;
 			return;
 		}
+
+	const unsigned bbArea = height * width;
+
+	// Initially I considered removing only these ugly, bulky, rectangular symbols.
+	if(isAnUncutBlock(pmc, height, width, bbArea, sz2)) {
+		++uncutBlocks;
+		if(!PreserveRemovableSymbolsForExamination)
+			return;
+		const_cast<PixMapSym&>(pmc).removable = true;
+		goto labelAppendPmcToSyms;
+	}
+
+	// Later I thought that unreadable glyphs would just annoy the user when inspecting the approximated image
+	if(isAnUnreadableSym(pmc, fontSz, bbArea, sz2)) {
+		++unreadable;
+		if(!PreserveRemovableSymbolsForExamination)
+			return;
+		const_cast<PixMapSym&>(pmc).removable = true;
+		goto labelAppendPmcToSyms; // just in case more tests will appear inbetween
+	}
+
+	// Add here any other filters to be applied on the charmap
+	
+labelAppendPmcToSyms:
 	syms.push_back(move(pmc));
 
 	const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
@@ -328,13 +582,13 @@ void PmsCont::setAsReady() {
 	extern const double PmsCont_SMALL_GLYPHS_PERCENT;
 	const auto smallGlyphsQty = (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
 	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
-				[] (const PixMapSym &first, const PixMapSym &second) -> bool {
+				[] (const PixMapSym &first, const PixMapSym &second) {
 		return first.glyphSum < second.glyphSum;
 	});
 	coverageOfSmallGlyphs = next(syms.begin(), smallGlyphsQty)->glyphSum / sz2;
 
 	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
-		 [] (const PixMapSym &first, const PixMapSym &second) -> bool {
+		 [] (const PixMapSym &first, const PixMapSym &second) {
 		return first.symCode < second.symCode;
 	});
 

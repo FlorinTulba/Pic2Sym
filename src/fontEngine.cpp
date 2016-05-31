@@ -435,17 +435,21 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	// 1% for this stage, no more reports
 	symsCont.setAsReady();
 
+	if(symsCont.getBlanksCount() != 0U)
+		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
+	if(symsCont.getDuplicatesCount() != 0U)
+		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
+	if(symsCont.getUncutBlocksCount() != 0U)
+		cout<<"Detected "<<symsCont.getUncutBlocksCount()<<" uncut blocks in the symsSet!"<<endl;
+	if(symsCont.getUnreadableCount() != 0U)
+		cout<<"Detected "<<symsCont.getUnreadableCount()<<" unreadable symbols in the symsSet!"<<endl;
+
 #ifdef _DEBUG
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
 		fixed<<setprecision(2)<<100.*symsCont.getCoverageOfSmallGlyphs()<<"% of the box"<<endl;
 
-	if(symsCont.getBlanksCount() != 0U)
-		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
-	if(symsCont.getDuplicatesCount() != 0U)
-		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
-	
 	if(!toResize.empty()) {
 		cout<<toResize.size()<<" symbols were resized twice: ";
 		for(const auto &item : toResize)

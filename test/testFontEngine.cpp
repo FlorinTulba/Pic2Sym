@@ -108,9 +108,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0");
 		cols = 5U; top = getSz()-1U;
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_REQUIRE(gs == 0.);
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
 	}
@@ -119,9 +118,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0");
 		rows = 4U; top = getSz()-1U;
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_REQUIRE(gs == 0.);
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
 	}
@@ -131,9 +129,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		rows = cols = 5U; top = getSz()-1U;
 		pixels.assign(rows*cols, 0U);
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(gs == 0., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec()); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
 	}
@@ -145,9 +142,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
 		pixels[0] = 170; pixels[cols-1] = 85; // 170 = 85*2, and 170 + 85 = 255
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4)); // 170 + 85 = 255
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
 		BOOST_TEST(mc.y == getSz()-1U, test_tools::tolerance(1e-4));
@@ -160,9 +156,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
 		pixels.assign(rows*cols, uc);
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == getSz()*getSz()*uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
@@ -178,9 +173,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		cout<<"Checking patch with a single non-zero pixel at: top="
 			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)left, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == (double)(getSz() - 1U - top), test_tools::tolerance(1e-4));
@@ -194,9 +188,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		const auto uc = ut::randUnsignedChar(1U);
 		pixels.assign(rows*cols, uc); // all pixels are 'uc'
 
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)(left+1U), test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == (double)(getSz() - 1U - (top - 1U)), test_tools::tolerance(1e-4));
@@ -218,9 +211,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 			<<(unsigned)p1<<'('<<(unsigned)x1<<','<<(unsigned)y1<<"); "
 			<<(unsigned)p2<<'('<<(unsigned)x2<<','<<(unsigned)y2<<')'<<endl;
 		
-		gs = PixMapSym::computeGlyphSum(rows, cols, pixels);
+		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
-		mc = PixMapSym::computeMc(getSz(), pixels, rows, cols, left, top, gs, getConsec(), getRevConsec());
 		// mc is measured based on a DESCENDING vertical axis
 		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) )
 		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
@@ -345,7 +337,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
 		BOOST_CHECK_NO_THROW(fe.symsSet());
-		BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569, test_tools::tolerance(1e-4));
+ 		BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569, test_tools::tolerance(1e-4));
 
 		BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));

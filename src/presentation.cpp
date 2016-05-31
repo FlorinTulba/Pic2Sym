@@ -260,7 +260,7 @@ void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
 		vector<const Mat> matSyms;
 		const auto fontSz = getFontSize();
 		for(const auto &pms : syms)
-			matSyms.emplace_back(pms.invToMat(fontSz));
+			matSyms.emplace_back(pms.toMat(fontSz, true));
 		
 		const_cast<vector<const PixMapSym>&>(syms).clear(); // discard local copy of the vector
 

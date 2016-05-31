@@ -84,7 +84,7 @@ void MatchEngine::updateSymbols() {
 
 		const auto &pms = rawSyms[i];
 		const Mat glyph = pms.toMatD01(sz),
-				negGlyph = pms.invToMat(sz);
+				negGlyph = pms.toMat(sz, !pms.removable);
 		Mat fgMask, bgMask, edgeMask, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 
 		// for very small fonts, minVal might be > 0 and maxVal might be < 255

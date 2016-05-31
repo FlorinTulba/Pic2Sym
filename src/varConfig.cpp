@@ -116,6 +116,14 @@ extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT);
 extern READ_DOUBLE_PROP(MatchEngine_updateSymbols_STILL_BG);
 extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
+extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
+extern READ_DOUBLE_PROP(MinAreaRatioForUncutBlocksBB);
+extern READ_DOUBLE_PROP(MinCoveredPixelsRatioForSmallUnreadableSymsBB);
+extern READ_DOUBLE_PROP(MinWhiteAreaForUncutBlocksBB);
+extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
+extern READ_DOUBLE_PROP(MaxAvgBrightnessForHatsSumOfUnreadableSyms);
+extern READ_DOUBLE_PROP(MinAvgBrightnessForUnreadableSyms);
+
 static READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
 extern const Size StructuralSimilarity_WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
 extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA);

@@ -65,6 +65,24 @@ Transform_ProgressReportsIncrement	0.04
 ; 0.1 means that smallest 10% of all glyphs are considered small
 PmsCont_SMALL_GLYPHS_PERCENT	0.1
 
+; Switch that allows visualizing the symbols that normally are removed in the Cmap Viewer
+; Note they will appear inverted and they also will participate in the matching process
+PreserveRemovableSymbolsForExamination	false
+
+; Detection of uncut rectangles
+; 0..1 range values for detecting basic rectangle symbols that can be removed,
+; since the user expects to see anything but another rectangle within the rectangular patch itself
+MinAreaRatioForUncutBlocksBB	.2
+MinWhiteAreaForUncutBlocksBB	.35
+
+; Detection of unreadable glyphs
+; MinAreaRatioForUnreadableSymsBB and MinCoveredPixelsRatioForSmallUnreadableSymsBB are in 0..1 range
+; the other 2 constants are in 0..255 range
+MinAreaRatioForUnreadableSymsBB	.6
+MinCoveredPixelsRatioForSmallUnreadableSymsBB	.6
+MaxAvgBrightnessForHatsSumOfUnreadableSyms	35.
+MinAvgBrightnessForUnreadableSyms	70.
+
 ; Constant for background threshold
 ; 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 ; STILL_BG was set to 0, as there are font families with extremely similar glyphs.
