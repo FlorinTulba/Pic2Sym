@@ -465,7 +465,10 @@ namespace {
 			Range rowRange(r - fontSzM1, r + 1);
 			for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
 				Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
-				negSymExtractor(it).copyTo(region);
+				vector<Mat> glyphChannels(3, negSymExtractor(it));
+				Mat glyphAsIfColor;
+				merge(glyphChannels, glyphAsIfColor);
+				glyphAsIfColor.copyTo(region);
 			}
 		}
 	}
@@ -524,14 +527,14 @@ void CmapInspect::reset() {
 }
 
 Mat CmapInspect::createGrid() const {
-	Mat result(CmapInspect_pageSz, CV_8UC1, Scalar(255U));
+	Mat result(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
 
 	// Draws horizontal & vertical cell borders
 	const int cellSide = 1+cmapPresenter.getFontSize();
 	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
-		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), 200);
+		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), Scalar(255U, 200U, 200U));
 	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
-		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), 200);
+		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), Scalar(255U, 200U, 200U));
 	return result;
 }
 
