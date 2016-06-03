@@ -206,12 +206,18 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 		return false;
 	}
 
+	if((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate)
+		return false;
+
 	if(!fontSzOk)
 		fontSzOk = true;
 
-	if(!fontFamilyOk || ((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate))
+	if(!fontFamilyOk) {
+		if((unsigned)fontSz != cfg.ss.getFontSz())
+			cfg.ss.setFontSz(fontSz);
 		return false;
-
+	}
+		
 	cfg.ss.setFontSz(fontSz);
 	pCmi->updateGrid();
 
