@@ -272,7 +272,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	top = (unsigned char)top_;
 
 	computeMcAndGlyphSum((unsigned)sz, pixels, rows, cols, left, top, consec, revConsec,
-						 mc, glyphSum, &colSums, &rowSums, &backslashDiags, &slashDiags);
+						 mc, glyphSum, &colSums, &rowSums);
 }
 
 PixMapSym::PixMapSym(const PixMapSym &other) :
@@ -282,7 +282,6 @@ PixMapSym::PixMapSym(const PixMapSym &other) :
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		pixels(other.pixels),
 		rowSums(other.rowSums), colSums(other.colSums),
-		backslashDiags(other.backslashDiags), slashDiags(other.slashDiags),
 		removable(other.removable) {}
 
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
@@ -292,7 +291,6 @@ PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulatio
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		pixels(move(other.pixels)),
 		rowSums(other.rowSums), colSums(other.colSums),
-		backslashDiags(other.backslashDiags), slashDiags(other.slashDiags),
 		removable(other.removable) {
 }
 
@@ -306,8 +304,6 @@ PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 		pixels = move(other.pixels);
 		rowSums = other.rowSums;
 		colSums = other.colSums;
-		backslashDiags = other.backslashDiags;
-		slashDiags = other.slashDiags;
 		removable = other.removable;
 	}
 	return *this;
@@ -364,16 +360,13 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 									 unsigned char left_, unsigned char top_,
 									 const Mat &consec, const Mat &revConsec,
 									 Point2d &mc, double &glyphSum,
-									 Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/,
-									 Mat *backslashDiags/* = nullptr*/, Mat *slashDiags/* = nullptr*/) {
+									 Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
 	const int diagsCount = (int)(sz<<1) | 1;
 	const double centerCoord = (sz-1U)/2.;
 	const Point2d center(centerCoord, centerCoord);
 	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
 	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
 	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
-	if(backslashDiags) *backslashDiags = Mat::zeros(1, diagsCount, CV_64FC1);
-	if(slashDiags) *slashDiags = Mat::zeros(1, diagsCount, CV_64FC1);
 
 	if(rows_ == 0U || cols_ == 0U) {
 		mc = center; glyphSum = 0.;
@@ -403,22 +396,6 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 	if(colSums) {
 		Mat destRegion(*colSums, Range::all(), leftRange);
 		Mat(sumPerColumn/255.).copyTo(destRegion);
-	}
-	if(backslashDiags) {
-		for(int diagIdx = 1 - (int)rows_, i = diagIdx + (int)(top_+ left_);
-				diagIdx < (int)cols_; ++diagIdx, ++i) {
-			const Mat backslashDiag = glyph.diag(diagIdx);
-			backslashDiags->at<double>(i) = *sum(backslashDiag).val/255.;
-		}
-	}
-	if(slashDiags) {
-		Mat horizFlippedGlyph;
-		flip(glyph, horizFlippedGlyph, 1); // flip around vertical axis
-		for(int diagIdx = 1 - (int)rows_, i = diagIdx + (int)(top_+ sz) - (int)(left_ + cols_);
-				diagIdx < (int)cols_; ++diagIdx, ++i) {
-			const Mat slashDiag = horizFlippedGlyph.diag(diagIdx);
-			slashDiags->at<double>(i) = *sum(slashDiag).val/255.;
-		}
 	}
 
 	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),

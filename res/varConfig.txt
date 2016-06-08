@@ -61,6 +61,26 @@ Settings_MAX_V_SYMS	768
 ; 0.05 means reporting every 5%
 Transform_ProgressReportsIncrement	0.04
 
+; Which symbol clusters to investigate?
+; The constant below allows checking also those clusters whose score appears
+; slightly inferior to the best score known at a moment
+InvestigateClusterEvenForInferiorScoreFactor	0.999
+
+; Consider clustering 2 symbols only when the dot product of their miniaturized and normalized
+; versions has a value close to miniaturized symbols' area.
+; The constant below states how close should be the dot product to the mentioned area.
+ClusterAllowedForDotProductOverAreaMoreThan	0.975
+
+; Max L2 error per pixel between the projections of 2 symbols that can be clustered together
+MaxAvgProjErrForClustering	0.007
+
+; Maximum offset between mass-centers of 2 symbols (relative to the symbol size) allowed to
+; still consider clustering the glyphs together
+MaxRelMcOffsetForClustering	0.01
+
+; Maximum difference of the average pixel value from 2 symbols that still allows clustering the glyphs
+MaxDiffAvgPixelValForClustering	0.01
+
 ; What percent (0..1) of the glyphs from a charmap set are considered small
 ; 0.1 means that smallest 10% of all glyphs are considered small
 PmsCont_SMALL_GLYPHS_PERCENT	0.1

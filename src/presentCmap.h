@@ -50,6 +50,9 @@ struct IPresentCmap /*abstract*/ : virtual IController {
 	/// Getting the fonts to fill currently displayed page
 	virtual MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
+	/// Allows visualizing the symbol clusters within the Cmap View
+	virtual const std::set<unsigned>& getClusterOffsets() const = 0;
+
 	/// Prepares for a new font resize operation
 	virtual void resetCmapView() = 0;
 

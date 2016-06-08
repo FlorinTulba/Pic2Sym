@@ -169,6 +169,7 @@ public:
 	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
 	unsigned getFontSize() const override;
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
+	const std::set<unsigned>& getClusterOffsets() const override;
 	void showUnofficialSymDetails(unsigned symsCount) const override;
 
 	// Implementation of IValidateFont below

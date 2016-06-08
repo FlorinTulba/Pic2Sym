@@ -48,10 +48,10 @@
 
 /// Most symbol information
 struct SymData {
-	const unsigned long code;		///< the code of the symbol
+	const unsigned long code = ULONG_MAX;	///< the code of the symbol
 	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
-	const double pixelSum;			///< sum of the values of the pixels, each in 0..1
+	const double pixelSum = 0.;		///< sum of the values of the pixels, each in 0..1
 	const cv::Point2d mc;			///< mass center of the symbol given original fg & bg
 
 	enum { // indices of each matrix type within a MatArray object
@@ -84,6 +84,32 @@ struct SymData {
 	SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 			const cv::Point2d &mc_, const IdxMatMap &relevantMats);
 #endif
+
+protected:
+	SymData(); ///< convenience base constructor for ClusterData from below
 };
+
+/// VSymData - vector with most information about each symbol
+typedef std::vector<const SymData> VSymData;
+
+/**
+Synthesized symbol as the representative of several symbols that were clustered together.
+Inherits from SymData to qualify in passing as SymData& parameter to assessMatch method.
+*/
+struct ClusterData : SymData {
+	const unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
+	const unsigned sz;				///< size of the cluster - how many symbols form the cluster
+	/**
+	Constructs a cluster representative for the selected symbols.
+
+	@param symsSet the set of all symbols (before clustering)
+	@param clusterSymIndices_ the indices towards the symbols from symsSet which belong to this cluster
+	*/
+	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_, const std::vector<unsigned> &clusterSymIndices);
+};
+
+/// VClusterData - vector with most information about each cluster
+typedef std::vector<const ClusterData> VClusterData;
+
 
 #endif

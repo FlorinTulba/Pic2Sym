@@ -192,6 +192,10 @@ MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned ma
 	return me.getSymsRange(from, maxCount);
 }
 
+const set<unsigned>& Controller::getClusterOffsets() const {
+	return me.getClusterOffsets();
+}
+
 void Controller::showUnofficialSymDetails(unsigned symsCount) const {
 	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
 
@@ -448,38 +452,91 @@ namespace {
 	@param content the resulted page as a matrix (image)
 	@param grid the 'hive' for the glyphs to be displayed
 	@param cmapPresenter provides the font size
+	@param clusterOffsets where does each cluster start
+	@param idxOfFirstSymFromPage index of the first symbol to be displayed on the page
 	*/
 	template<typename Iterator>
 	void populateGrid(Iterator it, Iterator itEnd,
 					  NegSymExtractor<Iterator> negSymExtractor,
-					  Mat &content, const Mat &grid, const IPresentCmap &cmapPresenter) {
+					  Mat &content, const Mat &grid, const IPresentCmap &cmapPresenter,
+					  const set<unsigned> &clusterOffsets = {},
+					  unsigned idxOfFirstSymFromPage = UINT_MAX) {
 		content = grid.clone();
+		const unsigned symsToShow = (unsigned)distance(it, itEnd);
 		const int fontSz = cmapPresenter.getFontSize(),
-			fontSzM1 = fontSz - 1,
 			cellSide = 1 + fontSz,
 			height = CmapInspect_pageSz.height,
 			width = CmapInspect_pageSz.width;
 
 		// Place each 'negative' glyph within the grid
-		for(int r = fontSzM1; it!=itEnd && r < height; r += cellSide) {
-			Range rowRange(r - fontSzM1, r + 1);
-			for(int c = fontSzM1; it!=itEnd && c < width; c += cellSide, ++it) {
-				Mat region(content, rowRange, Range(c - fontSzM1, c + 1));
-				vector<Mat> glyphChannels(3, negSymExtractor(it));
-				Mat glyphAsIfColor;
+		for(int r = cellSide; it!=itEnd && r < height; r += cellSide) {
+			Range rowRange(r - fontSz, r);
+			for(int c = cellSide; it!=itEnd && c < width; c += cellSide, ++it) {
+				const vector<Mat> glyphChannels(3, negSymExtractor(it));
+				Mat glyphAsIfColor, region(content, rowRange, Range(c - fontSz, c));
 				merge(glyphChannels, glyphAsIfColor);
 				glyphAsIfColor.copyTo(region);
 			}
 		}
+
+		if(clusterOffsets.empty() || UINT_MAX == idxOfFirstSymFromPage)
+			return;
+
+		// Display cluster limits if last 2 parameters provide this information
+		auto showMark = [&] (unsigned offsetNewCluster, bool endMark) {
+			static const Scalar ClusterMarkColor(0U, 0U, 255U),
+							ClustersEndMarkColor(128U, 0U, 64U);
+			const unsigned symsInArow = (unsigned)((width - 1) / cellSide);
+			const div_t pos = div((int)offsetNewCluster, (int)symsInArow);
+			const unsigned r = (unsigned)pos.quot * cellSide + 1,
+				c = (unsigned)pos.rem * cellSide;
+			const Mat clusterMark(fontSz, 1, CV_8UC3,
+								  endMark ? ClustersEndMarkColor : ClusterMarkColor);
+			clusterMark.copyTo(content.col(c).rowRange(r, r + fontSz));
+		};
+
+		const auto itBegin = clusterOffsets.cbegin();
+		const unsigned firstClusterSz = *std::next(itBegin) - *itBegin;
+		if(firstClusterSz < 2U) {
+			// show the end mark before the 1st symbol to signal there are no non-trivial clusters
+			showMark(0U, true);
+			return;
+		}
+
+		auto itCo = clusterOffsets.lower_bound(idxOfFirstSymFromPage);
+		assert(itCo != clusterOffsets.cend());
+		if(itCo != itBegin) { // true if the required page is not the 1st one
+			const unsigned prevClustSz = *itCo - *std::prev(itCo);
+			if(prevClustSz < 2U)
+				// When even the last cluster on the previous page was trivial,
+				// this page and following ones will contain only trivial clusters.
+				// So, nothing to mark, therefore just leave.
+				return;
+		}
+
+		// Here the size of previous cluster is >= 2		
+		for(unsigned offsetNewCluster = *itCo - idxOfFirstSymFromPage; offsetNewCluster < symsToShow; ++itCo) {
+			const unsigned curClustSz = *std::next(itCo) - *itCo;
+			const bool firstTrivialCluster = curClustSz < 2U;
+
+			// mark cluster beginning or the end of non-trivial clusters
+			showMark(offsetNewCluster, firstTrivialCluster);
+			if(firstTrivialCluster)
+				break; // stop marking trivial clusters
+
+			offsetNewCluster += curClustSz;
+		}
 	}
 } // anonymous namespace
 
-void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair) {
+void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair,
+							   const set<unsigned> &clusterOffsets,
+							   unsigned idxOfFirstSymFromPage) {
 	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
 				   (NegSymExtractor<MatchEngine::VSymDataCIt>) // conversion
 				   [](const MatchEngine::VSymDataCIt &iter) { return iter->symAndMasks[SymData::NEG_SYM_IDX]; },
-				   content, grid, cmapPresenter);
+				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
 }
 
 void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
@@ -527,15 +584,16 @@ void CmapInspect::reset() {
 }
 
 Mat CmapInspect::createGrid() const {
-	Mat result(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
+	static const Scalar GridColor(255U, 200U, 200U);
+	Mat emptyGrid(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
 
 	// Draws horizontal & vertical cell borders
 	const int cellSide = 1+cmapPresenter.getFontSize();
-	for(int i = cellSide-1; i < CmapInspect_pageSz.width; i += cellSide)
-		line(result, Point(i, 0), Point(i, CmapInspect_pageSz.height-1), Scalar(255U, 200U, 200U));
-	for(int i = cellSide-1; i < CmapInspect_pageSz.height; i += cellSide)
-		line(result, Point(0, i), Point(CmapInspect_pageSz.width-1, i), Scalar(255U, 200U, 200U));
-	return result;
+	for(int i = 0; i < CmapInspect_pageSz.width; i += cellSide)
+		emptyGrid.col(i).setTo(GridColor);
+	for(int i = 0; i < CmapInspect_pageSz.height; i += cellSide)
+		emptyGrid.row(i).setTo(GridColor);
+	return emptyGrid;
 }
 
 extern const wstring ControlPanel_aboutText;

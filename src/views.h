@@ -148,7 +148,9 @@ protected:
 	cv::Mat createGrid() const;				///< generates the grid that separates the glyphs
 
 	/// content = grid + glyphs for current page specified by a pair of iterators
-	void populateGrid(const MatchEngine::VSymDataCItPair &itPair);
+	void populateGrid(const MatchEngine::VSymDataCItPair &itPair,
+					  const std::set<unsigned> &clusterOffsets,
+					  unsigned idxOfFirstSymFromPage);
 
 public:
 	CmapInspect(const IPresentCmap &cmapPresenter_);

@@ -126,7 +126,7 @@ extern const String CmapInspect_pageTrackName;
 unsigned CmapInspect::computeSymsPerPage() const {
 	const int cellSide = 1+cmapPresenter.getFontSize();
 	extern const Size CmapInspect_pageSz;
-	return (CmapInspect_pageSz.width / cellSide) * (CmapInspect_pageSz.height / cellSide);
+	return ((CmapInspect_pageSz.width - 1) / cellSide) * ((CmapInspect_pageSz.height - 1) / cellSide);
 }
 
 void CmapInspect::updateGrid() {
@@ -154,7 +154,9 @@ void CmapInspect::showPage(unsigned pageIdx) {
 	if((unsigned)page != pageIdx)
 		setTrackbarPos(CmapInspect_pageTrackName, winName, pageIdx); // => page = pageIdx
 
-	populateGrid(cmapPresenter.getFontFaces(symsPerPage*pageIdx, symsPerPage));
+	const unsigned idxOfFirstSymFromPage = symsPerPage*pageIdx;
+	populateGrid(cmapPresenter.getFontFaces(idxOfFirstSymFromPage, symsPerPage),
+				 cmapPresenter.getClusterOffsets(), idxOfFirstSymFromPage);
 	imshow(winName, content);
 }
 

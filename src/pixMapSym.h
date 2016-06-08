@@ -68,8 +68,6 @@ struct PixMapSym {
 
 	cv::Mat colSums;		///< row with the sums of the pixels of each column of the symbol
 	cv::Mat rowSums;		///< row with the sums of the pixels of each row of the symbol
-	cv::Mat backslashDiags;	///< row with the sums of the pixels of each '\'-oriented diagonal of the symbol
-	cv::Mat slashDiags;		///< row with the sums of the pixels of each '/'-oriented diagonal of the symbol
 
 	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
 
@@ -114,8 +112,8 @@ struct PixMapSym {
 
 	/**
 	Computing the mass center (mc) and glyphSum of a given symbol.
-	When the parameters colSums, rowSums, backslashDiags and slashDiags
-	are not nullptr, the corresponding sum is returned.
+	When the parameters colSums, rowSums are not nullptr,
+	the corresponding sum is returned.
 
 	It's static for easier Unit Testing.
 	*/
@@ -123,8 +121,7 @@ struct PixMapSym {
 									 unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
 									 const cv::Mat &consec, const cv::Mat &revConsec,
 									 cv::Point2d &mc, double &glyphSum,
-									 cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr,
-									 cv::Mat *backslashDiags = nullptr, cv::Mat *slashDiags = nullptr);
+									 cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
 };
 
 struct IPresentCmap; // forward declaration

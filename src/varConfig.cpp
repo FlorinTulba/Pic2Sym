@@ -112,6 +112,12 @@ extern READ_UINT_PROP(Settings_MAX_H_SYMS);
 extern READ_UINT_PROP(Settings_MIN_V_SYMS);
 extern READ_UINT_PROP(Settings_MAX_V_SYMS);
 
+extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor);
+extern READ_DOUBLE_PROP(ClusterAllowedForDotProductOverAreaMoreThan);
+extern READ_DOUBLE_PROP(MaxAvgProjErrForClustering);
+extern READ_DOUBLE_PROP(MaxRelMcOffsetForClustering);
+extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForClustering);
+
 extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT);
 extern READ_DOUBLE_PROP(MatchEngine_updateSymbols_STILL_BG);
 extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);

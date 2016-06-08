@@ -204,7 +204,7 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 BestMatch& BestMatch::reset() {
 	score = std::numeric_limits<double>::lowest();
 	symCode = none;
-	symIdx = none;
+	symIdx = lastSelectedCandidateCluster = none;
 	pSymData = nullptr;
 	bestVariant = ApproxVariant();
 	return *this;

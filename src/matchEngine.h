@@ -38,6 +38,8 @@
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
+#include <set>
+
 #include "match.h"
 #include "fontEngine.h"
 
@@ -52,9 +54,6 @@ class Settings; // forward declaration
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine : public IMatch {
 public:
-	/// VSymData - vector with most information about each symbol
-	typedef std::vector<SymData> VSymData;
-
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
 	typedef VSymData::const_iterator VSymDataCIt;
 	typedef std::pair< VSymDataCIt, VSymDataCIt > VSymDataCItPair;
@@ -64,6 +63,8 @@ protected:
 	FontEngine &fe;				///< symbols set manager
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
 	VSymData symsSet;			///< set of most information on each symbol
+	VClusterData clusters;		///< the clustered symbols
+	std::set<unsigned> clusterOffsets;	///< start index in clusters where a new cluster starts
 
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
@@ -79,6 +80,7 @@ public:
 	/// Needed to display the cmap - returns a pair of symsSet iterators
 	VSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
+	const std::set<unsigned>& getClusterOffsets() const;
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
 	void getReady();		///< called before a series of findBetterMatch
