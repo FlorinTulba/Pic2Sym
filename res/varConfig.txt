@@ -47,6 +47,10 @@ Comparator_defaultTransparency	.25
 CmapInspect_width	640
 CmapInspect_height	480
 
+; If interested in the histogram representing the distribution of the weights of the symbols
+; set this flag to true
+ViewSymWeightsHistogram	false
+
 ; Limits for the Settings
 Settings_MIN_FONT_SIZE	7
 Settings_MAX_FONT_SIZE	50

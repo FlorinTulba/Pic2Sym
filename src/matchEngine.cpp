@@ -193,7 +193,7 @@ namespace {
 #pragma endregion initSmallSyms
 
 		// cluster smallSyms
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
  		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countAdotB = 0U, countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
 #endif
 		static const double SqMaxAvgProjErrForClustering = MaxAvgProjErrForClustering * MaxAvgProjErrForClustering;
@@ -202,7 +202,7 @@ namespace {
 		const unsigned clustersCount = (unsigned)partition(smallSyms, clusterLabels, [&] (
 														   const InfoForClustering &a,
 														   const InfoForClustering &b) {
-#ifndef _DEBUG
+#if !defined _DEBUG || defined UNIT_TESTING
 			if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForClustering)
 				return false;
 			if(norm(a.mc - b.mc) > MaxRelMcOffsetForClustering)
@@ -280,7 +280,7 @@ namespace {
 		});
 		cout<<"The "<<symsCount<<" symbols were clustered in "<<clustersCount<<" groups"<<endl;
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined UNIT_TESTING
 		PRINTLN(countAvgPixDiff);
 		PRINTLN(countMcsOffset);
 		PRINTLN(countAdotB);
@@ -301,7 +301,7 @@ namespace {
 		// Typically, there are only a few clusters larger than 1 element.
 		// This partition separates the actual formed clusters from one-of-a-kind elements
 		// leaving less work to perform to the sort executed afterwards
-		auto itFirstClusterWithOneItem = partition(BOUNDS(symsIndicesPerCluster),
+		auto itFirstClusterWithOneItem = stable_partition(BOUNDS(symsIndicesPerCluster),
 												   [] (const vector<unsigned> &a) {
 			return a.size() > 1U; // place actual clusters at the beginning of the vector
 		});
@@ -312,7 +312,8 @@ namespace {
 			distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem)
 			<<" non-trivial clusters that hold a total of "<<clustered<<" symbols."<<endl;
 		
-		sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
+		// Stable partition and sort leave the symbols organized in a more pleasant way than using unstable algorithms.
+		stable_sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
 			 [] (const vector<unsigned> &a, const vector<unsigned> &b) {
 			return a.size() > b.size(); // sort in descending order
 		});

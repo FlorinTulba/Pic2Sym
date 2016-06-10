@@ -128,7 +128,38 @@ namespace {
 			fn();
 		}
 	};
-}
+
+	/// Displays a histogram with the distribution of the weights of the symbols from the charmap
+	void viewSymWeightsHistogram(const vector<const PixMapSym> &theSyms) {
+#ifndef UNIT_TESTING
+		vector<double> symSums;
+		for(const auto &pms : theSyms)
+			symSums.push_back(pms.glyphSum);
+
+		static const unsigned MaxBinHeight = 256U;
+		const unsigned binsCount = min(256U, (unsigned)symSums.size());
+		const double smallestSum = symSums.front(), largestSum = symSums.back(),
+			sumsSpan = largestSum - smallestSum;
+		vector<unsigned> hist(binsCount, 0U);
+		const auto itBegin = symSums.cbegin();
+		for(unsigned bin = 0U, prevCount = 0U; bin < binsCount; ++bin) {
+			const auto it = upper_bound(CBOUNDS(symSums), smallestSum + sumsSpan*(bin+1.)/binsCount);
+			const unsigned curCount = (unsigned)distance(itBegin, it);
+			hist[bin] = curCount - prevCount;
+			prevCount = curCount;
+		}
+		const double maxBinValue = (double)*max_element(CBOUNDS(hist));
+		for(unsigned &binValue : hist)
+			binValue = (unsigned)round(binValue * MaxBinHeight / maxBinValue);
+		Mat histImg(MaxBinHeight, binsCount, CV_8UC1, Scalar(255U));
+		for(unsigned bin = 0U; bin < binsCount; ++bin)
+			if(hist[bin] > 0U)
+				histImg.rowRange(MaxBinHeight-hist[bin], MaxBinHeight).col(bin) = 0U;
+		imshow("histogram", histImg);
+		waitKey(1);
+#endif // UNIT_TESTING not defined
+	}
+} // anonymous namespace
 
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
 
@@ -253,6 +284,10 @@ void Controller::symbolsChanged() {
 	// Official versions of the status bar and the 1st cmap page
 	pCmi->setStatus(textForCmapStatusBar());
 	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
+
+	extern const bool ViewSymWeightsHistogram;
+	if(ViewSymWeightsHistogram)
+		viewSymWeightsHistogram(fe.symsSet());
 }
 
 void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {

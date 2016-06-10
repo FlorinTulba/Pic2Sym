@@ -94,6 +94,7 @@ static PropsReader varConfig("res/varConfig.txt");
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
+extern READ_BOOL_PROP(ViewSymWeightsHistogram);
 
 extern READ_BOOL_PROP(UsingOMP); // global OpenMP switch
 extern READ_BOOL_PROP_COND(ParallelizePixMapStatistics, UsingOMP);

@@ -554,20 +554,16 @@ void PmsCont::setAsReady() {
 	if(ready)
 		return;
 
+	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
+		 [] (const PixMapSym &first, const PixMapSym &second) {
+		return first.glyphSum < second.glyphSum;
+	});
+
 	// Determine below max box coverage for smallest glyphs from the kept symsSet.
 	// This will be used to favor using larger glyphs when this option is selected.
 	extern const double PmsCont_SMALL_GLYPHS_PERCENT;
 	const auto smallGlyphsQty = (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
-	nth_element(syms.begin(), next(syms.begin(), smallGlyphsQty), syms.end(),
-				[] (const PixMapSym &first, const PixMapSym &second) {
-		return first.glyphSum < second.glyphSum;
-	});
 	coverageOfSmallGlyphs = next(syms.begin(), smallGlyphsQty)->glyphSum / sz2;
-
-	sort(BOUNDS(syms), // just to appear familiar while visualizing the cmap
-		 [] (const PixMapSym &first, const PixMapSym &second) {
-		return first.symCode < second.symCode;
-	});
 
 	ready = true;
 }
