@@ -72,8 +72,12 @@ public:
 	void updatePagesCount(...) {}
 	void updateGrid() {}
 	void showPage(...) {}
-	unsigned getSymsPerPage() { return 0U; }
-	void reset() {}
+	unsigned getCellSide() const { return 0U; }
+	unsigned getSymsPerRow() const { return 0U; }
+	unsigned getSymsPerPage() const { return 0U; }
+	unsigned getPageIdx() const { return 0U; }
+	bool isBrowsable() const { return false; }
+	void prepareForBrowsing() {}
 	void showUnofficial1stPage(...) {}
 };
 

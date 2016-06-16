@@ -133,6 +133,8 @@ protected:
 	cv::Mat grid;				///< the symbols' `hive`
 	int page = 0;				///< page slider position
 	unsigned pagesCount = 0U;	///< used for dividing the cmap
+	unsigned cellSide = 0U;		///< used for dividing the cmap
+	unsigned symsPerRow = 0U;	///< used for dividing the cmap
 	unsigned symsPerPage = 0U;	///< used for dividing the cmap
 
 	/**
@@ -143,9 +145,9 @@ protected:
 	*/
 	bool updatingPageMax = false;
 
-	unsigned computeSymsPerPage() const;	///< determines how many symbols fit on a single page
+	bool readyToBrowse = false;		///< set to true only when all pages are ready
 
-	cv::Mat createGrid() const;				///< generates the grid that separates the glyphs
+	cv::Mat createGrid();			///< generates the grid that separates the glyphs
 
 	/// content = grid + glyphs for current page specified by a pair of iterators
 	void populateGrid(const MatchEngine::VSymDataCItPair &itPair,
@@ -157,9 +159,12 @@ public:
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
 
-	void reset();
-
+	unsigned getCellSide() const { return cellSide; }
+	unsigned getSymsPerRow() const { return symsPerRow; }
 	unsigned getSymsPerPage() const { return symsPerPage; }
+	unsigned getPageIdx() const { return (unsigned)page; }
+	bool isBrowsable() const { return readyToBrowse; }
+	void prepareForBrowsing() { readyToBrowse = true; }
 
 	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
 	void showUnofficial1stPage(std::vector<const cv::Mat> &symsOn1stPage,

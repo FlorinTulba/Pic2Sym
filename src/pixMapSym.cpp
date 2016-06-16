@@ -47,11 +47,13 @@ using namespace std;
 using namespace cv;
 
 extern const double MinAreaRatioForUncutBlocksBB;
-extern const double MinCoveredPixelsRatioForSmallUnreadableSymsBB;
+extern const double MinCoveredPixelsRatioForSmallUnreadableSyms;
 extern const double MinWhiteAreaForUncutBlocksBB;
 extern const double MinAreaRatioForUnreadableSymsBB;
-extern const double MaxAvgBrightnessForHatsSumOfUnreadableSyms;
-extern const double MinAvgBrightnessForUnreadableSyms;
+extern const double StillForegroundThreshold;
+extern const double ForegroundThresholdDelta;
+extern const double MinBulkinessForUnreadableSyms;
+extern const double MinAvgBrightnessForUnreadableSmallSyms;
 
 namespace {
 	/// Minimal glyph shifting and cropping or none to fit the bounding box
@@ -187,57 +189,69 @@ namespace {
 	solid symbols which could be preserved: filled triangles, circles, playing cards suits, smilies,
 	dices, arrows a.o.
 
-	Here's the adopted solution (by no means the best):
-	- large glyphs (>20) are readable
-	- so are those who occupy very little from their square
-	- small symbols (<10) need to be less dense, no matter their bounding box size, to be recognizable
-	- fonts with sizes 10..20 are more challenging:
-	They are usually readable if their pixels sum is small and have a fair amount of branches.
-	These branches should disappear when 'opening' the symbol with an appropriate-size structuring
-	element. They also might cause some gaps filling when 'closing' the glyph.
-	So, well-readable fonts would generate more such fillings and disappearing branches than compact
-	/ squeezed symbols.
-	Therefore, it makes sense adding the 'closed' and 'open' versions of the glyph and checking the
-	'energy' it contains. Large energy levels happen for distinct glyphs. Low levels correspond to
-	bulky, branch-scarce symbols.
-	Larger font size requires a larger structuring element.
+	The current implementation is a compromise surprising the fact that smaller fonts are
+	progressively less readable.
 	*/
 	bool isAnUnreadableSym(const PixMapSym &pmc, unsigned fontSz, unsigned bbArea, double sz2) {
 		// Usually, fonts of size >= 20 are quite readable
 		if(fontSz >= 20)
 			return false;
 
-		// Unreadable syms usually are large (~>64% area from their square)
+		// Usually unreadable syms are not small
 		if(bbArea < MinAreaRatioForUnreadableSymsBB * sz2)
 			return false;
 
-		const bool isPixelSumLarge = 255.*pmc.glyphSum > sz2 * MinAvgBrightnessForUnreadableSyms;
+/*
+		// Fonts smaller than 10, who cover > MinCoveredPixelsRatioForSmallUnreadableSyms% are not that readable
+		if(fontSz < 10) {
+			const bool isPixelSumLarge = 255.*pmc.glyphSum > sz2 * MinAvgBrightnessForUnreadableSmallSyms;
+			if(isPixelSumLarge)
+				return true;
 
-		// Fonts smaller than 10, who cover > MinCoveredPixelsRatioForSmallUnreadableSymsBB%
-		// of their bounding box are not that readable
-		if(fontSz < 10)
-			return isPixelSumLarge ||
-				countNonZero(pmc.asNarrowMat()) > MinCoveredPixelsRatioForSmallUnreadableSymsBB * bbArea;
+			const int nonZero = countNonZero(pmc.asNarrowMat());
+			return nonZero > MinCoveredPixelsRatioForSmallUnreadableSyms * sz2;
+		}
+*/
 
-		if(!isPixelSumLarge)
-			return false;
+		static const Point defAnchor(-1, -1);
+		const int winSideSE = (fontSz > 15U) ? 5 : 3; // masks need to be larger for larger fonts
+		const Size winSE(winSideSE, winSideSE);
 
-		const int winSideSE = (fontSz >= 15) ? 5 : 3;
-		const Mat structuringElem = getStructuringElement(MORPH_RECT, Size(winSideSE, winSideSE));
-		const Mat glyph = pmc.toMat((int)fontSz);
-		Mat closedG, openG, hatsSum;
-		morphologyEx(glyph, closedG, MORPH_CLOSE, structuringElem);
-		morphologyEx(glyph, openG, MORPH_OPEN, structuringElem);
+		Mat glyph = pmc.toMatD01(fontSz), glyphBinAux;
 
-		// hatsSum: possible fillings together with prunnable branches
-		// The larger, the more visible symbol branches are;
-		// The smaller, the fewer the branches and the compacter the symbol
-		hatsSum = closedG - openG; // same as topHat + blackHat
-		// Tophat = glyph-openG ; Blackhat = closedG-glyph
+		// adaptiveThreshold has some issues on uniform areas, so here's a customized implementation
+		boxFilter(glyph, glyphBinAux, -1, winSE, defAnchor, true, BORDER_CONSTANT);
+		double toSubtract = StillForegroundThreshold;
+		if(fontSz < 15U) { // for small fonts, thresholds should be much lower, to encode perceived pixel agglomeration
+			const double delta = (15U-fontSz) * ForegroundThresholdDelta/255.;
+			toSubtract += delta;
+		}
 
-		const double avgHatsSum = *mean(hatsSum).val;
+		// lower the threshold, but keep all values positive
+		glyphBinAux -= toSubtract;
+		glyphBinAux.setTo(0., glyphBinAux < 0.);
+		glyphBinAux = glyph > glyphBinAux;
 
-		return avgHatsSum < MaxAvgBrightnessForHatsSumOfUnreadableSyms;
+		// pad the thresholded matrix with 0-s all around, to allow distanceTransform consider the borders as 0-s
+		const int frameSz = (int)fontSz + 2;
+		const Range innerFrame(1, (int)fontSz + 1);
+		Mat glyphBin = Mat(frameSz, frameSz, CV_8UC1, Scalar(0U)), glyph32f;
+		glyphBinAux.copyTo(Mat(glyphBin, innerFrame, innerFrame));
+		distanceTransform(glyphBin, glyph32f, DIST_L2, DIST_MASK_PRECISE);
+		
+		double maxValAllowed = 1.9; // just below 2 (2 means there are sections at least 3 pixels thick)
+		if(fontSz > 10U)
+			maxValAllowed = fontSz/5.; // larger symbols have their core in a thicker shell (>2)
+
+		Mat symCore = glyph32f > maxValAllowed;
+		const unsigned notAllowedCount = (unsigned)countNonZero(symCore);
+		if(notAllowedCount > fontSz - 6U)
+			return true; // limit the count of symCore pixels
+
+		double maxVal; // largest symbol depth
+		minMaxIdx(glyph32f, nullptr, &maxVal, nullptr, nullptr, symCore);
+
+		return maxVal - maxValAllowed > 1.; // limit the depth of the symCore
 	}
 } // anonymous namespace
 
@@ -481,7 +495,6 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	syms.clear();
 	if(symsCount != 0U)
 		syms.reserve(symsCount);
-	const_cast<IPresentCmap&>(cmapViewUpdater).resetCmapView();
 
 	consec = Mat(1, fontSz_, CV_64FC1);
 	revConsec.release();

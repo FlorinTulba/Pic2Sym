@@ -38,21 +38,25 @@
 #include "controller.h"
 #include "settings.h"
 #include "matchParams.h"
+#include "matchSettingsManip.h"
 #include "controlPanel.h"
 #include "updateSymsActions.h"
 #include "views.h"
 #include "dlgs.h"
 #include "misc.h"
 
+#include <fstream>
 #include <iomanip>
 #include <functional>
 #include <thread>
 
+#include <boost/filesystem/path.hpp>
 #include <opencv2/highgui.hpp>
 
 using namespace std;
 using namespace std::chrono;
 using namespace boost;
+using namespace boost::filesystem;
 using namespace boost::lockfree;
 using namespace cv;
 
@@ -161,6 +165,34 @@ namespace {
 	}
 } // anonymous namespace
 
+string MatchEngine::getIdForSymsToUse() {
+	const unsigned sz = cfg.symSettings().getFontSz();
+	if(!Settings::isFontSizeOk(sz)) {
+		cerr<<"Invalid font size to use: "<<sz<<endl;
+		throw logic_error("Invalid font size in " __FUNCTION__);
+	}
+
+	ostringstream oss;
+	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding()<<'_'<<sz;
+	// this also throws logic_error if no family/style
+
+	return oss.str();
+}
+
+void Transformer::updateStudiedCase(int rows, int cols) {
+	const auto &ss = cfg.matchSettings();
+	ostringstream oss;
+	oss<<img.name()<<'_'
+		<<me.getIdForSymsToUse()<<'_'
+		<<ss.isHybridResult()<<'_'
+		<<ss.get_kSsim()<<'_'
+		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
+		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
+		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
+		<<cols<<'_'<<rows; // no extension yet
+	studiedCase = oss.str(); // this text is included in the result & trace file names
+}
+
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
 
 Controller::Controller(Settings &s) :
@@ -212,11 +244,6 @@ const string Controller::textHourGlass(const std::string &prefix, double progres
 	ostringstream oss;
 	oss<<prefix<<" ("<<fixed<<setprecision(0)<<progress*100.<<"%)";
 	return oss.str();
-}
-
-void Controller::resetCmapView() {
-	if(pCmi)
-		pCmi->reset();
 }
 
 MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
@@ -284,6 +311,7 @@ void Controller::symbolsChanged() {
 	// Official versions of the status bar and the 1st cmap page
 	pCmi->setStatus(textForCmapStatusBar());
 	pCmi->updatePagesCount((unsigned)fe.symsSet().size());
+	pCmi->prepareForBrowsing();
 
 	extern const bool ViewSymWeightsHistogram;
 	if(ViewSymWeightsHistogram)
@@ -409,37 +437,55 @@ void Controller::presentTransformationResults(double completionDurationS/* = -1.
 	}
 }
 
-#endif
+const SymData* Controller::pointedSymbol(int x, int y) const {
+	if(!pCmi->isBrowsable())
+		return nullptr;
 
-string MatchEngine::getIdForSymsToUse() {
-	const unsigned sz = cfg.symSettings().getFontSz();
-	if(!Settings::isFontSizeOk(sz)) {
-		cerr<<"Invalid font size to use: "<<sz<<endl;
-		throw logic_error("Invalid font size in " __FUNCTION__);
+	const unsigned cellSide = pCmi->getCellSide(),
+		r = (unsigned)y / cellSide, c = (unsigned)x / cellSide,
+		symIdx = pCmi->getPageIdx()*pCmi->getSymsPerPage() + r*pCmi->getSymsPerRow() + c;
+
+	if(symIdx >= me.getSymsCount())
+		return nullptr;
+
+	return &*me.getSymsRange(symIdx, 1U).first;
+}
+
+void Controller::displaySymCode(unsigned long symCode) const {
+	ostringstream oss;
+	oss<<textForCmapStatusBar()<<" [symbol "<<symCode<<']';
+	pCmi->setStatus(oss.str());
+}
+
+void Controller::enlistSymbolForInvestigation(const SymData &sd) const {
+	cout<<"Appending symbol "<<sd.code<<" to the list needed for further investigations"<<endl;
+	symsToInvestigate.push_back(sd.symAndMasks[SymData::NEG_SYM_IDX].clone());
+}
+
+void Controller::symbolsReadyToInvestigate() const {
+	if(symsToInvestigate.empty()) {
+		cout<<"The list of symbols for further investigations was empty, so there's nothing to save."<<endl;
+		return;
 	}
 
-	ostringstream oss;
-	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding()<<'_'<<sz;
-	// this also throws logic_error if no family/style
-
-	return oss.str();
+	path destFile = MatchSettingsManip::instance().getWorkDir();
+	destFile.append("Output").append("symsSelection_").concat(to_string(time(nullptr))).concat(".txt");
+	cout<<"The list of "<<symsToInvestigate.size()<<" symbols for further investigations will be saved to file "
+		<<destFile<<" and then cleared."<<endl;
+	ofstream ofs(destFile.string());
+	ofs<<symsToInvestigate.size()<<endl; // first line specifies the number of symbols in the list
+	for(const Mat &m : symsToInvestigate) {
+		const int rows = m.rows, cols = m.cols;
+		ofs<<rows<<' '<<cols<<endl; // every symbol is preceded by a header with the number of rows and columns
+		for(int r = 0; r < rows; ++r) {
+			for(int c = 0; c < cols; ++c)
+				ofs<<(unsigned)m.at<unsigned char>(r, c)<<' '; // pixel values are delimited by space
+			ofs<<endl;
+		}
+	}
+	ofs.close();
+	symsToInvestigate.clear();
 }
-
-void Transformer::updateStudiedCase(int rows, int cols) {
-	const auto &ss = cfg.matchSettings();
-	ostringstream oss;
-	oss<<img.name()<<'_'
-		<<me.getIdForSymsToUse()<<'_'
-		<<ss.isHybridResult()<<'_'
-		<<ss.get_kSsim()<<'_'
-		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
-		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
-		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
-		<<cols<<'_'<<rows; // no extension yet
-	studiedCase = oss.str(); // this text is included in the result & trace file names
-}
-
-#ifndef UNIT_TESTING
 
 Comparator::Comparator(void** /*hackParam = nullptr*/) : CvWin("Pic2Sym") {
 	content = noImage;
@@ -474,6 +520,7 @@ void Comparator::resize() const {
 extern const Size CmapInspect_pageSz;
 
 namespace {
+	const String CmapInspectWinName = "Charmap View";
 
 	/// type of a function extracting the negative mask from an iterator
 	template<typename Iterator>
@@ -602,9 +649,8 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 }
 
 CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
-		CvWin("Charmap View"), cmapPresenter(cmapPresenter_), grid(content = createGrid()) {
-	reset();
-
+		CvWin(CmapInspectWinName), cmapPresenter(cmapPresenter_) {
+	content = grid = createGrid();
 	extern const String CmapInspect_pageTrackName;
 	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
 				   reinterpret_cast<void*>(this));
@@ -612,18 +658,37 @@ CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
 
 	setPos(424, 0);			// Place cmap window on x axis between 424..1064
 	permitResize(false);	// Ensure the user sees the symbols exactly their size
+
+	// Support for investigating selected symbols from one or more charmaps:
+	// - mouse moves over the Charmap will display in the status bar the code of the pointed symbol
+	// - Ctrl + left mouse click will append the pointed symbol to the current list
+	// - left mouse double-click will save the current list and then it will clear it
+	setMouseCallback(CmapInspectWinName, [] (int event, int x, int y, int flags, void* userdata) {
+		const IPresentCmap *ppc = reinterpret_cast<IPresentCmap*>(userdata);
+		if(event == EVENT_MOUSEMOVE) { // Mouse move
+			const SymData *psd = ppc->pointedSymbol(x, y);
+			if(nullptr != psd)
+				ppc->displaySymCode(psd->code);
+		} else if((event == EVENT_LBUTTONDBLCLK) && ((flags & EVENT_FLAG_CTRLKEY) == 0)) { // Ctrl key not pressed and left mouse double-click
+			ppc->symbolsReadyToInvestigate();
+		} else if((event == EVENT_LBUTTONUP) && ((flags & EVENT_FLAG_CTRLKEY) != 0)) { // Ctrl key pressed and left mouse click
+			const SymData *psd = ppc->pointedSymbol(x, y);
+			if(nullptr != psd)
+				ppc->enlistSymbolForInvestigation(*psd);
+		}
+	}, reinterpret_cast<void*>(const_cast<IPresentCmap*>(&cmapPresenter)));
 }
 
-void CmapInspect::reset() {
-	symsPerPage = computeSymsPerPage();
-}
-
-Mat CmapInspect::createGrid() const {
+Mat CmapInspect::createGrid() {
 	static const Scalar GridColor(255U, 200U, 200U);
 	Mat emptyGrid(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
 
+	readyToBrowse = false;
+	cellSide = 1U + cmapPresenter.getFontSize();
+	symsPerRow = (((unsigned)CmapInspect_pageSz.width - 1U) / cellSide);
+	symsPerPage = symsPerRow * (((unsigned)CmapInspect_pageSz.height - 1U) / cellSide);
+
 	// Draws horizontal & vertical cell borders
-	const int cellSide = 1+cmapPresenter.getFontSize();
 	for(int i = 0; i < CmapInspect_pageSz.width; i += cellSide)
 		emptyGrid.col(i).setTo(GridColor);
 	for(int i = 0; i < CmapInspect_pageSz.height; i += cellSide)

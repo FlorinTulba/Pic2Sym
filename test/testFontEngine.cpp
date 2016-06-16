@@ -330,6 +330,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 
 		extern const unsigned Settings_MIN_FONT_SIZE;
 		extern const unsigned Settings_MAX_FONT_SIZE;
+		extern const bool PreserveRemovableSymbolsForExamination;
 		BOOST_REQUIRE_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE-1U), invalid_argument);
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE)); // ok
 		BOOST_REQUIRE_THROW(fe.setFontSz(Settings_MAX_FONT_SIZE+1U), invalid_argument);
@@ -337,7 +338,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
 		BOOST_CHECK_NO_THROW(fe.symsSet());
- 		BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569, test_tools::tolerance(1e-4));
+		BOOST_TEST(fe.smallGlyphsCoverage() ==
+				   (PreserveRemovableSymbolsForExamination ? 0.1201569 : 0.1174118),
+				   test_tools::tolerance(1e-4));
 
 		BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));

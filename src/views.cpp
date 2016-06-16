@@ -123,12 +123,6 @@ void Comparator::updateTransparency(int newTransp, void *userdata) {
 
 extern const String CmapInspect_pageTrackName;
 
-unsigned CmapInspect::computeSymsPerPage() const {
-	const int cellSide = 1+cmapPresenter.getFontSize();
-	extern const Size CmapInspect_pageSz;
-	return ((CmapInspect_pageSz.width - 1) / cellSide) * ((CmapInspect_pageSz.height - 1) / cellSide);
-}
-
 void CmapInspect::updateGrid() {
 	grid = createGrid();
 }

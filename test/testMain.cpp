@@ -289,6 +289,14 @@ bool Controller::newImage(const Mat &imgMat) {
 	return result;
 }
 
+const SymData* Controller::pointedSymbol(int x, int y) const { return nullptr; }
+
+void Controller::displaySymCode(unsigned long symCode) const {}
+
+void Controller::enlistSymbolForInvestigation(const SymData &sd) const {}
+
+void Controller::symbolsReadyToInvestigate() const {}
+
 SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :
 				 code(code_), minVal(minVal_), diffMinMax(diffMinMax_),

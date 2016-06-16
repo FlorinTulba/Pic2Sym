@@ -47,14 +47,23 @@ Provides read-only access to Cmap data.
 struct IPresentCmap /*abstract*/ : virtual IController {
 	virtual unsigned getFontSize() const = 0; ///< font size determines grid size
 
+	/// Provides details about the symbol under the mouse
+	virtual const SymData* pointedSymbol(int x, int y) const = 0;
+
+	/// Appends the code of the symbol under the mouse to the status bar
+	virtual void displaySymCode(unsigned long symCode) const = 0; 
+
+	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
+	virtual void enlistSymbolForInvestigation(const SymData &sd) const = 0;
+
+	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
+	virtual void symbolsReadyToInvestigate() const = 0;
+
 	/// Getting the fonts to fill currently displayed page
 	virtual MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
 	/// Allows visualizing the symbol clusters within the Cmap View
 	virtual const std::set<unsigned>& getClusterOffsets() const = 0;
-
-	/// Prepares for a new font resize operation
-	virtual void resetCmapView() = 0;
 
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;

@@ -116,6 +116,8 @@ extern READ_UINT_PROP(Settings_MAX_V_SYMS);
 extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor);
 extern READ_DOUBLE_PROP(ClusterAllowedForDotProductOverAreaMoreThan);
 extern READ_DOUBLE_PROP(MaxAvgProjErrForClustering);
+extern READ_DOUBLE_PROP(StillForegroundThreshold);
+extern READ_DOUBLE_PROP(ForegroundThresholdDelta);
 extern READ_DOUBLE_PROP(MaxRelMcOffsetForClustering);
 extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForClustering);
 
@@ -125,11 +127,11 @@ extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
 extern READ_DOUBLE_PROP(MinAreaRatioForUncutBlocksBB);
-extern READ_DOUBLE_PROP(MinCoveredPixelsRatioForSmallUnreadableSymsBB);
+extern READ_DOUBLE_PROP(MinCoveredPixelsRatioForSmallUnreadableSyms);
 extern READ_DOUBLE_PROP(MinWhiteAreaForUncutBlocksBB);
 extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
-extern READ_DOUBLE_PROP(MaxAvgBrightnessForHatsSumOfUnreadableSyms);
-extern READ_DOUBLE_PROP(MinAvgBrightnessForUnreadableSyms);
+extern READ_DOUBLE_PROP(MinBulkinessForUnreadableSyms);
+extern READ_DOUBLE_PROP(MinAvgBrightnessForUnreadableSmallSyms);
 
 static READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
 extern const Size StructuralSimilarity_WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);

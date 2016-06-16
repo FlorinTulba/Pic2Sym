@@ -87,6 +87,10 @@ protected:
 	/// queue requires template param with trivial destructor and assign operator,
 	/// so shared_ptr isn't useful here
 
+	/// A list of selected symbols to investigate separately.
+	/// Useful while exploring ways to filter-out various symbols from charmaps.
+	mutable std::list<const cv::Mat> symsToInvestigate;
+
 	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
 	bool validState(bool imageRequired = true) const;
@@ -165,9 +169,12 @@ public:
 	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
 
 	// Implementation of IPresentCmap below
-	void resetCmapView() override;
 	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
 	unsigned getFontSize() const override;
+	const SymData* pointedSymbol(int x, int y) const override;
+	void displaySymCode(unsigned long symCode) const override;
+	void enlistSymbolForInvestigation(const SymData &sd) const override;
+	void symbolsReadyToInvestigate() const override;
 	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 	const std::set<unsigned>& getClusterOffsets() const override;
 	void showUnofficialSymDetails(unsigned symsCount) const override;

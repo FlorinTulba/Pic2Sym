@@ -96,16 +96,20 @@ PreserveRemovableSymbolsForExamination	false
 ; Detection of uncut rectangles
 ; 0..1 range values for detecting basic rectangle symbols that can be removed,
 ; since the user expects to see anything but another rectangle within the rectangular patch itself
-MinAreaRatioForUncutBlocksBB	.2
-MinWhiteAreaForUncutBlocksBB	.35
+MinAreaRatioForUncutBlocksBB	0.2
+MinWhiteAreaForUncutBlocksBB	0.35
 
 ; Detection of unreadable glyphs
-; MinAreaRatioForUnreadableSymsBB and MinCoveredPixelsRatioForSmallUnreadableSymsBB are in 0..1 range
-; the other 2 constants are in 0..255 range
-MinAreaRatioForUnreadableSymsBB	.6
-MinCoveredPixelsRatioForSmallUnreadableSymsBB	.6
-MaxAvgBrightnessForHatsSumOfUnreadableSyms	35.
-MinAvgBrightnessForUnreadableSyms	70.
+; MinAreaRatioForUnreadableSymsBB and MinCoveredPixelsRatioForSmallUnreadableSyms are in 0..1 range
+; MinAvgBrightnessForUnreadableSmallSyms, ForegroundThresholdDelta are in 0..255 range
+; StillForegroundThreshold brightness threshold (1/255 =~ 0.004)
+; MinBulkinessForUnreadableSyms a small value larger than 1
+MinAreaRatioForUnreadableSymsBB	.2
+MinCoveredPixelsRatioForSmallUnreadableSyms	0.7
+StillForegroundThreshold	0.002
+ForegroundThresholdDelta	10.
+MinBulkinessForUnreadableSyms	1.13
+MinAvgBrightnessForUnreadableSmallSyms	100.
 
 ; Constant for background threshold
 ; 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
