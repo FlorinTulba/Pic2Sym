@@ -134,7 +134,9 @@ protected:
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
 	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
 	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
-	unsigned uncutBlocks = 0U;		///< count of rather large rectangular, homogeneous, white symbols
+	unsigned filledRectangles = 0U;	///< count of rather rectangular, homogeneous, bright symbols
+	unsigned gridBars = 0U;			///< count of glyphs used to represent the grid of tables
+	unsigned bulkies = 0U;			///< count of glyphs with large, almost filled areas
 	unsigned unreadable = 0U;		///< count of glyphs squeezed into a way too small square
 	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
 
@@ -152,7 +154,9 @@ public:
 	unsigned getFontSz() const;
 	unsigned getBlanksCount() const;
 	unsigned getDuplicatesCount() const;
-	unsigned getUncutBlocksCount() const;
+	unsigned getFilledRectanglesCount() const;
+	unsigned getGridBarsCount() const;
+	unsigned getBulkiesCount() const;
 	unsigned getUnreadableCount() const;
 	double getCoverageOfSmallGlyphs() const;
 	const std::vector<const PixMapSym>& getSyms() const;

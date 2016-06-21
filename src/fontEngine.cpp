@@ -439,8 +439,12 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
 	if(symsCont.getDuplicatesCount() != 0U)
 		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
-	if(symsCont.getUncutBlocksCount() != 0U)
-		cout<<"Detected "<<symsCont.getUncutBlocksCount()<<" uncut blocks in the symsSet!"<<endl;
+	if(symsCont.getFilledRectanglesCount() != 0U)
+		cout<<"Detected "<<symsCont.getFilledRectanglesCount()<<" filled rectangles in the symsSet!"<<endl;
+	if(symsCont.getGridBarsCount() != 0U)
+		cout<<"Detected "<<symsCont.getGridBarsCount()<<" grid bar symbols in the symsSet!"<<endl;
+	if(symsCont.getBulkiesCount() != 0U)
+		cout<<"Detected "<<symsCont.getBulkiesCount()<<" bulky glyphs in the symsSet!"<<endl;
 	if(symsCont.getUnreadableCount() != 0U)
 		cout<<"Detected "<<symsCont.getUnreadableCount()<<" unreadable symbols in the symsSet!"<<endl;
 

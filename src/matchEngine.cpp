@@ -52,7 +52,6 @@ using namespace cv;
 
 extern const Size BlurWinSize;
 extern const double BlurStandardDeviation;
-extern const double ClusterAllowedForDotProductOverAreaMoreThan;
 extern const double MaxAvgProjErrForClustering;
 extern const double MaxRelMcOffsetForClustering;
 extern const double MaxDiffAvgPixelValForClustering;
@@ -125,9 +124,8 @@ namespace {
 	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
 	void clusterSyms(VSymData &symsSet,
 					 VClusterData &clusters, set<unsigned> &clusterOffsets) {
-		static const int SmallSymSzI = 5;
-		static const double SmallSymSzD = (double)SmallSymSzI;
-		static const double SmallSymArea = SmallSymSzD * SmallSymSzD;
+		static const int SmallSymSzI = 5, SmallSymSzAreaI = SmallSymSzI * SmallSymSzI;
+		static const double SmallSymSzD = (double)SmallSymSzI, SmallSymAreaD = (double)SmallSymSzAreaI;
 		static const unsigned DiagsCountU = 2U * SmallSymSzI - 1U;
 		static const double DiagsCountD = (double)DiagsCountU;
 
@@ -172,31 +170,23 @@ namespace {
 				slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
 			}
 
-			// normalizing smallSym
-			Scalar avg, sdev;
-			meanStdDev(smallSym, avg, sdev);
-			smallSym -= *avg.val;
-			if(*sdev.val != 0.)
-				smallSym *= 1 / *sdev.val;
-			// smallSym.dot(smallSym) is:
-			//	- 0 for uniform smallSym (*sdev.val == 0.)
-			//	- SmallSymArea otherwise
-
 			smallSym /= SmallSymSzD;
 			hAvgProj /= SmallSymSzD;
 			vAvgProj /= SmallSymSzD;
 			backslashDiagAvgProj /= DiagsCountD;
 			slashDiagAvgProj /= DiagsCountD;
 
-			smallSyms.emplace_back(symData.mc/initFontSz, symData.pixelSum/initFontArea, smallSym, hAvgProj, vAvgProj, backslashDiagAvgProj, slashDiagAvgProj);
+			smallSyms.emplace_back(symData.mc/initFontSz, symData.pixelSum/initFontArea, smallSym,
+								   hAvgProj, vAvgProj, backslashDiagAvgProj, slashDiagAvgProj);
 		}
 #pragma endregion initSmallSyms
 
 		// cluster smallSyms
 #if defined _DEBUG && !defined UNIT_TESTING
- 		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countAdotB = 0U, countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
+		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countDiff = 0U, countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
 #endif
-		static const double SqMaxAvgProjErrForClustering = MaxAvgProjErrForClustering * MaxAvgProjErrForClustering;
+		static const double SqMaxRelMcOffsetForClustering = MaxRelMcOffsetForClustering * MaxRelMcOffsetForClustering;
+		const double TotMaxProjErrForClustering = MaxAvgProjErrForClustering * SmallSymSzD;
 
 		vector<int> clusterLabels(symsCount, -1);
 		const unsigned clustersCount = (unsigned)partition(smallSyms, clusterLabels, [&] (
@@ -205,18 +195,60 @@ namespace {
 #if !defined _DEBUG || defined UNIT_TESTING
 			if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForClustering)
 				return false;
-			if(norm(a.mc - b.mc) > MaxRelMcOffsetForClustering)
+			const Point2d mcDelta = a.mc - b.mc;
+			const double mcDeltaY = abs(mcDelta.y);
+			if(mcDeltaY > MaxRelMcOffsetForClustering)
 				return false;
-			if(norm(a.vAvgProj - b.vAvgProj, NORM_L2SQR) > SqMaxAvgProjErrForClustering)
+			const double mcDeltaX = abs(mcDelta.x);
+			if(mcDeltaX > MaxRelMcOffsetForClustering)
 				return false;
-			if(norm(a.hAvgProj - b.hAvgProj, NORM_L2SQR) > SqMaxAvgProjErrForClustering)
+			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
 				return false;
-			if(norm(a.backslashDiagAvgProj - b.backslashDiagAvgProj, NORM_L2SQR) > SqMaxAvgProjErrForClustering)
-				return false;
-			if(norm(a.slashDiagAvgProj - b.slashDiagAvgProj, NORM_L2SQR) > SqMaxAvgProjErrForClustering)
-				return false;
-			if(a.mat.dot(b.mat) < ClusterAllowedForDotProductOverAreaMoreThan)
-				return false;
+
+			const double *pDataA = reinterpret_cast<const double*>(a.vAvgProj.datastart),
+						*pDataAEnd = reinterpret_cast<const double*>(a.vAvgProj.datalimit),
+						*pDataB = reinterpret_cast<const double*>(b.vAvgProj.datastart);
+			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) {
+				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);
+				if(sumOfAbsDiffs > MaxAvgProjErrForClustering)
+					return false;
+			}
+
+			pDataA = reinterpret_cast<const double*>(a.hAvgProj.datastart);
+			pDataAEnd = reinterpret_cast<const double*>(a.hAvgProj.datalimit);
+			pDataB = reinterpret_cast<const double*>(b.hAvgProj.datastart);
+			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) {
+				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);
+				if(sumOfAbsDiffs > MaxAvgProjErrForClustering)
+					return false;
+			}
+
+			pDataA = reinterpret_cast<const double*>(a.backslashDiagAvgProj.datastart);
+			pDataAEnd = reinterpret_cast<const double*>(a.backslashDiagAvgProj.datalimit);
+			pDataB = reinterpret_cast<const double*>(b.backslashDiagAvgProj.datastart);
+			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) {
+				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);
+				if(sumOfAbsDiffs > MaxAvgProjErrForClustering)
+					return false;
+			}
+
+			pDataA = reinterpret_cast<const double*>(a.slashDiagAvgProj.datastart);
+			pDataAEnd = reinterpret_cast<const double*>(a.slashDiagAvgProj.datalimit);
+			pDataB = reinterpret_cast<const double*>(b.slashDiagAvgProj.datastart);
+			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) {
+				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);
+				if(sumOfAbsDiffs > MaxAvgProjErrForClustering)
+					return false;
+			}
+
+			auto itA = a.mat.begin<double>(), itAEnd = a.mat.end<double>(),
+				itB = b.mat.begin<double>();
+			for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
+				sumOfAbsDiffs += abs(*itA++ - *itB++);
+				if(sumOfAbsDiffs > TotMaxProjErrForClustering)
+					return false;
+			}
+
 			return true;
 
 #else // DEBUG mode
@@ -234,44 +266,38 @@ namespace {
 				return false;
 			}
 
-			const double vDiff = norm(a.vAvgProj - b.vAvgProj, NORM_L2SQR);
-			const bool bVdiff = vDiff > SqMaxAvgProjErrForClustering;
+			const double vDiff = norm(a.vAvgProj - b.vAvgProj, NORM_L1);
+			const bool bVdiff = vDiff > MaxAvgProjErrForClustering;
 			if(bVdiff) {
  				++countVdiff;
 				return false;
 			}
 
-			const double hDiff = norm(a.hAvgProj - b.hAvgProj, NORM_L2SQR);
-			const bool bHdiff = hDiff > SqMaxAvgProjErrForClustering;
+			const double hDiff = norm(a.hAvgProj - b.hAvgProj, NORM_L1);
+			const bool bHdiff = hDiff > MaxAvgProjErrForClustering;
 			if(bHdiff) {
  				++countHdiff;
 				return false;
 			}
 
-			const double backslashDiff = norm(a.backslashDiagAvgProj - b.backslashDiagAvgProj, NORM_L2SQR);
-			const bool bBslashDiff = backslashDiff > SqMaxAvgProjErrForClustering;
+			const double backslashDiff = norm(a.backslashDiagAvgProj - b.backslashDiagAvgProj, NORM_L1);
+			const bool bBslashDiff = backslashDiff > MaxAvgProjErrForClustering;
 			if(bBslashDiff) {
  				++countBslashDiff;
 				return false;
 			}
 
-			const double slashDiff = norm(a.slashDiagAvgProj - b.slashDiagAvgProj, NORM_L2SQR);
-			const bool bSlashDiff = slashDiff > SqMaxAvgProjErrForClustering;
+			const double slashDiff = norm(a.slashDiagAvgProj - b.slashDiagAvgProj, NORM_L1);
+			const bool bSlashDiff = slashDiff > MaxAvgProjErrForClustering;
 			if(bSlashDiff) {
  				++countSlashDiff;
 				return false;
 			}
 
-			// The absolute value of next scalar product would capture even similarity between inverse symbols.
-			// However, the other checks will return false in such cases.
-			const double aDotB = a.mat.dot(b.mat);
-			assert(abs(aDotB) < 1+EPS);
-			// The proof relies on the fact that a sum of squared differences is non-negative.
-			// <a,b> <= (<a,a>+<b,b>)/2, where <a,a> == <b,b> == SmallSymArea
-
-			const bool bAdotB = aDotB < ClusterAllowedForDotProductOverAreaMoreThan;
-			if(bAdotB) {
-				++countAdotB;
+			const double diff = norm(a.mat - b.mat, NORM_L1);
+			const bool bDiff = diff > TotMaxProjErrForClustering;
+			if(bDiff) {
+				++countDiff;
 				return false;
 			}
 
@@ -283,11 +309,11 @@ namespace {
 #if defined _DEBUG && !defined UNIT_TESTING
 		PRINTLN(countAvgPixDiff);
 		PRINTLN(countMcsOffset);
-		PRINTLN(countAdotB);
-		PRINTLN(countHdiff);
 		PRINTLN(countVdiff);
+		PRINTLN(countHdiff);
 		PRINTLN(countBslashDiff);
 		PRINTLN(countSlashDiff);
+		PRINTLN(countDiff);
 #endif
 
 		VSymData newSymsSet;

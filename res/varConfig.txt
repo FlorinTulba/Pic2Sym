@@ -70,20 +70,15 @@ Transform_ProgressReportsIncrement	0.04
 ; slightly inferior to the best score known at a moment
 InvestigateClusterEvenForInferiorScoreFactor	0.999
 
-; Consider clustering 2 symbols only when the dot product of their miniaturized and normalized
-; versions has a value close to miniaturized symbols' area.
-; The constant below states how close should be the dot product to the mentioned area.
-ClusterAllowedForDotProductOverAreaMoreThan	0.975
-
-; Max L2 error per pixel between the projections of 2 symbols that can be clustered together
-MaxAvgProjErrForClustering	0.007
+; Maximum difference of the average pixel value from 2 symbols that still allows clustering the glyphs
+MaxDiffAvgPixelValForClustering	0.01
 
 ; Maximum offset between mass-centers of 2 symbols (relative to the symbol size) allowed to
 ; still consider clustering the glyphs together
 MaxRelMcOffsetForClustering	0.01
 
-; Maximum difference of the average pixel value from 2 symbols that still allows clustering the glyphs
-MaxDiffAvgPixelValForClustering	0.01
+; Max L1 error per pixel between the projections of 2 symbols that can be clustered together
+MaxAvgProjErrForClustering	0.0125
 
 ; What percent (0..1) of the glyphs from a charmap set are considered small
 ; 0.1 means that smallest 10% of all glyphs are considered small
@@ -91,25 +86,17 @@ PmsCont_SMALL_GLYPHS_PERCENT	0.1
 
 ; Switch that allows visualizing the symbols that normally are removed in the Cmap Viewer
 ; Note they will appear inverted and they also will participate in the matching process
-PreserveRemovableSymbolsForExamination	false
+PreserveRemovableSymbolsForExamination	true
 
-; Detection of uncut rectangles
-; 0..1 range values for detecting basic rectangle symbols that can be removed,
-; since the user expects to see anything but another rectangle within the rectangular patch itself
-MinAreaRatioForUncutBlocksBB	0.2
-MinWhiteAreaForUncutBlocksBB	0.35
-
-; Detection of unreadable glyphs
-; MinAreaRatioForUnreadableSymsBB and MinCoveredPixelsRatioForSmallUnreadableSyms are in 0..1 range
-; MinAvgBrightnessForUnreadableSmallSyms, ForegroundThresholdDelta are in 0..255 range
+ Detection of unreadable glyphs
+; MinAreaRatioForUnreadableSymsBB is in 0..1 range
+; ForegroundThresholdDelta is in 0..255 range
 ; StillForegroundThreshold brightness threshold (1/255 =~ 0.004)
 ; MinBulkinessForUnreadableSyms a small value larger than 1
 MinAreaRatioForUnreadableSymsBB	.2
-MinCoveredPixelsRatioForSmallUnreadableSyms	0.7
 StillForegroundThreshold	0.002
 ForegroundThresholdDelta	10.
 MinBulkinessForUnreadableSyms	1.13
-MinAvgBrightnessForUnreadableSmallSyms	100.
 
 ; Constant for background threshold
 ; 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
