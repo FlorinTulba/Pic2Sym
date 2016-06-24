@@ -19,9 +19,12 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
+    <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\glyphsProgressTracker.h" />
+    <ClInclude Include="src\gridBarsFilter.h" />
     <ClInclude Include="src\matchAspects.h" />
     <ClInclude Include="src\cachedData.h" />
     <ClInclude Include="src\controller.h" />
@@ -44,21 +47,28 @@
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
+    <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symData.h" />
+    <ClInclude Include="src\symFilter.h" />
+    <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
+    <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\validateFont.h" />
     <ClInclude Include="src\views.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
+    <ClCompile Include="src\filledRectanglesFilter.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
+    <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\presentation.cpp" />
@@ -73,9 +83,11 @@
     <ClCompile Include="src\pixMapSym.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
+    <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
+    <ClCompile Include="src\unreadableSymsFilter.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\views.cpp" />

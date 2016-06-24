@@ -22,6 +22,60 @@
     <Filter Include="doc\licenses">
       <UniqueIdentifier>{7d5df763-5a5d-4b1c-aede-81fe65049733}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Controller">
+      <UniqueIdentifier>{1fd03420-2cd1-481d-b165-522ca1653d89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Var">
+      <UniqueIdentifier>{ab52063e-e91e-40ab-9b5d-6821287608aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Charmap">
+      <UniqueIdentifier>{c4fc1876-9c34-46c3-8d97-f1cb9f0ba258}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{c0e63d9c-8a75-4c11-9681-4141e34c00fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Charmap">
+      <UniqueIdentifier>{794f8827-f9b4-4f36-9bc4-8c860ae0d203}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controller">
+      <UniqueIdentifier>{57472972-625c-43fa-9b21-babf525e7de3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Settings">
+      <UniqueIdentifier>{7f115b37-de07-4a38-a4e0-40e724014f0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{d23533c6-e6d8-4926-9134-584acff539e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Var">
+      <UniqueIdentifier>{66137f60-2a61-4319-892b-94552ed66032}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Charmap\SymsFilters">
+      <UniqueIdentifier>{a7022d2d-bd00-4af0-bd07-618193e941a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Charmap\SymsFilters">
+      <UniqueIdentifier>{3b8bb52a-0ae4-4559-a4fe-f696f63def4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Controller\TransformEngine">
+      <UniqueIdentifier>{a7c06a37-afcf-4abf-9d26-448f84d69ed0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Controller\TransformEngine\Image">
+      <UniqueIdentifier>{979eb4ee-4faf-4e98-ba16-957b5ba1d226}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Controller\TransformEngine\MatchEngine">
+      <UniqueIdentifier>{79578266-0a57-4884-b029-951c6e1cabef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Settings">
+      <UniqueIdentifier>{c630912c-f278-4ebc-9777-8526200cb388}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controller\TransformEngine">
+      <UniqueIdentifier>{0121eebd-760d-40cc-9975-7d5c1395d480}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controller\TransformEngine\Image">
+      <UniqueIdentifier>{210291f7-7322-4def-b33f-f478654445b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controller\TransformEngine\MatchEngine">
+      <UniqueIdentifier>{b996ecf8-cb16-4176-b030-9a813f5f9d0d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
@@ -42,181 +96,217 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\fontEngine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\symFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\misc.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\symFilterBase.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\img.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\symFilterCache.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\dlgs.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\gridBarsFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\transform.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\bulkySymsFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\controller.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\unreadableSymsFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
-    <ClInclude Include="src\match.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchSettingsManip.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\settings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\symSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\pixMapSym.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\symData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchParams.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cachedData.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\filledRectanglesFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
     <ClInclude Include="src\controlPanel.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\UI</Filter>
     </ClInclude>
-    <ClInclude Include="src\views.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchEngine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\propsReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\patch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\transformTrace.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchAspects.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchAspectsFactory.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\dlgs.h">
+      <Filter>Header Files\UI</Filter>
     </ClInclude>
     <ClInclude Include="src\controlPanelActions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\presentCmap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\validateFont.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
     <ClInclude Include="src\glyphsProgressTracker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\picTransformProgressTracker.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
     <ClInclude Include="src\controllerBase.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
-    <ClInclude Include="src\timing.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\controller.h">
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
-    <ClInclude Include="src\ompTrace.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\presentCmap.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\picTransformProgressTracker.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\validateFont.h">
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
     <ClInclude Include="src\updateSymsActions.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\misc.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ompTrace.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\timing.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\propsReader.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\views.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\match.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchAspects.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchAspectsFactory.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchEngine.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchParams.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\settings.h">
+      <Filter>Header Files\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgSettings.h">
+      <Filter>Header Files\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symSettings.h">
+      <Filter>Header Files\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSettings.h">
+      <Filter>Header Files\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSettingsManip.h">
+      <Filter>Header Files\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fontEngine.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pixMapSym.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transform.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformTrace.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cachedData.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\img.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\patch.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symData.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\fontEngine.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\symFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
-    <ClCompile Include="src\img.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\filledRectanglesFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
-    <ClCompile Include="src\dlgs.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gridBarsFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
-    <ClCompile Include="src\transform.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\bulkySymsFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
-    <ClCompile Include="src\controller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\match.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\unreadableSymsFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
     <ClCompile Include="src\misc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matchSettingsManip.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matchSettings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\views.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matchEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cachedData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matchParams.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\structuralSimilarity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\pixMapSym.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\symSettings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\controlPanel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\propsReader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\varConfig.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\presentation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\patch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\transformTrace.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matchAspectsFactory.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Var</Filter>
     </ClCompile>
     <ClCompile Include="src\timing.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\propsReader.cpp">
+      <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transformTrace.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transform.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\views.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\img.cpp">
+      <Filter>Source Files\Controller\TransformEngine\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\patch.cpp">
+      <Filter>Source Files\Controller\TransformEngine\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\match.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchAspectsFactory.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchEngine.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchParams.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchSettings.cpp">
+      <Filter>Source Files\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchSettingsManip.cpp">
+      <Filter>Source Files\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symSettings.cpp">
+      <Filter>Source Files\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\varConfig.cpp">
+      <Filter>Source Files\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\controlPanel.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dlgs.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\presentation.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pixMapSym.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fontEngine.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\controller.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\structuralSimilarity.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cachedData.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
