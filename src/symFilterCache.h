@@ -35,33 +35,22 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#ifndef H_SYM_FILTER_CACHE
+#define H_SYM_FILTER_CACHE
 
-#include <numeric>
+/// Cached values to be used during glyph filtering
+struct SymFilterCache {
+	// values about the font, no matter its bounding box
+	unsigned szU;		///< font size as unsigned
+	unsigned areaU;		///< font area as unsigned
+	double szD;			///< font size as double
+	double areaD;		///< font area as double
+	void setFontSz(unsigned sz);
 
-using namespace std;
-using namespace cv;
+	// values about the bounding box of the font
+	unsigned bbAreaU;	///< area of the bounding box as unsigned
+	unsigned bbAreaD;	///< area of the bounding box as double
+	void setBoundingBox(unsigned height, unsigned width);
+};
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
-
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
-
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
-
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-}
-
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
-
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
-}
+#endif

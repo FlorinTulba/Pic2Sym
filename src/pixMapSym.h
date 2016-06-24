@@ -38,7 +38,11 @@
 #ifndef H_PIXMAP_SYM
 #define H_PIXMAP_SYM
 
+#include "symFilterBase.h"
+
 #include <vector>
+#include <map>
+#include <memory>
 
 #include <opencv2/core.hpp>
 #include <ft2build.h>
@@ -134,10 +138,6 @@ protected:
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
 	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
 	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
-	unsigned filledRectangles = 0U;	///< count of rather rectangular, homogeneous, bright symbols
-	unsigned gridBars = 0U;			///< count of glyphs used to represent the grid of tables
-	unsigned bulkies = 0U;			///< count of glyphs with large, almost filled areas
-	unsigned unreadable = 0U;		///< count of glyphs squeezed into a way too small square
 	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
 
 	// Precomputed entities during reset
@@ -147,6 +147,10 @@ protected:
 
 	const IPresentCmap &cmapViewUpdater;	///< updates Cmap View as soon as there are enough symbols for 1 page
 
+	/// member that allows setting a filter to detect symbols with undesired features
+	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
+	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
+
 public:
 	PmsCont(const IPresentCmap &cmapViewUpdater_);
 
@@ -154,10 +158,7 @@ public:
 	unsigned getFontSz() const;
 	unsigned getBlanksCount() const;
 	unsigned getDuplicatesCount() const;
-	unsigned getFilledRectanglesCount() const;
-	unsigned getGridBarsCount() const;
-	unsigned getBulkiesCount() const;
-	unsigned getUnreadableCount() const;
+	const std::map<unsigned, unsigned>& getRemovableSymsByCateg() const;
 	double getCoverageOfSmallGlyphs() const;
 	const std::vector<const PixMapSym>& getSyms() const;
 
@@ -170,7 +171,7 @@ public:
 	Space (empty / full) glyphs are invalid.
 	Also updates the count of blanks & duplicates.
 	*/
-	void appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb);
+	void appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc);
 
 	void setAsReady(); ///< No other symbols to append. Statistics can be now computed
 };

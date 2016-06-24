@@ -71,7 +71,7 @@ namespace ut {
 		void setSz(unsigned sz_) {
 			sz = sz_;
 			consec = Mat(1, sz_, CV_64FC1);
-			iota(consec.begin<double>(), consec.end<double>(), (double)0.); // 0..sz-1
+			iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.); // 0..sz-1
 			flip(consec, revConsec, 1);	// sz-1..0
 			revConsec = revConsec.t();
 		}
@@ -146,7 +146,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4)); // 170 + 85 = 255
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
-		BOOST_TEST(mc.y == getSz()-1U, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 0., test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_UniformPatch_CenterAndAverage) {
@@ -177,7 +177,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)left, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)(getSz() - 1U - top), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)top, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255) {
@@ -192,7 +192,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)(left+1U), test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)(getSz() - 1U - (top - 1U)), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(top - 1U), test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues) {

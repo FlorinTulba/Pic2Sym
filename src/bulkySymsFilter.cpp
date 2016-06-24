@@ -35,33 +35,50 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#include "bulkySymsFilter.h"
+#include "pixMapSym.h"
+#include "symFilterCache.h"
 
-#include <numeric>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
 using namespace cv;
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
+BulkySymsFilter::BulkySymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
+		TSymFilter(3U, "bulky symbols", std::move(nextFilter_)) {}
 
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
+bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+	static const auto compErMaskSide = [] (unsigned fontSz) {
+		return 2 + max(3, (((int)fontSz/2) | 1));
+	};
 
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
+	if(min(pms.rows, pms.cols) < (unsigned)compErMaskSide(sfc.szU))
+		return false;
 
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-}
+	static map<int, Mat> circleMasks;
+	if(circleMasks.empty()) {
+		extern const unsigned Settings_MAX_FONT_SIZE;
+		for(int maskSide = 3, maxMaskSide = compErMaskSide(Settings_MAX_FONT_SIZE);
+			maskSide <= maxMaskSide; maskSide += 2)
+			circleMasks[maskSide] = getStructuringElement(MORPH_ELLIPSE, Size(maskSide, maskSide));
+	}
 
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
+	const Mat narrowGlyph = pms.asNarrowMat();
+	Mat processed;
 
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
+/*
+	// Close with a small disk to fill any minor gaps.
+	static const auto compCloseMaskSide = [] (unsigned fontSz) {
+		return max(3, (((int)fontSz/6) | 1));
+	};
+	static const Point defAnchor(-1, -1);
+	morphologyEx(narrowGlyph, processed, MORPH_CLOSE, circleMasks[compCloseMaskSide(sfc.szU)],
+				defAnchor, 1, BORDER_CONSTANT, Scalar(0.));
+*/
+
+	// Erode with a large disk to detect large filled areas.
+	erode(narrowGlyph, processed, circleMasks[compErMaskSide(sfc.szU)]);
+
+	const bool result = countNonZero(processed > 127) > 0;
+	return result;
 }

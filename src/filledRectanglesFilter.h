@@ -35,33 +35,22 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#ifndef H_FILLED_RECTANGLES_FILTER
+#define H_FILLED_RECTANGLES_FILTER
 
-#include <numeric>
+#include "symFilter.h"
 
-using namespace std;
-using namespace cv;
+#include <opencv2/core/core.hpp>
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
+/// Detects filled symbols with a rectangular shape, even degenerate ones - basic lines.
+struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {
+	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
+	FilledRectanglesFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
 
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
+protected:
+	static bool checkProjectionForFilledRectangles(const cv::Mat &sums,
+												   unsigned sideLen, int &countOfMaxSums);
+};
 
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-}
-
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
-
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
-}
+#endif

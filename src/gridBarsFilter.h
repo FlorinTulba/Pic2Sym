@@ -35,33 +35,38 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#ifndef H_GRID_BARS_FILTER
+#define H_GRID_BARS_FILTER
 
-#include <numeric>
+#include "symFilter.h"
 
-using namespace std;
-using namespace cv;
+#include <opencv2/core/core.hpp>
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
+/** 
+Detects symbols typically used to generate a grid from glyphs.
 
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
+Such characters are less desirable, since the image to be processed is already split as a grid,
+so approximating patches with grid-like symbols produces the impression of further division.
 
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
+These symbols are quite elusive:
+- they might expand even towards the corners (when the borders they define are double-lines)
+- they might not touch the borders of the glyph
+- some of their branches might be thinner/thicker or single/double-lined
+- the brightness of each branch isn't always constant, nor it has a constant profile
 
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-}
+After lots of approaches I still miss many true positives and get numerous false positives.
 
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
+It appears that supervised learning would be ideal here, instead of manually evolving a model.
+It would be much easier just to provide a set of positives and negatives to a machine learning 
+algorithm and then check its accuracy.
+*/
+struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
+	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
-}
+	GridBarsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+
+protected:
+	static bool checkProjectionForGridSymbols(const cv::Mat &sums);
+};
+
+#endif

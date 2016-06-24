@@ -86,17 +86,15 @@ PmsCont_SMALL_GLYPHS_PERCENT	0.1
 
 ; Switch that allows visualizing the symbols that normally are removed in the Cmap Viewer
 ; Note they will appear inverted and they also will participate in the matching process
-PreserveRemovableSymbolsForExamination	true
+PreserveRemovableSymbolsForExamination	false
 
  Detection of unreadable glyphs
 ; MinAreaRatioForUnreadableSymsBB is in 0..1 range
 ; ForegroundThresholdDelta is in 0..255 range
 ; StillForegroundThreshold brightness threshold (1/255 =~ 0.004)
-; MinBulkinessForUnreadableSyms a small value larger than 1
 MinAreaRatioForUnreadableSymsBB	.2
 StillForegroundThreshold	0.002
 ForegroundThresholdDelta	10.
-MinBulkinessForUnreadableSyms	1.13
 
 ; Constant for background threshold
 ; 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal

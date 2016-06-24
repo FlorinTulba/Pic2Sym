@@ -35,33 +35,50 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#include "symFilter.h"
+#include "symFilterCache.h"
+#include "pixMapSym.h"
 
-#include <numeric>
+#include <set>
 
 using namespace std;
-using namespace cv;
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
-
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
-
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
-
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
+void SymFilterCache::setFontSz(unsigned sz) {
+	szD = szU = sz;
+	areaD = areaU = szU * szU;
 }
 
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
+void SymFilterCache::setBoundingBox(unsigned height, unsigned width) {
+	bbAreaD = bbAreaU = height * width;
+}
 
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
+map<unsigned, const string> SymFilter::filterTypes;
+
+SymFilter::SymFilter(unsigned filterId_, const string &filterName,
+					 unique_ptr<ISymFilter> nextFilter_) : ISymFilter(),
+				nextFilter(nextFilter_ ? std::move(nextFilter_) : make_unique<DefSymFilter>()),
+				filterId(filterId_) {
+	static set<const string> filterNames;
+
+	if(filterId_ == 0U)
+		throw invalid_argument(__FUNCTION__ " must use only filterId-s greater than 0!");
+
+#ifndef UNIT_TESTING
+	if(filterTypes.find(filterId_) != filterTypes.end())
+		throw invalid_argument(__FUNCTION__ " called with non-unique filterId_: " + to_string(filterId_));
+
+	if(filterNames.find(filterName) != filterNames.end())
+		throw invalid_argument(__FUNCTION__ " called with non-unique filterName: " + filterName);
+#endif // UNIT_TESTING not defined
+
+	filterTypes.emplace(filterId_, filterName);
+	filterNames.insert(filterName);
+}
+
+const string& SymFilter::filterName(unsigned filterId_) {
+	auto it = filterTypes.find(filterId_), itEnd = filterTypes.end();
+	if(it != itEnd)
+		return it->second;
+
+	throw invalid_argument(__FUNCTION__ " received an invalid filterId: " + to_string(filterId_));
 }

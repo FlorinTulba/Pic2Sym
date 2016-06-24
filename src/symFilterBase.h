@@ -35,33 +35,25 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "cachedData.h"
-#include "fontEngine.h"
-#include "misc.h"
+#ifndef H_SYM_FILTER_BASE
+#define H_SYM_FILTER_BASE
 
-#include <numeric>
+// Forward declarations
+struct PixMapSym;
+struct SymFilterCache;
 
-using namespace std;
-using namespace cv;
+/// Interface used for filtering out some of the symbols from the charmap
+struct ISymFilter /*abstract*/ {
+	/**
+	Returns the id of the filter which detected that the symbol exhibits some undesired features.
+	0 means no filters considered the glyph as disposable.
+	*/
+	virtual unsigned matchingFilterId(const PixMapSym&, const SymFilterCache&) const { return 0U; }
 
-const double CachedData::sdevMaxFgBg = 127.5;
-const double CachedData::sdevMaxEdge = 255.;
+	virtual ~ISymFilter() = 0 {}
+};
 
-void CachedData::useNewSymSize(unsigned sz_) {
-	sz = sz_;
-	sz_1 = sz - 1U;
-	sz2 = (double)sz * sz;
+/// Implicit Symbol Filter, which just approves any symbol
+struct DefSymFilter : ISymFilter {};
 
-	preferredMaxMcDist = sz / 8.;
-	complPrefMaxMcDist = sz_1 * sqrt(2) - preferredMaxMcDist;
-	patchCenter = Point2d(sz_1, sz_1) / 2.;
-
-	consec = Mat(1, sz, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-}
-
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
-	useNewSymSize(sz_);
-
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
-}
+#endif

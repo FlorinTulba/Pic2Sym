@@ -61,6 +61,11 @@
 #include "propsReader.cpp"
 #include "transformTrace.cpp"
 #include "matchAspectsFactory.cpp"
+#include "symFilter.cpp"
+#include "filledRectanglesFilter.cpp"
+#include "gridBarsFilter.cpp"
+#include "bulkySymsFilter.cpp"
+#include "unreadableSymsFilter.cpp"
 
 #include <ctime>
 #include <random>

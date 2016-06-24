@@ -55,6 +55,7 @@ const double EPS = 1e-6;
 // Example: copy(x.begin(), x.end(), ..) => copy(BOUNDS(x), ..)
 #define BOUNDS(iterable)	std::begin(iterable), std::end(iterable)
 #define CBOUNDS(iterable)	std::cbegin(iterable), std::cend(iterable)
+#define BOUNDS_FOR_ITEM_TYPE(iterable, type)	iterable.begin<type>(), iterable.end<type>()
 
 // string <-> wstring conversions
 std::wstring str2wstr(const std::string &str);

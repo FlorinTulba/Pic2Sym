@@ -126,7 +126,6 @@ extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
 extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
-extern READ_DOUBLE_PROP(MinBulkinessForUnreadableSyms);
 
 static READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
 extern const Size StructuralSimilarity_WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);

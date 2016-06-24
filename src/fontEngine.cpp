@@ -35,6 +35,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+#include "symFilter.h"
+#include "symFilterCache.h"
 #include "fontEngine.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
@@ -398,6 +400,8 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	// 90% for this stage, report every 5%
 	const FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
 
+	SymFilterCache sfc;
+	sfc.setFontSz(fontSz_);
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
 	for(FT_ULong c = FT_Get_First_Char(face, &idx), i = (FT_ULong)round((symsCount*2.)/90);
@@ -411,7 +415,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		if(width > fontSz_ || height > fontSz_)
 			toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
 		else
-			symsCont.appendSym(c, g, bb);
+			symsCont.appendSym(c, g, bb, sfc);
 	}
 
 	// 7% for this stage, report every 5% => report 95% at 3/7 from it
@@ -429,7 +433,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / hRatio);
 		FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
-		symsCont.appendSym(c, face->glyph, bb);
+		symsCont.appendSym(c, face->glyph, bb, sfc);
 	}
 
 	// 1% for this stage, no more reports
@@ -439,14 +443,10 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
 	if(symsCont.getDuplicatesCount() != 0U)
 		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
-	if(symsCont.getFilledRectanglesCount() != 0U)
-		cout<<"Detected "<<symsCont.getFilledRectanglesCount()<<" filled rectangles in the symsSet!"<<endl;
-	if(symsCont.getGridBarsCount() != 0U)
-		cout<<"Detected "<<symsCont.getGridBarsCount()<<" grid bar symbols in the symsSet!"<<endl;
-	if(symsCont.getBulkiesCount() != 0U)
-		cout<<"Detected "<<symsCont.getBulkiesCount()<<" bulky glyphs in the symsSet!"<<endl;
-	if(symsCont.getUnreadableCount() != 0U)
-		cout<<"Detected "<<symsCont.getUnreadableCount()<<" unreadable symbols in the symsSet!"<<endl;
+
+	const auto &removableSymsByCateg = symsCont.getRemovableSymsByCateg();
+	for(const auto &categAndCount : removableSymsByCateg)
+		cout<<"Detected "<<categAndCount.second<<' '<<SymFilter::filterName(categAndCount.first)<<" in the symsSet!"<<endl;
 
 #ifdef _DEBUG
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
