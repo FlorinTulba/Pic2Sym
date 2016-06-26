@@ -48,6 +48,7 @@
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
+    <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symFilter.h" />
@@ -84,6 +85,7 @@
     <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
+    <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />

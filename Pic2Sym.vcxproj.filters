@@ -219,6 +219,9 @@
     <ClInclude Include="src\appState.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="src\sievesSymsFilter.h">
+      <Filter>Header Files\Charmap\SymsFilters</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -313,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="src\appState.cpp">
       <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sievesSymsFilter.cpp">
+      <Filter>Source Files\Charmap\SymsFilters</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

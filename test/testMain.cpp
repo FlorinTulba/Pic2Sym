@@ -66,6 +66,7 @@
 #include "gridBarsFilter.cpp"
 #include "bulkySymsFilter.cpp"
 #include "unreadableSymsFilter.cpp"
+#include "sievesSymsFilter.cpp"
 
 #include <ctime>
 #include <random>

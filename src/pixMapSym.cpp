@@ -39,6 +39,7 @@
 #include "gridBarsFilter.h"
 #include "bulkySymsFilter.h"
 #include "unreadableSymsFilter.h"
+#include "sievesSymsFilter.h"
 #include "symFilterCache.h"
 #include "presentCmap.h"
 #include "misc.h"
@@ -263,7 +264,8 @@ PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
 		symFilter(make_unique<FilledRectanglesFilter>
 				(make_unique<GridBarsFilter>
 				(make_unique<BulkySymsFilter>
-				(make_unique<UnreadableSymsFilter>())))) {}
+				(make_unique<UnreadableSymsFilter>
+				(make_unique<SievesSymsFilter>()))))) {}
 
 unsigned PmsCont::getFontSz() const {
 	if(!ready) {
