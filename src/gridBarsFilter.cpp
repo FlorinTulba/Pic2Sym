@@ -66,63 +66,67 @@ static bool acceptableProfile(const Mat &narrowGlyph,	///< bounding box (BB) reg
 							  const Mat &projSums,		///< row/col projection sums
 							  Mat(Mat::*fMatRowCol)(int) const ///< one of &Mat::row/col
 							  ) {
-	Mat prevData;
-	double prevSums = 0.;
 	unsigned diffsBeforeCenter = 0U, diffsCentralRegion = 0U, diffsAfterCenter = 0U,
 		firstNonEmptyRowColBB, lastNonEmptyRowColBB, // first/last relevant line / col relative to BB
 		rowColProj; // row / column within horizontal / vertical projections of the glyph
 	for(lastNonEmptyRowColBB = lastRowColBB, rowColProj = lastNonEmptyRowColBB + firstRowColBB;
-		0. == projSums.at<double>(rowColProj); --rowColProj, --lastNonEmptyRowColBB);
+		0. == projSums.at<double>(rowColProj); --rowColProj, --lastNonEmptyRowColBB) {}
 	for(firstNonEmptyRowColBB = 0U, rowColProj = firstRowColBB;
-		0. == projSums.at<double>(rowColProj); ++rowColProj, ++firstNonEmptyRowColBB);
-	prevSums = projSums.at<double>(rowColProj);
-	prevData = (narrowGlyph.*fMatRowCol)(firstNonEmptyRowColBB);
+		0. == projSums.at<double>(rowColProj); ++rowColProj, ++firstNonEmptyRowColBB) {}
+	static const double FactorTolUnder = .9, FactorTolAbove = 1. / FactorTolUnder;
+	Mat prevData = (narrowGlyph.*fMatRowCol)(firstNonEmptyRowColBB),
+		prevDataInfLim = prevData * FactorTolUnder,
+		prevDataSupLim = prevData * FactorTolAbove;
+	int cnzPrevData = countNonZero(prevData);
 
 	for(unsigned rc = firstNonEmptyRowColBB + 1U; rc <= lastNonEmptyRowColBB; ++rc) {
+		++rowColProj;
 		const Mat thisRowCol = (narrowGlyph.*fMatRowCol)(rc);
-		const double thisSums = projSums.at<double>(++rowColProj);
-		if(thisSums == prevSums) {
-			/* equal(BOUNDS_FOR_ITEM_TYPE(thisRowCol, const unsigned char),
-										stdext::checked_array_iterator<MatIterator_<const unsigned char>>
-										(prevData.begin<const unsigned char>(), prevData.total()))
-			would generate a read from address 0 in Debug mode */
+		const int cnzThisRowCol = countNonZero(thisRowCol);
+		if(cnzPrevData == cnzThisRowCol) {
 			auto itThisRowCol = thisRowCol.begin<unsigned char>(),
 				itThisRowColEnd = thisRowCol.end<unsigned char>();
-			auto itPrevData = prevData.begin<unsigned char>();
-			bool notEqual = false;
+			auto itPrevDataInfLim = prevDataInfLim.begin<unsigned char>(),
+				itPrevDataSupLim = prevDataSupLim.begin<unsigned char>();
+			bool quiteTheSamePattern = true;
 			while(itThisRowCol != itThisRowColEnd) {
-				if(*itThisRowCol++ != *itPrevData++) {
-					notEqual = true;
+				const auto cellVal = *itThisRowCol;
+				if(cellVal < *itPrevDataInfLim || cellVal > *itPrevDataSupLim) {
+					quiteTheSamePattern = false;
 					break;
 				}
+				++itThisRowCol; ++itPrevDataInfLim; ++itPrevDataSupLim;
 			}
-			if(!notEqual) continue;
+			if(quiteTheSamePattern) continue;
 		}
 
 		// There should be at most 2 patterns above/below or to the left/right of the center area and
-		// at most 4 patterns in the central region
+		// a lot more patterns in the central region
 		if(rowColProj < crossClearance) {
 			if(++diffsBeforeCenter > 1U) return false;
+			
+			// Even when different, the 2 rows/columns must have non-zero elements in same columns/rows
+			Mat intersMin;
+			(cv::min)(thisRowCol, prevData, intersMin);
+			if(countNonZero(intersMin) < cnzPrevData) return false;
 
-			// All elements from thisRowCol should be >= than the corresponding ones from prevData
-			if(thisSums <= prevSums) return false;
-			for(unsigned cr = 0, lim = (unsigned)thisRowCol.total(); cr < lim; ++cr)
-				if(thisRowCol.at<unsigned char>(cr) < prevData.at<unsigned char>(cr))
-					return false;
 		} else if(rowColProj >= sfc.szU-crossClearance) {
 			if(++diffsAfterCenter > 1U) return false;
 
-			// All elements from thisRowCol should be <= than the corresponding ones from prevData
-			if(thisSums >= prevSums) return false;
-			for(unsigned cr = 0, lim = (unsigned)thisRowCol.total(); cr < lim; ++cr)
-				if(thisRowCol.at<unsigned char>(cr) > prevData.at<unsigned char>(cr))
-					return false;
+			// Even when different, the 2 rows/columns must have non-zero elements in same columns/rows
+			Mat intersMin;
+			(cv::min)(thisRowCol, prevData, intersMin);
+			if(countNonZero(intersMin) < cnzPrevData) return false;
+
 		} else {
-			if(++diffsCentralRegion > 4U) return false;
+			if(++diffsCentralRegion > 9U) return false;
 		}
 
-		prevSums = thisSums;
+		// Update cnz, prevData, inferior & superior limits for future compares
 		prevData = thisRowCol;
+		cnzPrevData = cnzThisRowCol;
+		prevDataInfLim = thisRowCol * FactorTolUnder;
+		prevDataSupLim = thisRowCol * FactorTolAbove;
 	}
 
 	return true;
@@ -228,22 +232,43 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 	if(max(pms.rows, pms.cols) < (sfc.szU>>1)) return false;
 
 	Mat narrowGlyph = pms.asNarrowMat();
-	Mat glyphBin = (narrowGlyph > 0U), closedGlyphBin;
-	const int brightestPixels = countNonZero(glyphBin);
-	if(brightestPixels < 7) return false; // don't report really small areas
+	Mat glyphBin = (narrowGlyph > 0U);
 
-	// Exclude also glyphs that touch pixels outside the main cross
+	const unsigned crossClearance = (unsigned)max(1, int(sfc.szU/3U - 1U)),
+			crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
+	const int minPixelsCenter = int(crossWidth - 1U) | 1, // crossWidth when odd, or crossWidth-1 when even
+			minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
+			minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
+
+	// Don't consider fonts with less pixels than necessary to obtain a grid bar
+	if(countNonZero(glyphBin) < minPixels) return false;
+
+	// Exclude glyphs that touch pixels outside the main cross
 	const Mat glyph = pms.toMat(sfc.szU);
-	const unsigned crossClearance = sfc.szU/3,
-		crossWidth = sfc.szU - (crossClearance << 1); // at least 1/3 from font size
-	const Range topOrLeft(0, crossClearance), rightOrBottom(sfc.szU-crossClearance, sfc.szU);
+	const Range topOrLeft(0, crossClearance), rightOrBottom(sfc.szU-crossClearance, sfc.szU),
+				center(crossClearance, crossClearance + crossWidth);
 	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) return false;
 	if(countNonZero(Mat(glyph, topOrLeft, rightOrBottom)) > 0) return false;
 	if(countNonZero(Mat(glyph, rightOrBottom, topOrLeft)) > 0) return false;
 	if(countNonZero(Mat(glyph, rightOrBottom, rightOrBottom)) > 0) return false;
 
-	// Making sure glyphBin entirely represents original narrowGlyph
-	narrowGlyph.setTo(255U, narrowGlyph >= 250U); // allow profiles to be less sensitive
+	// Grid bars also need some pixels in the center (>= minPixelsCenter)
+	if(countNonZero(Mat(glyph, center, center)) < minPixelsCenter) return false;
+
+	// On each end of the imaginary cross, there should be either 0 pixels or >= minPixelsBranch
+	// and there have to be at least 2 branches.
+	int cnz, branchesCount = 0;
+	if((cnz = countNonZero(Mat(glyph, topOrLeft, center))) >= minPixelsBranch) ++branchesCount;
+	else if(cnz > 0) return false;
+	if((cnz = countNonZero(Mat(glyph, center, topOrLeft))) >= minPixelsBranch) ++branchesCount;
+	else if(cnz > 0) return false;
+	if((cnz = countNonZero(Mat(glyph, rightOrBottom, center))) >= minPixelsBranch) ++branchesCount;
+	else if(cnz > 0) return false;
+	if((cnz = countNonZero(Mat(glyph, center, rightOrBottom))) >= minPixelsBranch) ++branchesCount;
+	else if(cnz > 0) return false;
+	if(branchesCount < 2) return false;
+
+	// Making sure glyphBin is entitled to represent narrowGlyph
 	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance, sfc.szU - 1U - pms.top, pms.rows - 1U,
 		pms.rowSums, &Mat::row)) return false;
 	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance, pms.left, pms.cols - 1U,
@@ -254,7 +279,8 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 	const int maskSz = max(3, (((int)sfc.szU>>2) | 1)), frameSz = maskSz>>1;
 	const Mat mask(maskSz, maskSz, CV_8UC1, Scalar(1U));
 	Mat glyphBinAux(pms.rows + 2*frameSz, pms.cols + 2*frameSz, CV_8UC1, Scalar(0U)),
-		destRegion(glyphBinAux, Range(frameSz, pms.rows+frameSz), Range(frameSz, pms.cols+frameSz));
+		destRegion(glyphBinAux, Range(frameSz, pms.rows+frameSz), Range(frameSz, pms.cols+frameSz)),
+		closedGlyphBin;
 	glyphBin.copyTo(destRegion);
 	morphologyEx(glyphBinAux, closedGlyphBin, MORPH_CLOSE, mask,
 				 defAnchor, 1, BORDER_CONSTANT, BlackFrame);
