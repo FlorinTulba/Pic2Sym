@@ -77,7 +77,7 @@ public:
 	unsigned getSymsPerPage() const { return 0U; }
 	unsigned getPageIdx() const { return 0U; }
 	bool isBrowsable() const { return false; }
-	void prepareForBrowsing() {}
+	void setBrowsable(bool = true) {}
 	void showUnofficial1stPage(...) {}
 };
 

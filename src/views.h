@@ -164,7 +164,7 @@ public:
 	unsigned getSymsPerPage() const { return symsPerPage; }
 	unsigned getPageIdx() const { return (unsigned)page; }
 	bool isBrowsable() const { return readyToBrowse; }
-	void prepareForBrowsing() { readyToBrowse = true; }
+	void setBrowsable(bool readyToBrowse_ = true) { readyToBrowse = readyToBrowse_; }
 
 	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
 	void showUnofficial1stPage(std::vector<const cv::Mat> &symsOn1stPage,
