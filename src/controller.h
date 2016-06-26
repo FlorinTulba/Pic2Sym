@@ -76,8 +76,6 @@ protected:
 
 	// Validation flags
 	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
-	bool hMaxSymsOk, vMaxSymsOk;
-	bool fontSzOk;
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueueSz22 updateSymsActionsQueue;
@@ -139,6 +137,7 @@ public:
 	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
 	void loadSettings() override;		///< updating the Settings object
 	void saveSettings() const override;	///< saving the Settings object
+	unsigned getFontEncodingIdx() const override;
 	void newImage(const std::string &imgPath) override;
 	void newFontFamily(const std::string &fontFile) override;
 	void newFontEncoding(int encodingIdx) override;

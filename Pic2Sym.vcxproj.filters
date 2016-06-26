@@ -216,6 +216,9 @@
     <ClInclude Include="src\symData.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
+    <ClInclude Include="src\appState.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -307,6 +310,9 @@
     </ClCompile>
     <ClCompile Include="src\cachedData.cpp">
       <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\appState.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

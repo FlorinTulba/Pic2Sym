@@ -36,6 +36,7 @@
  ****************************************************************************************/
 
 #include "controlPanel.h"
+#include "controlPanelActions.h"
 #include "settings.h"
 
 #include <opencv2/highgui.hpp>
@@ -79,6 +80,7 @@ extern const String ControlPanel_largerSymTrName;
 extern const String ControlPanel_thresh4BlanksTrName;
 extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
+extern const String ControlPanel_symsBatchSzTrName;
 
 double ControlPanel::Converter::proportionRule(double x, double xMax, double yMax) {
 	return x * yMax / xMax;
@@ -135,61 +137,67 @@ double ControlPanel::Converter::LargerSym::fromSlider(int largerSym) {
 void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
 	int newVal = ms.isHybridResult();
 	while(hybridResult != newVal)
-		setTrackbarPos(ControlPanel_hybridResultTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_hybridResultTrName), nullptr, newVal);
 
 	newVal = Converter::StructuralSim::toSlider(ms.get_kSsim());
 	while(structuralSim != newVal)
-		setTrackbarPos(ControlPanel_structuralSimTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_structuralSimTrName), nullptr, newVal);
 
 	newVal = Converter::Correctness::toSlider(ms.get_kSdevFg());
 	while(underGlyphCorrectness != newVal)
-		setTrackbarPos(ControlPanel_underGlyphCorrectnessTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_underGlyphCorrectnessTrName), nullptr, newVal);
 
 	newVal = Converter::Correctness::toSlider(ms.get_kSdevEdge());
 	while(glyphEdgeCorrectness != newVal)
-		setTrackbarPos(ControlPanel_glyphEdgeCorrectnessTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_glyphEdgeCorrectnessTrName), nullptr, newVal);
 
 	newVal = Converter::Correctness::toSlider(ms.get_kSdevBg());
 	while(asideGlyphCorrectness != newVal)
-		setTrackbarPos(ControlPanel_asideGlyphCorrectnessTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_asideGlyphCorrectnessTrName), nullptr, newVal);
 
 	newVal = Converter::Contrast::toSlider(ms.get_kContrast());
 	while(moreContrast != newVal)
-		setTrackbarPos(ControlPanel_moreContrastTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_moreContrastTrName), nullptr, newVal);
 
 	newVal = Converter::Gravity::toSlider(ms.get_kMCsOffset());
 	while(gravity != newVal)
-		setTrackbarPos(ControlPanel_gravityTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_gravityTrName), nullptr, newVal);
 
 	newVal = Converter::Direction::toSlider(ms.get_kCosAngleMCs());
 	while(direction != newVal)
-		setTrackbarPos(ControlPanel_directionTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_directionTrName), nullptr, newVal);
 
 	newVal = Converter::LargerSym::toSlider(ms.get_kSymDensity());
 	while(largerSym != newVal)
-		setTrackbarPos(ControlPanel_largerSymTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_largerSymTrName), nullptr, newVal);
 
 	newVal = ms.getBlankThreshold();
 	while(thresh4Blanks != newVal)
-		setTrackbarPos(ControlPanel_thresh4BlanksTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_thresh4BlanksTrName), nullptr, newVal);
+
+	pLuckySliderName = nullptr;
 }
 
 void ControlPanel::updateImgSettings(const ImgSettings &is) {
 	int newVal = is.getMaxHSyms();
 	while(maxHSyms != newVal)
-		setTrackbarPos(ControlPanel_outWTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outWTrName), nullptr, newVal);
 
 	newVal = is.getMaxVSyms();
 	while(maxVSyms != newVal)
-		setTrackbarPos(ControlPanel_outHTrName, nullptr, newVal);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outHTrName), nullptr, newVal);
+
+	pLuckySliderName = nullptr;
 }
 
 void ControlPanel::updateSymSettings(unsigned encIdx, unsigned fontSz_) {
 	while(encoding != encIdx)
-		setTrackbarPos(ControlPanel_encodingTrName, nullptr, encIdx);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, encIdx);
 
 	while(fontSz != fontSz_)
-		setTrackbarPos(ControlPanel_fontSzTrName, nullptr, fontSz_);
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_fontSzTrName), nullptr, fontSz_);
+
+	pLuckySliderName = nullptr;
 }
 
 void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
@@ -198,7 +206,52 @@ void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
 
 	// Sequence from below is required to really update the trackbar max & pos
 	// The controller should prevent them to trigger Controller::newFontEncoding
-	setTrackbarPos(ControlPanel_encodingTrName, nullptr, 1);
+	setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, 1);
 	updatingEncMax = false;
 	setTrackbarPos(ControlPanel_encodingTrName, nullptr, 0);
+	pLuckySliderName = nullptr;
+}
+
+void ControlPanel::restoreSliderValue(const String &trName) {
+	slidersRestoringValue.insert(&trName);
+
+	// Determine previous value
+	int prevVal = 0;
+	if(&trName == &ControlPanel_outWTrName) {
+		prevVal = cfg.imgSettings().getMaxHSyms();
+	} else if(&trName == &ControlPanel_outHTrName) {
+		prevVal = cfg.imgSettings().getMaxVSyms();
+	} else if(&trName == &ControlPanel_encodingTrName) {
+		prevVal = performer.getFontEncodingIdx();
+	} else if(&trName == &ControlPanel_fontSzTrName) {
+		prevVal = cfg.symSettings().getFontSz();
+	} else if(&trName == &ControlPanel_symsBatchSzTrName) {
+		prevVal = symsBatchSz; // no change needed for Symbols Batch Size!
+	} else if(&trName == &ControlPanel_hybridResultTrName) {
+		prevVal = cfg.matchSettings().isHybridResult() ? 1 : 0;
+	} else if(&trName == &ControlPanel_structuralSimTrName) {
+		prevVal = Converter::StructuralSim::toSlider(cfg.matchSettings().get_kSsim());
+	} else if(&trName == &ControlPanel_underGlyphCorrectnessTrName) {
+		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevFg());
+	} else if(&trName == &ControlPanel_glyphEdgeCorrectnessTrName) {
+		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevEdge());
+	} else if(&trName == &ControlPanel_asideGlyphCorrectnessTrName) {
+		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevBg());
+	} else if(&trName == &ControlPanel_moreContrastTrName) {
+		prevVal = Converter::Contrast::toSlider(cfg.matchSettings().get_kContrast());
+	} else if(&trName == &ControlPanel_gravityTrName) {
+		prevVal = Converter::Gravity::toSlider(cfg.matchSettings().get_kMCsOffset());
+	} else if(&trName == &ControlPanel_directionTrName) {
+		prevVal = Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs());
+	} else if(&trName == &ControlPanel_largerSymTrName) {
+		prevVal = Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity());
+	} else if(&trName == &ControlPanel_thresh4BlanksTrName) {
+		prevVal = cfg.matchSettings().getBlankThreshold();
+	} else throw domain_error("Code for " + trName + " must be added within " __FUNCTION__);
+
+	// Set the previous value
+	while(getTrackbarPos(trName, nullptr) != prevVal)
+		setTrackbarPos(trName, nullptr, prevVal);
+
+	slidersRestoringValue.erase(&trName);
 }

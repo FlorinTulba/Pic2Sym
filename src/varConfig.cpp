@@ -139,31 +139,6 @@ extern READ_DOUBLE_PROP(BlurStandardDeviation);
 
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement);
 
-#ifndef UNIT_TESTING
-
-extern READ_UINT_PROP(SymsBatch_trackMax);
-extern READ_UINT_PROP(SymsBatch_defaultSz);
-
-extern READ_INT_PROP(Comparator_trackMax);
-extern READ_DOUBLE_PROP(Comparator_defaultTransparency);
-
-static READ_INT_PROP(CmapInspect_width);
-static READ_INT_PROP(CmapInspect_height);
-extern const Size CmapInspect_pageSz(CmapInspect_width, CmapInspect_height);
-
-extern READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Contrast_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Gravity_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Gravity_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Direction_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Direction_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_LargerSym_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_LargerSym_maxReal);
-
 extern READ_STR_PROP_CONVERT(ControlPanel_selectImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_transformImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_selectFontLabel, String);
@@ -188,6 +163,31 @@ extern READ_STR_PROP_CONVERT(ControlPanel_largerSymTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_thresh4BlanksTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_outWTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_outHTrName, String);
+
+#ifndef UNIT_TESTING
+
+extern READ_UINT_PROP(SymsBatch_trackMax);
+extern READ_UINT_PROP(SymsBatch_defaultSz);
+
+extern READ_INT_PROP(Comparator_trackMax);
+extern READ_DOUBLE_PROP(Comparator_defaultTransparency);
+
+static READ_INT_PROP(CmapInspect_width);
+static READ_INT_PROP(CmapInspect_height);
+extern const Size CmapInspect_pageSz(CmapInspect_width, CmapInspect_height);
+
+extern READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Contrast_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_Gravity_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Gravity_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_Direction_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Direction_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_LargerSym_maxSlider);
+extern READ_DOUBLE_PROP(ControlPanel_Converter_LargerSym_maxReal);
 
 extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 

@@ -88,27 +88,25 @@ Settings::Settings() :
 	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
-	if(((imageOk && hMaxSymsOk && vMaxSymsOk) || !imageRequired) &&
-	   fontFamilyOk && fontSzOk)
+	if((imageOk || !imageRequired) && fontFamilyOk)
 		return true;
 
 	ostringstream oss;
 	oss<<"The problems are:"<<endl<<endl;
 	if(imageRequired && !imageOk)
 		oss<<"- no image to transform"<<endl;
-	if(imageRequired && !hMaxSymsOk)
-		oss<<"- max count of symbols horizontally is too small"<<endl;
-	if(imageRequired && !vMaxSymsOk)
-		oss<<"- max count of symbols vertically is too small"<<endl;
 	if(!fontFamilyOk)
 		oss<<"- no font family to use during transformation"<<endl;
-	if(!fontSzOk)
-		oss<<"- selected font size is too small"<<endl;
 	errMsg(oss.str(), "Please Correct these errors first!");
 	return false;
 }
 
 void Controller::newImage(const string &imgPath) {
+	extern const cv::String ControlPanel_selectImgLabel;
+	const auto permit = cp.actionDemand(ControlPanel_selectImgLabel);
+	if(nullptr == permit)
+		return;
+
 	if(img.absPath().compare(absolute(imgPath)) == 0)
 		return; // same image
 
@@ -155,6 +153,11 @@ bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = fal
 }
 
 void Controller::newFontFamily(const string &fontFile) {
+	extern const cv::String ControlPanel_selectFontLabel;
+	const auto permit = cp.actionDemand(ControlPanel_selectFontLabel);
+	if(nullptr == permit)
+		return;
+
 	if(!_newFontFamily(fontFile))
 		return;
 
@@ -165,7 +168,22 @@ void Controller::selectedFontFile(const string &fName) const {
 	cfg.ss.setFontFile(fName);
 }
 
+unsigned Controller::getFontEncodingIdx() const {
+	if(!fontFamilyOk)
+		throw logic_error("Please setup a font before calling " __FUNCTION__);
+
+	unsigned currEncIdx;
+	fe.getEncoding(&currEncIdx);
+
+	return currEncIdx;
+}
+
 void Controller::newFontEncoding(int encodingIdx) {
+	extern const cv::String ControlPanel_encodingTrName;
+	const auto permit = cp.actionDemand(ControlPanel_encodingTrName);
+	if(nullptr == permit)
+		return;
+
 	// Ignore call if no font yet, or just 1 encoding,
 	// or if the required hack (mentioned in 'ui.h') provoked this call
 	if(!fontFamilyOk || fe.uniqueEncodings() == 1U || cp.encMaxHack())
@@ -198,19 +216,17 @@ void Controller::selectedEncoding(const string &encName) const {
 }
 
 bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
+	extern const cv::String ControlPanel_fontSzTrName;
 	if(!Settings::isFontSizeOk(fontSz)) {
-		fontSzOk = false;
 		ostringstream oss;
 		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
 		errMsg(oss.str());
+		cp.restoreSliderValue(ControlPanel_fontSzTrName);
 		return false;
 	}
 
 	if((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate)
 		return false;
-
-	if(!fontSzOk)
-		fontSzOk = true;
 
 	if(!fontFamilyOk) {
 		if((unsigned)fontSz != cfg.ss.getFontSz())
@@ -225,6 +241,11 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 }
 
 void Controller::newFontSize(int fontSz) {
+	extern const cv::String ControlPanel_fontSzTrName;
+	const auto permit = cp.actionDemand(ControlPanel_fontSzTrName);
+	if(nullptr == permit)
+		return;
+
 	if(!_newFontSize(fontSz))
 		return;
 
@@ -232,46 +253,60 @@ void Controller::newFontSize(int fontSz) {
 }
 
 void Controller::newSymsBatchSize(int symsBatchSz) {
+	extern const cv::String ControlPanel_symsBatchSzTrName;
+	const auto permit = cp.actionDemand(ControlPanel_symsBatchSzTrName);
+	if(nullptr == permit)
+		return;
+
 	t.setSymsBatchSize(symsBatchSz);
 }
 
 void Controller::newHmaxSyms(int maxSymbols) {
+	extern const cv::String ControlPanel_outWTrName;
+	const auto permit = cp.actionDemand(ControlPanel_outWTrName);
+	if(nullptr == permit)
+		return;
+
+	if((unsigned)maxSymbols == cfg.is.getMaxHSyms()) // it's possible if the previous value was invalid
+		return;
+
 	if(!Settings::isHmaxSymsOk(maxSymbols)) {
-		hMaxSymsOk = false;
 		ostringstream oss;
 		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_H_SYMS<<'.';
 		errMsg(oss.str());
+		cp.restoreSliderValue(ControlPanel_outWTrName);
 		return;
 	}
-
-	if(!hMaxSymsOk)
-		hMaxSymsOk = true;
-
-	if((unsigned)maxSymbols == cfg.is.getMaxHSyms())
-		return;
 
 	cfg.is.setMaxHSyms(maxSymbols);
 }
 
 void Controller::newVmaxSyms(int maxSymbols) {
+	extern const cv::String ControlPanel_outHTrName;
+	const auto permit = cp.actionDemand(ControlPanel_outHTrName);
+	if(nullptr == permit)
+		return;
+
+	if((unsigned)maxSymbols == cfg.is.getMaxVSyms()) // it's possible if the previous value was invalid
+		return;
+
 	if(!Settings::isVmaxSymsOk(maxSymbols)) {
-		vMaxSymsOk = false;
 		ostringstream oss;
 		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_V_SYMS<<'.';
 		errMsg(oss.str());
+		cp.restoreSliderValue(ControlPanel_outHTrName);
 		return;
 	}
-
-	if(!vMaxSymsOk)
-		vMaxSymsOk = true;
-
-	if((unsigned)maxSymbols == cfg.is.getMaxVSyms())
-		return;
 
 	cfg.is.setMaxVSyms(maxSymbols);
 }
 
 void Controller::setResultMode(bool hybrid) {
+	extern const cv::String ControlPanel_hybridResultTrName;
+	const auto permit = cp.actionDemand(ControlPanel_hybridResultTrName);
+	if(nullptr == permit)
+		return;
+
 	if(hybrid != cfg.ms.isHybridResult())
 		cfg.ms.setResultMode(hybrid);
 }
@@ -281,46 +316,91 @@ unsigned Controller::getFontSize() const {
 }
 
 void Controller::newThreshold4BlanksFactor(unsigned threshold) {
+	extern const cv::String ControlPanel_thresh4BlanksTrName;
+	const auto permit = cp.actionDemand(ControlPanel_thresh4BlanksTrName);
+	if(nullptr == permit)
+		return;
+
 	if((unsigned)threshold != cfg.ms.getBlankThreshold())
 		cfg.ms.setBlankThreshold(threshold);
 }
 
 void Controller::newContrastFactor(double k) {
+	extern const cv::String ControlPanel_moreContrastTrName;
+	const auto permit = cp.actionDemand(ControlPanel_moreContrastTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kContrast())
 		cfg.ms.set_kContrast(k);
 }
 
 void Controller::newStructuralSimilarityFactor(double k) {
+	extern const cv::String ControlPanel_structuralSimTrName;
+	const auto permit = cp.actionDemand(ControlPanel_structuralSimTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kSsim())
 		cfg.ms.set_kSsim(k);
 }
 
 void Controller::newUnderGlyphCorrectnessFactor(double k) {
+	extern const cv::String ControlPanel_underGlyphCorrectnessTrName;
+	const auto permit = cp.actionDemand(ControlPanel_underGlyphCorrectnessTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kSdevFg())
 		cfg.ms.set_kSdevFg(k);
 }
 
 void Controller::newAsideGlyphCorrectnessFactor(double k) {
+	extern const cv::String ControlPanel_asideGlyphCorrectnessTrName;
+	const auto permit = cp.actionDemand(ControlPanel_asideGlyphCorrectnessTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kSdevBg())
 		cfg.ms.set_kSdevBg(k);
 }
 
 void Controller::newGlyphEdgeCorrectnessFactor(double k) {
+	extern const cv::String ControlPanel_glyphEdgeCorrectnessTrName;
+	const auto permit = cp.actionDemand(ControlPanel_glyphEdgeCorrectnessTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kSdevEdge())
 		cfg.ms.set_kSdevEdge(k);
 }
 
 void Controller::newDirectionalSmoothnessFactor(double k) {
+	extern const cv::String ControlPanel_directionTrName;
+	const auto permit = cp.actionDemand(ControlPanel_directionTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kCosAngleMCs())
 		cfg.ms.set_kCosAngleMCs(k);
 }
 
 void Controller::newGravitationalSmoothnessFactor(double k) {
+	extern const cv::String ControlPanel_gravityTrName;
+	const auto permit = cp.actionDemand(ControlPanel_gravityTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kMCsOffset())
 		cfg.ms.set_kMCsOffset(k);
 }
 
 void Controller::newGlyphWeightFactor(double k) {
+	extern const cv::String ControlPanel_largerSymTrName;
+	const auto permit = cp.actionDemand(ControlPanel_largerSymTrName);
+	if(nullptr == permit)
+		return;
+
 	if(k != cfg.ms.get_kSymDensity())
 		cfg.ms.set_kSymDensity(k);
 }
@@ -341,6 +421,11 @@ bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_)
 }
 
 bool Controller::performTransformation() {
+	extern const cv::String ControlPanel_transformImgLabel;
+	const auto permit = cp.actionDemand(ControlPanel_transformImgLabel);
+	if(nullptr == permit)
+		return false;
+
 	if(!validState())
 		return false;
 
@@ -349,6 +434,11 @@ bool Controller::performTransformation() {
 }
 
 void Controller::restoreUserDefaultMatchSettings() {
+	extern const cv::String ControlPanel_restoreDefaultsLabel;
+	const auto permit = cp.actionDemand(ControlPanel_restoreDefaultsLabel);
+	if(nullptr == permit)
+		return;
+
 #ifndef UNIT_TESTING
 	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
 #endif
@@ -356,12 +446,22 @@ void Controller::restoreUserDefaultMatchSettings() {
 }
 
 void Controller::setUserDefaultMatchSettings() const {
+	extern const cv::String ControlPanel_saveAsDefaultsLabel;
+	const auto permit = cp.actionDemand(ControlPanel_saveAsDefaultsLabel);
+	if(nullptr == permit)
+		return;
+
 #ifndef UNIT_TESTING
 	MatchSettingsManip::instance().saveUserDefaults(cfg.ms);
 #endif
 }
 
 void Controller::loadSettings() {
+	extern const cv::String ControlPanel_loadSettingsLabel;
+	const auto permit = cp.actionDemand(ControlPanel_loadSettingsLabel);
+	if(nullptr == permit)
+		return;
+
 	static SettingsSelector ss; // loader
 	if(!ss.promptForUserChoice())
 		return;
@@ -411,6 +511,11 @@ void Controller::loadSettings() {
 }
 
 void Controller::saveSettings() const {
+	extern const cv::String ControlPanel_saveSettingsLabel;
+	const auto permit = cp.actionDemand(ControlPanel_saveSettingsLabel);
+	if(nullptr == permit)
+		return;
+
 	if(!cfg.ss.ready()) {
 		warnMsg("There's no Font yet.\nSave settings only after selecting a font !");
 		return;

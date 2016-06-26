@@ -19,6 +19,7 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
@@ -61,6 +62,7 @@
     <ClInclude Include="src\views.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\appState.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\controller.cpp" />

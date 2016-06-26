@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -35,64 +35,40 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_MOCK_UI
-#define H_MOCK_UI
+#ifndef H_APP_STATE
+#define H_APP_STATE
 
-#ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif
+typedef unsigned short AppStateType;
 
-class CvWin /*abstract*/ {
-protected:
-	CvWin(...) {}
+/**
+Application distinct states
 
-public:
-	void setTitle(...) const {}
-	void setOverlay(...) const {}
-	void setStatus(...) const {}
-	void setPos(...) const {}
-	void permitResize(...) const {}
-	void resize(...) const {}
+The actual state of the application might be a combination of them.
+*/
+enum struct AppState : AppStateType {
+	Idle				= 0U,				///< Application is Idle
+	UpdateImg			= 1U,				///< Updating the image to be transformed
+	UpdateSymSettings	= UpdateImg<<1,		///< Updating settings related to the symbols to be used
+	UpdateImgSettings	= UpdateImg<<2,		///< Updating settings related to the image to be transformed
+	UpdateMatchSettings = UpdateImg<<3,		///< Updating settings related to the match aspects
+	SaveMatchSettings	= UpdateImg<<4,		///< Saving only the settings about match aspects
+	SaveAllSettings		= UpdateImg<<5,		///< Saving all 3 categories of settings
+	LoadAllSettings		= UpdateImg<<6,		///< Loading all 3 categories of settings
+	LoadMatchSettings	= UpdateImg<<7,		///< Loading only the settings about match aspects
+	ImgTransform		= UpdateImg<<8		///< Performing an approximation of an image
 };
 
-class Comparator : public CvWin {
-public:
-	Comparator(...) : CvWin(nullptr) {}
-	static void updateTransparency(...) {}
-	void setReference(...) {}
-	void setResult(...) {}
-	using CvWin::resize; // to remain visible after declaring an overload below
-	void resize(int, int) const {}
-};
+/**
+Every operation from the Control Panel must be authorized.
+They must acquire such a permit when they start.
+If they don't receive one, they must return.
 
-class CmapInspect : public CvWin {
-public:
-	CmapInspect(...) : CvWin(nullptr) {}
-	static void updatePageIdx(...) {}
-	void updatePagesCount(...) {}
-	void updateGrid() {}
-	void showPage(...) {}
-	unsigned getCellSide() const { return 0U; }
-	unsigned getSymsPerRow() const { return 0U; }
-	unsigned getSymsPerPage() const { return 0U; }
-	unsigned getPageIdx() const { return 0U; }
-	bool isBrowsable() const { return false; }
-	void setBrowsable(bool = true) {}
-	void showUnofficial1stPage(...) {}
-};
-
-struct ActionPermit {};
-
-class ControlPanel {
-public:
-	ControlPanel(...) {}
-	void updateEncodingsCount(...) {}
-	bool encMaxHack() const { return false; }
-	void updateMatchSettings(...) {}
-	void updateImgSettings(...) {}
-	void updateSymSettings(...) {}
-	std::unique_ptr<ActionPermit> actionDemand(const cv::String&) { return std::move(std::make_unique<ActionPermit>()); }
-	void restoreSliderValue(const cv::String&) {}
+In realization classes:
+- the constructor will update application state to reflect the new [parallel] action.
+- the destructor should be used to revert the application state change
+*/
+struct ActionPermit /*abstract*/ {
+	virtual ~ActionPermit() = 0 {}
 };
 
 #endif

@@ -40,6 +40,12 @@
 #ifndef H_CONTROL_PANEL
 #define H_CONTROL_PANEL
 
+#include "appState.h"
+
+#include <set>
+#include <map>
+#include <memory>
+
 #include <opencv2/core.hpp>
 
 // forward declarations
@@ -112,7 +118,8 @@ protected:
 		};
 	};
 
-	IControlPanelActions &actions;	// window manager
+	IControlPanelActions &performer;	///< the delegate responsible to perform selected actions
+	const Settings &cfg;				///< the settings, required to (re)initialize the sliders
 
 	// Configuration sliders' positions
 	int maxHSyms, maxVSyms;
@@ -130,8 +137,32 @@ protected:
 	*/
 	bool updatingEncMax = false;
 
+	volatile AppStateType appState = (AppStateType)AppState::Idle; ///< application state
+
+	/// pointers to the names of the sliders that are undergoing value restoration
+	std::set<const cv::String*> slidersRestoringValue;
+
+	/**
+	When performing Load All Settings or only Load Match Aspects Settings, the corresponding sliders
+	need to be updated one by one without considering the state and without modifying this state.
+	In order to reduce the chance that some parallel update setting event might get also a free ride,
+	the sliders are authorized one by one.
+	*/
+	const cv::String *pLuckySliderName = nullptr;
+
 public:
-	ControlPanel(IControlPanelActions &actions_, const Settings &cfg);
+	ControlPanel(IControlPanelActions &performer_, const Settings &cfg_);
+
+	/**
+	Restores a slider to its previous value when:
+	- the newly set value was invalid
+	- or the update of the tracker happened while the application was not in the appropriate state for it
+	*/
+	void restoreSliderValue(const cv::String &trName);
+
+	/// Authorizes the action of the control whose name is provided as parameter.
+	/// When the action isn't allowed returns nullptr.
+	std::unique_ptr<ActionPermit> actionDemand(const cv::String &controlName);
 
 	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above

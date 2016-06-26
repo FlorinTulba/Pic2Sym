@@ -55,6 +55,8 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 	virtual void loadSettings() = 0;		///< updating the Settings object
 	virtual void saveSettings() const = 0;	///< saving the Settings object
 
+	virtual unsigned getFontEncodingIdx() const = 0; ///< needed to restore encoding index
+
 	virtual void newImage(const std::string &imgPath) = 0;
 	virtual void newFontFamily(const std::string &fontFile) = 0;
 	virtual void newFontEncoding(int encodingIdx) = 0;

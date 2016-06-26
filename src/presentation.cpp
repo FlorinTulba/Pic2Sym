@@ -194,14 +194,13 @@ void Transformer::updateStudiedCase(int rows, int cols) {
 }
 
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
+extern const String ControlPanel_aboutLabel;
+extern const String ControlPanel_instructionsLabel;
 
 Controller::Controller(Settings &s) :
 		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
 		me(getMatchEngine(s)), t(getTransformer(s)),
-		comp(getComparator()), cp(getControlPanel(s)),
-		hMaxSymsOk(Settings::isHmaxSymsOk(s.is.getMaxHSyms())),
-		vMaxSymsOk(Settings::isVmaxSymsOk(s.is.getMaxVSyms())),
-		fontSzOk(Settings::isFontSizeOk(s.ss.getFontSz())) {
+		comp(getComparator()), cp(getControlPanel(s)) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
 	extern const string Comparator_initial_title;
@@ -211,11 +210,19 @@ Controller::Controller(Settings &s) :
 }
 
 void Controller::showAboutDlg(const string &title, const wstring &content) {
+	const auto permit = cp.actionDemand(ControlPanel_aboutLabel);
+	if(nullptr == permit)
+		return;
+
 	MessageBox(nullptr, content.c_str(),
 			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 }
 
 void Controller::showInstructionsDlg(const string &title, const wstring &content) {
+	const auto permit = cp.actionDemand(ControlPanel_instructionsLabel);
+	if(nullptr == permit)
+		return;
+
 	MessageBox(nullptr, content.c_str(),
 			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 }
@@ -698,8 +705,6 @@ Mat CmapInspect::createGrid() {
 
 extern const wstring ControlPanel_aboutText;
 extern const wstring ControlPanel_instructionsText;
-extern const String ControlPanel_aboutLabel;
-extern const String ControlPanel_instructionsLabel;
 extern const unsigned SymsBatch_defaultSz;
 
 ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg_) :

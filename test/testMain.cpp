@@ -283,11 +283,6 @@ bool Controller::newImage(const Mat &imgMat) {
 				cfg.is.setMaxHSyms(1U);
 			if(1U != cfg.is.getMaxVSyms())
 				cfg.is.setMaxVSyms(1U);
-
-			if(!hMaxSymsOk)
-				hMaxSymsOk = true;
-			if(!vMaxSymsOk)
-				vMaxSymsOk = true;
 		}
 	}
 
