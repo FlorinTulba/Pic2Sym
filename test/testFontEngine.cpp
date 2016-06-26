@@ -339,12 +339,14 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
 		BOOST_CHECK_NO_THROW(fe.symsSet());
 		BOOST_TEST(fe.smallGlyphsCoverage() ==
-				   (PreserveRemovableSymbolsForExamination ? 0.1201569 : 0.1174118),
+				   (PreserveRemovableSymbolsForExamination ? 0.1201569 : 0.126),
 				   test_tools::tolerance(1e-4));
 
 		BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));
 		BOOST_CHECK_NO_THROW(fe.symsSet());
-		BOOST_TEST(fe.smallGlyphsCoverage() == 0.109403, test_tools::tolerance(1e-4));
+		BOOST_TEST(fe.smallGlyphsCoverage() ==
+				   (PreserveRemovableSymbolsForExamination ? 0.109403 : 0.11475),
+				   test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Config
