@@ -57,11 +57,11 @@ public:
 	NormalActionPermit(volatile AppStateType &appState_,	///< existing state before the start of this action
 					   AppStateType statesToToggle_			///< the change to inflict on the state
 					   ) : appState(appState_), statesToToggle(statesToToggle_) {
-		appState = appState ^ statesToToggle;
+		appState = appState | statesToToggle;
 	}
 
 	~NormalActionPermit() {
-		appState = appState ^ statesToToggle;
+		appState = appState & ~statesToToggle;
 	}
 };
 
