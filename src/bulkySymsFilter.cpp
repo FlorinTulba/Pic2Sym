@@ -49,7 +49,7 @@ BulkySymsFilter::BulkySymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*
 
 bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
 	static const auto compErMaskSide = [] (unsigned fontSz) {
-		return 2 + max(3, (((int)fontSz/2) | 1));
+		return max(3, (((int)fontSz/2) | 1));
 	};
 
 	if(min(pms.rows, pms.cols) < (unsigned)compErMaskSide(sfc.szU))
@@ -79,6 +79,6 @@ bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &s
 	// Erode with a large disk to detect large filled areas.
 	erode(narrowGlyph, processed, circleMasks[compErMaskSide(sfc.szU)]);
 
-	const bool result = countNonZero(processed > 127) > 0;
+	const bool result = countNonZero(processed > 45) > 0;
 	return result;
 }
