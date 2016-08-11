@@ -220,7 +220,8 @@ bool GridBarsFilter::checkProjectionForGridSymbols(const Mat &sums) {
 				if(val == 0.) { state = Read0s; } else { state = ReadT1; }
 				break;
 
-			default:; // Unreachable
+			default:
+				throw logic_error("Handling of state " + to_string((int)state) + " not implemented yet!");
 		}
 	}
 
@@ -235,10 +236,10 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 	Mat glyphBin = (narrowGlyph > 0U);
 
 	const unsigned crossClearance = (unsigned)max(1, int(sfc.szU/3U - 1U)),
-			crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
+		crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
 	const int minPixelsCenter = int(crossWidth - 1U) | 1, // crossWidth when odd, or crossWidth-1 when even
-			minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
-			minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
+		minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
+		minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
 
 	// Don't consider fonts with less pixels than necessary to obtain a grid bar
 	if(countNonZero(glyphBin) < minPixels) return false;
@@ -246,7 +247,7 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 	// Exclude glyphs that touch pixels outside the main cross
 	const Mat glyph = pms.toMat(sfc.szU);
 	const Range topOrLeft(0, crossClearance), rightOrBottom(sfc.szU-crossClearance, sfc.szU),
-				center(crossClearance, crossClearance + crossWidth);
+		center(crossClearance, crossClearance + crossWidth);
 	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) return false;
 	if(countNonZero(Mat(glyph, topOrLeft, rightOrBottom)) > 0) return false;
 	if(countNonZero(Mat(glyph, rightOrBottom, topOrLeft)) > 0) return false;
