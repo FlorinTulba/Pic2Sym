@@ -218,7 +218,6 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 	const Point2d center(centerCoord, centerCoord);
 	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
 	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
-	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
 
 	if(rows_ == 0U || cols_ == 0U) {
 		mc = center; glyphSum = 0.;
