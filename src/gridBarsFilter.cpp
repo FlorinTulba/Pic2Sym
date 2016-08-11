@@ -230,50 +230,68 @@ bool GridBarsFilter::checkProjectionForGridSymbols(const Mat &sums) {
 
 bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
 	// At least one side of the bounding box needs to be larger than half sz
-	if(max(pms.rows, pms.cols) < (sfc.szU>>1)) return false;
+	if(max(pms.rows, pms.cols) < (sfc.szU>>1))
+		return false;
 
 	Mat narrowGlyph = pms.asNarrowMat();
 	Mat glyphBin = (narrowGlyph > 0U);
 
 	const unsigned crossClearance = (unsigned)max(1, int(sfc.szU/3U - 1U)),
-		crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
+			crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
 	const int minPixelsCenter = int(crossWidth - 1U) | 1, // crossWidth when odd, or crossWidth-1 when even
-		minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
-		minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
+			minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
+			minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
 
 	// Don't consider fonts with less pixels than necessary to obtain a grid bar
-	if(countNonZero(glyphBin) < minPixels) return false;
+	if(countNonZero(glyphBin) < minPixels)
+		return false;
 
 	// Exclude glyphs that touch pixels outside the main cross
 	const Mat glyph = pms.toMat(sfc.szU);
 	const Range topOrLeft(0, crossClearance), rightOrBottom(sfc.szU-crossClearance, sfc.szU),
-		center(crossClearance, crossClearance + crossWidth);
-	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) return false;
-	if(countNonZero(Mat(glyph, topOrLeft, rightOrBottom)) > 0) return false;
-	if(countNonZero(Mat(glyph, rightOrBottom, topOrLeft)) > 0) return false;
-	if(countNonZero(Mat(glyph, rightOrBottom, rightOrBottom)) > 0) return false;
+				center(crossClearance, crossClearance + crossWidth);
+	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) 
+		return false;
+	if(countNonZero(Mat(glyph, topOrLeft, rightOrBottom)) > 0)
+		return false;
+	if(countNonZero(Mat(glyph, rightOrBottom, topOrLeft)) > 0) 
+		return false;
+	if(countNonZero(Mat(glyph, rightOrBottom, rightOrBottom)) > 0) 
+		return false;
 
 	// Grid bars also need some pixels in the center (>= minPixelsCenter)
-	if(countNonZero(Mat(glyph, center, center)) < minPixelsCenter) return false;
+	if(countNonZero(Mat(glyph, center, center)) < minPixelsCenter)
+		return false;
 
 	// On each end of the imaginary cross, there should be either 0 pixels or >= minPixelsBranch
 	// and there have to be at least 2 branches.
 	int cnz, branchesCount = 0;
-	if((cnz = countNonZero(Mat(glyph, topOrLeft, center))) >= minPixelsBranch) ++branchesCount;
-	else if(cnz > 0) return false;
-	if((cnz = countNonZero(Mat(glyph, center, topOrLeft))) >= minPixelsBranch) ++branchesCount;
-	else if(cnz > 0) return false;
-	if((cnz = countNonZero(Mat(glyph, rightOrBottom, center))) >= minPixelsBranch) ++branchesCount;
-	else if(cnz > 0) return false;
-	if((cnz = countNonZero(Mat(glyph, center, rightOrBottom))) >= minPixelsBranch) ++branchesCount;
-	else if(cnz > 0) return false;
-	if(branchesCount < 2) return false;
+	if((cnz = countNonZero(Mat(glyph, topOrLeft, center))) >= minPixelsBranch) 
+		++branchesCount;
+	else if(cnz > 0)
+		return false;
+	if((cnz = countNonZero(Mat(glyph, center, topOrLeft))) >= minPixelsBranch) 
+		++branchesCount;
+	else if(cnz > 0)
+		return false;
+	if((cnz = countNonZero(Mat(glyph, rightOrBottom, center))) >= minPixelsBranch) 
+		++branchesCount;
+	else if(cnz > 0)
+		return false;
+	if((cnz = countNonZero(Mat(glyph, center, rightOrBottom))) >= minPixelsBranch) 
+		++branchesCount;
+	else if(cnz > 0)
+		return false;
+	if(branchesCount < 2)
+		return false;
 
 	// Making sure glyphBin is entitled to represent narrowGlyph
-	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance, sfc.szU - 1U - pms.top, pms.rows - 1U,
-		pms.rowSums, &Mat::row)) return false;
-	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance, pms.left, pms.cols - 1U,
-		pms.colSums, &Mat::col)) return false;
+	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance,
+				sfc.szU - 1U - pms.top, pms.rows - 1U, pms.rowSums, &Mat::row))
+		return false;
+	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance,
+				pms.left, pms.cols - 1U, pms.colSums, &Mat::col))
+		return false;
 
 	// Closing the space between any parallel lines of the grid symbol
 	static const Scalar BlackFrame(0U);
