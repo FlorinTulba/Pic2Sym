@@ -126,6 +126,14 @@ struct PixMapSym {
 									 const cv::Mat &consec, const cv::Mat &revConsec,
 									 cv::Point2d &mc, double &glyphSum,
 									 cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
+
+#ifdef UNIT_TESTING
+	/// Constructs a PixMapSym in Unit Testing mode
+	PixMapSym(const std::vector<unsigned char> &data, ///< values of the symbol's pixels
+			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
+			  const cv::Mat &revConsec	///< vector of consecutive values sz-1 .. 0
+			  );
+#endif
 };
 
 struct IPresentCmap; // forward declaration
