@@ -41,12 +41,11 @@
 #include "matchSettingsManip.h"
 #include "controlPanel.h"
 #include "updateSymsActions.h"
+#include "symsSerialization.h"
 #include "views.h"
 #include "dlgs.h"
 #include "misc.h"
 
-#include <fstream>
-#include <iomanip>
 #include <functional>
 #include <thread>
 
@@ -75,6 +74,37 @@ void showUsage() {
 	cout<<"		Pic2Sym.exe \"<testTitle>\""<<endl<<endl;
 	pauseAfterError();
 }
+
+// UnitTesting project launches an instance of Pic2Sym to visualize any discovered issues,
+// so it won't refer viewMismatches from below.
+// But it will start a Pic2Sym instance that will do such calls.
+#ifndef UNIT_TESTING
+void viewMismatches(const string &testTitle, const Mat &mismatches) {
+	const int twiceTheRows = mismatches.rows, rows = twiceTheRows>>1, cols = mismatches.cols;
+	const Mat reference = mismatches.rowRange(0, rows), // upper half is the reference
+		result = mismatches.rowRange(rows, twiceTheRows); // lower half is the result
+
+	// Comparator window size should stay within ~ 800x600
+	// Enlarge up to 3 times if resulting rows < 600.
+	// Enlarge also when resulted width would be less than 140 (width when the slider is visible)
+	const double resizeFactor = max(140./cols, min(600./rows, 3.));
+
+	ostringstream oss;
+	oss<<"View mismatches for "<<testTitle;
+	const string title(oss.str());
+
+	Comparator comp;
+	comp.setPos(0, 0);
+	comp.permitResize();
+	comp.resize(4+(int)ceil(cols*resizeFactor), 70+(int)ceil(rows*resizeFactor));
+	comp.setTitle(title.c_str());
+	comp.setStatus("Press Esc to close this window");
+	comp.setReference(reference);
+	comp.setResult(result, 90); // Emphasize the references 
+
+	Controller::handleRequests();
+}
+#endif // UNIT_TESTING not defined
 
 ostream& operator<<(ostream &os, const Settings &s) {
 	os<<s.ss<<s.is<<s.ms<<endl;
@@ -467,7 +497,7 @@ void Controller::displaySymCode(unsigned long symCode) const {
 
 void Controller::enlistSymbolForInvestigation(const SymData &sd) const {
 	cout<<"Appending symbol "<<sd.code<<" to the list needed for further investigations"<<endl;
-	symsToInvestigate.push_back(sd.symAndMasks[SymData::NEG_SYM_IDX].clone());
+	symsToInvestigate.push_back(255U - sd.symAndMasks[SymData::NEG_SYM_IDX]); // enlist actual symbol, not its negative
 }
 
 void Controller::symbolsReadyToInvestigate() const {
@@ -480,18 +510,8 @@ void Controller::symbolsReadyToInvestigate() const {
 	destFile.append("Output").append("symsSelection_").concat(to_string(time(nullptr))).concat(".txt");
 	cout<<"The list of "<<symsToInvestigate.size()<<" symbols for further investigations will be saved to file "
 		<<destFile<<" and then cleared."<<endl;
-	ofstream ofs(destFile.string());
-	ofs<<symsToInvestigate.size()<<endl; // first line specifies the number of symbols in the list
-	for(const Mat &m : symsToInvestigate) {
-		const int rows = m.rows, cols = m.cols;
-		ofs<<rows<<' '<<cols<<endl; // every symbol is preceded by a header with the number of rows and columns
-		for(int r = 0; r < rows; ++r) {
-			for(int c = 0; c < cols; ++c)
-				ofs<<(unsigned)m.at<unsigned char>(r, c)<<' '; // pixel values are delimited by space
-			ofs<<endl;
-		}
-	}
-	ofs.close();
+
+	ut::saveSymsSelection(destFile.string(), symsToInvestigate);
 	symsToInvestigate.clear();
 }
 

@@ -54,6 +54,7 @@
     <ClInclude Include="src\symFilter.h" />
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
+    <ClInclude Include="src\symsSerialization.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
@@ -89,6 +90,7 @@
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
+    <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />

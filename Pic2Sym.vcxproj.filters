@@ -76,6 +76,12 @@
     <Filter Include="Source Files\Controller\TransformEngine\MatchEngine">
       <UniqueIdentifier>{b996ecf8-cb16-4176-b030-9a813f5f9d0d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Testing">
+      <UniqueIdentifier>{bc1f7c78-0efb-4167-857f-a7dc82f9fb59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Testing">
+      <UniqueIdentifier>{6325a6bb-5ad1-42f8-97c2-7958a8a22895}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
@@ -222,6 +228,9 @@
     <ClInclude Include="src\sievesSymsFilter.h">
       <Filter>Header Files\Charmap\SymsFilters</Filter>
     </ClInclude>
+    <ClInclude Include="src\symsSerialization.h">
+      <Filter>Header Files\Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -319,6 +328,9 @@
     </ClCompile>
     <ClCompile Include="src\sievesSymsFilter.cpp">
       <Filter>Source Files\Charmap\SymsFilters</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symsSerialization.cpp">
+      <Filter>Source Files\Testing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
