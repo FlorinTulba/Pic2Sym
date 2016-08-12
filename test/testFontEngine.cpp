@@ -48,6 +48,8 @@ using namespace std;
 using namespace boost;
 using namespace cv;
 
+extern const bool PreserveRemovableSymbolsForExamination;
+
 namespace ut {
 	/// Fixture reducing some declarative effort from tests
 	class FontEngineFixtComputations : public Fixt {
@@ -89,15 +91,35 @@ namespace ut {
 
 	protected:
 		FontEngine *pfe = nullptr; ///< pointer to the FontEngine object needed within tests
+		bool origPreserveRemovableSymbolsForExamination; ///< initial value of PreserveRemovableSymbolsForExamination
+		bool *ptrPreserveRemovableSymbolsForExamination; ///< pointer to non-const PreserveRemovableSymbolsForExamination
 
 	public:
 		/// Creates the fixture providing a FontEngine object
-		FontEngineFixtConfig() : Fixt(), s(), c(s) {
+		FontEngineFixtConfig() : Fixt(), s(), c(s),
+			origPreserveRemovableSymbolsForExamination(PreserveRemovableSymbolsForExamination),
+			ptrPreserveRemovableSymbolsForExamination(const_cast<bool*> // pointed value becomes mutable
+				(&PreserveRemovableSymbolsForExamination)) {
 			try {
 				pfe = &c.getFontEngine(s.symSettings());
+
+				// Forcing PreserveRemovableSymbolsForExamination on true during each test case.
+				// Disposing removable symbols (marked by symbol filters) would provide a variable
+				// set of input symbols to the tests, which would need to update some expected values
+				// for each change within the filter configuration.
+				// Thus, keeping all removable symbols lets these tests unaffected by filter changes.
+				// Besides, testing on all symbols is sufficient to check the correctness of the covered cases.
+				if(!PreserveRemovableSymbolsForExamination)
+					*ptrPreserveRemovableSymbolsForExamination = true;
 			} catch(runtime_error&) {
 				cerr<<"Couldn't create FontEngine"<<endl;
 			}
+		}
+
+		/// Reestablishes old value of PreserveRemovableSymbolsForExamination
+		~FontEngineFixtConfig() {
+			if(PreserveRemovableSymbolsForExamination != origPreserveRemovableSymbolsForExamination)
+				*ptrPreserveRemovableSymbolsForExamination = origPreserveRemovableSymbolsForExamination;
 		}
 	};
 }
@@ -330,7 +352,6 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 
 		extern const unsigned Settings_MIN_FONT_SIZE;
 		extern const unsigned Settings_MAX_FONT_SIZE;
-		extern const bool PreserveRemovableSymbolsForExamination;
 		BOOST_REQUIRE_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE-1U), invalid_argument);
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE)); // ok
 		BOOST_REQUIRE_THROW(fe.setFontSz(Settings_MAX_FONT_SIZE+1U), invalid_argument);
@@ -338,15 +359,13 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U)); // ok
 		BOOST_CHECK_NO_THROW(fe.symsSet());
-		BOOST_TEST(fe.smallGlyphsCoverage() ==
-				   (PreserveRemovableSymbolsForExamination ? 0.1201569 : 0.126),
+		BOOST_TEST(fe.smallGlyphsCoverage() == 0.1201569,
 				   test_tools::tolerance(1e-4));
 
 		BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN")); // APPLE_ROMAN
 		BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));
 		BOOST_CHECK_NO_THROW(fe.symsSet());
-		BOOST_TEST(fe.smallGlyphsCoverage() ==
-				   (PreserveRemovableSymbolsForExamination ? 0.109403 : 0.11475),
+		BOOST_TEST(fe.smallGlyphsCoverage() == 0.109403,
 				   test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Config
