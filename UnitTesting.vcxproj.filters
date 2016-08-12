@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Resource Files\SymFilters">
+      <UniqueIdentifier>{e6075443-c644-42f8-ade6-7cfcdef828c3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test\testFontEngine.cpp">
@@ -25,6 +28,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="test\testMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test\testSymFilters.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -49,5 +55,37 @@
     <Font Include="res\BPmonoBold.ttf">
       <Filter>Resource Files</Filter>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\TestSymFilters\bulkyNegatives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\bulkyPositives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\filledRectanglesNegatives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\filledRectanglesPositives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\gridBarsNegatives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\gridBarsPositives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\sievesNegatives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\sievesPositives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\unreadableNegatives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
+    <Text Include="res\TestSymFilters\unreadablePositives.txt">
+      <Filter>Resource Files\SymFilters</Filter>
+    </Text>
   </ItemGroup>
 </Project>

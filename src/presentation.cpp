@@ -67,16 +67,18 @@ void pauseAfterError() {
 
 void showUsage() {
 	cout<<"Usage:"<<endl;
-	cout<<"There are 2 launch modes:"<<endl;
+	cout<<"There are 3 launch modes:"<<endl;
 	cout<<"A) Normal launch mode (no parameters)"<<endl;
 	cout<<"		Pic2Sym.exe"<<endl<<endl;
-	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 1 parameters)"<<endl;
-	cout<<"		Pic2Sym.exe \"<testTitle>\""<<endl<<endl;
+	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"		Pic2Sym.exe mismatches \"<testTitle>\""<<endl<<endl;
+	cout<<"C) View misfiltered symbols launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"		Pic2Sym.exe misfiltered \"<testTitle>\""<<endl<<endl;
 	pauseAfterError();
 }
 
 // UnitTesting project launches an instance of Pic2Sym to visualize any discovered issues,
-// so it won't refer viewMismatches from below.
+// so it won't refer viewMismatches and viewMisfiltered from below.
 // But it will start a Pic2Sym instance that will do such calls.
 #ifndef UNIT_TESTING
 void viewMismatches(const string &testTitle, const Mat &mismatches) {
@@ -103,6 +105,15 @@ void viewMismatches(const string &testTitle, const Mat &mismatches) {
 	comp.setResult(result, 90); // Emphasize the references 
 
 	Controller::handleRequests();
+}
+
+void viewMisfiltered(const string &testTitle, const Mat &misfiltered) {
+	const String winName = testTitle;
+	namedWindow(winName);
+	setWindowProperty(winName, CV_WND_PROP_AUTOSIZE, CV_WINDOW_NORMAL);
+	imshow(winName, misfiltered);
+	displayStatusBar(winName, "Press Esc to close this window");
+	waitKey();
 }
 #endif // UNIT_TESTING not defined
 

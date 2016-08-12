@@ -97,6 +97,7 @@
     <ClCompile Include="test\testMain.cpp" />
     <ClCompile Include="test\testController.cpp" />
     <ClCompile Include="test\testMatch.cpp" />
+    <ClCompile Include="test\testSymFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -109,6 +110,18 @@
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\BPmonoBold.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\TestSymFilters\bulkyNegatives.txt" />
+    <Text Include="res\TestSymFilters\bulkyPositives.txt" />
+    <Text Include="res\TestSymFilters\filledRectanglesNegatives.txt" />
+    <Text Include="res\TestSymFilters\filledRectanglesPositives.txt" />
+    <Text Include="res\TestSymFilters\gridBarsNegatives.txt" />
+    <Text Include="res\TestSymFilters\gridBarsPositives.txt" />
+    <Text Include="res\TestSymFilters\sievesNegatives.txt" />
+    <Text Include="res\TestSymFilters\sievesPositives.txt" />
+    <Text Include="res\TestSymFilters\unreadableNegatives.txt" />
+    <Text Include="res\TestSymFilters\unreadablePositives.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

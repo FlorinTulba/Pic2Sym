@@ -42,9 +42,11 @@
 #include <omp.h>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/optional/optional.hpp>
 
 using namespace std;
 using namespace cv;
+using namespace boost;
 using namespace boost::filesystem;
 
 /// Proper usage
@@ -52,6 +54,12 @@ void showUsage();
 
 /// Prevents closing the console before the user sees an error message
 void pauseAfterError();
+
+/// Presents the misidentified symbols
+void viewMismatches(const string &testTitle, const Mat &mismatches);
+
+/// Presents the misfiltered symbols
+void viewMisfiltered(const string &testTitle, const Mat &misfiltered);
 
 extern const string copyrightText;
 
@@ -98,6 +106,33 @@ namespace {
 #endif // defined(_DEBUG)
 	}
 
+	/// Returns the Mat object contained within the Unit Testing report.
+	optional<const Mat> contentOfReport(const string &testTitle, const string &contentDirName) {
+		path contentDir(path(".").append("UnitTesting").append(contentDirName));
+		if(!exists(contentDir)) {
+			cerr<<"Expected work directory: <SolutionDir>/x64/<ConfigType>/ , but the actual one is: "<<absolute(".")<<'.'<<endl;
+			cerr<<"It has to contain folder 'UnitTesting'."<<endl;
+			pauseAfterError();
+			return none;
+		}
+
+		path contentFile(absolute(contentDir).append(testTitle).concat(".jpg"));
+		if(!exists(contentFile)) {
+			cerr<<"There has to be a jpg file with the provided <testTitle> ("<<testTitle<<"), but file "<<contentFile<<" doesn't exist!"<<endl;
+			pauseAfterError();
+			return none;
+		}
+
+		const Mat content = imread(contentFile.string(), ImreadModes::IMREAD_UNCHANGED);
+		if(content.empty()) {
+			cerr<<"Invalid jpg file for "<<contentDirName<<": "<<contentFile<<'.'<<endl;
+			pauseAfterError();
+			return none;
+		}
+
+		return content;
+	}
+
 	/**
 	View Mismatches Launch mode opens a Comparator window allowing the developer to observe
 	the less fortunate approximations of reference patches.
@@ -106,66 +141,50 @@ namespace {
 	is also the stem of the jpg file handled by the Comparator.
 	*/
 	void viewMismatchesMode(const string &testTitle) {
-		path mismatchesDir(path(".").append("UnitTesting").append("Mismatches"));
-		if(!exists(mismatchesDir)) {
-			cerr<<"Expected work directory: <SolutionDir>/x64/<ConfigType>/ , but the actual one is: "<<absolute(".")<<'.'<<endl;
-			cerr<<"It has to contain folder 'UnitTesting'."<<endl;
-			pauseAfterError();
+		optional<const Mat> mismatches = contentOfReport(testTitle, "Mismatches");
+		if(!mismatches)
 			return;
-		}
 
-		path mismatchesFile(absolute(mismatchesDir).append(testTitle).concat(".jpg"));
-		if(!exists(mismatchesFile)) {
-			cerr<<"There has to be a jpg file with the provided <testTitle> ("<<testTitle<<"), but file "<<mismatchesFile<<" doesn't exist!"<<endl;
-			pauseAfterError();
+		viewMismatches(testTitle, mismatches.value());
+	}
+
+	/**
+	View Misfiltered symbols Launch mode opens a window allowing the developer to observe
+	the less fortunate filtered symbols.
+
+	testTitle is the title of the window and
+	is also the stem of the jpg file handled by the viewer.
+	*/
+	void viewMisfilteredMode(const string &testTitle) {
+		optional<const Mat> misfiltered = contentOfReport(testTitle, "Misfiltered");
+		if(!misfiltered)
 			return;
-		}
 
-		const Mat mismatches = imread(mismatchesFile.string(), ImreadModes::IMREAD_UNCHANGED);
-		if(mismatches.empty()) {
-			cerr<<"Invalid jpg file for mismatches: "<<mismatchesFile<<'.'<<endl;
-			pauseAfterError();
-			return;
-		}
-
-		const int twiceTheRows = mismatches.rows, rows = twiceTheRows>>1, cols = mismatches.cols;
-		const Mat reference = mismatches.rowRange(0, rows), // upper half is the reference
-				result = mismatches.rowRange(rows, twiceTheRows); // lower half is the result
-
-		// Comparator window size should stay within ~ 800x600
-		// Enlarge up to 3 times if resulting rows < 600.
-		// Enlarge also when resulted width would be less than 140 (width when the slider is visible)
-		const double resizeFactor = max(140./cols, min(600./rows, 3.));
-
-		ostringstream oss;
-		oss<<"View mismatches for "<<testTitle;
-		const string title(oss.str());
-
-		Comparator comp;
-		comp.setPos(0, 0);
-		comp.permitResize();
-		comp.resize(4+(int)ceil(cols*resizeFactor), 70+(int)ceil(rows*resizeFactor));
-		comp.setTitle(title.c_str());
-		comp.setStatus("Press Esc to leave.");
-		comp.setReference(reference);
-		comp.setResult(result, 90); // Emphasize the references 
-	
-		Controller::handleRequests();
+		viewMisfiltered(testTitle, misfiltered.value());
 	}
 } // anonymous namespace
 
 void main(int argc, char* argv[]) {
-	switch(argc) {
-		case 1:
-			normalLaunch(argv[0]);
-			break;
-		
-		case 2:
-			viewMismatchesMode(argv[1]);
-			break;
-		
-		default: // Wrong # of parameters
-			cerr<<"There were "<<argc-1<<" parameters, while the application expects at most 1!"<<endl;
+	if(1 == argc) { // no parameters
+		normalLaunch(argv[0]);
+
+	} else if(3 == argc) { // 2 parameters
+		const string firstParam(argv[1]),
+					secondParam(argv[2]);
+
+		if(firstParam.compare("mismatches") == 0) {
+			viewMismatchesMode(secondParam);
+
+		} else if(firstParam.compare("misfiltered") == 0) {
+			viewMisfilteredMode(secondParam);
+
+		} else {
+			cerr<<"Invalid first parameter '"<<firstParam<<'\''<<endl;
 			showUsage();
+		}
+
+	} else { // Wrong # of parameters
+		cerr<<"There were "<<argc-1<<" parameters!"<<endl;
+		showUsage();
 	}
 }
