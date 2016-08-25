@@ -86,7 +86,7 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 FilledRectanglesFilter::FilledRectanglesFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(1U, "filled rectangles", std::move(nextFilter_)) {}
 
-bool FilledRectanglesFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+bool FilledRectanglesFilter::isDisposable(const PixMapSym &pms, const SymFilterCache&) {
 	const Mat narrowGlyph = pms.asNarrowMat();
 	double brightestVal;
 	minMaxIdx(narrowGlyph, nullptr, &brightestVal);
