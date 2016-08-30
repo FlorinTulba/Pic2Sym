@@ -126,6 +126,7 @@ namespace {
 					 VClusterData &clusters, set<unsigned> &clusterOffsets) {
 		static const int SmallSymSzI = 5, SmallSymSzAreaI = SmallSymSzI * SmallSymSzI;
 		static const double SmallSymSzD = (double)SmallSymSzI, SmallSymAreaD = (double)SmallSymSzAreaI;
+		static const Size SmallSymDim(SmallSymSzI, SmallSymSzI);
 		static const unsigned DiagsCountU = 2U * SmallSymSzI - 1U;
 		static const double DiagsCountD = (double)DiagsCountU;
 
@@ -156,7 +157,7 @@ namespace {
 				hAvgProj, vAvgProj,
 				backslashDiagAvgProj(1, DiagsCountU, CV_64FC1, 0.),
 				slashDiagAvgProj(1, DiagsCountU, CV_64FC1, 0.);
-			resize(gsi, smallSym, Size(SmallSymSzI, SmallSymSzI), 0., 0., CV_INTER_AREA);
+			resize(gsi, smallSym, SmallSymDim, 0., 0., CV_INTER_AREA);
 
 			// computing average projections
 			reduce(smallSym, hAvgProj, 0, CV_REDUCE_AVG);
