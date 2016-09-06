@@ -99,17 +99,20 @@ Inherits from SymData to qualify in passing as SymData& parameter to assessMatch
 struct ClusterData : SymData {
 	const unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
 	const unsigned sz;				///< size of the cluster - how many symbols form the cluster
+
 	/**
 	Constructs a cluster representative for the selected symbols.
 
 	@param symsSet the set of all symbols (before clustering)
+	@param idxOfFirstSym_ index of the first symbol from symsSet that belongs to this cluster
 	@param clusterSymIndices_ the indices towards the symbols from symsSet which belong to this cluster
 	*/
-	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_, const std::vector<unsigned> &clusterSymIndices);
+	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
+				const std::vector<unsigned> &clusterSymIndices);
 };
 
 /// VClusterData - vector with most information about each cluster
-typedef std::vector<const ClusterData> VClusterData;
+typedef std::vector<ClusterData> VClusterData;
 
 
 #endif
