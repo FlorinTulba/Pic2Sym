@@ -91,15 +91,16 @@ namespace ut {
 
 	protected:
 		FontEngine *pfe = nullptr; ///< pointer to the FontEngine object needed within tests
-		bool origPreserveRemovableSymbolsForExamination; ///< initial value of PreserveRemovableSymbolsForExamination
-		bool *ptrPreserveRemovableSymbolsForExamination; ///< pointer to non-const PreserveRemovableSymbolsForExamination
+
+		/// initial value of PreserveRemovableSymbolsForExamination
+		bool origPreserveRemovableSymbolsForExamination = PreserveRemovableSymbolsForExamination;
+
+		/// reference to non-const PreserveRemovableSymbolsForExamination
+		bool &refPreserveRemovableSymbolsForExamination = const_cast<bool&>(PreserveRemovableSymbolsForExamination);
 
 	public:
 		/// Creates the fixture providing a FontEngine object
-		FontEngineFixtConfig() : Fixt(), s(), c(s),
-			origPreserveRemovableSymbolsForExamination(PreserveRemovableSymbolsForExamination),
-			ptrPreserveRemovableSymbolsForExamination(const_cast<bool*> // pointed value becomes mutable
-				(&PreserveRemovableSymbolsForExamination)) {
+		FontEngineFixtConfig() : Fixt(), s(), c(s) {
 			try {
 				pfe = &c.getFontEngine(s.symSettings());
 
@@ -110,7 +111,7 @@ namespace ut {
 				// Thus, keeping all removable symbols lets these tests unaffected by filter changes.
 				// Besides, testing on all symbols is sufficient to check the correctness of the covered cases.
 				if(!PreserveRemovableSymbolsForExamination)
-					*ptrPreserveRemovableSymbolsForExamination = true;
+					refPreserveRemovableSymbolsForExamination = true;
 			} catch(runtime_error&) {
 				cerr<<"Couldn't create FontEngine"<<endl;
 			}
@@ -119,7 +120,7 @@ namespace ut {
 		/// Reestablishes old value of PreserveRemovableSymbolsForExamination
 		~FontEngineFixtConfig() {
 			if(PreserveRemovableSymbolsForExamination != origPreserveRemovableSymbolsForExamination)
-				*ptrPreserveRemovableSymbolsForExamination = origPreserveRemovableSymbolsForExamination;
+				refPreserveRemovableSymbolsForExamination = origPreserveRemovableSymbolsForExamination;
 		}
 	};
 }
