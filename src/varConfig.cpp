@@ -113,15 +113,21 @@ extern READ_UINT_PROP(Settings_MAX_H_SYMS);
 extern READ_UINT_PROP(Settings_MIN_V_SYMS);
 extern READ_UINT_PROP(Settings_MAX_V_SYMS);
 
+extern READ_STR_PROP(ClusterAlgName);
 extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor);
-extern READ_DOUBLE_PROP(MaxAvgProjErrForClustering);
+extern READ_DOUBLE_PROP(MaxAvgProjErrForPartitionClustering);
 extern READ_DOUBLE_PROP(StillForegroundThreshold);
 extern READ_DOUBLE_PROP(ForegroundThresholdDelta);
-extern READ_DOUBLE_PROP(MaxRelMcOffsetForClustering);
-extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForClustering);
+extern READ_DOUBLE_PROP(MaxRelMcOffsetForPartitionClustering);
+extern READ_DOUBLE_PROP(MaxRelMcOffsetForTTSAS_Clustering);
+extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForPartitionClustering);
+extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForTTSAS_Clustering);
+extern READ_BOOL_PROP(TTSAS_Accept1stClusterThatQualifiesAsParent);
+extern READ_DOUBLE_PROP(TTSAS_Threshold_Member);
+extern READ_DOUBLE_PROP(TTSAS_Threshold_Outsider);
 
 extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT);
-extern READ_DOUBLE_PROP(MatchEngine_updateSymbols_STILL_BG);
+extern READ_DOUBLE_PROP(SymData_computeFields_STILL_BG);
 extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);

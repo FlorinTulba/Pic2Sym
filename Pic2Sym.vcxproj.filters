@@ -82,6 +82,12 @@
     <Filter Include="Source Files\Testing">
       <UniqueIdentifier>{6325a6bb-5ad1-42f8-97c2-7958a8a22895}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Charmap\Clustering">
+      <UniqueIdentifier>{ca90c6ac-862a-4e96-9b80-e619ed76f38d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Charmap\Clustering">
+      <UniqueIdentifier>{a48bec4c-a5a6-4e44-b917-45d9fc90a3c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
@@ -219,9 +225,6 @@
     <ClInclude Include="src\patch.h">
       <Filter>Header Files\Controller\TransformEngine\Image</Filter>
     </ClInclude>
-    <ClInclude Include="src\symData.h">
-      <Filter>Header Files\Controller\TransformEngine</Filter>
-    </ClInclude>
     <ClInclude Include="src\appState.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
@@ -230,6 +233,27 @@
     </ClInclude>
     <ClInclude Include="src\symsSerialization.h">
       <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symData.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterData.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterEngine.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterAlg.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\partitionClustering.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ttsasClustering.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noClustering.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -331,6 +355,24 @@
     </ClCompile>
     <ClCompile Include="src\symsSerialization.cpp">
       <Filter>Source Files\Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symData.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterEngine.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterAlg.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\partitionClustering.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ttsasClustering.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noClustering.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

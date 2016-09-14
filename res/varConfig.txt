@@ -70,15 +70,33 @@ Transform_ProgressReportsIncrement	0.04
 ; slightly inferior to the best score known at a moment
 InvestigateClusterEvenForInferiorScoreFactor	0.999
 
+; The name of the clustering algorithm. These options are available:
+; - None -> no clustering at all
+; - Partition -> pseudo-clustering algorithm using boolean predicate instead of distance-based assessments
+; - TTSAS -> implementation of the "Two-Threshold Sequential Algorithmic Scheme" clustering algorithm
+ClusterAlgName	TTSAS
+
+; Max L1 error per pixel between the projections of 2 symbols that can be clustered together
+MaxAvgProjErrForPartitionClustering	0.0125
+
 ; Maximum difference of the average pixel value from 2 symbols that still allows clustering the glyphs
-MaxDiffAvgPixelValForClustering	0.01
+MaxDiffAvgPixelValForPartitionClustering	0.01
+MaxDiffAvgPixelValForTTSAS_Clustering	0.04
 
 ; Maximum offset between mass-centers of 2 symbols (relative to the symbol size) allowed to
 ; still consider clustering the glyphs together
-MaxRelMcOffsetForClustering	0.01
+MaxRelMcOffsetForPartitionClustering	0.01
+MaxRelMcOffsetForTTSAS_Clustering	0.04
 
-; Max L1 error per pixel between the projections of 2 symbols that can be clustered together
-MaxAvgProjErrForClustering	0.0125
+; TTSAS can run faster by accepting as parent cluster the first group close enough to the analyzed symbol
+; or it won't stop before making sure it has found the closest cluster to the given symbol
+TTSAS_Accept1stClusterThatQualifiesAsParent	false
+
+; Threshold for including any symbol into a cluster in the TTSAS algorithm
+TTSAS_Threshold_Member	0.044
+
+; Threshold for excluding any chance for a symbol to belong to a certain cluster in the TTSAS algorithm
+TTSAS_Threshold_Outsider	0.048
 
 ; What percent (0..1) of the glyphs from a charmap set are considered small
 ; 0.1 means that smallest 10% of all glyphs are considered small
@@ -101,7 +119,7 @@ ForegroundThresholdDelta	10.
 ; STILL_BG was set to 0, as there are font families with extremely similar glyphs.
 ; When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
 ; But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
-MatchEngine_updateSymbols_STILL_BG	0.
+SymData_computeFields_STILL_BG	0.
 
 ; Blurred Patches with Contrast less than this value will become part of the result.
 ; No approximation will be performed for such patches.

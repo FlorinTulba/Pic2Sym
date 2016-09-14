@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
+    <ClInclude Include="src\clusterAlg.h" />
+    <ClInclude Include="src\clusterData.h" />
+    <ClInclude Include="src\clusterEngine.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
@@ -41,7 +44,9 @@
     <ClInclude Include="src\matchSettingsManip.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\matchSettings.h" />
+    <ClInclude Include="src\noClustering.h" />
     <ClInclude Include="src\ompTrace.h" />
+    <ClInclude Include="src\partitionClustering.h" />
     <ClInclude Include="src\patch.h" />
     <ClInclude Include="src\picTransformProgressTracker.h" />
     <ClInclude Include="src\pixMapSym.h" />
@@ -58,6 +63,7 @@
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
+    <ClInclude Include="src\ttsasClustering.h" />
     <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\validateFont.h" />
@@ -67,6 +73,8 @@
     <ClCompile Include="src\appState.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
+    <ClCompile Include="src\clusterAlg.cpp" />
+    <ClCompile Include="src\clusterEngine.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
@@ -74,6 +82,8 @@
     <ClCompile Include="src\fontEngine.cpp" />
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
+    <ClCompile Include="src\noClustering.cpp" />
+    <ClCompile Include="src\partitionClustering.cpp" />
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\img.cpp" />
@@ -88,11 +98,13 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
+    <ClCompile Include="src\symData.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
+    <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />

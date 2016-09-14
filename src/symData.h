@@ -48,6 +48,11 @@
 
 /// Most symbol information
 struct SymData {
+	/// Computes most information about a symbol based on glyph parameter
+	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
+							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
+							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal);
+
 	const unsigned long code = ULONG_MAX;	///< the code of the symbol
 	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
@@ -77,6 +82,8 @@ struct SymData {
 			code(code_), minVal(minVal_), diffMinMax(diffMinMax_),
 			pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {}
 
+	SymData& operator=(const SymData &other);
+	
 #ifdef UNIT_TESTING
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
 
@@ -86,33 +93,10 @@ struct SymData {
 #endif
 
 protected:
-	SymData(); ///< convenience base constructor for ClusterData from below
+	SymData(); ///< convenience base constructor for derived classes
 };
 
 /// VSymData - vector with most information about each symbol
 typedef std::vector<const SymData> VSymData;
-
-/**
-Synthesized symbol as the representative of several symbols that were clustered together.
-Inherits from SymData to qualify in passing as SymData& parameter to assessMatch method.
-*/
-struct ClusterData : SymData {
-	const unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
-	const unsigned sz;				///< size of the cluster - how many symbols form the cluster
-
-	/**
-	Constructs a cluster representative for the selected symbols.
-
-	@param symsSet the set of all symbols (before clustering)
-	@param idxOfFirstSym_ index of the first symbol from symsSet that belongs to this cluster
-	@param clusterSymIndices_ the indices towards the symbols from symsSet which belong to this cluster
-	*/
-	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
-				const std::vector<unsigned> &clusterSymIndices);
-};
-
-/// VClusterData - vector with most information about each cluster
-typedef std::vector<ClusterData> VClusterData;
-
 
 #endif

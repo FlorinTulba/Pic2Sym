@@ -38,10 +38,9 @@
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
-#include <set>
-
 #include "match.h"
 #include "fontEngine.h"
+#include "clusterEngine.h"
 
 // forward declarations
 struct CachedData;
@@ -63,8 +62,7 @@ protected:
 	FontEngine &fe;				///< symbols set manager
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
 	VSymData symsSet;			///< set of most information on each symbol
-	VClusterData clusters;		///< the clustered symbols
-	std::set<unsigned> clusterOffsets;	///< start index in clusters where a new cluster starts
+	ClusterEngine ce;			///< clusters manager
 
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects

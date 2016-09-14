@@ -45,6 +45,8 @@
 #include "timing.cpp"
 #include "fontEngine.cpp"
 #include "matchEngine.cpp"
+#include "clusterEngine.cpp"
+#include "symData.cpp"
 #include "match.cpp"
 #include "patch.cpp"
 #include "transform.cpp"
@@ -68,6 +70,10 @@
 #include "unreadableSymsFilter.cpp"
 #include "sievesSymsFilter.cpp"
 #include "symsSerialization.cpp"
+#include "clusterAlg.cpp"
+#include "noClustering.cpp"
+#include "partitionClustering.cpp"
+#include "ttsasClustering.cpp"
 
 #include <ctime>
 #include <random>

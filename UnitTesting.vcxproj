@@ -93,6 +93,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="test\testClustering.cpp" />
     <ClCompile Include="test\testFontEngine.cpp" />
     <ClCompile Include="test\testMain.cpp" />
     <ClCompile Include="test\testController.cpp" />
