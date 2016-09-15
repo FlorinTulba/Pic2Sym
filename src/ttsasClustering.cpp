@@ -54,9 +54,9 @@ using namespace std;
 using namespace boost;
 using namespace cv;
 
+extern const bool FastDistSymToClusterComputation;
 extern const bool TTSAS_Accept1stClusterThatQualifiesAsParent;
 extern const double TTSAS_Threshold_Member;
-extern const double TTSAS_Threshold_Outsider;
 extern const double MaxRelMcOffsetForTTSAS_Clustering;
 extern const double MaxDiffAvgPixelValForTTSAS_Clustering;
 
@@ -66,13 +66,47 @@ namespace {
 	typedef double Dist;
 	typedef vector<ClusterIdx> NearbyClusters;
 
+	/**
+	Produces the values of a Basel-like series:
+		BaselSeriesLimit - SumOfFirst_N_fromBaselSeries
+	or
+		pi^2/6 - SumOfFirst_N_for(1/i^2)
+
+	First value from the cache is the limit of the Basel sum: pi^2/6.
+	Every new value is the previous minus 1/i^2
+	*/
+	double threshOutsider(size_t clustSz) {
+		static vector<double> vals { M_PI*M_PI/6. };
+		static size_t lastSz = 1U;
+
+		if(lastSz <= clustSz) {
+			enum {IncrementSz = 50};
+			const size_t newSz = clustSz + IncrementSz;
+			vals.resize(newSz, 0.);
+			for(size_t i = lastSz; i < newSz; ++i)
+				vals[i] = max(0., vals[i-1U] - 1./(i*i));
+			lastSz = newSz;
+		}
+		return vals[clustSz];
+	}
+
 	/// Representative of a cluster of symbols
 	struct Cluster {
 		vector<SymIdx> memberIndices;	///< indices of the member symbols
 		TinySymData centroid;			///< characteristics of the centroid
 
 		Cluster(const TinySymData &sym, SymIdx symIdx) :
-			memberIndices({ symIdx }), centroid(sym) {}
+			memberIndices({ symIdx }),
+
+			/*
+			Using normal constructor instead of copy-constructor to clone all matrices.
+			Normal construction lets the centroid use the same matrices from
+			the cluster root symbol (parameter sym from here),
+			so any addMember() call would change the root symbol, as well.
+			*/
+			centroid(sym.mc, sym.avgPixVal, sym.mat.clone(),
+					sym.hAvgProj.clone(), sym.vAvgProj.clone(),
+					sym.backslashDiagAvgProj.clone(), sym.slashDiagAvgProj.clone()) {}
 
 		size_t membersCount() const { return memberIndices.size(); }
 
@@ -129,7 +163,7 @@ namespace {
 		const TinySymData &sym;
 		const vector<Cluster> &clusters;
 
-		/// clusters located in [TTSAS_Threshold_Member .. TTSAS_Threshold_Outsider]/Cluster_Size range from sym
+		/// clusters located in TTSAS_Threshold_Member*[1/(Cluster_Size+1) .. threshOutsider(Cluster_Size)] range from sym
 		NearbyClusters reserves;
 
 		/// first / best match for a parent, depending on TTSAS_Accept1stClusterThatQualifiesAsParent
@@ -138,24 +172,31 @@ namespace {
 
 		/**
 		Computing the distance from sym to the cluster with clustIdx index as economic as possible.
-		Parameter expandedClusterSz is used to lower the thresholds of all parameters
+		Parameter clusterSz is used to lower the thresholds of all parameters
 		for every increase in the size of the cluster.
 		In this way, the centroid of each expanding cluster remains close enough to any of its members.
 		*/
-		Dist distToCluster(const TinySymData &centroidCluster, double expandedClusterSz) {
-			const double thresholdOutsider = TTSAS_Threshold_Outsider / expandedClusterSz;
+		Dist distToCluster(const TinySymData &centroidCluster, size_t clusterSz) {
+			const double thresholdOutsider = threshOutsider(clusterSz);
+
+			if(!FastDistSymToClusterComputation) {
+				const double l1Dist = norm(centroidCluster.mat - sym.mat, NORM_L1);
+				if(l1Dist > thresholdOutsider * TTSAS_Threshold_Member)
+					return numeric_limits<Dist>::infinity();;
+				return l1Dist;
+			}
 
 			// Comparing glyph & cluster densities
-			if(abs(sym.avgPixVal - centroidCluster.avgPixVal) * expandedClusterSz >
-					MaxDiffAvgPixelValForTTSAS_Clustering)
+			if(abs(sym.avgPixVal - centroidCluster.avgPixVal)  >
+						MaxDiffAvgPixelValForTTSAS_Clustering * thresholdOutsider)
 				return numeric_limits<Dist>::infinity(); // skip the rest for very different densities
 
 			// Comparing glyph & cluster mass-centers
 			const Point2d mcDelta = sym.mc - centroidCluster.mc;
-			const double mcDeltaY = abs(mcDelta.y) * expandedClusterSz;
+			const double mcDeltaY = abs(mcDelta.y) / thresholdOutsider;
 			if(mcDeltaY > MaxRelMcOffsetForTTSAS_Clustering) // vertical mass-centers offset
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
-			const double mcDeltaX = abs(mcDelta.x) * expandedClusterSz;
+			const double mcDeltaX = abs(mcDelta.x) / thresholdOutsider;
 			if(mcDeltaX > MaxRelMcOffsetForTTSAS_Clustering) // horizontal mass-centers offset
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
 			static const double SqMaxRelMcOffsetForClustering =
@@ -163,7 +204,8 @@ namespace {
 			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
 
-			const double *pDataA, *pDataAEnd, *pDataB;
+			const double *pDataA, *pDataAEnd, *pDataB,
+						ThresholdOutsider = thresholdOutsider * TTSAS_Threshold_Member;
 
 #define CheckProjections(ProjectionField) \
 			pDataA = reinterpret_cast<const double*>(sym.ProjectionField.datastart); \
@@ -171,7 +213,7 @@ namespace {
 			pDataB = reinterpret_cast<const double*>(centroidCluster.ProjectionField.datastart); \
 			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) { \
 				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++); \
-				if(sumOfAbsDiffs > thresholdOutsider) \
+				if(sumOfAbsDiffs > ThresholdOutsider) \
 					return numeric_limits<Dist>::infinity(); /* stop as soon as projections appear too different */ \
 			}
 
@@ -189,7 +231,7 @@ namespace {
 			double sumOfAbsDiffs = 0.;
 			while(itA != itAEnd) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
-				if(sumOfAbsDiffs > thresholdOutsider)
+				if(sumOfAbsDiffs > ThresholdOutsider)
 					return numeric_limits<Dist>::infinity(); // stop as soon as the increasing sum is beyond threshold
 			}
 
@@ -236,11 +278,12 @@ namespace {
 			
 			const Cluster &cluster = clusters[clustIdx];
 			const TinySymData &centroidCluster = cluster.centroid;
-			const double expandedClusterSz = double(cluster.membersCount() + (size_t)1U);
+			const size_t clusterSz = cluster.membersCount();
+			const double expandedClusterSz = double(clusterSz + (size_t)1U);
 
 			// Inf for really distant clusters or if their centroid could become 
 			// too distant for previous members when including this symbol
-			const Dist dist = distToCluster(centroidCluster, expandedClusterSz);
+			const Dist dist = distToCluster(centroidCluster, clusterSz);
 			if(dist * expandedClusterSz < TTSAS_Threshold_Member) { // qualifies as parent
 				if(TTSAS_Accept1stClusterThatQualifiesAsParent || dist < distToParentCluster) {
 					idxOfParentCluster = clustIdx;
@@ -250,7 +293,7 @@ namespace {
 				return false; // keep current parent
 			}
 			
-			if(!isinf(dist)) // dist <= TTSAS_Threshold_Outsider / expandedClusterSz
+			if(!isinf(dist)) // dist <= threshOutsider(clusterSz)
 				reserves.push_back(clustIdx); // qualifies as reserve candidate, but not as parent
 
 			return false; // keep current parent
@@ -374,6 +417,8 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 							if(updatedClusters.find(neighborIdx) != updatedClusters.end()
 								   || prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end()) {
 								if(pcf.examine(neighborIdx))
+									// reachable as demonstrated in Unit Test:
+									// CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster
 									break;
 							} else pcf.rememberReserve(neighborIdx);
 						}
@@ -401,7 +446,7 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 				for(const ClusterIdx neighborIdx : neighborClusters) {
 					if(updatedClusters.find(neighborIdx) != updatedClusters.end()
 							|| prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end())
-					   pcf.examine(neighborIdx);
+						pcf.examine(neighborIdx);
 					else if(!pcf.found()) // Reserves don't matter after a parent has been found
 						pcf.rememberReserve(neighborIdx);
 				}
@@ -414,14 +459,14 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 				auto &updatedCluster = clusters[parentClusterIdx];
 				updatedCluster.addMember(smallSyms[ambigSymIdx], ambigSymIdx);
 
-#if defined _DEBUG && !defined UNIT_TESTING
+#ifdef _DEBUG
 				// Check that centroid's parameters stay within 0.645*Original_Threshold from each member.
 				// (see Doxy comment for ParentClusterFinder for details)
 				static const double BaselSum_1 = M_PI * M_PI / 6. - 1., // ~0.645
 								maxDiffAvgPixelVal = BaselSum_1 * MaxDiffAvgPixelValForTTSAS_Clustering,
 								maxRelMcOffset = BaselSum_1 * MaxRelMcOffsetForTTSAS_Clustering,
-								threshold_Outsider = BaselSum_1 * TTSAS_Threshold_Outsider,
 								threshold_Member = BaselSum_1 * TTSAS_Threshold_Member;
+				const double threshold_Outsider = threshOutsider(updatedCluster.membersCount());
 				const auto &centroid = updatedCluster.centroid;
 				for(const auto &memberIdx : updatedCluster.memberIndices) {
 					const auto &member = smallSyms[memberIdx];
@@ -433,7 +478,7 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 					assert(norm(member.slashDiagAvgProj - centroid.slashDiagAvgProj, NORM_L1) < threshold_Outsider);
 					assert(norm(member.mat - centroid.mat, NORM_L1) < threshold_Member);
 				}
-#endif // defined _DEBUG && !defined UNIT_TESTING
+#endif // _DEBUG
 
 				if(newClusters.end() == newClusters.find(parentClusterIdx))
 					updatedClusters.insert(parentClusterIdx); // add parentClusterIdx, unless it already appears in newClusters

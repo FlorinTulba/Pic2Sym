@@ -36,6 +36,7 @@
  ****************************************************************************************/
 
 #include "testMain.h"
+#include "misc.h"
 #include "clusterEngine.h"
 #include "noClustering.h"
 #include "partitionClustering.h"
@@ -45,12 +46,12 @@ using namespace std;
 using namespace cv;
 
 extern const string ClusterAlgName;
+extern const bool FastDistSymToClusterComputation;
 extern const double MaxAvgProjErrForPartitionClustering;
 extern const double MaxRelMcOffsetForPartitionClustering;
 extern const double MaxDiffAvgPixelValForPartitionClustering;
 extern const bool TTSAS_Accept1stClusterThatQualifiesAsParent;
 extern const double TTSAS_Threshold_Member;
-extern const double TTSAS_Threshold_Outsider;
 extern const double MaxRelMcOffsetForTTSAS_Clustering;
 extern const double MaxDiffAvgPixelValForTTSAS_Clustering;
 
@@ -58,39 +59,39 @@ namespace ut {
 	/// Provides a way to use specific clustering settings during each test and revert them afterwards
 	class ClusteringSettingsFixt : public Fixt {
 	protected:
-#define DEFINE_COPY_AND_REF(Setting, Type) \
+#define DefineCopyAndRef(Setting, Type) \
 		Type orig##Setting = Setting, &ref##Setting = const_cast<Type&>(Setting)
 
-		DEFINE_COPY_AND_REF(ClusterAlgName, string);
-		DEFINE_COPY_AND_REF(TTSAS_Accept1stClusterThatQualifiesAsParent, bool);
-		DEFINE_COPY_AND_REF(MaxAvgProjErrForPartitionClustering, double);
-		DEFINE_COPY_AND_REF(MaxRelMcOffsetForPartitionClustering, double);
-		DEFINE_COPY_AND_REF(MaxDiffAvgPixelValForPartitionClustering, double);
-		DEFINE_COPY_AND_REF(TTSAS_Threshold_Member, double);
-		DEFINE_COPY_AND_REF(TTSAS_Threshold_Outsider, double);
-		DEFINE_COPY_AND_REF(MaxRelMcOffsetForTTSAS_Clustering, double);
-		DEFINE_COPY_AND_REF(MaxDiffAvgPixelValForTTSAS_Clustering, double);
+		DefineCopyAndRef(ClusterAlgName, string);
+		DefineCopyAndRef(FastDistSymToClusterComputation, bool);
+		DefineCopyAndRef(TTSAS_Accept1stClusterThatQualifiesAsParent, bool);
+		DefineCopyAndRef(MaxAvgProjErrForPartitionClustering, double);
+		DefineCopyAndRef(MaxRelMcOffsetForPartitionClustering, double);
+		DefineCopyAndRef(MaxDiffAvgPixelValForPartitionClustering, double);
+		DefineCopyAndRef(TTSAS_Threshold_Member, double);
+		DefineCopyAndRef(MaxRelMcOffsetForTTSAS_Clustering, double);
+		DefineCopyAndRef(MaxDiffAvgPixelValForTTSAS_Clustering, double);
 
-#undef DEFINE_COPY_AND_REF
+#undef DefineCopyAndRef
 
 	public:
 		~ClusteringSettingsFixt() {
-#define REVERT_IF_CHANGED(Setting) \
+#define RevertIfChanged(Setting) \
 			if(Setting != orig##Setting) \
 				ref##Setting = orig##Setting
 
-			REVERT_IF_CHANGED(ClusterAlgName);
-			REVERT_IF_CHANGED(TTSAS_Accept1stClusterThatQualifiesAsParent);
-			REVERT_IF_CHANGED(MaxAvgProjErrForPartitionClustering);
-			REVERT_IF_CHANGED(MaxRelMcOffsetForPartitionClustering);
-			REVERT_IF_CHANGED(MaxDiffAvgPixelValForPartitionClustering);
-			REVERT_IF_CHANGED(MaxDiffAvgPixelValForPartitionClustering);
-			REVERT_IF_CHANGED(TTSAS_Threshold_Member);
-			REVERT_IF_CHANGED(TTSAS_Threshold_Outsider);
-			REVERT_IF_CHANGED(MaxRelMcOffsetForTTSAS_Clustering);
-			REVERT_IF_CHANGED(MaxDiffAvgPixelValForTTSAS_Clustering);
+			RevertIfChanged(ClusterAlgName);
+			RevertIfChanged(FastDistSymToClusterComputation);
+			RevertIfChanged(TTSAS_Accept1stClusterThatQualifiesAsParent);
+			RevertIfChanged(MaxAvgProjErrForPartitionClustering);
+			RevertIfChanged(MaxRelMcOffsetForPartitionClustering);
+			RevertIfChanged(MaxDiffAvgPixelValForPartitionClustering);
+			RevertIfChanged(MaxDiffAvgPixelValForPartitionClustering);
+			RevertIfChanged(TTSAS_Threshold_Member);
+			RevertIfChanged(MaxRelMcOffsetForTTSAS_Clustering);
+			RevertIfChanged(MaxDiffAvgPixelValForTTSAS_Clustering);
 
-#undef REVERT_IF_CHANGED
+#undef RevertIfChanged
 		}
 	};
 
@@ -105,52 +106,90 @@ namespace ut {
 		}
 	};
 
-	const SymData EmptySym5x5(0UL, 0., 0., 0., Point2d(2., 2.),
-		{ { SymData::NEG_SYM_IDX, Mat(5, 5, CV_8UC1, Scalar(255U)) },
-		{ SymData::GROUNDED_SYM_IDX, Mat(5, 5, CV_64FC1, Scalar(0.)) } }),
-				MainDiag5x5(1UL, 0., 1., 5., Point2d(2., 2.),
-		{ { SymData::NEG_SYM_IDX, (255U - Mat::eye(5, 5, CV_8UC1) * 255U) }, 
-		{ SymData::GROUNDED_SYM_IDX, Mat::eye(5, 5, CV_64FC1) } });
+	const double TinySymArea = double(TinySymData::TinySymSz*TinySymData::TinySymSz);
+	const unsigned TinySymMidSide = (unsigned)TinySymData::TinySymSz>>1,
+				TinySymDiagsCount = ((unsigned)TinySymData::TinySymSz<<1) - 1U;
+	const Point2d TinySymCenter(TinySymMidSide, TinySymMidSide);
+
+	const TinySymData EmptyTinySym(TinySymCenter, 0., Mat(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)),
+								   Mat(1, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)), Mat(1, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)),
+								   Mat(1, TinySymDiagsCount, CV_64FC1, Scalar(0.)), Mat(1, TinySymDiagsCount, CV_64FC1, Scalar(0.)));
+
+	const SymData EmptySymData5x5(0UL, 0., 0., 0., TinySymCenter,
+		{ { SymData::NEG_SYM_IDX, Mat(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_8UC1, Scalar(255U)) },
+		{ SymData::GROUNDED_SYM_IDX, Mat(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)) } }),
+				MainDiagSymData5x5(1UL, 0., 1., (double)TinySymData::TinySymSz, TinySymCenter,
+		{ { SymData::NEG_SYM_IDX, (255U - Mat::eye(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_8UC1) * 255U) },
+		{ SymData::GROUNDED_SYM_IDX, Mat::eye(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_64FC1) } });
+
+	void updateCentralPixel(TinySymData &sym, double pixelVal) {
+		const double oldPixelVal = sym.mat.at<double>(TinySymMidSide, TinySymMidSide),
+					oldPixSum = sym.avgPixVal * TinySymArea,
+					diff = pixelVal - oldPixelVal,
+					avgDiff = diff / TinySymData::TinySymSz;
+
+		sym.mc = (oldPixSum*sym.mc + diff*TinySymCenter) / (oldPixSum + diff);
+		
+		sym.avgPixVal += diff / TinySymArea;
+		
+		// Clone all matrices from sym, to ensure that the central pixel
+		// won't be changed in the template provided as the sym parameter
+		sym.mat = sym.mat.clone();
+		sym.mat.at<double>(TinySymMidSide, TinySymMidSide) = pixelVal;
+
+#define UpdateProjectionAt(Field, At) \
+		sym.Field = sym.Field.clone(); \
+		sym.Field.at<double>(At) += avgDiff
+
+		UpdateProjectionAt(hAvgProj, TinySymMidSide);
+		UpdateProjectionAt(vAvgProj, TinySymMidSide);
+		UpdateProjectionAt(backslashDiagAvgProj, TinySymData::TinySymSz-1);
+		UpdateProjectionAt(slashDiagAvgProj, TinySymData::TinySymSz-1);
+
+#undef UpdateProjectionAt
+	};
 }
 
-BOOST_FIXTURE_TEST_SUITE(ClusterEngineCreation_Tests, ut::ClusteringSettingsFixt)
+using namespace ut;
+
+BOOST_FIXTURE_TEST_SUITE(ClusterEngineCreation_Tests, ClusteringSettingsFixt)
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_InvalidAlgName_UsingNoClustering) {
 		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_InvalidAlgName_UsingNoClustering");
 		refClusterAlgName = "Invalid_Algorithm_Name!!!!";
-		ut::TestClusterEngine ce;
+		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<NoClustering>());
 	}
 
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_NoClusteringRequest_UsingNoClustering) {
 		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
 		refClusterAlgName = "None";
-		ut::TestClusterEngine ce;
+		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<NoClustering>());
 	}
 
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering) {
 		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
 		refClusterAlgName = "Partition";
-		ut::TestClusterEngine ce;
+		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<PartitionClustering>());
 	}
 
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering) {
 		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
 		refClusterAlgName = "TTSAS";
-		ut::TestClusterEngine ce;
+		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<TTSAS_Clustering>());
 	}
 
 BOOST_AUTO_TEST_SUITE_END() // ClusterEngineCreation
 
-BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
+BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 	BOOST_AUTO_TEST_CASE(UsingNoClustering_6identicalSymbols_0nonTrivialClusters) {
 		BOOST_TEST_MESSAGE("Running UsingNoClustering_6identicalSymbols_0nonTrivialClusters");
 		refClusterAlgName = "None";
 		ClusterEngine ce;
 		size_t symsCount = 6U;
-		VSymData symsSet(symsCount, ut::EmptySym5x5);
+		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == symsCount);
 	}
@@ -160,7 +199,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
 		refClusterAlgName = "Partition";
 		ClusterEngine ce;
 		const size_t symsCount = 6U;
-		VSymData symsSet(symsCount, ut::EmptySym5x5);
+		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
@@ -170,7 +209,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce;
 		const size_t symsCount = 6U;
-		VSymData symsSet(symsCount, ut::EmptySym5x5);
+		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
@@ -179,7 +218,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingPartitionClustering_x0x0xSequence_2Clusters");
 		refClusterAlgName = "Partition";
 		ClusterEngine ce;
-		VSymData symsSet { ut::MainDiag5x5, ut::EmptySym5x5, ut::MainDiag5x5, ut::EmptySym5x5, ut::MainDiag5x5 };
+		VSymData symsSet { MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5 };
 		const size_t symsCount = symsSet.size();
 		ce.process(symsSet);
 		const auto &clusterOffsets = ce.getClusterOffsets();
@@ -197,7 +236,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingTTSASclustering_x0x0xSequence_2Clusters");
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce;
-		VSymData symsSet { ut::MainDiag5x5, ut::EmptySym5x5, ut::MainDiag5x5, ut::EmptySym5x5, ut::MainDiag5x5 };
+		VSymData symsSet { MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5 };
 		const size_t symsCount = symsSet.size();
 		ce.process(symsSet);
 		const auto &clusterOffsets = ce.getClusterOffsets();
@@ -213,10 +252,117 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ut::ClusteringSettingsFixt)
 
 BOOST_AUTO_TEST_SUITE_END() // BasicClustering_Tests
 
-// Generate several random centroids, so that they are distant enough.
-// For each centroid, generate a few random cluster members.
-// Shuffle the resulted symbols.
-// Check afterwards if the algorithms correctly groups the symbols.
-// Accept tests if most characteristics match.
-// Display desired and obtained clusters when grouping appears different than expected.
-// Test suite checking FontEngine constraints
+BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
+	BOOST_AUTO_TEST_CASE(CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot) {
+		BOOST_TEST_MESSAGE("Running CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot");
+		TTSAS_Clustering tc;
+		vector<const TinySymData> smallSyms;
+		vector<vector<unsigned>> symsIndicesPerCluster;
+
+		for(unsigned n = 1U; n < 30U; ++n) {
+			// Use n identical symbols => a single cluster
+			BOOST_TEST_MESSAGE("Checking member thresholds with a set of " + to_string(n) + " identical symbols");
+
+			smallSyms.assign(n, EmptyTinySym);
+			BOOST_REQUIRE(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+
+			const double ThresholdForNplus1 = TTSAS_Threshold_Member / (n+1U);
+
+			// Append a symbol beyond the threshold => 2 clusters
+			TinySymData newSym = EmptyTinySym; // changing only central pixel => same mass-center
+			updateCentralPixel(newSym, ThresholdForNplus1 + EPS);
+			smallSyms.push_back(newSym);
+			BOOST_TEST(2U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+
+			// Just check that adding now a symbol below the threshold results in a single cluster
+			updateCentralPixel(newSym = EmptyTinySym, ThresholdForNplus1 - EPS);
+			smallSyms.push_back(newSym);
+			BOOST_TEST(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+			smallSyms.pop_back(); // Remove last added element
+
+			// Now replace the symbol beyond the threshold with the one below => a single cluster
+			const_cast<TinySymData&>(smallSyms.back()) = newSym;
+			BOOST_TEST(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+			
+			// By now, the central pixel of the centroid has the value: TTSAS_Threshold_Member / (n+1)^2
+			// The new threshold is TTSAS_Threshold_Member / (n+2)
+			const double CentralPixelOfCentroidNplus1 = TTSAS_Threshold_Member / ((n+1U)*(n+1U)),
+						ThresholdForNplus2 = TTSAS_Threshold_Member / (n+2U),
+						BorderMemberNplus2 = CentralPixelOfCentroidNplus1 + ThresholdForNplus2;
+
+			// Append a symbol beyond the threshold => 2 clusters
+			updateCentralPixel(newSym = EmptyTinySym, BorderMemberNplus2 + EPS);
+			smallSyms.push_back(newSym);
+			BOOST_TEST(2U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+
+			// Bring that last symbol below the threshold => a single cluster
+			updateCentralPixel(newSym = EmptyTinySym, BorderMemberNplus2 - EPS);
+			const_cast<TinySymData&>(smallSyms.back()) = newSym;
+			BOOST_TEST(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+
+			// Swap the last 2 symbols, to check that the order isn't a problem in this case.
+			swap(smallSyms[n], smallSyms.back());
+			BOOST_TEST(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+		}
+	}
+
+	BOOST_AUTO_TEST_CASE(CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster) {
+		BOOST_TEST_MESSAGE("Running CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster");
+		TTSAS_Clustering tc;
+		vector<vector<unsigned>> symsIndicesPerCluster;
+		vector<const TinySymData> smallSyms;
+		smallSyms.reserve(4U);
+		
+		/*
+		Scenario with 4 symbols:
+
+		First loop:
+		1) add 1st symbol S1 which becomes right away the root of the 1st (and only) cluster C1
+		2) add 2nd symbol S2 rather different from C1, but still C1 becomes reserve candidate for S2
+		3) add 3rd symbol S3 just a bit more similar to C1 than S2,
+			so C1 becomes reserve candidate for S3, as well
+		4) add 4th symbol S4 way more similar to C1, so that C1 becomes parent of S1 and S4
+
+		At the end of 1st loop, S1 and S4 form cluster C1, while S2 and S3 see previous C1 just as a candidate.
+		Now S2 perceives the new centroid of C1 still as reserve candidate, and not as parent cluster,
+		while C1 can already be promoted to parent for S3, as its centroid is more similar to S3.
+		
+		However, let's see how these facts are observed and acted upon during the second loop:
+		5) S2 rechecks the updated C1 from previous new clusters and decides C1 is still just a candidate
+		6) S3 rechecks the updated C1 from previous new clusters and decides C1 to become its parent
+
+		At the end of 2nd loop, S1, S3 and S4 form cluster C1, while S2 sees previous C1 just as a candidate.
+		But by this time, C1's centroid is already similar-enough to S2 to be promoted to parent.
+
+		Third loop:
+		7) S2 rechecks the updated C1 from updated clusters and accepts the long-waited promotion of C1
+		*/
+
+		TinySymData sym = EmptyTinySym; // changing only central pixel => same mass-center
+		const double Border4 = TTSAS_Threshold_Member / 2., // Border for 4th symbol
+
+					// Border for 2nd and 3rd symbols (1/(2^2) + 1/3) * TTSAS_Threshold_Member
+					Border23 = 7. * TTSAS_Threshold_Member / 12.; 
+
+		// 1st symbol - the root of the sole cluster
+		smallSyms.push_back(sym); 
+
+		// 2nd symbol, which promotes its updated reserve cluster to parent cluster in 3rd loop
+		updateCentralPixel(sym = EmptyTinySym, Border23 + EPS);
+		smallSyms.push_back(sym);
+
+		// 3rd symbol, which accepts the parent at the end of 2nd loop from previous new clusters
+		// Normally, this is also a promotion of updated reserve candidate,
+		// but the update was kept in newClusters instead of updatedClusters,
+		// as the cluster was just created during that loop
+		updateCentralPixel(sym = EmptyTinySym, Border23 - EPS);
+		smallSyms.push_back(sym);
+
+		// 4th symbol, which accepts the parent at the end of 1st loop from new clusters
+		updateCentralPixel(sym = EmptyTinySym, Border4 - EPS);
+		smallSyms.push_back(sym);
+
+		BOOST_TEST(1U == tc.formGroups(smallSyms, symsIndicesPerCluster));
+	}
+
+BOOST_AUTO_TEST_SUITE_END() // TTSAS_Clustering_Tests

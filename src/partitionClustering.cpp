@@ -45,6 +45,7 @@
 using namespace std;
 using namespace cv;
 
+extern const bool FastDistSymToClusterComputation;
 extern const double MaxAvgProjErrForPartitionClustering;
 extern const double MaxRelMcOffsetForPartitionClustering;
 extern const double MaxDiffAvgPixelValForPartitionClustering;
@@ -65,6 +66,11 @@ unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallS
 		const TinySymData &a,
 		const TinySymData &b) {
 #if !defined _DEBUG || defined UNIT_TESTING
+		if(!FastDistSymToClusterComputation) {
+			const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+			return l1Dist <= MaxAvgProjErrForPartitionClustering;
+		}
+
 		if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForPartitionClustering)
 			return false;
 		const Point2d mcDelta = a.mc - b.mc;
@@ -107,6 +113,11 @@ unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallS
 		return true;
 
 #else // DEBUG mode and UNIT_TESTING is not defined
+		if(!FastDistSymToClusterComputation) {
+			const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+			return l1Dist <= MaxAvgProjErrForPartitionClustering;
+		}
+
 		const double avgPixDiff = abs(a.avgPixVal - b.avgPixVal);
 		const bool bAvgPixDiff = avgPixDiff > MaxDiffAvgPixelValForPartitionClustering;
 		if(bAvgPixDiff) {
