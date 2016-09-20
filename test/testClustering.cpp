@@ -168,14 +168,14 @@ BOOST_FIXTURE_TEST_SUITE(ClusterEngineCreation_Tests, ClusteringSettingsFixt)
 	}
 
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
+		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering");
 		refClusterAlgName = "Partition";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<PartitionClustering>());
 	}
 
 	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
+		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering");
 		refClusterAlgName = "TTSAS";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<TTSAS_Clustering>());
