@@ -46,7 +46,7 @@
 /// Clusters a set of symbols
 class ClusterEngine {
 protected:
-	IClusterAlg &clustAlg;		///< algorithm used for clustering
+	ClusterAlg &clustAlg;		///< algorithm used for clustering
 
 	VClusterData clusters;		///< the clustered symbols
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts

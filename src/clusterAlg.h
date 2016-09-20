@@ -63,12 +63,12 @@ struct TinySymData {
 		backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
 };
 
-/// Interface for clustering algorithms
-struct IClusterAlg /*abstract*/ {
+/// Abstract class for clustering algorithms
+struct ClusterAlg /*abstract*/ {
 	/// Gets a reference to the clustering algorithm named algName or ignores it for invalid name.
-	static IClusterAlg& algByName(const std::string &algName);
+	static ClusterAlg& algByName(const std::string &algName);
 
-	virtual ~IClusterAlg() = 0 {}
+	virtual ~ClusterAlg() = 0 {}
 
 	/**
 	Performs clustering of tiny versions of a set of symbols.

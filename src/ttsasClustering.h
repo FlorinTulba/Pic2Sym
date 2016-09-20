@@ -53,7 +53,7 @@ It was customized to:
   (inspecting only new clusters plus the known neighbors who got updated)
 - allow choosing either the first suitable parent cluster, or considering only the best paternal match
 */
-struct TTSAS_Clustering : IClusterAlg {
+struct TTSAS_Clustering : ClusterAlg {
 	/**
 	Performs clustering of tiny versions of a set of symbols.
 	The same grouping is applied to the initial larger symbols.

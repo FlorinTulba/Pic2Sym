@@ -145,7 +145,7 @@ namespace {
 	}
 } // anonymous namespace
 
-ClusterEngine::ClusterEngine() : clustAlg(IClusterAlg::algByName(ClusterAlgName)) {}
+ClusterEngine::ClusterEngine() : clustAlg(ClusterAlg::algByName(ClusterAlgName)) {}
 
 void ClusterEngine::process(VSymData &symsSet) {
 	assert(!symsSet.empty());

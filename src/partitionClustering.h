@@ -46,7 +46,7 @@ It isn't an actual clustering algorithm, as no distance measure is used.
 Instead, the glyphs are grouped based on a boolean predicate assessing
 if 2 given symbols could belong to the same category or not.
 */
-struct PartitionClustering : IClusterAlg {
+struct PartitionClustering : ClusterAlg {
 	/**
 	Performs clustering of tiny versions of a set of symbols.
 	The same grouping is applied to the initial larger symbols.

@@ -43,8 +43,8 @@
 
 using namespace std;
 
-IClusterAlg& IClusterAlg::algByName(const string &algName) {
-	IClusterAlg *pAlg = nullptr;
+ClusterAlg& ClusterAlg::algByName(const string &algName) {
+	ClusterAlg *pAlg = nullptr;
 	if(0 == algName.compare("TTSAS")) {
 		static TTSAS_Clustering alg;
 		pAlg = &alg;

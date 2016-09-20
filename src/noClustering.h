@@ -41,7 +41,7 @@
 #include "clusterAlg.h"
 
 /// Fallback solution when no clustering is desired
-struct NoClustering final : IClusterAlg {
+struct NoClustering final : ClusterAlg {
 	/// Puts each symbol into its own cluster
 	unsigned formGroups(const std::vector<const TinySymData> &smallSyms,
 						std::vector<std::vector<unsigned>> &symsIndicesPerCluster) override;
