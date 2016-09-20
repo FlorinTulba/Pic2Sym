@@ -276,5 +276,5 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 		}
 		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::SaveAllSettings));
 
-	} else throw domain_error("No handling yet for " + controlName + " in " __FUNCTION__);
+	} else THROW_WITH_VAR_MSG("No handling yet for " + controlName + " in " __FUNCTION__, domain_error);
 }

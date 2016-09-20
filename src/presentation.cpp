@@ -208,10 +208,8 @@ namespace {
 
 string MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.symSettings().getFontSz();
-	if(!Settings::isFontSizeOk(sz)) {
-		cerr<<"Invalid font size to use: "<<sz<<endl;
-		throw logic_error("Invalid font size in " __FUNCTION__);
-	}
+	if(!Settings::isFontSizeOk(sz))
+		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(sz) + ") in " __FUNCTION__, logic_error);
 
 	ostringstream oss;
 	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding()<<'_'<<sz;

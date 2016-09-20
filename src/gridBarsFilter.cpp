@@ -221,7 +221,7 @@ bool GridBarsFilter::checkProjectionForGridSymbols(const Mat &sums) {
 				break;
 
 			default:
-				throw logic_error("Handling of state " + to_string((int)state) + " not implemented yet!");
+				THROW_WITH_VAR_MSG("Handling of state " + to_string((int)state) + " not implemented yet!", logic_error);
 		}
 	}
 

@@ -167,8 +167,8 @@ namespace ut {
 			const path positives(path(pathPrefix).concat("Positives.txt"));
 			const path negatives(path(pathPrefix).concat("Negatives.txt"));
 			if(!exists(positives) || !exists(negatives))
-				throw invalid_argument(string("Couldn't find ") + positives.string() + " or "
-									+ negatives.string());
+				THROW_WITH_VAR_MSG(string("Couldn't find ") + positives.string() + " or "
+										+ negatives.string(), invalid_argument);
 
 			const string prefixStem = pathPrefix.stem().string();
 

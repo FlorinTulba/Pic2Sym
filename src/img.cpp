@@ -37,6 +37,7 @@
 
 #include "img.h"
 #include "imgSettings.h"
+#include "misc.h"
 
 #include <iostream>
 
@@ -96,10 +97,8 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_) :
 		patchSz(patchSz_), original(img) {
 	const Mat &source = img.original();
-	if(source.empty()) {
-		cerr<<"No image set yet"<<endl;
-		throw logic_error("No image set yet");
-	}
+	if(source.empty())
+		THROW_WITH_CONST_MSG("No image set yet", logic_error);
 
 	const int initW = source.cols, initH = source.rows;
 	const double initAr = initW / (double)initH;

@@ -38,6 +38,7 @@
 #include "symFilter.h"
 #include "symFilterCache.h"
 #include "pixMapSym.h"
+#include "misc.h"
 
 #include <set>
 
@@ -61,14 +62,14 @@ SymFilter::SymFilter(unsigned filterId_, const string &filterName,
 	static set<const string> filterNames;
 
 	if(filterId_ == 0U)
-		throw invalid_argument(__FUNCTION__ " must use only filterId-s greater than 0!");
+		THROW_WITH_CONST_MSG(__FUNCTION__ " must use only filterId-s greater than 0!", invalid_argument);
 
 #ifndef UNIT_TESTING
 	if(filterTypes.find(filterId_) != filterTypes.end())
-		throw invalid_argument(__FUNCTION__ " called with non-unique filterId_: " + to_string(filterId_));
+		THROW_WITH_VAR_MSG(__FUNCTION__ " called with non-unique filterId_: " + to_string(filterId_), invalid_argument);
 
 	if(filterNames.find(filterName) != filterNames.end())
-		throw invalid_argument(__FUNCTION__ " called with non-unique filterName: " + filterName);
+		THROW_WITH_VAR_MSG(__FUNCTION__ " called with non-unique filterName: " + filterName, invalid_argument);
 #endif // UNIT_TESTING not defined
 
 	filterTypes.emplace(filterId_, filterName);
@@ -80,5 +81,5 @@ const string& SymFilter::filterName(unsigned filterId_) {
 	if(it != itEnd)
 		return it->second;
 
-	throw invalid_argument(__FUNCTION__ " received an invalid filterId: " + to_string(filterId_));
+	THROW_WITH_VAR_MSG(__FUNCTION__ " : received an invalid filterId: " + to_string(filterId_), invalid_argument);
 }

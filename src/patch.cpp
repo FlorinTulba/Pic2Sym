@@ -37,6 +37,7 @@
 
 #include "patch.h"
 #include "matchEngine.h"
+#include "misc.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -59,7 +60,7 @@ const Mat& Patch::matrixToApprox() const {
 	if(needsApproximation)
 		return grayD;
 
-	throw logic_error(__FUNCTION__ " shouldn't be called when needsApproximation is false!");
+	THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be called when needsApproximation is false!", logic_error);
 }
 
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :

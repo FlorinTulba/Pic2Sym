@@ -170,7 +170,7 @@ void Controller::selectedFontFile(const string &fName) const {
 
 unsigned Controller::getFontEncodingIdx() const {
 	if(!fontFamilyOk)
-		throw logic_error("Please setup a font before calling " __FUNCTION__);
+		THROW_WITH_CONST_MSG("Please setup a font before calling " __FUNCTION__, logic_error);
 
 	unsigned currEncIdx;
 	fe.getEncoding(&currEncIdx);
@@ -407,7 +407,7 @@ void Controller::newGlyphWeightFactor(double k) {
 
 bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
 	if(!resizedImg_)
-		throw invalid_argument("Provided nullptr param to " __FUNCTION__);
+		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
 
 	const bool result = !resizedImg || (*resizedImg != *resizedImg_);
 

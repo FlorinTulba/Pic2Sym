@@ -37,6 +37,7 @@
 
 #include "views.h"
 #include "presentCmap.h"
+#include "misc.h"
 
 #include <opencv2/highgui.hpp>
 
@@ -93,7 +94,8 @@ void Comparator::setTransparency(double transparency) {
 
 void Comparator::setReference(const Mat &ref_) {
 	if(ref_.empty())
-		throw invalid_argument("Please provide a non-empty image to " __FUNCTION__ "!");
+		THROW_WITH_CONST_MSG("Please provide a non-empty image to " __FUNCTION__ "!", invalid_argument);
+
 	initial = content = ref_;
 	if(!result.empty())
 		result.release();
@@ -106,9 +108,11 @@ void Comparator::setReference(const Mat &ref_) {
 void Comparator::setResult(const Mat &res_, int transparency
 						   /* = (int)round(Comparator_defaultTransparency * Comparator_trackMax)*/) {
 	if(initial.empty())
-		throw logic_error("Please call " __FUNCTION__ " after Comparator::setReference()!");
+		THROW_WITH_CONST_MSG("Please call " __FUNCTION__ " after Comparator::setReference()!", logic_error);
+
 	if(initial.type() != res_.type() || initial.size != res_.size)
-		throw invalid_argument("Please provide a resulted image of the same size & type as the original image!");
+		THROW_WITH_CONST_MSG("Please provide a resulted image of the same size & type as the original image!", invalid_argument);
+
 	result = res_;
 	if(trackPos != transparency)
 		setTrackbarPos(Comparator_transpTrackName, winName, transparency);

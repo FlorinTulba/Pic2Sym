@@ -81,10 +81,9 @@ namespace {
 		req.width = req.height; // initial check for square drawing board
 		req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
 		const FT_Error error = FT_Request_Size(face, &req);
-		if(error != FT_Err_Ok) {
-			cerr<<"Couldn't set font size: "<<sz<<"  Error: "<<error<<endl;
-			throw invalid_argument("Couldn't set font size!");
-		}
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
+
 		symsCount = 0U;
 		FT_UInt idx;
 		for(FT_ULong c = FT_Get_First_Char(face, &idx);
@@ -222,10 +221,8 @@ FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctr
 					   cmapPresenter(dynamic_cast<const IPresentCmap&>(ctrler_)),
 					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
-	if(error != FT_Err_Ok) {
-		cerr<<"Couldn't initialize FreeType! Error: "<<error<<endl;
-		throw runtime_error("Couldn't initialize FreeType!");
-	}
+	if(error != FT_Err_Ok)
+		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + to_string(error), runtime_error);
 }
 
 FontEngine::~FontEngine() {
@@ -261,10 +258,8 @@ bool FontEngine::checkFontFile(const path &fontPath, FT_Face &face_) const {
 }
 
 bool FontEngine::setNthUniqueEncoding(unsigned idx) {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call setNthUniqueEncoding!"<<endl;
-		throw logic_error("setNthUniqueEncoding called before selecting a font.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG("No Font yet! Please select one first and then call " __FUNCTION__ "!", logic_error);
 
 	if(idx == encodingIndex)
 		return true; // same encoding
@@ -292,10 +287,8 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 }
 
 bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/) {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call setEncoding!"<<endl;
-		throw logic_error("setEncoding called before selecting a font.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG("No Font yet! Please select one first and then call " __FUNCTION__ "!", logic_error);
 
 	if(encName.compare(ss.getEncoding()) == 0 && !forceUpdate)
 		return true; // same encoding
@@ -319,10 +312,9 @@ bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/
 }
 
 void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
-	if(face_ == nullptr) {
-		cerr<<"Trying to set a NULL face!"<<endl;
-		throw invalid_argument("Can't provide a NULL face as parameter!");
-	}
+	if(face_ == nullptr)
+		THROW_WITH_CONST_MSG("Can't provide a NULL face as parameter in " __FUNCTION__ "!", invalid_argument);
+
 	if(face != nullptr) {
 		if(strcmp(face->family_name, face_->family_name)==0 &&
 		   strcmp(face->style_name, face_->style_name)==0)
@@ -368,15 +360,11 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	if(symsCont.isReady() && symsCont.getFontSz() == fontSz_)
 		return;
 
-	if(face == nullptr) {
-		cerr<<"Please use FontEngine::newFont before calling FontEngine::setFontSz!"<<endl;
-		throw logic_error(__FUNCTION__ " called before FontEngine::newFont!");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG("Please use FontEngine::newFont before calling " __FUNCTION__ "!", logic_error);
 
-	if(!Settings::isFontSizeOk(fontSz_)) {
-		cerr<<"Invalid font size ("<<fontSz_<<") for FontEngine::setFontSz!"<<endl;
-		throw invalid_argument("Invalid font size for " __FUNCTION__);
-	}
+	if(!Settings::isFontSizeOk(fontSz_))
+		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(fontSz_) + ") for " __FUNCTION__ "!", invalid_argument);
 
 	cout<<"Setting font size "<<fontSz_<<endl;
 
@@ -405,7 +393,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
 	for(FT_ULong c = FT_Get_First_Char(face, &idx), i = (FT_ULong)round((symsCount*2.)/90);
-				idx != 0;  c=FT_Get_Next_Char(face, c, &idx), ++i) {
+		idx != 0;  c=FT_Get_Next_Char(face, c, &idx), ++i) {
 		if(i % tick == 0)
 			glyphsProgress.reportGlyphProgress(progress+=.05);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
@@ -466,10 +454,9 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 }
 
 const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) const {
-	if(face == nullptr) {
-		cerr<<"Font Encoding not ready yet! Please do all the configurations first!"<<endl;
-		throw logic_error(__FUNCTION__  " called before the completion of configuration.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before the completion of configuration.", logic_error);
+
 	if(pEncodingIndex != nullptr)
 		*pEncodingIndex = encodingIndex;
 
@@ -477,34 +464,30 @@ const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) co
 }
 
 unsigned FontEngine::uniqueEncodings() const {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call " __FUNCTION__  "!"<<endl;
-		throw logic_error(__FUNCTION__  " called before selecting a font.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return (unsigned)uniqueEncs.size();
 }
 
 unsigned FontEngine::upperSymsCount() const {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call " __FUNCTION__  "!"<<endl;
-		throw logic_error(__FUNCTION__  " called before selecting a font.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return symsCount;
 }
 
 const vector<const PixMapSym>& FontEngine::symsSet() const {
-	if(face == nullptr || !symsCont.isReady()) {
-		cerr<<"symsSet not ready yet! Please do all the configurations first!"<<endl;
-		throw logic_error(__FUNCTION__ " called before selecting a font.");
-	}
+	if(face == nullptr || !symsCont.isReady())
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return symsCont.getSyms();
 }
 
 double FontEngine::smallGlyphsCoverage() const {
-	if(face == nullptr || !symsCont.isReady()) {
-		cerr<<__FUNCTION__  " not ready yet! Please do all the configurations first!"<<endl;
-		throw logic_error(__FUNCTION__  " called before selecting a font.");
-	}
+	if(face == nullptr || !symsCont.isReady())
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return symsCont.getCoverageOfSmallGlyphs();
 }
 
@@ -513,17 +496,15 @@ const string& FontEngine::fontFileName() const {
 }
 
 FT_String* FontEngine::getFamily() const {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call " __FUNCTION__  "!"<<endl;
-		throw logic_error(__FUNCTION__  " called before selecting a font.");
-	}
+	if(face == nullptr) 
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return face->family_name;
 }
 
 FT_String* FontEngine::getStyle() const {
-	if(face == nullptr) {
-		cerr<<"No Font yet! Please select one first and then call " __FUNCTION__  "!"<<endl;
-		throw logic_error(__FUNCTION__  " called before selecting a font.");
-	}
+	if(face == nullptr)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+
 	return face->style_name;
 }

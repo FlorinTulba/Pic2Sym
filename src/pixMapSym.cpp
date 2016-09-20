@@ -267,55 +267,43 @@ PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
 				(make_unique<SievesSymsFilter>()))))) {}
 
 unsigned PmsCont::getFontSz() const {
-	if(!ready) {
-		cerr<<__FUNCTION__  " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__  " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return fontSz;
 }
 
 unsigned PmsCont::getBlanksCount() const {
-	if(!ready) {
-		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return blanks;
 }
 
 unsigned PmsCont::getDuplicatesCount() const {
-	if(!ready) {
-		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return duplicates;
 }
 
 const map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg() const {
-	if(!ready) {
-		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return removableSymsByCateg;
 }
 
 double PmsCont::getCoverageOfSmallGlyphs() const {
-	if(!ready) {
-		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return coverageOfSmallGlyphs;
 }
 
 const vector<const PixMapSym>& PmsCont::getSyms() const {
-	if(!ready) {
-		cerr<<__FUNCTION__ " cannot be called before setAsReady"<<endl;
-		throw logic_error(__FUNCTION__ " cannot be called before setAsReady");
-	}
+	if(!ready)
+		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
 	return syms;
 }
@@ -341,11 +329,9 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 }
 
 void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
-	if(ready) {
-		cerr<<"Cannot " __FUNCTION__ " after setAsReady without reset-ing"<<endl;
-		throw logic_error("Cannot " __FUNCTION__ " after setAsReady without reset-ing");
-	}
-
+	if(ready)
+		THROW_WITH_CONST_MSG("Cannot call " __FUNCTION__ " after setAsReady without reset-ing", logic_error);
+	
 	const FT_Bitmap b = g->bitmap;
 	const unsigned height = b.rows, width = b.width;
 

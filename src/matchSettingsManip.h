@@ -39,6 +39,7 @@
 #define H_MATCH_SETTINGS_MANIP
 
 #include "matchSettings.h"
+#include "misc.h"
 
 #include <string>
 
@@ -82,7 +83,7 @@ protected:
 			Initialized is set to true at the end of the construction.
 			*/
 			if(!ms.initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
-				throw invalid_argument("Obsolete version of 'initMatchSettings.cfg'!");
+				THROW_WITH_CONST_MSG("Obsolete version of 'initMatchSettings.cfg'!", invalid_argument);
 
 			// Point reachable while reading Settings with an older version of MatchSettings field
 		}

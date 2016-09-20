@@ -38,6 +38,7 @@
 #include "controlPanel.h"
 #include "controlPanelActions.h"
 #include "settings.h"
+#include "misc.h"
 
 #include <opencv2/highgui.hpp>
 
@@ -247,7 +248,7 @@ void ControlPanel::restoreSliderValue(const String &trName) {
 		prevVal = Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity());
 	} else if(&trName == &ControlPanel_thresh4BlanksTrName) {
 		prevVal = cfg.matchSettings().getBlankThreshold();
-	} else throw domain_error("Code for " + trName + " must be added within " __FUNCTION__);
+	} else THROW_WITH_VAR_MSG("Code for " + trName + " must be added within " __FUNCTION__, domain_error);
 
 	// Set the previous value
 	while(getTrackbarPos(trName, nullptr) != prevVal)

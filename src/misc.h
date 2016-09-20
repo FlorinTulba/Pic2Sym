@@ -66,4 +66,20 @@ void infoMsg(const std::string &text, const std::string &title = "");
 void warnMsg(const std::string &text, const std::string &title = "");
 void errMsg(const std::string &text, const std::string &title = "");
 
+// Throwing exceptions while displaying the exception message to the console
+//  First version should be used when the exception message is constant
+#define THROW_WITH_CONST_MSG(excMsg, excType) \
+	{ \
+		static const std::string constErrMsgForConsoleAndThrow(excMsg); \
+		std::cerr<<constErrMsgForConsoleAndThrow<<std::endl; \
+		throw excType(constErrMsgForConsoleAndThrow); \
+	}
+//  Second version should be used when the exception message is variable (reports specific values)
+#define THROW_WITH_VAR_MSG(msg, excType) \
+	{ \
+		const std::string varErrMsgForConsoleAndThrow(msg); \
+		std::cerr<<varErrMsgForConsoleAndThrow<<std::endl; \
+		throw excType(varErrMsgForConsoleAndThrow); \
+	}
+
 #endif

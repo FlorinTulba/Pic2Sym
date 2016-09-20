@@ -40,6 +40,7 @@
 #include "matchSettingsManip.h"
 #include "settings.h"
 #include "propsReader.h"
+#include "misc.h"
 
 #include <fstream>
 #include <iostream>
@@ -55,7 +56,7 @@ MatchSettingsManip* MatchSettingsManip::inst = nullptr;
 
 void MatchSettingsManip::init(const string &appLaunchPath) {
 	if(nullptr != inst)
-		throw logic_error(__FUNCTION__ " should be called only once!");
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only once!", logic_error);
 
 	static MatchSettingsManip theInstance(appLaunchPath);
 	inst = &theInstance;
@@ -65,7 +66,7 @@ MatchSettingsManip& MatchSettingsManip::instance() {
 	if(nullptr != inst)
 		return *inst;
 
-	throw logic_error(__FUNCTION__ " called before MatchSettingsManip::init()!");
+	THROW_WITH_CONST_MSG(__FUNCTION__ " called before MatchSettingsManip::init()!", logic_error);
 }
 
 void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
@@ -99,15 +100,13 @@ MatchSettingsManip::MatchSettingsManip(const string &appLaunchPath) {
 
 	defCfgPath = cfgPath = workDir = executablePath.remove_filename();
 
-	if(!exists(defCfgPath.append("res").append("defaultMatchSettings.txt"))) {
-		cerr<<"There's no "<<defCfgPath<<endl;
-		throw runtime_error("There's no res/defaultMatchSettings.txt");
-	}
+	if(!exists(defCfgPath.append("res").append("defaultMatchSettings.txt")))
+		THROW_WITH_VAR_MSG(__FUNCTION__" : There's no " + defCfgPath.string(), runtime_error);
 }
 
 void MatchSettingsManip::createUserDefaults(MatchSettings &ms) {
 	if(!parseCfg(ms, defCfgPath))
-		throw runtime_error("Invalid Configuration!");
+		THROW_WITH_CONST_MSG(__FUNCTION__" : Invalid Configuration!", runtime_error);
 
 	saveUserDefaults(ms);
 }

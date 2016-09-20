@@ -129,7 +129,7 @@ class FontFinder {
 							KEY_READ,			// rights to query, enumerate
 							&fontsKey			// returns the necessary key
 							) != ERROR_SUCCESS)
-				throw invalid_argument("Couldn't find the Fonts mapping within Registry!");
+				THROW_WITH_CONST_MSG("Couldn't find the Fonts mapping within Registry!", invalid_argument);
 
 			// Get the required buffer size for font names and the names of the corresponding font files		
 			if(RegQueryInfoKey(fontsKey,
@@ -145,7 +145,7 @@ class FontFinder {
 					nullptr, // lpcbSecurityDescriptor (Not necessary)
 					nullptr // lpftLastWriteTime (Not interested in this)
 					) != ERROR_SUCCESS)
-				throw invalid_argument("Couldn't interrogate the Fonts key!");
+				THROW_WITH_CONST_MSG("Couldn't interrogate the Fonts key!", invalid_argument);
 
 			fontNameBuf.resize(longestNameLen+1); // reserve also for '\0'
 			fontFileBuf.resize(longestDataLen+2); // reserve also for '\0'(wchar_t as BYTE)
@@ -171,12 +171,11 @@ class FontFinder {
 			if(ERROR_NO_MORE_ITEMS == ret)
 				return false;
 
-			if(ERROR_MORE_DATA == ret) {
-				cerr<<"Allocated buffer isn't large enough to fit the font name or font file name!"<<endl;
-				throw length_error("Allocated buffer isn't large enough!");
-			}
+			if(ERROR_MORE_DATA == ret)
+				THROW_WITH_CONST_MSG(__FUNCTION__ " : Allocated buffer isn't large enough to fit the font name or font file name!", length_error);
+
 			if(ERROR_SUCCESS != ret)
-				throw invalid_argument("Couldn't enumerate the Fonts!");
+				THROW_WITH_CONST_MSG(__FUNCTION__ " : Couldn't enumerate the Fonts!", length_error);
 
 			fontName.assign(fontNameBuf.data());
 			fontFileName.assign((TCHAR*)fontFileBuf.data());
@@ -227,20 +226,17 @@ class FontFinder {
 			// If the curFontFile isn't a path already, prefix it with typicalFontsDir
 			curFontFile = move(temp);
 		}
-		if(!exists(curFontFile)) {
-			cerr<<"There's no such font file: "<<curFontFile<<endl;
-			throw domain_error("Wrong assumption for locating the font files!");
-		}
+		if(!exists(curFontFile))
+			THROW_WITH_VAR_MSG(__FUNCTION__ " : There's no such font file: " + curFontFile.string(), domain_error);
+
 		return curFontFile.string();
 	}
 
 	// When ambiguous results, lets the user select the correct one.
 	static string extractResult(map<string, string> &choices) {
 		const size_t choicesCount = choices.size();
-		if(0U == choicesCount) {
-			cerr<<"Couldn't find this font within registry!"<<endl;
-			throw runtime_error("Couldn't locate font within registry!");
-		}
+		if(0U == choicesCount)
+			THROW_WITH_CONST_MSG(__FUNCTION__ " : Couldn't find this font within registry!", runtime_error);
 
 		if(1U == choicesCount)
 			return choices.begin()->second;

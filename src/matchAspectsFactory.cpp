@@ -37,6 +37,7 @@
 
 #include "matchAspectsFactory.h"
 #include "matchAspects.h"
+#include "misc.h"
 
 using namespace std;
 
@@ -58,5 +59,5 @@ std::shared_ptr<MatchAspect> MatchAspectsFactory::create(const string &aspectNam
 
 #undef HANDLE_ASPECT
 
-	throw invalid_argument(aspectName + " is an invalid aspect name!");
+	THROW_WITH_VAR_MSG(aspectName + " is an invalid aspect name!", invalid_argument);
 }
