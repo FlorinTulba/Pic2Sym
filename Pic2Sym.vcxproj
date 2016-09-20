@@ -29,6 +29,8 @@
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\glyphsProgressTracker.h" />
     <ClInclude Include="src\gridBarsFilter.h" />
+    <ClInclude Include="src\jobMonitor.h" />
+    <ClInclude Include="src\jobMonitorBase.h" />
     <ClInclude Include="src\matchAspects.h" />
     <ClInclude Include="src\cachedData.h" />
     <ClInclude Include="src\controller.h" />
@@ -51,6 +53,7 @@
     <ClInclude Include="src\picTransformProgressTracker.h" />
     <ClInclude Include="src\pixMapSym.h" />
     <ClInclude Include="src\presentCmap.h" />
+    <ClInclude Include="src\progressNotifier.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
@@ -60,6 +63,8 @@
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\symsSerialization.h" />
+    <ClInclude Include="src\taskMonitor.h" />
+    <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
@@ -95,6 +100,7 @@
     <ClCompile Include="src\matchSettingsManip.cpp" />
     <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
+    <ClCompile Include="src\jobMonitor.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
@@ -102,6 +108,7 @@
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
+    <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\ttsasClustering.cpp" />

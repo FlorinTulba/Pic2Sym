@@ -35,37 +35,42 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CLUSTER_ENGINE
-#define H_CLUSTER_ENGINE
+#ifndef H_TASK_MONITOR
+#define H_TASK_MONITOR
 
-#include "clusterData.h"
-#include "clusterAlg.h"
+#include "taskMonitorBase.h"
 
-#include <set>
+class AbsJobMonitor; // forward declaration
 
-class AbsJobMonitor;
+/// Implementation of AbsTaskMonitor for supervising a task with a job
+class TaskMonitor : public AbsTaskMonitor {
 
-/// Clusters a set of symbols
-class ClusterEngine {
+#ifndef UNIT_TESTING
 protected:
-	/// observer of the symbols' loading, filtering and clustering, who reports their progress
-	AbsJobMonitor *symsMonitor = nullptr;
+	AbsJobMonitor &parent;	///< reference of the parent job
+	unsigned seqId;			///< order of the supervised task among job's tasks
 
-	ClusterAlg &clustAlg;		///< algorithm used for clustering
+	/**
+	Total count of the required steps to complete the task.
+	Kept as double to reduce the conversions required to obtain progress value (steps/totalSteps).
+	*/
+	double totalSteps = 0.;
 
-	VClusterData clusters;		///< the clustered symbols
-	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
+#endif // UNIT_TESTING not defined
 
 public:
-	ClusterEngine(); ///< Creates the cluster algorithm prescribed in varConfig.txt
-	
-	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
-	void process(VSymData &symsSet);
+	/**
+	Used to construct a method-static monitor of a task (monitoredActivity) within a given job (parent_).
+	The constructor calls parent_.monitorNewTask(*this) to initialize field seqId and
+	to let the parent job know about this new task.
+	*/
+	TaskMonitor(const std::string &monitoredActivity, AbsJobMonitor &parent_);
 
-	const VClusterData& getClusters() const { return clusters; }
-	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
+	void setTotalSteps(size_t totalSteps_) override;	///< total steps required to finish the activity
 
-	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+	void taskAdvanced(size_t steps/* = 1U*/) override;	///< task performer reports its progress
+	void taskDone() override;							///< task performer reports finishing this activity
+	void taskAborted() override;	///< task performer reports that the activity was aborted
 };
 
-#endif
+#endif // H_TASK_MONITOR

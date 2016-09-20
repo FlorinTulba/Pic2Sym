@@ -36,6 +36,8 @@
  ****************************************************************************************/
 
 #include "partitionClustering.h"
+#include "taskMonitor.h"
+
 #include "misc.h"
 
 #include <iostream>
@@ -52,6 +54,8 @@ extern const double MaxDiffAvgPixelValForPartitionClustering;
 
 unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallSyms,
 										 vector<vector<unsigned>> &symsIndicesPerCluster) {
+	static TaskMonitor partitionClustering("partition clustering", *symsMonitor);
+
 	static const double SqMaxRelMcOffsetForClustering =
 		MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
 
@@ -168,6 +172,8 @@ unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallS
 	symsIndicesPerCluster.resize(clustersCount);
 	for(unsigned i = 0U; i<symsCount; ++i)
 		symsIndicesPerCluster[clusterLabels[i]].push_back(i);
+
+	partitionClustering.taskDone();
 
 	return clustersCount;
 }

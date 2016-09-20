@@ -36,17 +36,22 @@
  ****************************************************************************************/
 
 #include "noClustering.h"
+#include "taskMonitor.h"
 
 using namespace std;
 
 unsigned NoClustering::formGroups(const vector<const TinySymData> &smallSyms,
 								  vector<vector<unsigned>> &symsIndicesPerCluster) {
+	static TaskMonitor trivialClustering("trivial clustering", *symsMonitor);
+
 	// One cluster per symbol - each symbol forms its own cluster
 	const unsigned clustersCount = (unsigned)smallSyms.size();
 
 	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>(1));
 	for(unsigned i = 0U; i<clustersCount; ++i)
 		symsIndicesPerCluster[i][0] = i;
+
+	trivialClustering.taskDone();
 
 	return clustersCount;
 }

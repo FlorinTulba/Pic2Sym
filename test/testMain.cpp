@@ -324,7 +324,7 @@ MatchSettings::MatchSettings() {}
 		pField = std::make_shared<FieldType>(__VA_ARGS__); \
 		ut::Controller::init##FieldType = false; \
 	} \
-	return *pField;
+	return *pField
 
 Img& Controller::getImg() {
 	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
@@ -394,6 +394,28 @@ void Controller::displaySymCode(unsigned long symCode) const {}
 void Controller::enlistSymbolForInvestigation(const SymData &sd) const {}
 
 void Controller::symbolsReadyToInvestigate() const {}
+
+TaskMonitor::TaskMonitor(const string&, AbsJobMonitor&) : AbsTaskMonitor("") {}
+
+void TaskMonitor::setTotalSteps(size_t) {}
+
+void TaskMonitor::taskAdvanced(size_t/* = 1U*/) {}
+
+void TaskMonitor::taskDone() {}
+
+void TaskMonitor::taskAborted() {}
+
+JobMonitor::JobMonitor(...) : AbsJobMonitor("") {}
+
+unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) { return 0U; }
+
+void JobMonitor::setTasksDetails(const vector<double>&) {}
+
+void JobMonitor::taskAdvanced(double, unsigned) {}
+
+void JobMonitor::taskDone(unsigned) {}
+
+void JobMonitor::taskAborted(unsigned) {}
 
 SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
 				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :

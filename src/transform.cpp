@@ -43,6 +43,8 @@
 #include "matchSettingsManip.h"
 #include "matchParams.h"
 #include "patch.h"
+#include "jobMonitorBase.h"
+#include "taskMonitor.h"
 #include "transformTrace.h"
 #include "ompTrace.h"
 
@@ -165,7 +167,15 @@ Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Sett
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_), symsBatchSz(SymsBatch_defaultSz) {}
 
 void Transformer::run() {
+	transformMonitor->setTasksDetails({
+		.1, // preparations of the timer, image, symbol sets and result
+		.9 // transformation of the image's patches
+	});
+
 	isCanceled = false;
+
+	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);
+
 	Timer timer = ctrler.createTimerForImgTransform();
 
 	me.updateSymbols(); // throws for invalid cmap/size
@@ -194,11 +204,21 @@ void Transformer::run() {
 	result = resizedBlurred.clone(); // initialize the result with a simple blur. Mandatory clone!
 	ctrler.presentTransformationResults(); // show the blur as draft result
 
+	preparations.taskDone();
+
+	// Transformation task can be aborted only after processing several rows of patches with a new symbols batch.
+	// Therefore the total steps required to complete the task is the symbols count multiplied by the number of rows of patches.
+	static TaskMonitor imgTransformTaskMonitor("transformation of the image's patches", *transformMonitor);
+	imgTransformTaskMonitor.setTotalSteps((size_t)symsCount * (size_t)patchesPerCol);
+
 	// symsBatchSz is volatile => every batch might have a different size
 	for(unsigned fromIdx = 0U, upperIdx = min(const_cast<unsigned&>(symsBatchSz), symsCount);
 			!isCanceled && fromIdx < symsCount;
 			fromIdx = upperIdx, upperIdx = min(upperIdx + symsBatchSz, symsCount))
-		considerSymsBatch(fromIdx, upperIdx);
+		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
+
+	if(!isCanceled)
+		imgTransformTaskMonitor.taskDone();
 
 	logDataForBestMatches(isCanceled, studiedCase, sz, h, w, me.usesUnicode(), draftMatches);
 }
@@ -236,15 +256,13 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 	}
 }
 
-void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx) {
-	volatile int finalizedRows = 0;
-	extern const double Transform_ProgressReportsIncrement;
-	const double startProgress = fromIdx / (double)symsCount,
-			endProgress = upperIdx / (double)symsCount,
-			maxProgress = endProgress - startProgress;
-	double expectedProgressReport = startProgress + Transform_ProgressReportsIncrement;
+void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor) {
+	volatile size_t finalizedRows = 0U;
+	const size_t rowsOfPatches = size_t((unsigned)h/sz),
+				batchSz = size_t(upperIdx - fromIdx),
+				prevSteps = (size_t)fromIdx * rowsOfPatches;
 
-#pragma omp parallel if(ParallelizeTr_PatchRowLoops) firstprivate(expectedProgressReport)
+#pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
 	for(int r = 0; r<h; r += sz) {
 		if(isCanceled)
@@ -269,22 +287,25 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx) {
 		++finalizedRows;
 
 		// #pragma omp master not allowed in for
-		if((omp_get_thread_num() == 0) && (finalizedRows * (int)sz < h)) {
+		if((omp_get_thread_num() == 0) && (finalizedRows < rowsOfPatches)) {
+			imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * finalizedRows);
 			// Only master thread checks cancellation status
-			if(checkCancellationRequest())
+			if(checkCancellationRequest()) {
 				isCanceled = true;
-			else {
-				const double newProgress = startProgress + maxProgress*sz*finalizedRows/h;
-				if(newProgress > expectedProgressReport) {
-					ctrler.reportTransformationProgress(newProgress);
-					expectedProgressReport = newProgress + Transform_ProgressReportsIncrement;
-				}
+				imgTransformTaskMonitor.taskAborted();
 			}
 		}
 	} // rows loop
 	
+	if(!isCanceled)
+		imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * rowsOfPatches);
+
+	// At the end of this batch, display draft result, unless this is the last batch.
+	// For the last batch (upperIdx == symsCount), the timer's destructor
+	// will display the result (final draft) and it will also report
+	// either the transformation duration or the fact that the transformation was canceled.
 	if(upperIdx < symsCount)
-		ctrler.reportTransformationProgress(endProgress, true);
+		ctrler.presentTransformationResults();
 }
 
 void Transformer::setSymsBatchSize(int symsBatchSz_) {
@@ -292,4 +313,9 @@ void Transformer::setSymsBatchSize(int symsBatchSz_) {
 		symsBatchSz = UINT_MAX;
 	else
 		symsBatchSz = (unsigned)symsBatchSz_;
+}
+
+Transformer& Transformer::useTransformMonitor(AbsJobMonitor &transformMonitor_) {
+	transformMonitor = &transformMonitor_;
+	return *this;
 }

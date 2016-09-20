@@ -61,3 +61,8 @@ ClusterAlg& ClusterAlg::algByName(const string &algName) {
 	}
 	return *pAlg;
 }
+
+ClusterAlg& ClusterAlg::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
+	symsMonitor = &symsMonitor_;
+	return *this;
+}

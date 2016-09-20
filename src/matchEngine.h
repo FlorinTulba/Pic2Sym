@@ -42,13 +42,12 @@
 #include "fontEngine.h"
 #include "clusterEngine.h"
 
-// forward declarations
+// Forward declarations
 struct CachedData;
 struct MatchParams;
 struct BestMatch;
 class Patch;
-
-class Settings; // forward declaration
+class Settings;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine : public IMatch {
@@ -60,6 +59,10 @@ public:
 protected:
 	const Settings &cfg;		///< settings for the engine
 	FontEngine &fe;				///< symbols set manager
+
+	/// observer of the symbols' loading, filtering and clustering, who reports their progress
+	AbsJobMonitor *symsMonitor = nullptr;
+
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
 	VSymData symsSet;			///< set of most information on each symbol
 	ClusterEngine ce;			///< clusters manager
@@ -92,6 +95,8 @@ public:
 					   MatchParams &mp) const override; // IMatch override
 
 	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
+
+	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };
 
 #endif

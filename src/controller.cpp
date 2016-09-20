@@ -541,7 +541,7 @@ void Controller::saveSettings() const {
 
 #define GET_FIELD(FieldType, ...) \
 	static FieldType field(__VA_ARGS__); \
-	return field;
+	return field
 
 Img& Controller::getImg() {
 	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration

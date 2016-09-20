@@ -37,6 +37,8 @@
 
 #include "controller.h"
 #include "settings.h"
+#include "jobMonitor.h"
+#include "progressNotifier.h"
 #include "matchParams.h"
 #include "matchSettingsManip.h"
 #include "controlPanel.h"
@@ -160,6 +162,28 @@ ostream& operator<<(ostream &os, const MatchSettings &c) {
 }
 
 namespace {
+	/// Adapter from IProgressNotifier to IGlyphsProgressTracker
+	struct SymsUpdateProgressNotifier : IProgressNotifier {
+		IGlyphsProgressTracker &performer;
+
+		SymsUpdateProgressNotifier(IGlyphsProgressTracker &performer_) : performer(performer_) {}
+
+		void notifyUser(const std::string&, double progress) override {
+			performer.reportGlyphProgress(progress);
+		}
+	};
+
+	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
+	struct PicTransformProgressNotifier : IProgressNotifier {
+		IPicTransformProgressTracker &performer;
+
+		PicTransformProgressNotifier(IPicTransformProgressTracker &performer_) : performer(performer_) {}
+
+		void notifyUser(const std::string&, double progress) override {
+			performer.reportTransformationProgress(progress);
+		}
+	};
+
 	/// Common realization of IUpdateSymsAction
 	struct UpdateSymsAction : IUpdateSymsAction {
 	protected:
@@ -235,10 +259,16 @@ void Transformer::updateStudiedCase(int rows, int cols) {
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
+extern const double Transform_ProgressReportsIncrement;
+extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 Controller::Controller(Settings &s) :
-		img(getImg()), fe(getFontEngine(s.ss)), cfg(s),
-		me(getMatchEngine(s)), t(getTransformer(s)),
+		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs", std::make_shared<SymsUpdateProgressNotifier>(*this),
+			min(1., max(.01, SymbolsProcessing_ProgressReportsIncrement)))), // report at least once and at most 100 times
+		imgTransformMonitor(std::make_shared<JobMonitor>("Transforming image", std::make_shared<PicTransformProgressNotifier>(*this),
+		min(1., max(.01, Transform_ProgressReportsIncrement)))), // report at least once and at most 100 times
+		img(getImg()), fe(getFontEngine(s.ss).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
+		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)), t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		comp(getComparator()), cp(getControlPanel(s)) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
@@ -329,6 +359,16 @@ void Controller::symbolsChanged() {
 	// Starting a thread to perform the actual change of the symbols,
 	// while preserving this thread for GUI updating
 	thread([&] {
+		glyphsUpdateMonitor->setTasksDetails({
+			.01,	// determine optimal square-fitting for the symbols
+			.185,	// load & filter symbols that fit the square
+			.01,	// load & filter extra-squeezed symbols
+			.005,	// determine coverageOfSmallGlyphs
+			.17,	// computing specific symbol-related values
+			.01,	// preparing clustering on smaller symbols
+			.6,		// clustering the small symbols
+			.01		// reorders clusters
+		});
 		fe.setFontSz(cfg.ss.getFontSz());
 		me.updateSymbols();
 
@@ -660,7 +700,7 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair,
 
 void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 										atomic_flag &updating1stCmapPage,
-										LockFreeQueueSz22 &updateSymsActionsQueue) {
+										LockFreeQueue &updateSymsActionsQueue) {
 	std::shared_ptr<Mat> unofficial = std::make_shared<Mat>();
 	::populateGrid(CBOUNDS(symsOn1stPage),
 				   (NegSymExtractor<vector<const Mat>::const_iterator>) // conversion

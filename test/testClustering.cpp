@@ -41,6 +41,7 @@
 #include "noClustering.h"
 #include "partitionClustering.h"
 #include "ttsasClustering.h"
+#include "jobMonitor.h"
 
 using namespace std;
 using namespace cv;
@@ -59,6 +60,8 @@ namespace ut {
 	/// Provides a way to use specific clustering settings during each test and revert them afterwards
 	class ClusteringSettingsFixt : public Fixt {
 	protected:
+		JobMonitor jm;
+
 #define DefineCopyAndRef(Setting, Type) \
 		Type orig##Setting = Setting, &ref##Setting = const_cast<Type&>(Setting)
 
@@ -188,6 +191,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingNoClustering_6identicalSymbols_0nonTrivialClusters");
 		refClusterAlgName = "None";
 		ClusterEngine ce;
+		ce.useSymsMonitor(jm);
 		size_t symsCount = 6U;
 		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
@@ -198,6 +202,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingPartitionClustering_6identicalSymbols_noTrivialClusters");
 		refClusterAlgName = "Partition";
 		ClusterEngine ce;
+		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
@@ -208,6 +213,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingTTSASclustering_6identicalSymbols_noTrivialClusters");
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce;
+		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		VSymData symsSet(symsCount, EmptySymData5x5);
 		ce.process(symsSet);
@@ -218,6 +224,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingPartitionClustering_x0x0xSequence_2Clusters");
 		refClusterAlgName = "Partition";
 		ClusterEngine ce;
+		ce.useSymsMonitor(jm);
 		VSymData symsSet { MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5 };
 		const size_t symsCount = symsSet.size();
 		ce.process(symsSet);
@@ -236,6 +243,7 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_TEST_MESSAGE("Running UsingTTSASclustering_x0x0xSequence_2Clusters");
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce;
+		ce.useSymsMonitor(jm);
 		VSymData symsSet { MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5, EmptySymData5x5, MainDiagSymData5x5 };
 		const size_t symsCount = symsSet.size();
 		ce.process(symsSet);
@@ -256,6 +264,7 @@ BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
 	BOOST_AUTO_TEST_CASE(CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot) {
 		BOOST_TEST_MESSAGE("Running CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot");
 		TTSAS_Clustering tc;
+		tc.useSymsMonitor(jm);
 		vector<const TinySymData> smallSyms;
 		vector<vector<unsigned>> symsIndicesPerCluster;
 
@@ -309,6 +318,7 @@ BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
 	BOOST_AUTO_TEST_CASE(CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster) {
 		BOOST_TEST_MESSAGE("Running CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster");
 		TTSAS_Clustering tc;
+		tc.useSymsMonitor(jm);
 		vector<vector<unsigned>> symsIndicesPerCluster;
 		vector<const TinySymData> smallSyms;
 		smallSyms.reserve(4U);

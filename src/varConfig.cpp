@@ -144,6 +144,7 @@ extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
 extern READ_DOUBLE_PROP(BlurStandardDeviation);
 
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement);
+extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement);
 
 extern READ_STR_PROP_CONVERT(ControlPanel_selectImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_transformImgLabel, String);

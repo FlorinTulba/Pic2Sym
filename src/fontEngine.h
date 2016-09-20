@@ -45,12 +45,13 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/bimap/bimap.hpp>
 
-// forward declarations
+// Forward declarations
 struct IController;
 struct IGlyphsProgressTracker;
 struct IValidateFont;
 struct IPresentCmap;
 class SymSettings;
+class AbsJobMonitor;
 
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine {
@@ -60,7 +61,10 @@ protected:
 	const IGlyphsProgressTracker &glyphsProgress;		///< glyph preprocessing monitor  aspect of the Controller
 	const IPresentCmap &cmapPresenter;		///< cmap presenting aspect of the Controller
 
-	FT_Library library	= nullptr;	///< the FreeType lib
+	/// observer of the symbols' loading, filtering and clustering, who reports their progress
+	AbsJobMonitor *symsMonitor = nullptr;
+
+	FT_Library library = nullptr;	///< the FreeType lib
 	FT_Face face		= nullptr;	///< a loaded font
 
 	const SymSettings &ss;			///< settings of this font engine
@@ -105,6 +109,8 @@ public:
 	const std::string& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
 	FT_String* getFamily() const;					///< get font family
 	FT_String* getStyle() const;					///< get font style
+
+	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };
 
 #endif

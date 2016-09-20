@@ -36,9 +36,9 @@
  ****************************************************************************************/
 
 #include "ttsasClustering.h"
+#include "taskMonitor.h"
 #include "misc.h"
 
-#include <vector>
 #include <set>
 #include <map>
 #include <algorithm>
@@ -182,7 +182,7 @@ namespace {
 			if(!FastDistSymToClusterComputation) {
 				const double l1Dist = norm(centroidCluster.mat - sym.mat, NORM_L1);
 				if(l1Dist > thresholdOutsider * TTSAS_Threshold_Member)
-					return numeric_limits<Dist>::infinity();;
+					return numeric_limits<Dist>::infinity();
 				return l1Dist;
 			}
 
@@ -331,9 +331,14 @@ namespace {
 
 unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms,
 									  vector<vector<unsigned>> &symsIndicesPerCluster) {
+	static TaskMonitor ttsasClustering("TTSAS clustering", *symsMonitor);
+	const size_t symsToCluster = smallSyms.size();
+	ttsasClustering.setTotalSteps(symsToCluster);
+	size_t clusteredSyms = 0U;
+
 	// Symbols that still don't belong to the known clusters together with their known neighbor clusters
 	map<SymIdx, NearbyClusters> ambiguousSyms;
-	for(SymIdx i = 0U, symsCount = (unsigned)smallSyms.size(); i < symsCount; ++i) 
+	for(SymIdx i = 0U, symsCount = (unsigned)symsToCluster; i < symsCount; ++i)
 		ambiguousSyms.emplace_hint(ambiguousSyms.end(), i, NearbyClusters());
 
 	vector<Cluster> clusters; // known clusters
@@ -349,10 +354,15 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 		auto itAmbigSym = ambiguousSyms.begin(); 
 		SymIdx ambigSymIdx = itAmbigSym->first; // first index of the remaining ambiguous symbol
 
+		const auto newSymClustered = [&] {
+			itAmbigSym = ambiguousSyms.erase(itAmbigSym);
+			ttsasClustering.taskAdvanced(++clusteredSyms);
+		};
+
 		const auto createNewCluster = [&] {
 			newClusters.emplace_hint(newClusters.end(), (unsigned)clusters.size());
 			clusters.emplace_back(smallSyms[ambigSymIdx], ambigSymIdx);
-			itAmbigSym = ambiguousSyms.erase(itAmbigSym);
+			newSymClustered();
 		};
 
 		/*
@@ -482,7 +492,7 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 
 				if(newClusters.end() == newClusters.find(parentClusterIdx))
 					updatedClusters.insert(parentClusterIdx); // add parentClusterIdx, unless it already appears in newClusters
-				itAmbigSym = ambiguousSyms.erase(itAmbigSym);
+				newSymClustered();
 
 			} else if(pcf.reserveCandidates().empty()) { // way too far from all current clusters
 				createNewCluster();
@@ -500,6 +510,8 @@ unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms
 	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>());
 	for(unsigned i = 0U; i<clustersCount; ++i)
 		symsIndicesPerCluster[i] = std::move(clusters[i].memberIndices);
+
+	ttsasClustering.taskDone();
 
 	return clustersCount;
 }

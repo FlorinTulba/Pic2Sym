@@ -35,37 +35,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CLUSTER_ENGINE
-#define H_CLUSTER_ENGINE
+#ifndef H_PROGRESS_NOTIFIER
+#define H_PROGRESS_NOTIFIER
 
-#include "clusterData.h"
-#include "clusterAlg.h"
+#include <string>
 
-#include <set>
+/// Interface for reporting progress of a given job to the user
+struct IProgressNotifier /*abstract*/ {
+	virtual ~IProgressNotifier() = 0 {}
 
-class AbsJobMonitor;
-
-/// Clusters a set of symbols
-class ClusterEngine {
-protected:
-	/// observer of the symbols' loading, filtering and clustering, who reports their progress
-	AbsJobMonitor *symsMonitor = nullptr;
-
-	ClusterAlg &clustAlg;		///< algorithm used for clustering
-
-	VClusterData clusters;		///< the clustered symbols
-	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
-
-public:
-	ClusterEngine(); ///< Creates the cluster algorithm prescribed in varConfig.txt
-	
-	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
-	void process(VSymData &symsSet);
-
-	const VClusterData& getClusters() const { return clusters; }
-	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
-
-	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+	/// Informs the user that the job named monitoredJob reached (100*progress)%
+	virtual void notifyUser(const std::string &monitoredJob, double progress) {}
 };
 
-#endif
+#endif // H_PROGRESS_NOTIFIER

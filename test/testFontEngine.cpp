@@ -39,6 +39,7 @@
 #include "fontEngine.h"
 #include "settings.h"
 #include "controller.h"
+#include "jobMonitor.h"
 
 #include <iostream>
 #include <numeric>
@@ -90,6 +91,7 @@ namespace ut {
 		::Controller c;	///< controller using default settings. Tests shouldn't touch it
 
 	protected:
+		JobMonitor jm;
 		FontEngine *pfe = nullptr; ///< pointer to the FontEngine object needed within tests
 
 		/// initial value of PreserveRemovableSymbolsForExamination
@@ -102,7 +104,7 @@ namespace ut {
 		/// Creates the fixture providing a FontEngine object
 		FontEngineFixtConfig() : Fixt(), s(), c(s) {
 			try {
-				pfe = &c.getFontEngine(s.symSettings());
+				pfe = &c.getFontEngine(s.symSettings()).useSymsMonitor(jm);
 
 				// Forcing PreserveRemovableSymbolsForExamination on true during each test case.
 				// Disposing removable symbols (marked by symbol filters) would provide a variable

@@ -35,37 +35,44 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CLUSTER_ENGINE
-#define H_CLUSTER_ENGINE
+#include "taskMonitor.h"
+#include "jobMonitorBase.h"
+#include "misc.h"
 
-#include "clusterData.h"
-#include "clusterAlg.h"
+using namespace std;
 
-#include <set>
+TaskMonitor::TaskMonitor(const string &monitoredActivity, AbsJobMonitor &parent_) :
+		AbsTaskMonitor(monitoredActivity), parent(parent_),
 
-class AbsJobMonitor;
+		// register itself to the parent job monitor and get the order of this task within job's tasks
+		seqId(parent_.monitorNewTask(*this)) {}
 
-/// Clusters a set of symbols
-class ClusterEngine {
-protected:
-	/// observer of the symbols' loading, filtering and clustering, who reports their progress
-	AbsJobMonitor *symsMonitor = nullptr;
+void TaskMonitor::setTotalSteps(size_t totalSteps_) {
+	// Kept as double to reduce the conversions required to obtain progress value (steps/totalSteps)
+	totalSteps = (double)totalSteps_;
+}
 
-	ClusterAlg &clustAlg;		///< algorithm used for clustering
+void TaskMonitor::taskAdvanced(size_t steps/* = 1U*/) {
+	if(0U == steps)
+		return;
 
-	VClusterData clusters;		///< the clustered symbols
-	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
+	if(totalSteps == 0.)
+		THROW_WITH_CONST_MSG("Please call " __FUNCTION__ " only after TaskMonitor::setTotalSteps()!", logic_error);
 
-public:
-	ClusterEngine(); ///< Creates the cluster algorithm prescribed in varConfig.txt
-	
-	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
-	void process(VSymData &symsSet);
+	double taskProgress = steps / totalSteps;
+	if(taskProgress > 1. + EPS) {
+		cerr<<"Current task stage("<<steps<<") is more than task's span("<<(size_t)totalSteps<<")"<<endl;
+		taskProgress = 1.;
+	}
 
-	const VClusterData& getClusters() const { return clusters; }
-	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
+	parent.taskAdvanced(taskProgress, seqId);
+}
 
-	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
-};
+void TaskMonitor::taskDone() {
+	parent.taskAdvanced(1., seqId);
+}
 
-#endif
+void TaskMonitor::taskAborted() {
+	parent.taskAborted(seqId);
+}
+

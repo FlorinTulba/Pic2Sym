@@ -255,6 +255,21 @@
     <ClInclude Include="src\noClustering.h">
       <Filter>Header Files\Charmap\Clustering</Filter>
     </ClInclude>
+    <ClInclude Include="src\jobMonitor.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\taskMonitor.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\progressNotifier.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\jobMonitorBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\taskMonitorBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -373,6 +388,12 @@
     </ClCompile>
     <ClCompile Include="src\noClustering.cpp">
       <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\jobMonitor.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\taskMonitor.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -50,11 +50,13 @@
 class Settings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
+class TaskMonitor;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
 protected:
 	const IPicTransformProgressTracker &ctrler;	///< data & views manager
+	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
 
 	const Settings &cfg;		///< general configuration
 	MatchEngine &me;			///< approximating patches
@@ -80,8 +82,8 @@ protected:
 	void initDraftMatches(bool newResizedImg, const cv::Mat &resizedVersion,
 						  unsigned patchesPerCol, unsigned patchesPerRow);
 
-	/// Improves the result by analyzing the symbols in range [fromIdx, upperIdx).
-	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx);
+	/// Improves the result by analyzing the symbols in range [fromIdx, upperIdx) under the supervision of imgTransformTaskMonitor
+	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor);
 
 public:
 	Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
@@ -97,6 +99,8 @@ public:
 		gets disabled for the rest of the transformation, ignoring any new slider positions.
 	*/
 	void setSymsBatchSize(int symsBatchSz_);
+
+	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_); ///< setting the transformation monitor
 };
 
 #endif

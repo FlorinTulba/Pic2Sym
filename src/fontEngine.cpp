@@ -35,13 +35,14 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+#include "fontEngine.h"
 #include "symFilter.h"
 #include "symFilterCache.h"
-#include "fontEngine.h"
 #include "validateFont.h"
 #include "glyphsProgressTracker.h"
 #include "presentCmap.h"
 #include "settings.h"
+#include "taskMonitor.h"
 #include "misc.h"
 #include "ompTrace.h"
 
@@ -366,9 +367,10 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	if(!Settings::isFontSizeOk(fontSz_))
 		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(fontSz_) + ") for " __FUNCTION__ "!", invalid_argument);
 
-	cout<<"Setting font size "<<fontSz_<<endl;
+	if(nullptr == symsMonitor)
+		THROW_WITH_CONST_MSG("Please use FontEngine::setSymsMonitor before calling " __FUNCTION__ "!", logic_error);
 
-	double progress = 0.;
+	cout<<"Setting font size "<<fontSz_<<endl;
 
 	const double sz = fontSz_;
 	vector<tuple<FT_ULong, double, double>> toResize;
@@ -379,23 +381,22 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
 	req.horiResolution = req.vertResolution = 72U;
 
-	// 2% for this stage, no reports
+	static TaskMonitor determineOptimalSquareFittingSymbols("determine optimal square-fitting for the symbols", *symsMonitor);
 	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
+	determineOptimalSquareFittingSymbols.taskDone(); // mark it as already finished
+
+	static TaskMonitor loadFitSymbols("load & filter symbols that fit the square", *symsMonitor);
+	loadFitSymbols.setTotalSteps((size_t)symsCount);
 	symsCont.reset(fontSz_, symsCount);
 
 	cmapPresenter.showUnofficialSymDetails(symsCount);
-
-	// 90% for this stage, report every 5%
-	const FT_ULong tick = (FT_ULong)round((symsCount*5.)/90);
 
 	SymFilterCache sfc;
 	sfc.setFontSz(fontSz_);
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
-	for(FT_ULong c = FT_Get_First_Char(face, &idx), i = (FT_ULong)round((symsCount*2.)/90);
-		idx != 0;  c=FT_Get_Next_Char(face, c, &idx), ++i) {
-		if(i % tick == 0)
-			glyphsProgress.reportGlyphProgress(progress+=.05);
+	size_t i = 0;
+	for(FT_ULong c = FT_Get_First_Char(face, &idx);  idx != 0;  c=FT_Get_Next_Char(face, c, &idx)) {
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
@@ -404,16 +405,15 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
 		else
 			symsCont.appendSym(c, g, bb, sfc);
+
+		loadFitSymbols.taskAdvanced(++i);
 	}
 
-	// 7% for this stage, report every 5% => report 95% at 3/7 from it
 	// Resize symbols which didn't fit initially
-	const int reportI = (int)(3*toResize.size()/7);
-	int i = 0;
+	static TaskMonitor loadExtraSqueezedSymbols("load & filter extra-squeezed symbols", *symsMonitor);
+	loadExtraSqueezedSymbols.setTotalSteps(toResize.size());
+	i = 0;
 	for(const auto &item : toResize) {
-		if(i++ == reportI)
-			glyphsProgress.reportGlyphProgress(.95);
-
 		FT_ULong c;
 		double hRatio, vRatio;
 		tie(c, vRatio, hRatio) = item;
@@ -422,19 +422,14 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		symsCont.appendSym(c, face->glyph, bb, sfc);
+
+		loadExtraSqueezedSymbols.taskAdvanced(++i);
 	}
 
-	// 1% for this stage, no more reports
+	// Determine coverageOfSmallGlyphs
+	static TaskMonitor determineCoverageOfSmallGlyphs("determine coverageOfSmallGlyphs", *symsMonitor);
 	symsCont.setAsReady();
-
-	if(symsCont.getBlanksCount() != 0U)
-		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
-	if(symsCont.getDuplicatesCount() != 0U)
-		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
-
-	const auto &removableSymsByCateg = symsCont.getRemovableSymsByCateg();
-	for(const auto &categAndCount : removableSymsByCateg)
-		cout<<"Detected "<<categAndCount.second<<' '<<SymFilter::filterName(categAndCount.first)<<" in the symsSet!"<<endl;
+	determineCoverageOfSmallGlyphs.taskDone(); // mark it as already finished
 
 #ifdef _DEBUG
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
@@ -451,6 +446,17 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	cout<<endl;
 #endif // _DEBUG
+
+	if(symsCont.getBlanksCount() != 0U)
+		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
+	if(symsCont.getDuplicatesCount() != 0U)
+		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
+
+	const auto &removableSymsByCateg = symsCont.getRemovableSymsByCateg();
+	for(const auto &categAndCount : removableSymsByCateg)
+		cout<<"Detected "<<categAndCount.second<<' '<<SymFilter::filterName(categAndCount.first)<<" in the symsSet!"<<endl;
+
+	cout<<"Count of remaining symbols is "<<symsCont.getSyms().size()<<endl;
 }
 
 const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) const {
@@ -507,4 +513,9 @@ FT_String* FontEngine::getStyle() const {
 		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
 
 	return face->style_name;
+}
+
+FontEngine& FontEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
+	symsMonitor = &symsMonitor_;
+	return *this;
 }

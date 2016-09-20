@@ -41,7 +41,10 @@
 #include "matchParams.h"
 #include "patch.h"
 #include "settings.h"
+#include "taskMonitor.h"
 #include "ompTrace.h"
+
+#include <omp.h>
 
 using namespace std;
 using namespace cv;
@@ -86,12 +89,16 @@ void MatchEngine::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
+	static TaskMonitor fieldsComputations("computing specific symbol-related values", *symsMonitor);
+
 	extern const bool PrepareMoreGlyphsAtOnce;
 
 	symsSet.clear();
 	const auto &rawSyms = fe.symsSet();
 	const int symsCount = (int)rawSyms.size();
 	symsSet.reserve(symsCount);
+
+	fieldsComputations.setTotalSteps((size_t)symsCount);
 
 	const unsigned sz = cfg.symSettings().getFontSz();
 
@@ -123,7 +130,13 @@ void MatchEngine::updateSymbols() {
 										blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
 										varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
 									} });
+
+		// #pragma omp master not allowed in for
+		if(omp_get_thread_num() == 0)
+			fieldsComputations.taskAdvanced((size_t)i);
 	}
+
+	fieldsComputations.taskDone();
 
 	// Clustering symsSet (which gets reordered) - clusterOffsets will point where each cluster starts
 	ce.process(symsSet);
@@ -258,6 +271,12 @@ double MatchEngine::assessMatch(const Mat &patch,
 	// parallelization would require 'mp' fields to be guarded by locks
 
 	return score;
+}
+
+MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
+	symsMonitor = &symsMonitor_;
+	ce.useSymsMonitor(symsMonitor_);
+	return *this;
 }
 
 #ifdef _DEBUG

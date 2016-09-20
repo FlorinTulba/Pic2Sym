@@ -35,37 +35,26 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_CLUSTER_ENGINE
-#define H_CLUSTER_ENGINE
+#ifndef H_TASK_MONITOR_BASE
+#define H_TASK_MONITOR_BASE
 
-#include "clusterData.h"
-#include "clusterAlg.h"
+#include <string>
 
-#include <set>
-
-class AbsJobMonitor;
-
-/// Clusters a set of symbols
-class ClusterEngine {
+/// Abstract class for monitoring progress of a specific activity within a given job
+class AbsTaskMonitor /*abstract*/ {
 protected:
-	/// observer of the symbols' loading, filtering and clustering, who reports their progress
-	AbsJobMonitor *symsMonitor = nullptr;
-
-	ClusterAlg &clustAlg;		///< algorithm used for clustering
-
-	VClusterData clusters;		///< the clustered symbols
-	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
+	const std::string monitoredTask_;	///< name of the monitored task
 
 public:
-	ClusterEngine(); ///< Creates the cluster algorithm prescribed in varConfig.txt
-	
-	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
-	void process(VSymData &symsSet);
+	AbsTaskMonitor(const std::string &monitoredTask) : monitoredTask_(monitoredTask) {}
+	virtual ~AbsTaskMonitor() = 0 {}
 
-	const VClusterData& getClusters() const { return clusters; }
-	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
+	const std::string& monitoredTask() const { return monitoredTask_; } ///< name of the activity
 
-	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+	virtual void setTotalSteps(size_t totalSteps_) = 0;	///< total steps required to finish the activity
+	virtual void taskAdvanced(size_t steps = 1U) = 0;	///< task performer reports its progress
+	virtual void taskDone() = 0;						///< task performer reports finishing this activity
+	virtual void taskAborted() = 0;	///< task performer reports that the activity was aborted
 };
 
-#endif
+#endif // H_TASK_MONITOR_BASE

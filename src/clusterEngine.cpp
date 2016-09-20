@@ -36,10 +36,11 @@
  ****************************************************************************************/
 
 #include "clusterEngine.h"
+#include "jobMonitorBase.h"
+#include "taskMonitor.h"
 #include "misc.h"
 
 #include <set>
-#include <string>
 #include <iostream>
 #include <numeric>
 
@@ -150,16 +151,19 @@ ClusterEngine::ClusterEngine() : clustAlg(ClusterAlg::algByName(ClusterAlgName))
 void ClusterEngine::process(VSymData &symsSet) {
 	assert(!symsSet.empty());
 
-	clusterOffsets.clear(); clusters.clear();
-
+	static TaskMonitor initClusteringOnSmallSyms("preparing clustering on smaller symbols", *symsMonitor);
 	vector<const TinySymData> smallSyms;
 	initSmallSyms(symsSet, smallSyms);
+	initClusteringOnSmallSyms.taskDone(); // mark it as already finished
 
 	// cluster smallSyms
 	vector<vector<unsigned>> symsIndicesPerCluster;
 	const unsigned clustersCount = clustAlg.formGroups(smallSyms, symsIndicesPerCluster);
 
+	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
+	clusters.clear(); clusterOffsets.clear();
 	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet, clusters, clusterOffsets);
+	reorderClusters.taskDone(); // mark it as already finished
 }
 
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
@@ -200,4 +204,10 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	const_cast<Mat&>(symAndMasks[GROUNDED_SYM_IDX]) = groundedGlyph;
 	const_cast<Mat&>(symAndMasks[BLURRED_GR_SYM_IDX]) = blurOfGroundedGlyph;
 	const_cast<Mat&>(symAndMasks[VARIANCE_GR_SYM_IDX]) = varianceOfGroundedGlyph;
+}
+
+ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
+	symsMonitor = &symsMonitor_;
+	clustAlg.useSymsMonitor(symsMonitor_);
+	return *this;
 }

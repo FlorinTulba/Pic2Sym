@@ -52,13 +52,19 @@
 
 #include <atomic>
 
-class ControlPanel; // forward declaration
+// Forward declarations
+class ControlPanel;
+class AbsJobMonitor;
 
 /// Manager of the views and data.
 class Controller :
 	public IControlPanelActions, public IPresentCmap, public IValidateFont,
 	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
 protected:
+	// Control of displayed progress
+	std::shared_ptr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
+	std::shared_ptr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
+
 	// Data
 	Img &img;			///< original image to process after resizing
 
@@ -78,7 +84,7 @@ protected:
 	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
 
 	// synchronization items necessary while updating symbols
-	mutable LockFreeQueueSz22 updateSymsActionsQueue;
+	mutable LockFreeQueue updateSymsActionsQueue;
 	std::atomic_flag updatingSymbols;	///< stays true while updating the symbols
 	std::atomic_flag updating1stCmapPage;	///< controls concurrent attempts to update 1st page
 	/// Stores the events occurred while updating the symbols.

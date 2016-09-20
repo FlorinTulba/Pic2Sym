@@ -63,6 +63,8 @@ struct TinySymData {
 		backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
 };
 
+class AbsJobMonitor; // forward declaration
+
 /// Abstract class for clustering algorithms
 struct ClusterAlg /*abstract*/ {
 	/// Gets a reference to the clustering algorithm named algName or ignores it for invalid name.
@@ -81,6 +83,12 @@ struct ClusterAlg /*abstract*/ {
 	*/
 	virtual unsigned formGroups(const std::vector<const TinySymData> &smallSyms,
 								std::vector<std::vector<unsigned>> &symsIndicesPerCluster) = 0;
+	
+	ClusterAlg& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+
+protected:
+	/// observer of the symbols' loading, filtering and clustering, who reports their progress
+	AbsJobMonitor *symsMonitor = nullptr;
 };
 
 #endif
