@@ -38,12 +38,12 @@
 #ifndef H_TIMING
 #define H_TIMING
 
+#include "misc.h"
+
 #include <chrono>
 #include <vector>
 #include <memory>
 #include <string>
-
-#define UNREFERENCED_PARAMETER(Par) (Par)
 
 // Timing jobs:
 /// Interface for any observer of a timer (see below the Timer class)

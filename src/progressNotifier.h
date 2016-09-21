@@ -38,6 +38,8 @@
 #ifndef H_PROGRESS_NOTIFIER
 #define H_PROGRESS_NOTIFIER
 
+#include "misc.h"
+
 #include <string>
 
 /// Interface for reporting progress of a given job to the user
@@ -45,7 +47,10 @@ struct IProgressNotifier /*abstract*/ {
 	virtual ~IProgressNotifier() = 0 {}
 
 	/// Informs the user that the job named monitoredJob reached (100*progress)%
-	virtual void notifyUser(const std::string &monitoredJob, double progress) {}
+	virtual void notifyUser(const std::string &monitoredJob, double progress) {
+		UNREFERENCED_PARAMETER(monitoredJob);
+		UNREFERENCED_PARAMETER(progress);
+	}
 };
 
 #endif // H_PROGRESS_NOTIFIER

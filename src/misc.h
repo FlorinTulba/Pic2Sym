@@ -45,6 +45,9 @@
 // Error margin
 const double EPS = 1e-6;
 
+// Prevent warning about unreferenced parameters
+#define UNREFERENCED_PARAMETER(Par) (Par)
+
 // Display an expression and its value
 #define PRINT(expr)			std::cout<<#expr " : "<<(expr)
 #define PRINTLN(expr)		PRINT(expr)<<std::endl
@@ -67,14 +70,21 @@ void warnMsg(const std::string &text, const std::string &title = "");
 void errMsg(const std::string &text, const std::string &title = "");
 
 // Throwing exceptions while displaying the exception message to the console
-//  First version should be used when the exception message is constant
+/*
+First version should be used when the exception message is constant.
+Declaring a method-static variable makes sense only when the exception is caught,
+so particularly for Unit Testing for this application.
+Otherwise, the program just leaves, letting no chance for reusing the method-static variable.
+*/
 #define THROW_WITH_CONST_MSG(excMsg, excType) \
 	{ \
 		static const std::string constErrMsgForConsoleAndThrow(excMsg); \
 		std::cerr<<constErrMsgForConsoleAndThrow<<std::endl; \
 		throw excType(constErrMsgForConsoleAndThrow); \
 	}
-//  Second version should be used when the exception message is variable (reports specific values)
+/*
+Second version should be used when the exception message is variable (reports specific values).
+*/
 #define THROW_WITH_VAR_MSG(msg, excType) \
 	{ \
 		const std::string varErrMsgForConsoleAndThrow(msg); \
