@@ -41,7 +41,7 @@ using namespace std;
 using namespace std::chrono;
 
 Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
-		observers(observers_), lastStart(high_resolution_clock::now()) {
+		observers(observers_), lastStart(high_resolution_clock::now()), elapsedS(0.) {
 	for(auto observer : observers)
 		observer->onStart();
 }
@@ -62,6 +62,19 @@ Timer::~Timer() {
 	release();
 }
 
+double Timer::elapsed() const {
+	if(!valid)
+		return 0.;
+
+	if(paused)
+		return elapsedS.count();
+
+	auto durationToReport = elapsedS;
+	durationToReport += high_resolution_clock::now() - lastStart;
+
+	return durationToReport.count();
+}
+
 void Timer::cancel(const string &reason/* = "The task was canceled"*/) {
 	if(!valid)
 		return;
@@ -76,9 +89,9 @@ void Timer::pause() {
 	if(!valid || paused)
 		return;
 
-	paused = true;
-
 	elapsedS += high_resolution_clock::now() - lastStart;
+
+	paused = true;
 
 	for(auto observer : observers)
 		observer->onPause(elapsedS.count());

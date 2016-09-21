@@ -99,6 +99,8 @@ public:
 
 	virtual ~Timer();				///< if not canceled / released, reports duration to all observers
 
+	double elapsed() const;			///< reports elapsed seconds
+
 	virtual void pause();			///< pauses the timer and reports duration to all observers
 	virtual void resume();			///< resumes the timer
 	virtual void release();			///< stops the timer and reports duration to all observers
