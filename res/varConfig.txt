@@ -63,11 +63,11 @@ Settings_MAX_V_SYMS	768
 
 ; Frequency of progress updates during the approximation process:
 ; 0.05 means reporting every 5%
-Transform_ProgressReportsIncrement	0.04
+Transform_ProgressReportsIncrement	0.01
 
 ; Frequency of progress updates during the symbol set processing:
 ; 0.05 means reporting every 5%
-SymbolsProcessing_ProgressReportsIncrement	0.02
+SymbolsProcessing_ProgressReportsIncrement	0.01
 
 ; Which symbol clusters to investigate?
 ; The constant below allows checking also those clusters whose score appears
