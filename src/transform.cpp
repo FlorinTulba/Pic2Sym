@@ -167,11 +167,6 @@ Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Sett
 		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_), symsBatchSz(SymsBatch_defaultSz) {}
 
 void Transformer::run() {
-	transformMonitor->setTasksDetails({
-		.1, // preparations of the timer, image, symbol sets and result
-		.9 // transformation of the image's patches
-	});
-
 	isCanceled = false;
 
 	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);
@@ -204,7 +199,22 @@ void Transformer::run() {
 	result = resizedBlurred.clone(); // initialize the result with a simple blur. Mandatory clone!
 	ctrler.presentTransformationResults(); // show the blur as draft result
 
+	const double preparationsDuration = timer.elapsed(),
+
+			// If the duration of the preparations took more than .7 seconds,
+			// consider the weight of preparations for the transformation to be 10%
+			// Otherwise, the weight of these preparations is negligible, say 0.1%
+			preparationsWeight = (preparationsDuration > .7) ? .1 : .001,
+			transformationWeight = 1. - preparationsWeight;
+
+	transformMonitor->setTasksDetails({
+		preparationsWeight,		// preparations of the timer, image, symbol sets and result
+		transformationWeight	// transformation of the image's patches
+	});
+
 	preparations.taskDone();
+	cout<<"The "<<preparations.monitoredTask()<<" preceding the transformation took "
+		<<fixed<<setprecision(2)<<preparationsDuration<<"s."<<endl;
 
 	// Transformation task can be aborted only after processing several rows of patches with a new symbols batch.
 	// Therefore the total steps required to complete the task is the symbols count multiplied by the number of rows of patches.
