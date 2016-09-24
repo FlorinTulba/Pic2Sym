@@ -38,6 +38,7 @@
 #include "controller.h"
 #include "matchSettingsManip.h"
 #include "settings.h"
+#include "study.h"
 
 #include <omp.h>
 
@@ -165,6 +166,12 @@ namespace {
 } // anonymous namespace
 
 void main(int argc, char* argv[]) {
+	// Some matters need separate studying, so don't start the actual application when studying them
+	if(studying()) {
+		study(argc, argv);
+		return;
+	}
+		
 	if(1 == argc) { // no parameters
 		normalLaunch(argv[0]);
 
