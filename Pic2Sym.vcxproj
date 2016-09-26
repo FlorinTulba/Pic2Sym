@@ -57,6 +57,7 @@
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
+    <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symFilter.h" />
@@ -104,6 +105,7 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
+    <ClCompile Include="src\study.cpp" />
     <ClCompile Include="src\symData.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
