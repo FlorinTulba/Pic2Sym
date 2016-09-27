@@ -40,7 +40,8 @@
 
 #include "symFilter.h"
 
-#include <opencv2/core/core.hpp>
+// Forward declaration
+namespace cv { class Mat; }
 
 /** 
 Detects symbols typically used to generate a grid from glyphs.

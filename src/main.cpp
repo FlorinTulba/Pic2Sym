@@ -45,6 +45,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/optional/optional.hpp>
 
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+
 using namespace std;
 using namespace cv;
 using namespace boost;

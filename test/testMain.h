@@ -42,7 +42,6 @@
 #include "matchParams.h"
 
 #include <boost/test/unit_test.hpp>
-#include <opencv2/core/core.hpp>
 
 /// unit testing namespace
 namespace ut {

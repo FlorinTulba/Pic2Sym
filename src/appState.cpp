@@ -40,6 +40,9 @@
 
 #include <set>
 #include <map>
+#include <sstream>
+
+#include <opencv2/core/core.hpp>
 
 using namespace std;
 using namespace cv;

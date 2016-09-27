@@ -44,9 +44,9 @@
 #include <string>
 #include <vector>
 
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/core/core.hpp>
 
-// forward declarations
+// Forward declarations
 class Settings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
 class Timer;

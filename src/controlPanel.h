@@ -46,13 +46,13 @@
 #include <map>
 #include <memory>
 
-#include <opencv2/core.hpp>
-
-// forward declarations
+// Forward declarations
 class Settings;
 struct IControlPanelActions;
 class ImgSettings;
 class MatchSettings;
+namespace cv { class String; }
+
 
 /**
 Configures the transformation settings, chooses which image to process and with which cmap.
