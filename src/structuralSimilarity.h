@@ -54,17 +54,23 @@ public:
 	/// Blurring algorithm used to support this match aspect. The Controller sets it at start.
 	static const BlurEngine &supportBlur;
 
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
+	/// Providing a clue about how complex is this MatchAspect compared to the others
+	double relativeComplexity() const override;
 
-#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 protected:
+	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
+	double score(const MatchParams &mp) const override;
+
+	/// Prepares required fields from MatchParams mp to be able to assess the match
+	void fillRequiredMatchParams(const cv::Mat &patch,
+								 const SymData &symData,
+								 MatchParams &mp) const override;
+
+#ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
+public:
 #endif
 
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSsim()) {}
+	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg);
 };
 
 #endif // H_STRUCTURAL_SIMILARITY

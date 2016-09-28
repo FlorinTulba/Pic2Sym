@@ -48,24 +48,34 @@ using namespace cv;
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
+StructuralSimilarity::StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
+	MatchAspect(cachedData_, cfg.get_kSsim()) {}
+
+/**
+Poor structural similarity produces ssim close to -1.
+Good structural similarity sets ssim towards 1.
+The returned value is in 0..1 range,
+		small for small ssim-s or large k (>1)
+		larger for good ssim-s or 0 < k <= 1
+*/
+double StructuralSimilarity::score(const MatchParams &mp) const {
+	return pow((1. + mp.ssim.value()) / 2., k);
+}
+
 /*
 Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .
 
 Downsampling was not used, as the results normally get inspected by
 enlarging the regions of interest.
 */
-double StructuralSimilarity::assessMatch(const Mat &patch,
-										 const SymData &symData,
-										 MatchParams &mp) const {
-
+void StructuralSimilarity::fillRequiredMatchParams(const Mat &patch,
+												   const SymData &symData,
+												   MatchParams &mp) const {
 	mp.computeSsim(patch, symData);
+}
 
-	// Poor structural similarity produces ssim close to -1.
-	// Good structural similarity sets ssim towards 1.
-	// The returned value is in 0..1 range,
-	//		small for small ssim-s or large k (>1)
-	//		larger for good ssim-s or 0 < k <= 1
-	return pow((1. + mp.ssim.value()) / 2., k);
+double StructuralSimilarity::relativeComplexity() const {
+	return 1000.; // extremely complex compared to the rest of the aspects
 }
 
 void MatchParams::computeBlurredPatch(const Mat &patch) {

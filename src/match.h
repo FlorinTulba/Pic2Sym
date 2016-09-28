@@ -44,7 +44,6 @@
 
 #include <vector>
 #include <string>
-#include <iostream>
 
 struct MatchParams; // forward declaration
 
@@ -75,26 +74,42 @@ protected:
 	/// REGISTER_MATCH_ASPECT and REGISTERED_MATCH_ASPECT defined below
 	struct NameRegistrator {
 		/// adds a new aspect name to registeredAspects
-		NameRegistrator(const std::string &aspectType) {
-			registeredAspects().push_back(aspectType);
-		}
+		NameRegistrator(const std::string &aspectType);
 	};
 
 	const CachedData &cachedData; ///< cached information from matching engine
 	const double &k; ///< cached coefficient from MatchSettings, corresponding to current aspect
 
+	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
+	virtual double score(const MatchParams &mp) const = 0;
+
+	/// Prepares required fields from MatchParams mp to be able to assess the match
+	virtual void fillRequiredMatchParams(const cv::Mat &patch,
+										 const SymData &symData,
+										 MatchParams &mp) const = 0;
+
 	/// Base class constructor
-	MatchAspect(const CachedData &cachedData_, const double &k_) :
-			cachedData(cachedData_), k(k_) {}
+	MatchAspect(const CachedData &cachedData_, const double &k_);
 
 public:
 	virtual ~MatchAspect() = 0 {}
 
+	/// Scores the match between a gray patch and a symbol based on current aspect (IMatch override)
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override final; // Template method (reason to set it final)
+
+	/// Computing max score of a this MatchAspect
+	double maxScore() const;
+
+	/// Providing a clue about how complex is this MatchAspect compared to the others
+	virtual double relativeComplexity() const = 0;
+
 	/// All aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
-	bool enabled() const { return k > 0.; }
+	bool enabled() const;
 
 	/// Provides the list of names of all registered aspects
-	static const std::vector<const std::string>& aspectNames() { return registeredAspects(); }
+	static const std::vector<const std::string>& aspectNames();
 };
 
 /// Place this call in a private region of an aspect class to register (HEADER file).
@@ -143,4 +158,4 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 
 */
 
-#endif
+#endif // H_MATCH
