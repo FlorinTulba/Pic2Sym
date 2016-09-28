@@ -71,11 +71,13 @@ public:
 	*/
 	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
 
-	/// Constructor delegating its job to the one with 3 parameters
-	Patch(const cv::Mat &orig_);
-
 	/// specifies which matrix to use during the approximation process
 	const cv::Mat& matrixToApprox() const;
+
+#ifdef UNIT_TESTING
+	/// Constructor delegating its job to the one with 3 parameters
+	Patch(const cv::Mat &orig_);
+#endif //UNIT_TESTING
 };
 
-#endif
+#endif // H_PATCH

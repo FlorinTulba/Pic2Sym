@@ -440,3 +440,14 @@ PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const
 						 mc, glyphSum,
 						 &colSums, &rowSums);
 }
+
+static const Mat blurredVersionOf(const Mat &orig_) {
+	Mat blurred;
+	extern const Size BlurWinSize;
+	extern const double BlurStandardDeviation;
+	GaussianBlur(orig_, blurred, BlurWinSize, BlurStandardDeviation, BlurStandardDeviation, BORDER_REPLICATE);
+	return blurred;
+}
+
+Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
+

@@ -44,18 +44,6 @@
 using namespace std;
 using namespace cv;
 
-static const Mat blurredVersionOf(const Mat &orig_) {
-	extern const Size BlurWinSize;
-	extern const double BlurStandardDeviation;
-	Mat blurred;
-	GaussianBlur(orig_, blurred,
-				 BlurWinSize, BlurStandardDeviation, 0.,
-				 BORDER_REPLICATE);
-	return blurred;
-}
-
-Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
-
 const Mat& Patch::matrixToApprox() const {
 	if(needsApproximation)
 		return grayD;
