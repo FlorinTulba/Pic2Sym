@@ -273,6 +273,9 @@
     <ClInclude Include="src\study.h">
       <Filter>Header Files\Testing</Filter>
     </ClInclude>
+    <ClInclude Include="src\structuralSimilarity.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

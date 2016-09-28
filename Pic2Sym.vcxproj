@@ -57,6 +57,7 @@
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
+    <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symData.h" />

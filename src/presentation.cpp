@@ -40,6 +40,7 @@
 #include "jobMonitor.h"
 #include "progressNotifier.h"
 #include "matchParams.h"
+#include "structuralSimilarity.h"
 #include "matchSettingsManip.h"
 #include "controlPanel.h"
 #include "updateSymsActions.h"

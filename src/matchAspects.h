@@ -40,28 +40,6 @@
 
 #include "match.h"
 
-/**
-Selecting a symbol with best structural similarity.
-
-See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
-*/
-class StructuralSimilarity : public MatchAspect {
-	REGISTER_MATCH_ASPECT(StructuralSimilarity);
-
-public:
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-
-#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
-protected:
-#endif
-
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSsim()) {}
-};
-
 /// Selecting a symbol with the scene underneath it as uniform as possible
 class FgMatch : public MatchAspect {
 	REGISTER_MATCH_ASPECT(FgMatch);

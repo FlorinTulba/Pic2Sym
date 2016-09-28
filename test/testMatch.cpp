@@ -42,6 +42,7 @@
 #include "patch.h"
 #include "controller.h"
 #include "matchAspects.h"
+#include "structuralSimilarity.h"
 
 #include <random>
 #include <algorithm>

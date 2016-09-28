@@ -36,7 +36,7 @@
  ****************************************************************************************/
 
 #include "match.h"
-#include "matchAspects.h"
+#include "structuralSimilarity.h"
 #include "matchParams.h"
 #include "misc.h"
 

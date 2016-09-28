@@ -35,30 +35,31 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "matchAspectsFactory.h"
-#include "matchAspects.h"
-#include "structuralSimilarity.h"
-#include "misc.h"
+#ifndef H_STRUCTURAL_SIMILARITY
+#define H_STRUCTURAL_SIMILARITY
 
-using namespace std;
+#include "match.h"
 
-std::shared_ptr<MatchAspect> MatchAspectsFactory::create(const string &aspectName,
-														 const CachedData &cachedData,
-														 const MatchSettings &ms) {
-#define HANDLE_MATCH_ASPECT(Aspect) \
-	if(aspectName.compare(#Aspect) == 0) \
-		return std::make_shared<Aspect>(cachedData, ms)
+/**
+Selecting a symbol with best structural similarity.
 
-	HANDLE_MATCH_ASPECT(StructuralSimilarity);
-	HANDLE_MATCH_ASPECT(FgMatch);
-	HANDLE_MATCH_ASPECT(BgMatch);
-	HANDLE_MATCH_ASPECT(EdgeMatch);
-	HANDLE_MATCH_ASPECT(BetterContrast);
-	HANDLE_MATCH_ASPECT(GravitationalSmoothness);
-	HANDLE_MATCH_ASPECT(DirectionalSmoothness);
-	HANDLE_MATCH_ASPECT(LargerSym);
+See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
+*/
+class StructuralSimilarity : public MatchAspect {
+	REGISTER_MATCH_ASPECT(StructuralSimilarity);
 
-#undef HANDLE_ASPECT
+public:
+	/// scores the match between a gray patch and a symbol based on current aspect
+	double assessMatch(const cv::Mat &patch,
+					   const SymData &symData,
+					   MatchParams &mp) const override; // IMatch override
 
-	THROW_WITH_VAR_MSG(aspectName + " is an invalid aspect name!", invalid_argument);
-}
+#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
+protected:
+#endif
+
+	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
+		MatchAspect(cachedData_, cfg.get_kSsim()) {}
+};
+
+#endif // H_STRUCTURAL_SIMILARITY
