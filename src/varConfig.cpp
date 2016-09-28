@@ -35,8 +35,13 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "misc.h"
 #include "propsReader.h"
+#include "gaussBlur.h"
+#include "stackBlur.h"
+#include "extBoxBlur.h"
+#include "boxBlur.h"
+#include "structuralSimilarity.h"
+#include "misc.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <opencv2/core/core.hpp>
@@ -133,11 +138,20 @@ extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
 extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
 
-static READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
-extern const Size StructuralSimilarity_WIN_SIZE(StructuralSimilarity_RecommendedWindowSide, StructuralSimilarity_RecommendedWindowSide);
+extern READ_STR_PROP(StructuralSimilarity_BlurType);
+extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
 extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA);
 extern READ_DOUBLE_PROP(StructuralSimilarity_C1);
 extern READ_DOUBLE_PROP(StructuralSimilarity_C2);
+
+// Keep all cir fields before StructuralSimilarity::supportBlur
+BlurEngine::ConfInstRegistrator BoxBlur::cir("box", BoxBlur::configuredInstance()); 
+BlurEngine::ConfInstRegistrator ExtBoxBlur::cir("ext_box", ExtBoxBlur::configuredInstance());
+BlurEngine::ConfInstRegistrator StackBlur::cir("stack", StackBlur::configuredInstance());
+BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian", GaussBlur::configuredInstance());
+
+// Keep this after StructuralSimilarity_BlurType and below all defined cir static fields
+const BlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(StructuralSimilarity_BlurType);
 
 static READ_INT_PROP(BlurWindowSize);
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);

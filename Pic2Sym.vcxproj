@@ -20,13 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\appState.h" />
+    <ClInclude Include="src\blur.h" />
+    <ClInclude Include="src\boxBlur.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\clusterAlg.h" />
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterEngine.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
+    <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
+    <ClInclude Include="src\gaussBlur.h" />
     <ClInclude Include="src\glyphsProgressTracker.h" />
     <ClInclude Include="src\gridBarsFilter.h" />
     <ClInclude Include="src\jobMonitor.h" />
@@ -57,6 +61,7 @@
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
+    <ClInclude Include="src\stackBlur.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symFilterBase.h" />
@@ -78,6 +83,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\appState.cpp" />
+    <ClCompile Include="src\blur.cpp" />
+    <ClCompile Include="src\boxBlur.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\clusterAlg.cpp" />
@@ -85,8 +92,10 @@
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
+    <ClCompile Include="src\extBoxBlur.cpp" />
     <ClCompile Include="src\filledRectanglesFilter.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
+    <ClCompile Include="src\gaussBlur.cpp" />
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\noClustering.cpp" />
@@ -105,6 +114,7 @@
     <ClCompile Include="src\jobMonitor.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
+    <ClCompile Include="src\stackBlur.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\study.cpp" />
     <ClCompile Include="src\symData.cpp" />

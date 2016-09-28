@@ -74,6 +74,11 @@
 #include "noClustering.cpp"
 #include "partitionClustering.cpp"
 #include "ttsasClustering.cpp"
+#include "blur.cpp"
+#include "boxBlur.cpp"
+#include "extBoxBlur.cpp"
+#include "stackBlur.cpp"
+#include "gaussBlur.cpp"
 
 #include <ctime>
 #include <random>

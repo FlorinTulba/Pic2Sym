@@ -43,6 +43,7 @@
 #include "controller.h"
 #include "matchAspects.h"
 #include "structuralSimilarity.h"
+#include "blur.h"
 
 #include <random>
 #include <algorithm>
@@ -57,6 +58,8 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
+
+extern const string StructuralSimilarity_BlurType;
 
 namespace ut {
 	/// dummy value
@@ -283,6 +286,9 @@ namespace ut {
 		MatchAspectsFixt(unsigned sz_ = 50U) : Fixt() {
 			setSz(sz_);
 		}
+
+		/// help for blur
+		const BlurEngine& blurSupport = BlurEngine::byName(StructuralSimilarity_BlurType);
 	};
 
 	/// Parameterized test case. Uniform patches get approximated by completely faded glyphs.
@@ -606,9 +612,6 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 	}
 BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
-extern const Size StructuralSimilarity_WIN_SIZE;
-extern const double StructuralSimilarity_SIGMA;
-
 BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 	BOOST_AUTO_TEST_CASE(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch) {
 		BOOST_TEST_MESSAGE("Running CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch");
@@ -626,12 +629,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
-		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -675,12 +674,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		GaussianBlur(diagSymD1, blurOfGroundedGlyph,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
-		GaussianBlur(diagSymD1.mul(diagSymD1), varOfGroundedGlyph,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)

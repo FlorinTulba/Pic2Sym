@@ -37,6 +37,7 @@
 
 #include "match.h"
 #include "structuralSimilarity.h"
+#include "blur.h"
 #include "matchParams.h"
 #include "misc.h"
 
@@ -46,9 +47,6 @@ using namespace std;
 using namespace cv;
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
-
-extern const Size StructuralSimilarity_WIN_SIZE;
-extern const double StructuralSimilarity_SIGMA;
 
 /*
 Match aspect implementing the method described in https://ece.uwaterloo.ca/~z70wang/research/ssim .
@@ -75,9 +73,7 @@ void MatchParams::computeBlurredPatch(const Mat &patch) {
 		return;
 
 	Mat blurredPatch_;
-	GaussianBlur(patch, blurredPatch_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(patch, blurredPatch_);
 	blurredPatch = blurredPatch_;
 }
 
@@ -96,9 +92,7 @@ void MatchParams::computeVariancePatch(const Mat &patch) {
 	computeBlurredPatchSq(patch);
 
 	Mat variancePatch_;
-	GaussianBlur(patch.mul(patch), variancePatch_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(patch.mul(patch), variancePatch_);
 	variancePatch_ -= blurredPatchSq.value();
 	variancePatch = variancePatch_;
 }
@@ -113,30 +107,26 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	computePatchApprox(patch, symData);
 	const Mat &approxPatch = patchApprox.value();
 
-	// Saving 2 calls to GaussianBlur each time current symbol is compared to a patch:
+	// Saving 2 calls to BlurEngine each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
 	const double diffRatio = contrast.value() / symData.diffMinMax;
 	const Mat blurredPatchApprox = bg.value() + diffRatio *
-		symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
-		blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
-		variancePatchApprox = diffRatio * diffRatio *
-		symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+										symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
+				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
+				variancePatchApprox = diffRatio * diffRatio *
+										symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	double minVal, maxVal;
 	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	GaussianBlur(approxPatch, blurredPatchApprox_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_);
 	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
 	assert(abs(maxVal) < EPS);
 
-	GaussianBlur(approxPatch.mul(approxPatch), variancePatchApprox_,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_);
 	variancePatchApprox_ -= blurredPatchApproxSq;
 	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
@@ -145,16 +135,14 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 
 	const Mat productMats = patch.mul(approxPatch),
 		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	GaussianBlur(productMats, covariance,
-					 StructuralSimilarity_WIN_SIZE, StructuralSimilarity_SIGMA, 0.,
-					 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(productMats, covariance);
 	covariance -= productBlurredMats;
 
 	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;
 	const Mat numerator = (2.*productBlurredMats + StructuralSimilarity_C1).
-		mul(2.*covariance + StructuralSimilarity_C2),
-		denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
-		mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);
+							mul(2.*covariance + StructuralSimilarity_C2),
+			denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
+							mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);
 
 	divide(numerator, denominator, ssimMap);
 	ssim = *mean(ssimMap).val;

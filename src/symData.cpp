@@ -36,6 +36,8 @@
  ****************************************************************************************/
 
 #include "symData.h"
+#include "structuralSimilarity.h"
+#include "blur.h"
 #include "misc.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
@@ -82,22 +84,15 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal)));
 	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * (maxVal-minVal)));
 
-	extern const Size BlurWinSize;
-	extern const double BlurStandardDeviation;
-
 	// Storing a blurred version of the grounded glyph for structural similarity match aspect
-	GaussianBlur(groundedGlyph, blurOfGroundedGlyph,
-				 BlurWinSize, BlurStandardDeviation, 0.,
-				 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph);
 
 	// edgeMask selects all pixels that are not minVal, nor maxVal
 	inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
 
 	// Storing also the variance of the grounded glyph for structural similarity match aspect
 	// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
-	GaussianBlur(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph,
-				 BlurWinSize, BlurStandardDeviation, 0.,
-				 BORDER_REPLICATE);
+	StructuralSimilarity::supportBlur.process(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph);
 
 	varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 }

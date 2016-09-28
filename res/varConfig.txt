@@ -135,6 +135,12 @@ Transformer_run_THRESHOLD_CONTRAST_BLURRED	7.
 
 ; Constants for Structural Similarity aspect
 ; C1 = (.01*255)^2   ;   C2 = (.03*255)^2
+; Blur type can be:
+;	- box - BoxBlur with a single iteration
+;	- ext_box - ExtBoxBlur with a single iteration
+;	- stack - StackBlur adapted for desired standard deviation
+;	- gaussian - the reference GaussBlur
+StructuralSimilarity_BlurType	box
 StructuralSimilarity_RecommendedWindowSide	11
 StructuralSimilarity_SIGMA	1.5
 StructuralSimilarity_C1	6.5025

@@ -88,6 +88,12 @@
     <Filter Include="Source Files\Charmap\Clustering">
       <UniqueIdentifier>{a48bec4c-a5a6-4e44-b917-45d9fc90a3c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Var\Blurring">
+      <UniqueIdentifier>{994d14ce-dbf3-472f-bc28-ddf3fda39cd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Var\Blurring">
+      <UniqueIdentifier>{4b9536e8-1464-4c60-9064-659214ce3fae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
@@ -273,8 +279,23 @@
     <ClInclude Include="src\study.h">
       <Filter>Header Files\Testing</Filter>
     </ClInclude>
+    <ClInclude Include="src\blur.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
+    <ClInclude Include="src\boxBlur.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
+    <ClInclude Include="src\extBoxBlur.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gaussBlur.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
     <ClInclude Include="src\structuralSimilarity.h">
       <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stackBlur.h">
+      <Filter>Header Files\Var\Blurring</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -403,6 +424,21 @@
     </ClCompile>
     <ClCompile Include="src\study.cpp">
       <Filter>Source Files\Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\boxBlur.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\blur.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\extBoxBlur.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gaussBlur.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stackBlur.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

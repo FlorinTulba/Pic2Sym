@@ -35,36 +35,38 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_STRUCTURAL_SIMILARITY
-#define H_STRUCTURAL_SIMILARITY
+#include "gaussBlur.h"
+#include "misc.h"
 
-#include "match.h"
+#include <opencv2/imgproc/imgproc.hpp>
 
-class BlurEngine; // Forward declaration
+using namespace std;
+using namespace cv;
 
-/**
-Selecting a symbol with best structural similarity.
+GaussBlur::GaussBlur(double desiredSigma, unsigned kernelWidth_/* = 0U*/) {
+	configure(desiredSigma, kernelWidth_);
+}
 
-See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
-*/
-class StructuralSimilarity : public MatchAspect {
-	REGISTER_MATCH_ASPECT(StructuralSimilarity);
+GaussBlur& GaussBlur::configure(double desiredSigma, unsigned kernelWidth_/* = 0U*/) {
+	if(desiredSigma < 0.)
+		THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
 
-public:
-	/// Blurring algorithm used to support this match aspect. The Controller sets it at start.
-	static const BlurEngine &supportBlur;
+	if(kernelWidth_ != 0U && (kernelWidth_ & 1U) != 1U)
+		THROW_WITH_CONST_MSG("kernelWidth_ should be an odd value or 0 in " __FUNCTION__, invalid_argument);
 
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
+	sigma = desiredSigma; kernelWidth = kernelWidth_;
 
-#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
-protected:
-#endif
+	return *this;
+}
 
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSsim()) {}
-};
+void GaussBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const {
+	GaussianBlur(toBlur, blurred, Size(kernelWidth, kernelWidth), sigma, sigma, BORDER_REPLICATE);
+}
 
-#endif // H_STRUCTURAL_SIMILARITY
+const GaussBlur& GaussBlur::configuredInstance() {
+	// Gaussian blur with desired standard deviation and window width
+	extern const int StructuralSimilarity_RecommendedWindowSide;
+	extern const double StructuralSimilarity_SIGMA;
+	static GaussBlur result(StructuralSimilarity_SIGMA, StructuralSimilarity_RecommendedWindowSide);
+	return result;
+}

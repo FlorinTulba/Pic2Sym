@@ -35,36 +35,35 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_STRUCTURAL_SIMILARITY
-#define H_STRUCTURAL_SIMILARITY
+#include "blur.h"
+#include "misc.h"
 
-#include "match.h"
+#include <opencv2/core/core.hpp>
 
-class BlurEngine; // Forward declaration
+using namespace std;
+using namespace cv;
 
-/**
-Selecting a symbol with best structural similarity.
+BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
+	static ConfiguredInstances configuredInstances_;
+	return configuredInstances_;
+}
 
-See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
-*/
-class StructuralSimilarity : public MatchAspect {
-	REGISTER_MATCH_ASPECT(StructuralSimilarity);
+BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
+	configuredInstances().emplace(blurType, &configuredInstance);
+}
 
-public:
-	/// Blurring algorithm used to support this match aspect. The Controller sets it at start.
-	static const BlurEngine &supportBlur;
+const BlurEngine& BlurEngine::byName(const string &blurType) {
+	try {
+		return *configuredInstances().at(blurType);
+	} catch(out_of_range&) {
+		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
+	}
+}
 
-	/// scores the match between a gray patch and a symbol based on current aspect
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
-
-#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
-protected:
-#endif
-
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-		MatchAspect(cachedData_, cfg.get_kSsim()) {}
-};
-
-#endif // H_STRUCTURAL_SIMILARITY
+void BlurEngine::process(const Mat &toBlur, Mat &blurred) const {
+	if(toBlur.empty() || toBlur.type() != CV_64FC1)
+		THROW_WITH_CONST_MSG("Parameter toBlur from " __FUNCTION__ " needs to be a non-empty, single channel matrix with values of type double!", invalid_argument);
+	blurred = Mat(toBlur.size(), CV_64FC1, 0.);
+	
+	doProcess(toBlur, blurred);
+}
