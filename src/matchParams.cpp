@@ -47,6 +47,29 @@ using namespace std;
 using namespace boost;
 using namespace cv;
 
+const MatchParams& MatchParams::perfectMatch() {
+	static MatchParams idealMatch;
+	static bool initialized = false;
+	if(!initialized) {
+		// Same mass centers
+		static const Point2d ORIGIN;
+		idealMatch.mcPatch = idealMatch.mcPatchApprox = ORIGIN;
+		idealMatch.mcsOffset = 0.;
+
+		// All standard deviations 0
+		idealMatch.sdevFg = idealMatch.sdevBg = idealMatch.sdevEdge = 0.;
+		
+		idealMatch.ssim = 1.;		// Perfect structural similarity
+
+		idealMatch.symDensity = 1.;	// Largest density possible
+
+		idealMatch.contrast = 255.;	// Largest contrast possible
+
+		initialized = true;
+	}
+	return idealMatch;
+}
+
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
 	patchApprox = none;

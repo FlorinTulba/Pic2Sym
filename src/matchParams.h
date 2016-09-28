@@ -50,6 +50,9 @@ class MatchSettings;
 
 /// Holds relevant data during patch&glyph matching
 struct MatchParams {
+	/// Returns an instance as for an ideal match between a symbol and a patch
+	static const MatchParams& perfectMatch();
+
 	// These params are computed only once, if necessary, when approximating the patch
 	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch
 	boost::optional<cv::Mat> blurredPatch;		///< blurred version of the patch
