@@ -227,8 +227,15 @@ void Transformer::run() {
 			fromIdx = upperIdx, upperIdx = min(upperIdx + symsBatchSz, symsCount))
 		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
 
-	if(!isCanceled)
+	if(!isCanceled) {
+#ifdef _DEBUG
+		cout<<"Transformation finished. Reporting skipped aspects: ";
+		copy(CBOUNDS(me.skippedAspects), ostream_iterator<size_t>(cout, "; "));
+		cout<<"\b\b  "<<endl;
+#endif // _DEBUG
+
 		imgTransformTaskMonitor.taskDone();
+	}
 
 	logDataForBestMatches(isCanceled, studiedCase, sz, h, w, me.usesUnicode(), draftMatches);
 }

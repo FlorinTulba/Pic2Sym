@@ -43,6 +43,7 @@
 #include "settings.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
+#include "misc.h"
 
 #include <omp.h>
 
@@ -61,16 +62,17 @@ namespace {
 	/// Checks if the provided symbol range within the current cluster contains a better match
 	bool checkRangeWithinCluster(unsigned from, unsigned upperLimit,
 								 const MatchEngine &me, const Mat &toApprox,
-								 const VSymData &symsSet,
+								 const VSymData &symsSet, const valarray<double> &invMaxIncreaseFactors,
 								 BestMatch &draftMatch, MatchParams &mp) {
 		bool betterMatchFound = false;
+		valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors);
 		for(unsigned i = from; i < upperLimit; ++i) {
 			mp.reset(); // preserves patch-invariant fields
 			const auto &symData = symsSet[i];
-			double score = me.assessMatch(toApprox, symData, mp);
-
-			if(score > draftMatch.score) {
+			double score;
+			if(me.isBetterMatch(toApprox, symData, mp, scoresToBeatBySyms, score)) {
 				draftMatch.update(score, symData.code, i, symData, mp);
+				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
 				betterMatchFound = true;
 			}
 		}
@@ -174,9 +176,56 @@ void MatchEngine::getReady() {
 	for(auto pAspect : availAspects)
 		if(pAspect->enabled())
 			enabledAspects.push_back(&*pAspect);
+
+	/*
+	Reorder the aspects based on their complexity and their max score.
+	The goal is to skip as many complex aspects as possible while checking if a new symbol
+	is a better match for a given patch than a previous symbol with a given score.
+	As soon as it's obvious that the remaining aspects can't raise the score above current best score,
+	the assessment is aborted.
+	The strategy is most beneficial if the skipped aspects are more complex than those evaluated already.
+	Thus, reorder the enabled aspects as follows:
+	- rearrange aspects in increasing order of their complexity
+	- for equally complex aspects, consider first those with a higher max score,
+	  to reduce the chance that other aspects are needed
+	*/
+	sort(BOUNDS(enabledAspects), [] (const MatchAspect *a, const MatchAspect *b) -> bool {
+		const double relComplexityA = a->relativeComplexity(),
+					relComplexityB = b->relativeComplexity();
+		// Ascending by complexity
+		if(relComplexityA < relComplexityB)
+			return true;
+
+		if(relComplexityA > relComplexityB)
+			return false;
+
+		// Equal complexity here already
+
+		const double maxScoreA = a->maxScore(),
+					maxScoreB = b->maxScore();
+
+		// Descending by max score
+		return maxScoreA >= maxScoreB;
+	});
+
+	enabledAspectsCount = enabledAspects.size();
+
+#ifdef _DEBUG
+	skippedAspects.resize(enabledAspectsCount);
+	fill(BOUNDS(skippedAspects), 0U);
+#endif
+
+	// Adjust max increase factors for every enabled aspect
+	invMaxIncreaseFactors.resize(enabledAspectsCount);
+	double maxIncreaseFactor = 1.;
+	for(int i = (int)enabledAspectsCount - 1; i >= 0; --i)
+		invMaxIncreaseFactors[i] = 1. / (maxIncreaseFactor *= enabledAspects[i]->maxScore());
 }
 
 bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const {
+	if(enabledAspects.empty())
+		return false;
+
 	const auto &patch = draftMatch.patch;
 	if(!patch.needsApproximation) {
 		if(draftMatch.bestVariant.approx.empty()) {
@@ -209,6 +258,12 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 	MatchParams &mp = draftMatch.bestVariant.params;
 	const auto &clusters = ce.getClusters();
 
+	// Multi-element clusters still qualify with slightly inferior scores,
+	// as individual symbols within the cluster might deliver a superior score.
+	extern const double InvestigateClusterEvenForInferiorScoreFactor;
+	valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors),
+		scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
+
 	for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster;
 			++clusterIdx, firstSymIdxWithinFromCluster = 0) {
 		const auto &cluster = clusters[clusterIdx];
@@ -218,41 +273,48 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 			const unsigned upperLimit =
 				(clusterIdx < lastCluster) ? cluster.sz : (lastSymIdxWithinLastCluster + 1U);
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-									*this, toApprox, symsSet,
-									draftMatch, mp))
+									*this, toApprox, symsSet, invMaxIncreaseFactors,
+									draftMatch, mp)) {
+				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
+				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
+			}
+
 			continue;
 		}
 
 		// Current cluster attempts qualification - it computes its own score
 		mp.reset(); // preserves patch-invariant fields
-		double score = assessMatch(toApprox, cluster, mp);
 
-		// Single element clusters have same score as their content.
-		// So, making sure the score won't be computed twice:
-		if(cluster.sz == 1U) {
-			if(score > draftMatch.score) {
+		double score;
+		const bool trivialCluster = (cluster.sz == 1U);
+		if(isBetterMatch(toApprox, cluster, mp,
+						trivialCluster ? scoresToBeatBySyms : scoresToBeatByClusters, score)) {
+			// Single element clusters have same score as their content.
+			// So, making sure the score won't be computed twice:
+			if(trivialCluster) {
 				draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
 				const unsigned idx = cluster.idxOfFirstSym;
 				const auto &symData = symsSet[idx];
 				draftMatch.update(score, symData.code, idx, symData, mp);
+				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
+				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+				betterMatchFound = true;
+				continue;
+			}
+
+			// Nontrivial cluster
+			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
+
+			const unsigned upperLimit = (clusterIdx < lastCluster) ? cluster.sz :
+											(lastSymIdxWithinLastCluster + 1U);
+			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
+										*this, toApprox, symsSet, invMaxIncreaseFactors,
+										draftMatch, mp)) {
+				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
+				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
 			}
-			continue;
-		}
-		
-		// Multi-element clusters still qualify with slightly inferior scores,
-		// as individual symbols within the cluster might deliver a superior score.
-		extern const double InvestigateClusterEvenForInferiorScoreFactor;
-		if(score > draftMatch.score * InvestigateClusterEvenForInferiorScoreFactor) {
-			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
-			
-			const unsigned upperLimit = (clusterIdx < lastCluster) ? cluster.sz :
-				(lastSymIdxWithinLastCluster + 1U);
-			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-									*this, toApprox, symsSet,
-									draftMatch, mp))
-				betterMatchFound = true;
 		}
 	}
 
@@ -262,15 +324,24 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 	return betterMatchFound;
 }
 
-double MatchEngine::assessMatch(const Mat &patch,
-								const SymData &symData,
-								MatchParams &mp) const {
-	double score = 1.;
-	for(auto pAspect : enabledAspects)
-		score *= pAspect->assessMatch(patch, symData, mp);
-	// parallelization would require 'mp' fields to be guarded by locks
+bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchParams &mp,
+								const valarray<double> &scoresToBeat, double &score) const {
+	// There is at least one enabled match aspect,
+	// since findBetterMatch prevents further calls when there are no enabled aspects.
+	assert(enabledAspectsCount > 0U);
+	score = enabledAspects[0]->assessMatch(patch, symData, mp);
+	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;
+	while(++i <= lim) {
+		if(score < scoresToBeat[i]) {
+#ifdef _DEBUG
+			++skippedAspects[i];
+#endif // _DEBUG
+			return false; // skip further aspects checking when score can't beat best match score
+		}
+		score *= enabledAspects[i]->assessMatch(patch, symData, mp);
+	}
 
-	return score;
+	return score > scoresToBeat[lim];
 }
 
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {

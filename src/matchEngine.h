@@ -38,9 +38,11 @@
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
-#include "match.h"
 #include "fontEngine.h"
 #include "clusterEngine.h"
+#include "cachedData.h"
+
+#include <valarray>
 
 // Forward declarations
 struct CachedData;
@@ -48,9 +50,10 @@ struct MatchParams;
 struct BestMatch;
 class Patch;
 class Settings;
+class MatchAspect;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
-class MatchEngine : public IMatch {
+class MatchEngine {
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
 	typedef VSymData::const_iterator VSymDataCIt;
@@ -67,11 +70,17 @@ protected:
 	VSymData symsSet;			///< set of most information on each symbol
 	ClusterEngine ce;			///< clusters manager
 
+	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
+
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
 	std::vector<MatchAspect*> enabledAspects;				///< only the enabled aspects
+	size_t enabledAspectsCount = 0U;						///< count of the enabled aspects
 
-	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
+#ifdef UNIT_TESTING // UnitTesting project needs access to invMaxIncreaseFactors
+public:
+#endif // UNIT_TESTING
+	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
 public:
 	MatchEngine(const Settings &cfg_, FontEngine &fe_);
@@ -89,14 +98,21 @@ public:
 	/// Returns true if a new better match was found.
 	bool findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const;
 
-	/// scores the match between a gray patch and a symbol based on all enabled aspects
-	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
-					   MatchParams &mp) const override; // IMatch override
+	/// Determines if symData is a better match for patch than previous matching symbol.
+	bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
+					   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
+					   MatchParams &mp,			///< matching parameters resulted from the comparison
+					   const std::valarray<double> &scoresToBeat,///< scores after each aspect that beat the current best match
+					   double &score			///< achieved score of the new assessment
+					   ) const;
 
 	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+
+#ifdef _DEBUG
+	mutable std::vector<size_t> skippedAspects; // used for reporting skipped aspects
+#endif
 };
 
 #endif

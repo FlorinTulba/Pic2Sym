@@ -441,11 +441,13 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		if(best.symIdx != idx) {
 			mismatches.push_back(best);
 			MatchParams mp;
+			double score;
+			me.isBetterMatch(patchD255, *it, mp, best.score * me.invMaxIncreaseFactors, score);
 			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
 			cerr<<"Approximation achieved score="
 				<<fixed<<setprecision(17)<<best.score
 				<<" while the score for the expected symbol is "
-				<<fixed<<setprecision(17)<<me.assessMatch(patchD255, *it, mp)<<endl;
+				<<fixed<<setprecision(17)<<score<<endl;
 			wcerr<<"Params from approximated symbol: "<<best.bestVariant.params<<endl;
 			wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
 		}
