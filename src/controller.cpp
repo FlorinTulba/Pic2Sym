@@ -41,6 +41,7 @@
 #include "dlgs.h"
 #include "settings.h"
 #include "controlPanel.h"
+#include "match.h"
 
 #include <Windows.h>
 #include <sstream>
@@ -88,8 +89,13 @@ Settings::Settings() :
 	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
-	if((imageOk || !imageRequired) && fontFamilyOk)
-		return true;
+	bool noEnabledMatchAspects = false;
+	if((imageOk || !imageRequired) && fontFamilyOk) {
+		for(auto pAspect : me.availMatchAspects())
+			if(pAspect->enabled())
+				return true;
+		noEnabledMatchAspects = true;
+	}
 
 	ostringstream oss;
 	oss<<"The problems are:"<<endl<<endl;
@@ -97,6 +103,8 @@ bool Controller::validState(bool imageRequired/* = true*/) const {
 		oss<<"- no image to transform"<<endl;
 	if(!fontFamilyOk)
 		oss<<"- no font family to use during transformation"<<endl;
+	if(noEnabledMatchAspects)
+		oss<<"- no enabled matching aspects to consider"<<endl;
 	errMsg(oss.str(), "Please Correct these errors first!");
 	return false;
 }

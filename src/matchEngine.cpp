@@ -167,6 +167,10 @@ const set<unsigned>& MatchEngine::getClusterOffsets() const {
 	return ce.getClusterOffsets();
 }
 
+const vector<std::shared_ptr<MatchAspect>>& MatchEngine::availMatchAspects() const {
+	return availAspects;
+}
+
 void MatchEngine::getReady() {
 	updateSymbols();
 
@@ -224,9 +228,7 @@ void MatchEngine::getReady() {
 }
 
 bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const {
-	if(enabledAspects.empty())
-		return false;
-
+	assert(!enabledAspects.empty());
 	const auto &patch = draftMatch.patch;
 	if(!patch.needsApproximation) {
 		if(draftMatch.bestVariant.approx.empty()) {

@@ -121,7 +121,16 @@ BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 
 			Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127));
 			c.newImage(testPatch);
+			c.newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
 			BOOST_REQUIRE(c.performTransformation());
+		}
+
+		BOOST_AUTO_TEST_CASE(AttemptTransformation_NoEnabledAspects_NoTransformationPossible) {
+			BOOST_TEST_MESSAGE("Running AttemptTransformation_NoEnabledAspects_NoTransformationPossible");
+
+			Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127));
+			c.newImage(testPatch);
+			BOOST_REQUIRE(!c.performTransformation());
 		}
 
 		BOOST_AUTO_TEST_CASE(AttemptTransformation_SetColorImage_OkToTransformImage) {
@@ -129,6 +138,7 @@ BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 
 			Mat testColorPatch(c.getFontSize(), c.getFontSize(), CV_8UC3, Scalar::all(127));
 			c.newImage(testColorPatch);
+			c.newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
 			BOOST_REQUIRE(c.performTransformation());
 		}
 	BOOST_AUTO_TEST_SUITE_END() // Controller_Tests_Using_BpMonoBoldFont

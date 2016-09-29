@@ -110,6 +110,8 @@ public:
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
+	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
+
 #ifdef _DEBUG
 	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
 	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects
