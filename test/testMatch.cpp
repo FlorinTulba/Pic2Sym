@@ -1236,7 +1236,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(2)*.5*(sz_1 - 1./(getSz()+1))) / cd.complPrefMaxMcDist, test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(2)*.5*(sz_1 - 1./(getSz()+1))) * cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters) {
@@ -1280,8 +1280,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatch->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5/(getSz()+1), dy = .5*(sz_1 - 1/(getSz()+1.));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) /
-				   cd.complPrefMaxMcDist, test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) *
+				   cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters) {
@@ -1323,8 +1323,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatch->x == (double)sz_1, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5*(sz_1 + 1/(getSz()+1.)), dy = .5*(sz_1 - 1/(getSz()+1.));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) /
-				   cd.complPrefMaxMcDist, test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) *
+				   cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch) {
@@ -1361,7 +1361,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2*(2-sqrt(2)), test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
+		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+				   test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters) {
@@ -1399,7 +1400,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 1., test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
+		BOOST_TEST(res == (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+				   test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters) {
@@ -1436,7 +1438,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == (double)sz_1, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2-sqrt(2), test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
+		BOOST_TEST(res == (2.-sqrt(2.)) * (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+				   test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckLargerSymAspect_EmptyGlyph_Density0) {

@@ -138,6 +138,8 @@ extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
 extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
 
+extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs);
+
 extern READ_STR_PROP(StructuralSimilarity_BlurType);
 extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
 extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA);

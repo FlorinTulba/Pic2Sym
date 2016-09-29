@@ -111,7 +111,8 @@ public:
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
 #ifdef _DEBUG
-	mutable std::vector<size_t> skippedAspects; // used for reporting skipped aspects
+	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
+	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects
 #endif
 };
 

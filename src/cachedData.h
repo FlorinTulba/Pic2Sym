@@ -69,10 +69,13 @@ struct CachedData {
 	unsigned sz_1;				///< sz - 1
 	double sz2;					///< sz^2
 	double smallGlyphsCoverage;	///< max density for symbols considered small
+	double maxMcDist;			///< max possible distance between mass centers (sz_1*sqrt(2))
 	double preferredMaxMcDist;	///< acceptable distance between mass centers (sz/8)
+	double a_mcsOffsetFactor;	///< mcsOffsetFactor = a * mcsOffset + b (see DirectionalSmoothness::score)
+	double b_mcsOffsetFactor;	///< mcsOffsetFactor = a * mcsOffset + b (see DirectionalSmoothness::score)
 
-	/// max possible distance between mass centers (sz_1*sqrt(2)) - preferredMaxMcDist
-	double complPrefMaxMcDist;
+	/// 1 / max possible distance between mass centers (sz_1*sqrt(2)) - preferredMaxMcDist
+	double invComplPrefMaxMcDist;
 	cv::Point2d patchCenter;	///< position of the center of the patch (sz_1/2, sz_1/2)
 	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
 

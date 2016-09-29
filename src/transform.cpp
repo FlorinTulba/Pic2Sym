@@ -229,8 +229,8 @@ void Transformer::run() {
 
 	if(!isCanceled) {
 #ifdef _DEBUG
-		cout<<"Transformation finished. Reporting skipped aspects: ";
-		copy(CBOUNDS(me.skippedAspects), ostream_iterator<size_t>(cout, "; "));
+		cout<<"Transformation finished. Reporting skipped aspects from a total of "<<me.totalIsBetterMatchCalls<<" isBetterMatch calls: ";
+		copy(CBOUNDS(me.skippedAspects), ostream_iterator<size_t>(cout, ", "));
 		cout<<"\b\b  "<<endl;
 #endif // _DEBUG
 

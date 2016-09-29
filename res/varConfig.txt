@@ -133,6 +133,10 @@ SymData_computeFields_STILL_BG	0.
 ; Max Contrast is 255.
 Transformer_run_THRESHOLD_CONTRAST_BLURRED	7.
 
+; Constant for the Directional Smoothness aspect
+; See comment from CachedData::useNewSymSize about this constant
+DirSmooth_DesiredBaseForCenterAndCornerMcs	.95
+
 ; Constants for Structural Similarity aspect
 ; C1 = (.01*255)^2   ;   C2 = (.03*255)^2
 ; Blur type can be:

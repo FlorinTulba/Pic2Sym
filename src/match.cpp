@@ -202,8 +202,8 @@ Larger k induces larger penalty for large mcsOffset and
 also larger reward for small mcsOffset
 */
 double GravitationalSmoothness::score(const MatchParams &mp) const {
-	return pow(1. + (cachedData.preferredMaxMcDist - mp.mcsOffset.value()) /
-			   cachedData.complPrefMaxMcDist, k);
+	return pow(1. + (cachedData.preferredMaxMcDist - mp.mcsOffset.value()) *
+			   cachedData.invComplPrefMaxMcDist, k);
 }
 
 void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
@@ -222,14 +222,17 @@ DirectionalSmoothness::DirectionalSmoothness(const CachedData &cachedData_, cons
 
 /**
 Penalizes large angle between mc-s, but no so much when they are close to each other.
-The mc-s are consider close when the distance between them is < preferredMaxMcDist
+The mc-s are consider close when the distance between them is < PreferredMaxMcDist
 		(1. + cosAngleMCs) * (2-sqrt(2)) is <=1 for |angleMCs| >= 45  and  >1 otherwise
-So, large k generally penalizes large angles and encourages small ones,
-but fades gradually for nearer mc-s or fades completely when the mc-s overlap.
+		mcsOffsetFactor  is:
+		- <1 for mcsOffset > PreferredMaxMcDist
+		- 1 for mcsOffset = PreferredMaxMcDist
+		- >1 for mcsOffset < PreferredMaxMcDist
+So, large k penalizes large (angles & mc-s offsets) and encourages small ones from both.
 */
 double DirectionalSmoothness::score(const MatchParams &mp) const {
-	static const double SQRT2 = sqrt(2), TWOmSQRT2 = 2. - SQRT2;
 	static const Point2d ORIGIN; // (0, 0)
+	static const double TWOmSQRT2 = 2. - sqrt(2);
 
 	const Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
 	const Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
@@ -239,9 +242,24 @@ double DirectionalSmoothness::score(const MatchParams &mp) const {
 	if(relMcGlyph != ORIGIN && relMcPatch != ORIGIN) // avoid DivBy0
 		cosAngleMCs = relMcGlyph.dot(relMcPatch) / (norm(relMcGlyph) * norm(relMcPatch));
 
-	return pow((1. + cosAngleMCs) * TWOmSQRT2,
-			   k * min(mp.mcsOffset.value(), cachedData.preferredMaxMcDist) /
-			   cachedData.preferredMaxMcDist);
+	/*
+	angleFactor encourages angles between mc under 45 degrees:
+	- <1 for |angleMCs| > 45
+	- 1 for |angleMCs| = 45
+	- >1 for |angleMCs| < 45
+	*/
+	const double angleFactor = (1. + cosAngleMCs) * TWOmSQRT2;
+
+	/*
+	mcsOffsetFactor encourages smaller offsets between mc-s
+	- <1 for mcsOffset > PreferredMaxMcDist
+	- 1 for mcsOffset = PreferredMaxMcDist
+	- >1 for mcsOffset < PreferredMaxMcDist
+	*/
+	const double mcsOffsetFactor = 
+		cachedData.a_mcsOffsetFactor * mp.mcsOffset.value() + cachedData.b_mcsOffsetFactor;
+
+	return pow(angleFactor * mcsOffsetFactor, k);
 }
 
 void DirectionalSmoothness::fillRequiredMatchParams(const Mat &patch,

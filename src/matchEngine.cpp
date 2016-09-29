@@ -211,6 +211,7 @@ void MatchEngine::getReady() {
 	enabledAspectsCount = enabledAspects.size();
 
 #ifdef _DEBUG
+	totalIsBetterMatchCalls = 0U;
 	skippedAspects.resize(enabledAspectsCount);
 	fill(BOUNDS(skippedAspects), 0U);
 #endif
@@ -326,15 +327,21 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 
 bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchParams &mp,
 								const valarray<double> &scoresToBeat, double &score) const {
+#ifdef _DEBUG
+	++totalIsBetterMatchCalls;
+#endif // _DEBUG
+
 	// There is at least one enabled match aspect,
 	// since findBetterMatch prevents further calls when there are no enabled aspects.
 	assert(enabledAspectsCount > 0U);
+
 	score = enabledAspects[0]->assessMatch(patch, symData, mp);
 	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;
 	while(++i <= lim) {
 		if(score < scoresToBeat[i]) {
 #ifdef _DEBUG
-			++skippedAspects[i];
+			for(unsigned j = i; j <= lim; ++j)
+				++skippedAspects[j];
 #endif // _DEBUG
 			return false; // skip further aspects checking when score can't beat best match score
 		}
