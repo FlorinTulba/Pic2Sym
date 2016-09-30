@@ -56,9 +56,9 @@ struct TinySymData {
 	cv::Mat hAvgProj, vAvgProj;						// horizontal and vertical projection
 	cv::Mat backslashDiagAvgProj, slashDiagAvgProj;	// normal and inverse diagonal projections
 
-	TinySymData(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat mat_,
-				const cv::Mat hAvgProj_, const cv::Mat vAvgProj_,
-				const cv::Mat backslashDiagAvgProj_, const cv::Mat slashDiagAvgProj_) :
+	TinySymData(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
+				const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
+				const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_) :
 		mc(mc_), avgPixVal(avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
 		backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
 };
