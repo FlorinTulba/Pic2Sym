@@ -61,14 +61,17 @@ static string replacePlaceholder(const string &text,	///< initial text
 }
 
 /// parser for reading various texts and constants customizing the runtime look and behavior
-static PropsReader varConfig("res/varConfig.txt");
+static PropsReader& varConfigRef() {
+	static PropsReader varConfig("res/varConfig.txt");
+	return varConfig;
+}
 
 // Macros for reading the properties from 'varConfig.txt'
 #define READ_PROP(prop, type) \
-	const type prop = varConfig.read<type>(#prop)
+	const type prop = varConfigRef().read<type>(#prop)
 
 #define READ_PROP_COND(prop, type, cond, defaultVal) \
-	const type prop = (cond) ? varConfig.read<type>(#prop) : (defaultVal)
+	const type prop = (cond) ? varConfigRef().read<type>(#prop) : (defaultVal)
 
 #define READ_BOOL_PROP(prop) \
 	READ_PROP(prop, bool)
@@ -92,10 +95,10 @@ static PropsReader varConfig("res/varConfig.txt");
 	READ_PROP(prop, string)
 
 #define READ_STR_PROP_CONVERT(prop, destStringType) \
-	const destStringType prop = varConfig.read<string>(#prop)
+	const destStringType prop = varConfigRef().read<string>(#prop)
 
 #define READ_WSTR_PROP(prop) \
-	const wstring prop = str2wstr(varConfig.read<string>(#prop))
+	const wstring prop = str2wstr(varConfigRef().read<string>(#prop))
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
@@ -216,12 +219,12 @@ extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 
 extern READ_STR_PROP_CONVERT(CmapInspect_pageTrackName, String);
 
-extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfig.read<string>("ControlPanel_aboutText")));
+extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfigRef().read<string>("ControlPanel_aboutText")));
 extern READ_WSTR_PROP(ControlPanel_instructionsText);
 
 #endif // ifndef UNIT_TESTING
 
-extern const string Comparator_initial_title = replacePlaceholder(varConfig.read<string>("Comparator_initial_title"));
+extern const string Comparator_initial_title = replacePlaceholder(varConfigRef().read<string>("Comparator_initial_title"));
 extern READ_STR_PROP(Comparator_statusBar);
 
 extern READ_STR_PROP(Controller_PREFIX_GLYPH_PROGRESS);
