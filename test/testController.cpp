@@ -94,7 +94,7 @@ BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 	}
 
 	BOOST_AUTO_TEST_CASE(ProvidingAFontToController_UseBPmonoBold_NoThrow) {
-		BOOST_TEST_MESSAGE("Running CheckController_UseBPmonoBold_NoThrow");
+		BOOST_TEST_MESSAGE("Running ProvidingAFontToController_UseBPmonoBold_NoThrow");
 		BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
 	}
 
