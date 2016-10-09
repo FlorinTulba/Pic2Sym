@@ -36,7 +36,7 @@
  ****************************************************************************************/
 
 #include "controller.h"
-#include "matchSettingsManip.h"
+#include "appStart.h"
 #include "settings.h"
 #include "study.h"
 
@@ -99,7 +99,7 @@ namespace {
 
 		copyrightNotice();
 
-		MatchSettingsManip::init(appFile);
+		AppStart::determinedBy(appFile);
 		Settings s;
 		Controller c(s);
 		Controller::handleRequests();

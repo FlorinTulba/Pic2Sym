@@ -40,7 +40,7 @@
 #include "misc.h"
 #include "timing.h"
 #include "settings.h"
-#include "matchSettingsManip.h"
+#include "appStart.h"
 #include "matchParams.h"
 #include "patch.h"
 #include "jobMonitorBase.h"
@@ -83,7 +83,7 @@ struct ResultFileManager {
 	/// Creates 'Output' directory which stores generated results
 	static void createOutputFolder() {
 		// Ensure there is an Output folder
-		path outputFolder = MatchSettingsManip::instance().getWorkDir();
+		path outputFolder = AppStart::dir();
 		if(!exists(outputFolder.append("Output")))
 			create_directory(outputFolder);
 	}
@@ -102,7 +102,7 @@ struct ResultFileManager {
 		}
 
 		// Generating a JPG result file (minor quality loss, but less space)
-		resultFile = MatchSettingsManip::instance().getWorkDir();
+		resultFile = AppStart::dir();
 		resultFile.append("Output").append(studiedCase).concat(".jpg");
 	
 		if(exists(resultFile)) {

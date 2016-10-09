@@ -47,13 +47,10 @@
 
 /// Singleton isolating the logic for the update of MatchSettings from disk in various scenarios
 class MatchSettingsManip {
-	static MatchSettingsManip *inst;	///< pointer to the singleton
-
 	MatchSettingsManip(const MatchSettingsManip&) = delete;
 	void operator=(const MatchSettingsManip&) = delete;
 
 protected:
-	boost::filesystem::path workDir;	///< Folder where the application was launched
 	boost::filesystem::path defCfgPath;	///< Path of the original configuration file
 	boost::filesystem::path cfgPath;	///< Path of the user configuration file
 
@@ -103,20 +100,11 @@ protected:
 	/// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
 	void createUserDefaults(MatchSettings &ms);
 
-	/**
-	Creates the Singleton.
-	@param appLaunchPath the path to 'Pic2Sym.exe' and is used to determine
-	the folder where to look for 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
-	*/
-	MatchSettingsManip(const std::string &appLaunchPath);
+	/// Creates the Singleton.
+	MatchSettingsManip();
 
 public:
-	/// Provides required path by the singleton
-	static void init(const std::string &appLaunchPath);
-	
 	static MatchSettingsManip& instance(); ///< returns a reference to the singleton
-
-	const boost::filesystem::path& getWorkDir() const { return workDir; }
 
 	bool parseCfg(MatchSettings &ms, const boost::filesystem::path &cfgFile); ///< Loads the settings provided in cfgFile
 

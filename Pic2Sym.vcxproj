@@ -19,6 +19,7 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\boxBlur.h" />
@@ -82,6 +83,7 @@
     <ClInclude Include="src\views.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\appStart.cpp" />
     <ClCompile Include="src\appState.cpp" />
     <ClCompile Include="src\blur.cpp" />
     <ClCompile Include="src\boxBlur.cpp" />

@@ -101,16 +101,14 @@ std::wostream& operator<<(std::wostream &os, const BestMatch &bm) {
 #if defined _DEBUG && !defined UNIT_TESTING
 
 #include "transformTrace.h"
-#include "matchSettingsManip.h"
-
-#include <boost/filesystem/path.hpp>
+#include "appStart.h"
 
 using namespace std;
 using namespace boost::filesystem;
 
 TransformTrace::TransformTrace(const string &studiedCase_, unsigned sz_, bool isUnicode_) :
 		studiedCase(studiedCase_), sz(sz_), isUnicode(isUnicode_) {
-	path traceFile(MatchSettingsManip::instance().getWorkDir());
+	path traceFile(AppStart::dir());
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 

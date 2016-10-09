@@ -41,7 +41,7 @@
 #include "progressNotifier.h"
 #include "matchParams.h"
 #include "structuralSimilarity.h"
-#include "matchSettingsManip.h"
+#include "appStart.h"
 #include "controlPanel.h"
 #include "updateSymsActions.h"
 #include "symsSerialization.h"
@@ -52,7 +52,7 @@
 #include <functional>
 #include <thread>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <opencv2/highgui.hpp>
 
 using namespace std;
@@ -556,8 +556,10 @@ void Controller::symbolsReadyToInvestigate() const {
 		return;
 	}
 
-	path destFile = MatchSettingsManip::instance().getWorkDir();
-	destFile.append("Output").append("symsSelection_").concat(to_string(time(nullptr))).concat(".txt");
+	path destFile = AppStart::dir();
+	if(!exists(destFile.append("SymsSelections")))
+		create_directory(destFile);
+	destFile.append(to_string(time(nullptr))).concat(".txt");
 	cout<<"The list of "<<symsToInvestigate.size()<<" symbols for further investigations will be saved to file "
 		<<destFile<<" and then cleared."<<endl;
 

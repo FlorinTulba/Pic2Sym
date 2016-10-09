@@ -297,6 +297,9 @@
     <ClInclude Include="src\stackBlur.h">
       <Filter>Header Files\Var\Blurring</Filter>
     </ClInclude>
+    <ClInclude Include="src\appStart.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -439,6 +442,9 @@
     </ClCompile>
     <ClCompile Include="src\stackBlur.cpp">
       <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\appStart.cpp">
+      <Filter>Source Files\Var</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

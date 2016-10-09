@@ -38,6 +38,7 @@
 #ifndef UNIT_TESTING
 
 #include "matchSettingsManip.h"
+#include "appStart.h"
 #include "settings.h"
 #include "propsReader.h"
 #include "misc.h"
@@ -52,21 +53,9 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace boost::archive;
 
-MatchSettingsManip* MatchSettingsManip::inst = nullptr;
-
-void MatchSettingsManip::init(const string &appLaunchPath) {
-	if(nullptr != inst)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only once!", logic_error);
-
-	static MatchSettingsManip theInstance(appLaunchPath);
-	inst = &theInstance;
-}
-
 MatchSettingsManip& MatchSettingsManip::instance() {
-	if(nullptr != inst)
-		return *inst;
-
-	THROW_WITH_CONST_MSG(__FUNCTION__ " called before MatchSettingsManip::init()!", logic_error);
+	static MatchSettingsManip inst;
+	return inst;
 }
 
 void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
@@ -95,10 +84,8 @@ void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
 	createUserDefaults(ms);
 }
 
-MatchSettingsManip::MatchSettingsManip(const string &appLaunchPath) {
-	boost::filesystem::path executablePath(absolute(appLaunchPath));
-
-	defCfgPath = cfgPath = workDir = executablePath.remove_filename();
+MatchSettingsManip::MatchSettingsManip() {
+	defCfgPath = cfgPath = AppStart::dir();
 
 	if(!exists(defCfgPath.append("res").append("defaultMatchSettings.txt")))
 		THROW_WITH_VAR_MSG(__FUNCTION__" : There's no " + defCfgPath.string(), runtime_error);
