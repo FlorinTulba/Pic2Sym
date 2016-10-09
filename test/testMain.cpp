@@ -422,11 +422,11 @@ void JobMonitor::taskDone(unsigned) {}
 
 void JobMonitor::taskAborted(unsigned) {}
 
-SymData::SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
+SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
 				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :
-				 code(code_), minVal(minVal_), diffMinMax(diffMinMax_),
-				 pixelSum(pixelSum_), mc(mc_),
-				 symAndMasks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {
+		code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
+		pixelSum(pixelSum_), mc(mc_),
+		symAndMasks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {
 	for(const auto &idxAndMat : relevantMats)
 		const_cast<Mat&>(symAndMasks[idxAndMat.first]) = idxAndMat.second;
 }

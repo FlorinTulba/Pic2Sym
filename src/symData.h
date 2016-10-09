@@ -54,6 +54,7 @@ struct SymData {
 							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal);
 
 	const unsigned long code = ULONG_MAX;	///< the code of the symbol
+	const size_t symIdx = 0U;				///< symbol index within cmap
 	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
 	const double pixelSum = 0.;		///< sum of the values of the pixels, each in 0..1
@@ -77,10 +78,8 @@ struct SymData {
 
 	const MatArray symAndMasks;		///< symbol + other matrices & masks
 
-	SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
-			const cv::Point2d &mc_, const MatArray &symAndMasks_) :
-			code(code_), minVal(minVal_), diffMinMax(diffMinMax_),
-			pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {}
+	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
+			const cv::Point2d &mc_, const MatArray &symAndMasks_);
 
 	SymData& operator=(const SymData &other);
 	
@@ -88,7 +87,7 @@ struct SymData {
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
 
 	/// Constructor that allows filling only the relevant matrices from MatArray
-	SymData(unsigned long code_, double minVal_, double diffMinMax_, double pixelSum_,
+	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
 			const cv::Point2d &mc_, const IdxMatMap &relevantMats);
 #endif
 

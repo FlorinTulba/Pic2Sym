@@ -61,6 +61,7 @@ Fields 'left' and 'top' indicate the position of the top-left corner within the 
 */
 struct PixMapSym {
 	unsigned long symCode = 0UL;	///< symbol code
+	size_t symIdx = 0U;				///< symbol index within cmap
 	double glyphSum = 0.;			///< sum of the pixel values divided by 255
 	cv::Point2d mc;					///< glyph's mass center
 
@@ -90,6 +91,7 @@ struct PixMapSym {
 	Any bitmap pitch is removed => storing pixels without gaps.
 	*/
 	PixMapSym(unsigned long symCode,	///< the symbol code
+			  size_t symIdx_,			///< symbol index within cmap
 			  const FT_Bitmap &bm,		///< the bitmap to process
 			  int leftBound,			///< initial position of the symbol considered from the left
 			  int topBound,				///< initial position of the symbol considered from the top
@@ -177,9 +179,9 @@ public:
 	appendSym puts valid glyphs into vector 'syms'.
 
 	Space (empty / full) glyphs are invalid.
-	Also updates the count of blanks & duplicates.
+	Also updates the count of blanks & duplicates and of any filtered out symbols.
 	*/
-	void appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc);
+	void appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc);
 
 	void setAsReady(); ///< No other symbols to append. Statistics can be now computed
 };

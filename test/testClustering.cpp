@@ -118,10 +118,10 @@ namespace ut {
 								   Mat(1, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)), Mat(1, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)),
 								   Mat(1, TinySymDiagsCount, CV_64FC1, Scalar(0.)), Mat(1, TinySymDiagsCount, CV_64FC1, Scalar(0.)));
 
-	const SymData EmptySymData5x5(0UL, 0., 0., 0., TinySymCenter,
+	const SymData EmptySymData5x5(0UL, 0U, 0., 0., 0., TinySymCenter,
 		{ { SymData::NEG_SYM_IDX, Mat(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_8UC1, Scalar(255U)) },
 		{ SymData::GROUNDED_SYM_IDX, Mat(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_64FC1, Scalar(0.)) } }),
-				MainDiagSymData5x5(1UL, 0., 1., (double)TinySymData::TinySymSz, TinySymCenter,
+				MainDiagSymData5x5(1UL, 0U, 0., 1., (double)TinySymData::TinySymSz, TinySymCenter,
 		{ { SymData::NEG_SYM_IDX, (255U - Mat::eye(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_8UC1) * 255U) },
 		{ SymData::GROUNDED_SYM_IDX, Mat::eye(TinySymData::TinySymSz, TinySymData::TinySymSz, CV_64FC1) } });
 

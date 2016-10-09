@@ -121,6 +121,7 @@ void MatchEngine::updateSymbols() {
 #pragma omp ordered
 //#pragma omp critical - implied by ordered from above
 		symsSet.emplace_back(pms.symCode,
+							 pms.symIdx,
 							 minVal, maxVal-minVal,
 							 pms.glyphSum, pms.mc,
 							 SymData::MatArray { {

@@ -45,6 +45,11 @@
 using namespace std;
 using namespace cv;
 
+SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
+				 const Point2d &mc_, const MatArray &symAndMasks_) :
+	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
+	pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {}
+
 SymData::SymData() : symAndMasks({ { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {}
 
 SymData& SymData::operator=(const SymData &other) {
@@ -53,6 +58,7 @@ SymData& SymData::operator=(const SymData &other) {
 		const_cast<Type&>(Field) = other.Field
 
 		REPLACE_FIELD(code, unsigned long);
+		REPLACE_FIELD(symIdx, size_t);
 		REPLACE_FIELD(minVal, double);
 		REPLACE_FIELD(diffMinMax, double);
 		REPLACE_FIELD(pixelSum, double);

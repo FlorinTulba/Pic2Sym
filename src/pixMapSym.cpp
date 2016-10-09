@@ -95,13 +95,14 @@ static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
 }
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
+					 size_t symIdx_,				// symbol index within cmap
 					 const FT_Bitmap &bm,			// the bitmap to process
 					 int leftBound, int topBound,	// initial position of the symbol
 					 int sz,						// font size
 					 const Mat &consec,				// vector of consecutive values 0 .. sz-1
 					 const Mat &revConsec,			// vector of consecutive values sz-1 .. 0
 					 const FT_BBox &bb) :			// the bounding box to fit
-					 symCode(symCode_) {
+		symCode(symCode_), symIdx(symIdx_) {
 	int rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom;
 	fitGlyphToBox(bm, bb, leftBound, topBound, sz, // input params
 				  rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
@@ -130,6 +131,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 
 PixMapSym::PixMapSym(const PixMapSym &other) :
 		symCode(other.symCode),
+		symIdx(other.symIdx),
 		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
@@ -139,6 +141,7 @@ PixMapSym::PixMapSym(const PixMapSym &other) :
 
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
 		symCode(other.symCode),
+		symIdx(other.symIdx),
 		glyphSum(other.glyphSum),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
@@ -150,6 +153,7 @@ PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulatio
 PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 	if(this != &other) {
 		symCode = other.symCode;
+		symIdx = other.symIdx;
 		glyphSum = other.glyphSum;
 		mc = other.mc;
 		rows = other.rows; cols = other.cols;
@@ -163,7 +167,7 @@ PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 }
 
 bool PixMapSym::operator==(const PixMapSym &other) const {
-	if(this == &other || symCode == other.symCode)
+	if(this == &other || symCode == other.symCode || symIdx == other.symIdx)
 		return true;
 
 	return
@@ -328,7 +332,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	revConsec = revConsec.t();
 }
 
-void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
+void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
 	if(ready)
 		THROW_WITH_CONST_MSG("Cannot call " __FUNCTION__ " after setAsReady without reset-ing", logic_error);
 	
@@ -341,7 +345,7 @@ void PmsCont::appendSym(FT_ULong c, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache 
 		return;
 	}
 
-	const PixMapSym pms(c, g->bitmap, g->bitmap_left, g->bitmap_top,
+	const PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
 						(int)fontSz, consec, revConsec, bb);
 	if(pms.glyphSum < EPS || sz2 - pms.glyphSum < EPS) { // discard disguised Space characters
 		++blanks;

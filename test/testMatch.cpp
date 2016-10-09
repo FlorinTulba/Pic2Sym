@@ -67,6 +67,8 @@ namespace ut {
 	/// dummy value
 	const unsigned long NOT_RELEVANT_UL = ULONG_MAX;
 	/// dummy value
+	const size_t NOT_RELEVANT_SZ = 0U;
+	/// dummy value
 	const Point2d NOT_RELEVANT_POINT;
 	/// dummy value
 	const Mat NOT_RELEVANT_MAT;
@@ -171,6 +173,7 @@ namespace ut {
 		// A glyph half 0, half 255
 		sdWithHorizEdgeMask = std::make_shared<SymData>(
 				NOT_RELEVANT_UL,	// glyph code (not relevant here)
+				NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				0., // min glyph value (0..1 range)
 				1.,	// difference between min and max glyph (0..1 range)
 				sz*sz/2.,	// pixelSum = 255*(sz^2/2)/255 = sz^2/2
@@ -636,6 +639,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min in range 0..1 (not relevant here)
 				   1., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -681,6 +685,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min in range 0..1 (not relevant here)
 				   1., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -716,6 +721,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const Mat diagFgMask = Mat::diag(Mat(1, getSz(), CV_8UC1, Scalar(255U)));
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -740,6 +746,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const Mat diagFgMask = Mat::diag(Mat(1, getSz(), CV_8UC1, Scalar(255U)));
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -765,6 +772,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const Mat diagFgMask = Mat::diag(Mat(1, getSz(), CV_8UC1, Scalar(255U)));
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -817,6 +825,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		groundedGlyph.convertTo(groundedGlyph, CV_64FC1, 1./255);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -869,6 +878,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		groundedGlyph.convertTo(groundedGlyph, CV_64FC1, 1./255);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -922,6 +932,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		groundedGlyph.convertTo(groundedGlyph, CV_64FC1, 1./255);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -984,6 +995,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		groundedGlyph.convertTo(groundedGlyph, CV_64FC1, 1./255);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
@@ -1023,6 +1035,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1050,6 +1063,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1078,6 +1092,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1118,6 +1133,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1151,6 +1167,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1183,6 +1200,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const unsigned cnz = getArea() - 3U*getSz() + 2U;
 		BOOST_REQUIRE(countNonZero(allBut3DiagsBgMask) == cnz);
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // pixelSum (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1214,6 +1232,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1255,6 +1274,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1300,6 +1320,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1342,6 +1363,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1380,6 +1402,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1419,6 +1442,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   pixelSum,
 				   origMcSym,
@@ -1450,6 +1474,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   0., // pixelSum (INITIALLY, AN EMPTY SYMBOL IS CONSIDERED)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1470,6 +1495,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   getArea() * cd.smallGlyphsCoverage, // pixelSum (symbol that just enters the 'large symbols' category)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
@@ -1489,6 +1515,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
+				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   getArea(), // pixelSum (largest possible symbol)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)

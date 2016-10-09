@@ -373,7 +373,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<"Setting font size "<<fontSz_<<endl;
 
 	const double sz = fontSz_;
-	vector<tuple<FT_ULong, double, double>> toResize;
+	vector<tuple<FT_ULong, size_t, double, double>> toResize;
 	double factorH, factorV;
 	FT_BBox bb;
 	FT_UInt idx;
@@ -395,16 +395,16 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	sfc.setFontSz(fontSz_);
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
-	size_t i = 0;
+	size_t i = 0U;
 	for(FT_ULong c = FT_Get_First_Char(face, &idx);  idx != 0;  c=FT_Get_Next_Char(face, c, &idx)) {
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
 		const unsigned height = b.rows, width = b.width;
 		if(width > fontSz_ || height > fontSz_)
-			toResize.emplace_back(c, max(1., height/sz), max(1., width/sz));
+			toResize.emplace_back(c, i, max(1., height/sz), max(1., width/sz));
 		else
-			symsCont.appendSym(c, g, bb, sfc);
+			symsCont.appendSym(c, i, g, bb, sfc);
 
 		loadFitSymbols.taskAdvanced(++i);
 	}
@@ -412,16 +412,17 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	// Resize symbols which didn't fit initially
 	static TaskMonitor loadExtraSqueezedSymbols("load & filter extra-squeezed symbols", *symsMonitor);
 	loadExtraSqueezedSymbols.setTotalSteps(toResize.size());
-	i = 0;
+	i = 0U;
 	for(const auto &item : toResize) {
 		FT_ULong c;
+		size_t symIdx;
 		double hRatio, vRatio;
-		tie(c, vRatio, hRatio) = item;
+		tie(c, symIdx, vRatio, hRatio) = item;
 		req.height = (FT_ULong)floor(factorV * ((FT_ULong)(fontSz_)<<6) / vRatio);
 		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / hRatio);
 		FT_Request_Size(face, &req);
 		FT_Load_Char(face, c, FT_LOAD_RENDER);
-		symsCont.appendSym(c, face->glyph, bb, sfc);
+		symsCont.appendSym(c, symIdx, face->glyph, bb, sfc);
 
 		loadExtraSqueezedSymbols.taskAdvanced(++i);
 	}
