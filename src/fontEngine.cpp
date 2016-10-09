@@ -81,7 +81,7 @@ namespace {
 		req.height = sz<<6; // 26.6 format
 		req.width = req.height; // initial check for square drawing board
 		req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
-		const FT_Error error = FT_Request_Size(face, &req);
+		FT_Error error = FT_Request_Size(face, &req);
 		if(error != FT_Err_Ok)
 			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
 
@@ -90,33 +90,36 @@ namespace {
 		for(FT_ULong c = FT_Get_First_Char(face, &idx);
 				idx != 0;
 				c = FT_Get_Next_Char(face, c, &idx), ++symsCount) {
-			FT_Load_Char(face, c, FT_LOAD_RENDER);
+			error = FT_Load_Char(face, c, FT_LOAD_RENDER);
+			if(error != FT_Err_Ok)
+				THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
 			const FT_GlyphSlot g = face->glyph;
 			const FT_Bitmap b = g->bitmap;
 
 			const unsigned height = b.rows, width = b.width;
 			vHeight.push_back(height); vWidth.push_back(width);
 			
-			const int left = g->bitmap_left, right = g->bitmap_left+width - 1,
+			const int left = g->bitmap_left, right = left+width - 1,
 					top = g->bitmap_top, bottom = top - (int)height + 1;
 			vLeft.push_back(left); vRight.push_back(right);
 			vTop.push_back(top); vBottom.push_back(bottom);
 		}
 
 		// Compute some means and standard deviations
-		Vec<double, 1> avgHeight, sdHeight, avgWidth, sdWidth, avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
+		Vec<double, 1> avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
+		Scalar avgHeight, avgWidth;
 #pragma omp parallel if(ParallelizePixMapStatistics)
 #pragma omp sections nowait
 		{
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "height");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vHeight.data()), avgHeight, sdHeight);
+				avgHeight = mean(Mat(1, symsCount, CV_64FC1, vHeight.data()));
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "width");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vWidth.data()), avgWidth, sdWidth);
+				avgWidth = mean(Mat(1, symsCount, CV_64FC1, vWidth.data()));
 			}
 #pragma omp section
 			{
@@ -151,7 +154,9 @@ namespace {
 		req.height = (FT_ULong)floor(factorV * req.height);
 		req.width = (FT_ULong)floor(factorH * req.width);
 
-		FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
+		error = FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
 
 		// Positioning the Bounding box to best cover the estimated future position & size of the symbols
 		double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
@@ -214,6 +219,17 @@ namespace {
 
 		return encMap;
 	}
+
+	/// Required data for a symbol to be resized twice
+	struct DataForSymToResize {
+		FT_ULong symCode;	///< code of the symbol
+		size_t symIdx;		///< index within charmap
+		double hRatio;		///< horizontal resize ratio
+		double vRatio;		///< vertical resize ratio
+
+		DataForSymToResize(FT_ULong symCode_, size_t symIdx_, double hRatio_, double vRatio_) :
+			symCode(symCode_), symIdx(symIdx_), hRatio(hRatio_), vRatio(vRatio_) {}
+	};
 } // anonymous namespace
 
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
@@ -359,7 +375,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 
 void FontEngine::setFontSz(unsigned fontSz_) {
 	if(symsCont.isReady() && symsCont.getFontSz() == fontSz_)
-		return;
+		return; // same font size
 
 	if(face == nullptr)
 		THROW_WITH_CONST_MSG("Please use FontEngine::newFont before calling " __FUNCTION__ "!", logic_error);
@@ -373,7 +389,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<"Setting font size "<<fontSz_<<endl;
 
 	const double sz = fontSz_;
-	vector<tuple<FT_ULong, size_t, double, double>> toResize;
+	vector<DataForSymToResize> toResize;
 	double factorH, factorV;
 	FT_BBox bb;
 	FT_UInt idx;
@@ -397,7 +413,9 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
 	size_t i = 0U;
 	for(FT_ULong c = FT_Get_First_Char(face, &idx);  idx != 0;  c=FT_Get_Next_Char(face, c, &idx)) {
-		FT_Load_Char(face, c, FT_LOAD_RENDER);
+		const FT_Error error = FT_Load_Char(face, c, FT_LOAD_RENDER);
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
 		const unsigned height = b.rows, width = b.width;
@@ -414,15 +432,17 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	loadExtraSqueezedSymbols.setTotalSteps(toResize.size());
 	i = 0U;
 	for(const auto &item : toResize) {
-		FT_ULong c;
-		size_t symIdx;
-		double hRatio, vRatio;
-		tie(c, symIdx, vRatio, hRatio) = item;
-		req.height = (FT_ULong)floor(factorV * ((FT_ULong)(fontSz_)<<6) / vRatio);
-		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / hRatio);
-		FT_Request_Size(face, &req);
-		FT_Load_Char(face, c, FT_LOAD_RENDER);
-		symsCont.appendSym(c, symIdx, face->glyph, bb, sfc);
+		req.height = (FT_ULong)floor(factorV * ((FT_ULong)(fontSz_)<<6) / item.vRatio);
+		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / item.hRatio);
+		FT_Error error = FT_Request_Size(face, &req);
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(factorV * fontSz_ / item.vRatio) +
+								" x " + to_string(factorH * fontSz_ / item.hRatio) +
+								"  Error: " + to_string(error), invalid_argument);
+		error = FT_Load_Char(face, item.symCode, FT_LOAD_RENDER);
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(item.symCode) + "  Error: " + to_string(error), invalid_argument);
+		symsCont.appendSym(item.symCode, item.symIdx, face->glyph, bb, sfc);
 
 		loadExtraSqueezedSymbols.taskAdvanced(++i);
 	}
@@ -441,7 +461,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	if(!toResize.empty()) {
 		cout<<toResize.size()<<" symbols were resized twice: ";
 		for(const auto &item : toResize)
-			cout<<get<0>(item)<<", ";
+			cout<<item.symCode<<", ";
 		cout<<endl;
 	}
 
