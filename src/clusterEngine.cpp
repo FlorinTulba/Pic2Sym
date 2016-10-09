@@ -57,12 +57,12 @@ namespace {
 		static const Size SmallSymDim(TinySymData::TinySymSz, TinySymData::TinySymSz);
 		static const unsigned DiagsCountU = 2U * TinySymData::TinySymSz - 1U;
 		static const double InvDiagsCount = 1. / DiagsCountU,
-						InvSmallSymSz = 1. / TinySymData::TinySymSz,
-						InvSmallSymArea = 1. / (TinySymData::TinySymSz * TinySymData::TinySymSz);
-		
+			InvSmallSymSz = 1. / TinySymData::TinySymSz,
+			InvSmallSymArea = 1. / (TinySymData::TinySymSz * TinySymData::TinySymSz);
+
 		smallSyms.reserve(symsSet.size());
 		const double invInitFontSz = 1. / symsSet[0].symAndMasks[SymData::NEG_SYM_IDX].rows,
-					invInitFontArea = invInitFontSz * invInitFontSz;
+			invInitFontArea = invInitFontSz * invInitFontSz;
 		for(const auto &symData : symsSet) {
 			const Mat &gsi = symData.symAndMasks[SymData::GROUNDED_SYM_IDX]; // double values, 0..1 range
 			Mat smallSym, flippedSmallSym,
@@ -76,7 +76,7 @@ namespace {
 			reduce(smallSym, vAvgProj, 1, CV_REDUCE_AVG);
 			flip(smallSym, flippedSmallSym, 1); // flip around vertical axis
 			for(int diagIdx = -TinySymData::TinySymSz+1, i = 0;
-					diagIdx < TinySymData::TinySymSz; ++diagIdx, ++i) {
+				diagIdx < TinySymData::TinySymSz; ++diagIdx, ++i) {
 				const Mat backslashDiag = smallSym.diag(diagIdx);
 				backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
 
@@ -87,7 +87,7 @@ namespace {
 			smallSyms.emplace_back(symData.mc * invInitFontSz, // mapping original mc to the unit square
 								   symData.pixelSum * invInitFontArea, // average pixel value (0..1)
 								   smallSym * InvSmallSymArea, // all pixels divided by area of tiny sym
-								   
+
 								   // all elements of the resulted projections divided by their count
 								   hAvgProj * InvSmallSymSz, vAvgProj * InvSmallSymSz,
 								   backslashDiagAvgProj * InvDiagsCount, slashDiagAvgProj * InvDiagsCount);
@@ -102,22 +102,21 @@ namespace {
 		// Typically, there are only a few clusters larger than 1 element.
 		// This partition separates the actual formed clusters from one-of-a-kind elements
 		// leaving less work to perform to the sort executed afterwards
-		auto itFirstClusterWithOneItem = stable_partition(BOUNDS(symsIndicesPerCluster),
+		auto itFirstClusterWithOneItem = partition(BOUNDS(symsIndicesPerCluster),
 														  [] (const vector<unsigned> &a) {
 			return a.size() > 1U; // place actual clusters at the beginning of the vector
 		});
 
-		// Stable partition and sort leave the symbols organized in a more pleasant way than using unstable algorithms.
-		stable_sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
+		// Sort non-trivial clusters in descending order of their size
+		// and then in ascending order of pixelSum (taken from last cluster member)
+		sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
 					[&] (const vector<unsigned> &a, const vector<unsigned> &b) {
 			const size_t szA = a.size(), szB = b.size();
-			// Sort in descending order of cluster sz and then in ascending order of pixelSum
-			// (taken from last cluster member)
 			return (szA > szB) || ((szA == szB) && (symsSet[a.back()].pixelSum < symsSet[b.back()].pixelSum));
 		});
 
 		// Sort trivial clusters in ascending order of pixelSum
-		sort(itFirstClusterWithOneItem, end(symsIndicesPerCluster), // just to appear familiar while visualizing the cmap
+		sort(itFirstClusterWithOneItem, end(symsIndicesPerCluster),
 			 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
 			return symsSet[a.back()].pixelSum < symsSet[b.back()].pixelSum;
 		});
