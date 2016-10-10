@@ -43,6 +43,8 @@
 #include "structuralSimilarity.h"
 #include "misc.h"
 
+#include <set>
+
 #include <boost/algorithm/string/replace.hpp>
 #include <opencv2/core/core.hpp>
 
@@ -50,25 +52,150 @@ using namespace std;
 using namespace cv;
 using namespace boost::algorithm;
 
-/// Replaces all instances of a pattern in a text with a different string.
-static string replacePlaceholder(const string &text,	///< initial text
-								 const string &placeholder = "$(PIC2SYM_VERSION)",	///< pattern to be replaced
-								 const string &replacement = PIC2SYM_VERSION	///< replacement string
-								 ) {
-	string text_(text);
-	replace_all(text_, placeholder, replacement);
-	return text_; // NRVO
-}
+namespace {
+	/// Replaces all instances of a pattern in a text with a different string.
+	string replacePlaceholder(const string &text,	///< initial text
+							  const string &placeholder = "$(PIC2SYM_VERSION)",	///< pattern to be replaced
+							  const string &replacement = PIC2SYM_VERSION	///< replacement string
+							  ) {
+		string text_(text);
+		replace_all(text_, placeholder, replacement);
+		return text_; // NRVO
+	}
 
-/// parser for reading various texts and constants customizing the runtime look and behavior
-static PropsReader& varConfigRef() {
-	static PropsReader varConfig("res/varConfig.txt");
-	return varConfig;
-}
+	/// parser for reading various texts and constants customizing the runtime look and behavior
+	PropsReader& varConfigRef() {
+		static PropsReader varConfig("res/varConfig.txt");
+		return varConfig;
+	}
+
+	/// Base class for validators of the configuration items from 'res/varConfig.txt'
+	template<class Type>
+	struct ConfigItemValidator {
+		/// Should throw an appropriate exception when itemVal is wrong for itemName
+		virtual void examine(const string &itemName, const Type &itemVal) const = 0;
+	};
+
+	/// Base class for IsOdd and IsEven from below
+	template<class Type, typename = enable_if_t<is_integral<Type>::value>>
+	struct IsOddOrEven : ConfigItemValidator<Type> {
+		void examine(const string &itemName, const Type &itemVal) const override {
+			if(isOdd) {
+				if((Type)0 == (itemVal & (Type)1))
+					THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be odd!", invalid_argument);
+			} else { // is even
+				if((Type)1 == (itemVal & (Type)1))
+					THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be even!", invalid_argument);
+			}
+		}
+
+	protected:
+		const bool isOdd;	///< true for IsOdd, false for IsEven
+
+		IsOddOrEven(bool isOdd_) : isOdd(isOdd_) {}
+	};
+
+	/// Throws for non-odd configuration items
+	template<class Type>
+	struct IsOdd : IsOddOrEven<Type> {
+		IsOdd(void** /*hackParam*/ = nullptr) : IsOddOrEven(true) {}
+	};
+
+	/// Throws for non-even configuration items
+	template<class Type>
+	struct IsEven : IsOddOrEven<Type> {
+		IsEven(void** /*hackParam*/ = nullptr) : IsOddOrEven(false) {}
+	};
+
+	/// Base class for IsLessThan and IsGreaterThan from below
+	template<class Type, typename = enable_if_t<is_arithmetic<Type>::value>>
+	struct IsLessOrGreaterThan : ConfigItemValidator<Type> {
+		void examine(const string &itemName, const Type &itemVal) const override {
+			if(isLess) {
+				if(orEqual) {
+					if(itemVal > refVal)
+						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be <= " + to_string(refVal) + "!", out_of_range);
+				} else { // orEqual is false
+					if(itemVal >= refVal)
+						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be < " + to_string(refVal) + "!", out_of_range);
+				}
+
+			} else { // isGreater
+				if(orEqual) {
+					if(itemVal < refVal)
+						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be >= " + to_string(refVal) + "!", out_of_range);
+				} else { // orEqual is false
+					if(itemVal <= refVal)
+						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be > " + to_string(refVal) + "!", out_of_range);
+				}
+			}
+		}
+
+	protected:
+		const bool isLess;	///< true for IsLessThan, false for IsGreaterThan
+		const Type refVal;	///< the value to compare against
+		const bool orEqual;	///< compare strictly or not
+
+		IsLessOrGreaterThan(bool isLess_, const Type &refVal_, bool orEqual_ = false) :
+			isLess(isLess_), refVal(refVal_), orEqual(orEqual_) {}
+	};
+
+	/// Throws for values > or >= than refVal_
+	template<class Type>
+	struct IsLessThan : IsLessOrGreaterThan<Type> {
+		IsLessThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(true, refVal_, orEqual_) {}
+	};
+
+	/// Throws for values < or <= than refVal_
+	template<class Type>
+	struct IsGreaterThan : IsLessOrGreaterThan<Type> {
+		IsGreaterThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(false, refVal_, orEqual_) {}
+	};
+
+	/// Checks that the provided value for a configuration item is within a given set of accepted values.
+	template<class Type>
+	struct IsOneOf : ConfigItemValidator<Type> {
+		IsOneOf(const set<Type> &allowedSet_) : allowedSet(allowedSet_), allowedSetStr(setAsString(allowedSet_)) {
+			if(allowedSet_.empty())
+				THROW_WITH_CONST_MSG(__FUNCTION__ " should get a non-empty set of allowed values!", invalid_argument);
+		}
+
+		void examine(const string &itemName, const Type &itemVal) const override {
+			if(allowedSet.cend() == allowedSet.find(itemVal))
+				THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be among these values: " + allowedSetStr + "!", invalid_argument);
+		}
+
+	protected:
+		/// Helper to initialize allowedSetStr in initialization list
+		static const string setAsString(const set<Type> &allowedSet_) {
+			ostringstream oss;
+			copy(CBOUNDS(allowedSet_), ostream_iterator<Type>(oss, ", "));
+			oss<<"\b\b ";
+			return oss.str();
+		}
+
+		const set<Type> allowedSet;	///< allowed set of values
+		const string allowedSetStr;	///< same set in string format
+	};
+
+	/// Checks that itemName's value (itemValue) is approved by all validators, in which case it returns it.
+	template<class Type>
+	const Type& checkItem(const string &itemName, const Type &itemVal,
+						  const list< const ConfigItemValidator<Type> * > &validators) {
+		for(const auto validator : validators) {
+			if(validator == nullptr)
+				continue;
+			validator->examine(itemName, itemVal);
+		}
+		return itemVal;
+	}
+} // anonymous namespace
 
 // Macros for reading the properties from 'varConfig.txt'
-#define READ_PROP(prop, type) \
-	const type prop = varConfigRef().read<type>(#prop)
+#define READ_PROP(prop, type, ...) \
+	const type prop = checkItem<type>(#prop, varConfigRef().read<type>(#prop), \
+									/* Builds a list from the validators provided in '...': */ \
+									list< const ConfigItemValidator<type> * > {__VA_ARGS__} );
 
 #define READ_PROP_COND(prop, type, cond, defaultVal) \
 	const type prop = (cond) ? varConfigRef().read<type>(#prop) : (defaultVal)
@@ -79,26 +206,77 @@ static PropsReader& varConfigRef() {
 #define READ_BOOL_PROP_COND(prop, cond) \
 	READ_PROP_COND(prop, bool, cond, false)
 
-#define READ_INT_PROP(prop) \
-	READ_PROP(prop, int)
+#define READ_INT_PROP(prop, ...) \
+	READ_PROP(prop, int, __VA_ARGS__)
 
 #define READ_INT_PROP_COND(prop, cond, defaultVal) \
 	READ_PROP_COND(prop, int, cond, defaultVal)
 
-#define READ_UINT_PROP(prop) \
-	READ_PROP(prop, unsigned)
+#define READ_UINT_PROP(prop, ...) \
+	READ_PROP(prop, unsigned, __VA_ARGS__)
 
-#define READ_DOUBLE_PROP(prop) \
-	READ_PROP(prop, double)
+#define READ_DOUBLE_PROP(prop, ...) \
+	READ_PROP(prop, double, __VA_ARGS__)
 
-#define READ_STR_PROP(prop) \
-	READ_PROP(prop, string)
+#define READ_STR_PROP(prop, ...) \
+	READ_PROP(prop, string, __VA_ARGS__)
 
 #define READ_STR_PROP_CONVERT(prop, destStringType) \
 	const destStringType prop = varConfigRef().read<string>(#prop)
 
 #define READ_WSTR_PROP(prop) \
 	const wstring prop = str2wstr(varConfigRef().read<string>(#prop))
+
+// Limits for read data
+#define VALIDATOR(Name, Kind, Type, ...) \
+	const Kind<Type>* Name() { \
+		static const Kind<Type> validator(__VA_ARGS__); \
+		return &validator; \
+	} 
+
+static VALIDATOR(oddI, IsOdd, int, nullptr);
+static VALIDATOR(oddU, IsOdd, unsigned, nullptr);
+
+static VALIDATOR(lessThan20i,	IsLessThan, int, 20);
+static VALIDATOR(lessThan600i,	IsLessThan, int, 600, true);
+static VALIDATOR(lessThan800i,	IsLessThan, int, 800, true);
+static VALIDATOR(lessThan1000i, IsLessThan, int, 1000, true);
+static VALIDATOR(atMost9U,		IsLessThan, unsigned, 9U, true);
+static VALIDATOR(atMost50U,		IsLessThan, unsigned, 50U, true);
+static VALIDATOR(atMost768U,	IsLessThan, unsigned, 768U, true);
+static VALIDATOR(lessThan1000U, IsLessThan, unsigned, 1000U, true);
+static VALIDATOR(atMost1024U,	IsLessThan, unsigned, 1024U, true);
+static VALIDATOR(lessThan235D,	IsLessThan, double, 235.);
+static VALIDATOR(atMost50D,		IsLessThan, double, 50., true);
+static VALIDATOR(lessThan26D,	IsLessThan, double, 26.);
+static VALIDATOR(lessThan20D,	IsLessThan, double, 20.);
+static VALIDATOR(lessThan10D,	IsLessThan, double, 10, true);
+static VALIDATOR(lessThan5D,	IsLessThan, double, 5., true);
+static VALIDATOR(lessThan1D,	IsLessThan, double, 1.);
+static VALIDATOR(lessThan0dot1, IsLessThan, double, 0.1);
+static VALIDATOR(lessThan0dot4, IsLessThan, double, 0.4);
+static VALIDATOR(lessThan0dot04,IsLessThan, double, 0.04);
+
+static VALIDATOR(atLeast3i,		IsGreaterThan, int, 3, true);
+static VALIDATOR(atLeast5i,		IsGreaterThan, int, 5, true);
+static VALIDATOR(atLeast10i,	IsGreaterThan, int, 10, true);
+static VALIDATOR(atLeast480i,	IsGreaterThan, int, 480, true);
+static VALIDATOR(atLeast640i,	IsGreaterThan, int, 640, true);
+static VALIDATOR(atLeast1U,		IsGreaterThan, unsigned, 1U, true);
+static VALIDATOR(atLeast5U,		IsGreaterThan, unsigned, 5U, true);
+static VALIDATOR(atLeast3U,		IsGreaterThan, unsigned, 3U, true);
+static VALIDATOR(atLeast1dot6,	IsGreaterThan, double, 1.6);
+static VALIDATOR(atLeast14D,	IsGreaterThan, double, 14.);
+static VALIDATOR(atLeast0dot8,	IsGreaterThan, double, 0.8, true);
+static VALIDATOR(atLeast0dot15,	IsGreaterThan, double, 0.15, true);
+static VALIDATOR(atLeast0dot01, IsGreaterThan, double, 0.01, true);
+static VALIDATOR(atLeast0dot05, IsGreaterThan, double, 0.05, true);
+static VALIDATOR(atLeast0dot001,IsGreaterThan, double, 0.001);
+static VALIDATOR(positiveD,		IsGreaterThan, double, 0.);
+static VALIDATOR(nonNegativeD,	IsGreaterThan, double, 0., true);
+
+static VALIDATOR(availableClusterAlgs,	IsOneOf, string, { "None", "Partition", "TTSAS" });
+static VALIDATOR(availBlurAlgsForStrSim,IsOneOf, string, { "box", "ext_box", "stack", "gaussian" });
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
@@ -111,42 +289,69 @@ extern READ_BOOL_PROP_COND(ParallelizeGridPopulation, UsingOMP);
 extern READ_BOOL_PROP_COND(PrepareMoreGlyphsAtOnce, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeTr_PatchRowLoops, UsingOMP);
 
-extern READ_UINT_PROP(Settings_MIN_FONT_SIZE);
-extern READ_UINT_PROP(Settings_MAX_FONT_SIZE);
-extern READ_UINT_PROP(Settings_DEF_FONT_SIZE);
-extern READ_UINT_PROP(Settings_MAX_THRESHOLD_FOR_BLANKS);
-extern READ_UINT_PROP(Settings_MIN_H_SYMS);
-extern READ_UINT_PROP(Settings_MAX_H_SYMS);
-extern READ_UINT_PROP(Settings_MIN_V_SYMS);
-extern READ_UINT_PROP(Settings_MAX_V_SYMS);
+extern READ_UINT_PROP(Settings_MAX_THRESHOLD_FOR_BLANKS, atMost50U());
 
-extern READ_STR_PROP(ClusterAlgName);
+static const unsigned minFontSize() {
+	static READ_UINT_PROP(Settings_MIN_FONT_SIZE, atLeast5U());
+	return Settings_MIN_FONT_SIZE;
+}
+extern const unsigned Settings_MIN_FONT_SIZE = minFontSize();
+
+static const unsigned minHSyms() {
+	static READ_UINT_PROP(Settings_MIN_H_SYMS, atLeast3U());
+	return Settings_MIN_H_SYMS;
+}
+extern const unsigned Settings_MIN_H_SYMS = minHSyms();
+
+static const unsigned minVSyms() {
+	static READ_UINT_PROP(Settings_MIN_V_SYMS, atLeast3U());
+	return Settings_MIN_V_SYMS;
+}
+extern const unsigned Settings_MIN_V_SYMS = minVSyms();
+
+static VALIDATOR(moreThanMinFontSize,	IsGreaterThan, unsigned, minFontSize(), true);
+static VALIDATOR(moreThanMinHSyms,		IsGreaterThan, unsigned, minHSyms(), true);
+static VALIDATOR(moreThanMinVSyms,		IsGreaterThan, unsigned, minVSyms(), true);
+
+static const unsigned maxFontSize() {
+	static READ_UINT_PROP(Settings_MAX_FONT_SIZE, atMost50U(), moreThanMinFontSize());
+	return Settings_MAX_FONT_SIZE;
+}
+extern const unsigned Settings_MAX_FONT_SIZE = maxFontSize();
+
+extern READ_UINT_PROP(Settings_MAX_H_SYMS, atMost1024U(), moreThanMinHSyms());
+extern READ_UINT_PROP(Settings_MAX_V_SYMS, atMost768U(), moreThanMinVSyms());
+
+static VALIDATOR(lessThanMaxFontSize,	IsLessThan, unsigned, maxFontSize(), true);
+extern READ_UINT_PROP(Settings_DEF_FONT_SIZE, moreThanMinFontSize(), lessThanMaxFontSize());
+
+extern READ_STR_PROP(ClusterAlgName, availableClusterAlgs());
 extern READ_BOOL_PROP(FastDistSymToClusterComputation);
-extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor);
-extern READ_DOUBLE_PROP(MaxAvgProjErrForPartitionClustering);
-extern READ_DOUBLE_PROP(StillForegroundThreshold);
-extern READ_DOUBLE_PROP(ForegroundThresholdDelta);
-extern READ_DOUBLE_PROP(MaxRelMcOffsetForPartitionClustering);
-extern READ_DOUBLE_PROP(MaxRelMcOffsetForTTSAS_Clustering);
-extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForPartitionClustering);
-extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForTTSAS_Clustering);
+extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor, lessThan1D(), atLeast0dot8());
+extern READ_DOUBLE_PROP(MaxAvgProjErrForPartitionClustering, positiveD(), lessThan0dot1());
+extern READ_DOUBLE_PROP(StillForegroundThreshold, atLeast0dot001(), lessThan0dot04());
+extern READ_DOUBLE_PROP(ForegroundThresholdDelta, nonNegativeD(), atMost50D());
+extern READ_DOUBLE_PROP(MaxRelMcOffsetForPartitionClustering, atLeast0dot001(), lessThan0dot1());
+extern READ_DOUBLE_PROP(MaxRelMcOffsetForTTSAS_Clustering, atLeast0dot001(), lessThan0dot1());
+extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForPartitionClustering, atLeast0dot001(), lessThan0dot1());
+extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForTTSAS_Clustering, atLeast0dot001(), lessThan0dot1());
 extern READ_BOOL_PROP(TTSAS_Accept1stClusterThatQualifiesAsParent);
-extern READ_DOUBLE_PROP(TTSAS_Threshold_Member);
+extern READ_DOUBLE_PROP(TTSAS_Threshold_Member, atLeast0dot01(), lessThan0dot1());
 
-extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT);
-extern READ_DOUBLE_PROP(SymData_computeFields_STILL_BG);
-extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED);
+extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT, atLeast0dot05(), lessThan0dot4());
+extern READ_DOUBLE_PROP(SymData_computeFields_STILL_BG, nonNegativeD(), lessThan0dot04());
+extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED, nonNegativeD(), lessThan20D());
 
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
-extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB);
+extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB, atLeast0dot15(), lessThan1D());
 
-extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs);
+extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs, atLeast0dot8(), lessThan1D());
 
-extern READ_STR_PROP(StructuralSimilarity_BlurType);
-extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide);
-extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA);
-extern READ_DOUBLE_PROP(StructuralSimilarity_C1);
-extern READ_DOUBLE_PROP(StructuralSimilarity_C2);
+extern READ_STR_PROP(StructuralSimilarity_BlurType, availBlurAlgsForStrSim());
+extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide, oddI(), atLeast3i(), lessThan20i());
+extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA, positiveD(), lessThan5D());
+extern READ_DOUBLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
+extern READ_DOUBLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
 
 // Keep all cir fields before StructuralSimilarity::supportBlur
 BlurEngine::ConfInstRegistrator BoxBlur::cir("box", BoxBlur::configuredInstance()); 
@@ -157,12 +362,12 @@ BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian", GaussBlur::configured
 // Keep this after StructuralSimilarity_BlurType and below all defined cir static fields
 const BlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(StructuralSimilarity_BlurType);
 
-static READ_INT_PROP(BlurWindowSize);
+static READ_INT_PROP(BlurWindowSize, oddI(), atLeast3i(), lessThan20i());
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
-extern READ_DOUBLE_PROP(BlurStandardDeviation);
+extern READ_DOUBLE_PROP(BlurStandardDeviation, positiveD(), lessThan5D());
 
-extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement);
-extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement);
+extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
+extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 
 extern READ_STR_PROP_CONVERT(ControlPanel_selectImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_transformImgLabel, String);
@@ -191,28 +396,28 @@ extern READ_STR_PROP_CONVERT(ControlPanel_outHTrName, String);
 
 #ifndef UNIT_TESTING
 
-extern READ_UINT_PROP(SymsBatch_trackMax);
-extern READ_UINT_PROP(SymsBatch_defaultSz);
+extern READ_UINT_PROP(SymsBatch_trackMax, atLeast5U(), lessThan1000U());
+extern READ_UINT_PROP(SymsBatch_defaultSz, atLeast1U(), atMost50U());
 
-extern READ_INT_PROP(Comparator_trackMax);
-extern READ_DOUBLE_PROP(Comparator_defaultTransparency);
+extern READ_INT_PROP(Comparator_trackMax, atLeast5i(), lessThan1000i());
+extern READ_DOUBLE_PROP(Comparator_defaultTransparency, nonNegativeD(), lessThan1D());
 
-static READ_INT_PROP(CmapInspect_width);
-static READ_INT_PROP(CmapInspect_height);
+static READ_INT_PROP(CmapInspect_width, atLeast640i(), lessThan800i());
+static READ_INT_PROP(CmapInspect_height, atLeast480i(), lessThan600i());
 extern const Size CmapInspect_pageSz(CmapInspect_width, CmapInspect_height);
 
-extern READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Contrast_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Gravity_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Gravity_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_Direction_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_Direction_maxReal);
-extern READ_INT_PROP(ControlPanel_Converter_LargerSym_maxSlider);
-extern READ_DOUBLE_PROP(ControlPanel_Converter_LargerSym_maxReal);
+extern READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Contrast_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_Gravity_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Gravity_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_Direction_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Direction_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_LargerSym_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_LargerSym_maxReal, positiveD(), lessThan10D());
 
 extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 
