@@ -14,7 +14,6 @@ UsingOMP	true
 ParallelizePixMapStatistics	true
 ParallelizeGridCreation	true
 ParallelizeGridPopulation	true
-MinRowsToParallelizeGlyphBitmapExtraction	16
 PrepareMoreGlyphsAtOnce	true
 ParallelizeTr_PatchRowLoops	true
 

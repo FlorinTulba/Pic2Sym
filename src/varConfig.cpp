@@ -108,7 +108,6 @@ extern READ_BOOL_PROP(UsingOMP); // global OpenMP switch
 extern READ_BOOL_PROP_COND(ParallelizePixMapStatistics, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeGridCreation, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeGridPopulation, UsingOMP);
-extern READ_INT_PROP_COND(MinRowsToParallelizeGlyphBitmapExtraction, UsingOMP, INT_MAX);
 extern READ_BOOL_PROP_COND(PrepareMoreGlyphsAtOnce, UsingOMP);
 extern READ_BOOL_PROP_COND(ParallelizeTr_PatchRowLoops, UsingOMP);
 
