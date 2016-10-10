@@ -68,6 +68,11 @@ Transform_ProgressReportsIncrement	0.01
 ; 0.05 means reporting every 5%
 SymbolsProcessing_ProgressReportsIncrement	0.01
 
+; Size of the fonts used when providing support for faster clustering.
+; Must be an odd value >= 5.
+; To be used through function 'extern unsigned TinySymsSz()'
+TinySymsSize	5
+
 ; Which symbol clusters to investigate?
 ; The constant below allows checking also those clusters whose score appears
 ; slightly inferior to the best score known at a moment

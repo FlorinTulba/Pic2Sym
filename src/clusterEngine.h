@@ -43,7 +43,11 @@
 
 #include <set>
 
+#include <boost/filesystem/path.hpp>
+
+// Forward declarations
 class AbsJobMonitor;
+struct ITinySymsProvider;
 
 /// Clusters a set of symbols
 class ClusterEngine {
@@ -57,10 +61,20 @@ protected:
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
 
 public:
-	ClusterEngine(); ///< Creates the cluster algorithm prescribed in varConfig.txt
+	ClusterEngine(ITinySymsProvider &tsp_); ///< Creates the cluster algorithm prescribed in varConfig.txt
+
+	/**
+	Determines if fontType was already clustered using algName clustering algorithm.
+	The path to the file supposed to contain the clustering results is returned in the clusteredSetFile parameter.
+	*/
+	static bool clusteredAlready(const std::string &fontType, const std::string &algName,
+								 boost::filesystem::path &clusteredSetFile);
 	
-	/// Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts
-	void process(VSymData &symsSet);
+	/**
+	Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts.
+	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
+	*/
+	void process(VSymData &symsSet, const std::string &fontType = "");
 
 	const VClusterData& getClusters() const { return clusters; }
 	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }

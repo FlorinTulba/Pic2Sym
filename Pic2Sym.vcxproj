@@ -27,6 +27,7 @@
     <ClInclude Include="src\clusterAlg.h" />
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterEngine.h" />
+    <ClInclude Include="src\clusterSerialization.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
     <ClInclude Include="src\extBoxBlur.h" />
@@ -74,6 +75,8 @@
     <ClInclude Include="src\taskMonitor.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
+    <ClInclude Include="src\tinySym.h" />
+    <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\ttsasClustering.h" />
@@ -91,6 +94,7 @@
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\clusterAlg.cpp" />
     <ClCompile Include="src\clusterEngine.cpp" />
+    <ClCompile Include="src\clusterSerialization.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
@@ -125,6 +129,7 @@
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\timing.cpp" />
+    <ClCompile Include="src\tinySym.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />

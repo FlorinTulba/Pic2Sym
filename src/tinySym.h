@@ -35,29 +35,32 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_APP_START
-#define H_APP_START
+#ifndef H_TINY_SYM
+#define H_TINY_SYM
 
-#include <string>
+#include <opencv2/core/core.hpp>
 
-#include <boost/filesystem/path.hpp>
+struct PixMapSym; // Forward declaration
 
-/**
-Utility to provide the location of the executed application and also of the:
-- 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
-- 'Output' folder
-- 'ClusteredSets' folder
-- 'SymsSelections' folder
-*/
-class AppStart {
-	static boost::filesystem::path folder;	///< location of the executed application
+/// Data for tiny symbols
+struct TinySym {
+	/// Ratio between reference symbols and the shrunken symbol
+	enum { RatioRefTiny = 8 };
 
-public:
-	/// Setting the directory of the executed application provided as parameter
-	static void determinedBy(const std::string &appFile);
+	cv::Point2d mc = cv::Point2d(.5, .5);	///< reference mc divided by font size (0..1 x 0..1 range)
+	double avgPixVal = 0.;					///< reference pixelSum divided by font area (0..1 range)
 
-	/// @return the location of the executed application
-	static const boost::filesystem::path& dir();
+	cv::Mat mat;		///< grounded version of the small symbol
+
+	// The average projections from below are for the grounded version, not the original
+	cv::Mat hAvgProj, vAvgProj;						// horizontal and vertical projection
+	cv::Mat backslashDiagAvgProj, slashDiagAvgProj;	// normal and inverse diagonal projections
+
+	TinySym();
+	TinySym(const PixMapSym &refSym);
+	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
+			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
+			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);
 };
 
-#endif // H_APP_START
+#endif // H_TINY_SYM

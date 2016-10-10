@@ -38,32 +38,14 @@
 #ifndef H_CLUSTER_ALG
 #define H_CLUSTER_ALG
 
+#include "symData.h"
+
 #include <string>
 #include <vector>
 
-#include <opencv2/core/core.hpp>
-
-/// Data used to decide if 2 symbols can be grouped together, while comparing their 5x5 versions
-struct TinySymData {
-	enum { TinySymSz = 5 }; ///< size of the smaller versions of the symbols used when comparing them
-
-	cv::Point2d mc;	///< original mc divided by font size (0..1 x 0..1 range)
-	double avgPixVal;	///< original pixelSum divided by font area (0..1 range)
-
-	cv::Mat mat;		///< resized glyph to 5x5 (its grounded version, not the original)
-
-	// The average projections from below are for the grounded version, not the original
-	cv::Mat hAvgProj, vAvgProj;						// horizontal and vertical projection
-	cv::Mat backslashDiagAvgProj, slashDiagAvgProj;	// normal and inverse diagonal projections
-
-	TinySymData(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
-				const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
-				const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_) :
-		mc(mc_), avgPixVal(avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
-		backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
-};
-
-class AbsJobMonitor; // forward declaration
+// Forward declarations
+class AbsJobMonitor;
+struct ITinySymsProvider;
 
 /// Abstract class for clustering algorithms
 struct ClusterAlg /*abstract*/ {
@@ -73,20 +55,26 @@ struct ClusterAlg /*abstract*/ {
 	virtual ~ClusterAlg() = 0 {}
 
 	/**
-	Performs clustering of tiny versions of a set of symbols.
-	The same grouping is applied to the initial larger symbols.
+	Performs clustering of a set of symbols.
 	
-	@param smallSyms tiny symbols to be grouped by similarity
-	@param symsIndicesPerCluster returned vector of clusters, each cluster with the indices towards member tiny symbols
+	@param symsToGroup symbols to be grouped by similarity
+	@param symsIndicesPerCluster returned vector of clusters, each cluster with the indices towards member symbols
+	@param fontType font family, style and encoding (not the size); empty for various unit tests
 
 	@return number of clusters obtained
 	*/
-	virtual unsigned formGroups(const std::vector<const TinySymData> &smallSyms,
-								std::vector<std::vector<unsigned>> &symsIndicesPerCluster) = 0;
+	virtual unsigned formGroups(const VSymData &symsToGroup,
+								std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+								const std::string &fontType = "") = 0;
+
+	/// Assigns to tsp the provider of tiny symbols
+	ClusterAlg& setTinySymsProvider(ITinySymsProvider &tsp_);
 	
 	ClusterAlg& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
 protected:
+	ITinySymsProvider *tsp = nullptr;	///< offers support for tiny symbols
+
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
 };

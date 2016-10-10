@@ -35,29 +35,37 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_APP_START
-#define H_APP_START
+#ifndef H_CLUSTER_SERIALIZATION
+#define H_CLUSTER_SERIALIZATION
 
-#include <string>
+#include <vector>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 
-/**
-Utility to provide the location of the executed application and also of the:
-- 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
-- 'Output' folder
-- 'ClusteredSets' folder
-- 'SymsSelections' folder
-*/
-class AppStart {
-	static boost::filesystem::path folder;	///< location of the executed application
+/// Clusters data that needs to be serialized
+struct ClusterIO {
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of ClusterIO class
 
-public:
-	/// Setting the directory of the executed application provided as parameter
-	static void determinedBy(const std::string &appFile);
+	unsigned clustersCount = 0U;		///< total number of clusters
 
-	/// @return the location of the executed application
-	static const boost::filesystem::path& dir();
+	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
+	std::vector<int> clusterLabels;	
+
+	/// Serializes this ClusterIO object to ar
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version) {
+		ar & clustersCount & clusterLabels;
+	}
+
+	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
+	bool loadFrom(const std::string &path);
+
+	/// Writes current content to file located at path. Returns false when saving fails.
+	bool saveTo(const std::string &path) const;
 };
 
-#endif // H_APP_START
+BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
+
+#endif // H_CLUSTER_SERIALIZATION

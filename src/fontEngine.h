@@ -39,6 +39,7 @@
 #define H_FONT_ENGINE
 
 #include "pixMapSym.h"
+#include "tinySymsProvider.h"
 
 #include <string>
 
@@ -54,7 +55,7 @@ class SymSettings;
 class AbsJobMonitor;
 
 /// FontEngine class wraps some necessary FreeType functionality.
-class FontEngine {
+class FontEngine : public ITinySymsProvider {
 protected:
 	const IController &ctrler;	///< cmap presenting, font validation and glyph preprocessing monitor aspects of the Controller
 	const IValidateFont &fontValidator;		///< font validation aspect of the Controller
@@ -64,8 +65,10 @@ protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
 
-	FT_Library library = nullptr;	///< the FreeType lib
+	FT_Library library	= nullptr;	///< the FreeType lib
 	FT_Face face		= nullptr;	///< a loaded font
+
+	std::vector<const TinySym> tinySyms;	///< small version of all the symbols from current cmap
 
 	const SymSettings &ss;			///< settings of this font engine
 	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
@@ -109,6 +112,9 @@ public:
 	const std::string& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
 	FT_String* getFamily() const;					///< get font family
 	FT_String* getStyle() const;					///< get font style
+
+	/// (Creates and) Returns the small versions of all the symbols from current cmap
+	const std::vector<const TinySym>& getTinySyms() override;
 
 	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };

@@ -80,7 +80,7 @@ namespace {
 	}
 } // anonymous namespace
 
-MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce() {
+MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce(fe_) {
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(
 			MatchAspectsFactory::create(aspectName, cachedData, cfg_.matchSettings()));
@@ -142,7 +142,7 @@ void MatchEngine::updateSymbols() {
 	fieldsComputations.taskDone();
 
 	// Clustering symsSet (which gets reordered) - clusterOffsets will point where each cluster starts
-	ce.process(symsSet);
+	ce.process(symsSet, getFontType());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }

@@ -46,6 +46,7 @@
 #include "fontEngine.cpp"
 #include "matchEngine.cpp"
 #include "clusterEngine.cpp"
+#include "tinySym.cpp"
 #include "symData.cpp"
 #include "match.cpp"
 #include "patch.cpp"
@@ -431,6 +432,10 @@ SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double dif
 		const_cast<Mat&>(symAndMasks[idxAndMat.first]) = idxAndMat.second;
 }
 
+SymData SymData::clone(size_t symIdx_) {
+	return SymData(code, symIdx_, minVal, diffMinMax, pixelSum, mc, symAndMasks);
+}
+
 PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const Mat &revConsec) : 
 		pixels(data) {
 	const unsigned sz = (unsigned)consec.cols;
@@ -456,3 +461,7 @@ static const Mat blurredVersionOf(const Mat &orig_) {
 
 Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
 
+bool ClusterEngine::clusteredAlready(const string&, const string&, boost::filesystem::path&) { return false; }
+
+bool ClusterIO::loadFrom(const string&) { return false; }
+bool ClusterIO::saveTo(const string&) const { return false; }

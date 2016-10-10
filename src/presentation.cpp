@@ -231,14 +231,21 @@ namespace {
 	}
 } // anonymous namespace
 
+string MatchEngine::getFontType() {
+	ostringstream oss;
+	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding();
+	// throws logic_error if no family/style
+
+	return oss.str();
+}
+
 string MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.symSettings().getFontSz();
 	if(!Settings::isFontSizeOk(sz))
 		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(sz) + ") in " __FUNCTION__, logic_error);
 
 	ostringstream oss;
-	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding()<<'_'<<sz;
-	// this also throws logic_error if no family/style
+	oss<<getFontType()<<'_'<<sz;
 
 	return oss.str();
 }
@@ -366,8 +373,7 @@ void Controller::symbolsChanged() {
 			.01,	// load & filter extra-squeezed symbols
 			.005,	// determine coverageOfSmallGlyphs
 			.17,	// computing specific symbol-related values
-			.01,	// preparing clustering on smaller symbols
-			.6,		// clustering the small symbols
+			.61,	// clustering the small symbols
 			.01		// reorders clusters
 		});
 		fe.setFontSz(cfg.ss.getFontSz());

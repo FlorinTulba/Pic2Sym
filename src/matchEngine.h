@@ -82,6 +82,8 @@ public:
 #endif // UNIT_TESTING
 	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
+	std::string getFontType(); ///< type of the symbols determined by fe, independent of font size
+
 public:
 	MatchEngine(const Settings &cfg_, FontEngine &fe_);
 

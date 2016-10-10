@@ -60,6 +60,7 @@ using namespace std;
 using namespace boost;
 
 extern const string StructuralSimilarity_BlurType;
+extern const string ClusterAlgName;
 
 namespace ut {
 	/// dummy value
@@ -399,6 +400,15 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 					 boost::unit_test::data::make(msArray) * fonts,
 					 ms, font) {
 	Fixt fixt; // mandatory
+	
+	// Disabling clustering for this test,
+	// as the result is highly sensitive to the accuracy of the clustering,
+	// which depends on quite a number of adjustable parameters.
+	// Every time one of these parameters is modified,
+	// this test might cross the accepted mismatches threshold.
+	const string oldClusterAlgName(ClusterAlgName);
+	const_cast<string&>(ClusterAlgName) = "None";
+
 	const string &fontFamily = font.first, &encoding = font.second;
 
 	ostringstream oss;
@@ -466,6 +476,8 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 
 		showMismatches(nameOfTest, mismatches);
 	}
+
+	const_cast<string&>(ClusterAlgName) = oldClusterAlgName;
 }
 
 BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)

@@ -36,8 +36,11 @@
  ****************************************************************************************/
 
 #include "partitionClustering.h"
+#include "clusterEngine.h"
+#include "clusterSerialization.h"
 #include "taskMonitor.h"
-
+#include "tinySym.h"
+#include "tinySymsProvider.h"
 #include "misc.h"
 
 #include <iostream>
@@ -52,44 +55,54 @@ extern const double MaxAvgProjErrForPartitionClustering;
 extern const double MaxRelMcOffsetForPartitionClustering;
 extern const double MaxDiffAvgPixelValForPartitionClustering;
 
-unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallSyms,
-										 vector<vector<unsigned>> &symsIndicesPerCluster) {
+const string PartitionClustering::Name("Partition");
+
+unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
+										 vector<vector<unsigned>> &symsIndicesPerCluster,
+										 const string &fontType/* = ""*/) {
 	static TaskMonitor partitionClustering("partition clustering", *symsMonitor);
 
-	static const double SqMaxRelMcOffsetForClustering =
-		MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
+	boost::filesystem::path clusteredSetFile;
+	ClusterIO rawClusters;
+	if(!ClusterEngine::clusteredAlready(fontType, Name, clusteredSetFile)
+		   || !rawClusters.loadFrom(clusteredSetFile.string())) {
+		if(tsp == nullptr)
+			THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after calling setTinySymsProvider()!", logic_error);
+
+		const auto &tinySyms = tsp->getTinySyms();
+		static const double SqMaxRelMcOffsetForClustering =
+						MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
 
 #if defined _DEBUG && !defined UNIT_TESTING
-	unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countDiff = 0U,
-			countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
+		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countDiff = 0U,
+				countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
 #endif
 
-	const unsigned symsCount = (unsigned)smallSyms.size();
-	vector<int> clusterLabels(symsCount, -1);
-	const unsigned clustersCount = (unsigned)partition(smallSyms, clusterLabels, [&] (
-		const TinySymData &a,
-		const TinySymData &b) {
+		const unsigned tinySymsCount = (unsigned)tinySyms.size();
+		rawClusters.clusterLabels.resize(tinySymsCount, -1);
+		rawClusters.clustersCount = (unsigned)partition(tinySyms, rawClusters.clusterLabels,
+											[&] (const TinySym &a, const TinySym &b) {
 #if !defined _DEBUG || defined UNIT_TESTING
-		if(!FastDistSymToClusterComputation) {
-			const double l1Dist = norm(a.mat - b.mat, NORM_L1);
-			return l1Dist <= MaxAvgProjErrForPartitionClustering;
-		}
+			if(!FastDistSymToClusterComputation) {
+				const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+				return l1Dist <= MaxAvgProjErrForPartitionClustering;
+			}
 
-		if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForPartitionClustering)
-			return false;
-		const Point2d mcDelta = a.mc - b.mc;
-		const double mcDeltaY = abs(mcDelta.y);
-		if(mcDeltaY > MaxRelMcOffsetForPartitionClustering)
-			return false;
-		const double mcDeltaX = abs(mcDelta.x);
-		if(mcDeltaX > MaxRelMcOffsetForPartitionClustering)
-			return false;
-		if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
-			return false;
+			if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForPartitionClustering)
+				return false;
+			const Point2d mcDelta = a.mc - b.mc;
+			const double mcDeltaY = abs(mcDelta.y);
+			if(mcDeltaY > MaxRelMcOffsetForPartitionClustering)
+				return false;
+			const double mcDeltaX = abs(mcDelta.x);
+			if(mcDeltaX > MaxRelMcOffsetForPartitionClustering)
+				return false;
+			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
+				return false;
 
-		const double *pDataA, *pDataAEnd, *pDataB;
+			const double *pDataA, *pDataAEnd, *pDataB;
 
-		#define CheckProjections(ProjectionField) \
+#define CheckProjections(ProjectionField) \
 			pDataA = reinterpret_cast<const double*>(a.ProjectionField.datastart); \
 			pDataAEnd = reinterpret_cast<const double*>(a.ProjectionField.datalimit); \
 			pDataB = reinterpret_cast<const double*>(b.ProjectionField.datastart); \
@@ -99,81 +112,89 @@ unsigned PartitionClustering::formGroups(const vector<const TinySymData> &smallS
 					return false; \
 			}
 
-		CheckProjections(vAvgProj);
-		CheckProjections(hAvgProj);
-		CheckProjections(backslashDiagAvgProj);
-		CheckProjections(slashDiagAvgProj);
+			CheckProjections(vAvgProj);
+			CheckProjections(hAvgProj);
+			CheckProjections(backslashDiagAvgProj);
+			CheckProjections(slashDiagAvgProj);
 
-		#undef CheckProjections
+#undef CheckProjections
 
-		auto itA = a.mat.begin<double>(), itAEnd = a.mat.end<double>(),
-			itB = b.mat.begin<double>();
-		for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
-			sumOfAbsDiffs += abs(*itA++ - *itB++);
-			if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClustering)
-				return false;
-		}
+			auto itA = a.mat.begin<double>(), itAEnd = a.mat.end<double>(),
+				itB = b.mat.begin<double>();
+			for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
+				sumOfAbsDiffs += abs(*itA++ - *itB++);
+				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClustering)
+					return false;
+			}
 
-		return true;
+			return true;
 
 #else // DEBUG mode and UNIT_TESTING is not defined
-		if(!FastDistSymToClusterComputation) {
-			const double l1Dist = norm(a.mat - b.mat, NORM_L1);
-			return l1Dist <= MaxAvgProjErrForPartitionClustering;
-		}
+			if(!FastDistSymToClusterComputation) {
+				const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+				return l1Dist <= MaxAvgProjErrForPartitionClustering;
+			}
 
-		const double avgPixDiff = abs(a.avgPixVal - b.avgPixVal);
-		const bool bAvgPixDiff = avgPixDiff > MaxDiffAvgPixelValForPartitionClustering;
-		if(bAvgPixDiff) {
-			++countAvgPixDiff;
-			return false;
-		}
+			const double avgPixDiff = abs(a.avgPixVal - b.avgPixVal);
+			const bool bAvgPixDiff = avgPixDiff > MaxDiffAvgPixelValForPartitionClustering;
+			if(bAvgPixDiff) {
+				++countAvgPixDiff;
+				return false;
+			}
 
-		const double mcsOffset = norm(a.mc - b.mc);
-		const bool bMcsOffset = mcsOffset > MaxRelMcOffsetForPartitionClustering;
-		if(bMcsOffset) {
-			++countMcsOffset;
-			return false;
-		}
+			const double mcsOffset = norm(a.mc - b.mc);
+			const bool bMcsOffset = mcsOffset > MaxRelMcOffsetForPartitionClustering;
+			if(bMcsOffset) {
+				++countMcsOffset;
+				return false;
+			}
 
 #define CheckDifferences(Field, WorkloadReductionQuota) \
-		{ \
-			const double l1Norm = norm(a.Field - b.Field, NORM_L1); \
-			const bool contributesToWorkloadReduction = l1Norm > MaxAvgProjErrForPartitionClustering; \
-			if(contributesToWorkloadReduction) { \
-				++WorkloadReductionQuota; \
-				return false; \
-			} \
-		}
+			{ \
+				const double l1Norm = norm(a.Field - b.Field, NORM_L1); \
+				const bool contributesToWorkloadReduction = l1Norm > MaxAvgProjErrForPartitionClustering; \
+				if(contributesToWorkloadReduction) { \
+					++WorkloadReductionQuota; \
+					return false; \
+				} \
+			}
 
-		CheckDifferences(vAvgProj, countVdiff);
-		CheckDifferences(hAvgProj, countHdiff);
-		CheckDifferences(backslashDiagAvgProj, countBslashDiff);
-		CheckDifferences(slashDiagAvgProj, countSlashDiff);
-		CheckDifferences(mat, countDiff);
+			CheckDifferences(vAvgProj, countVdiff);
+			CheckDifferences(hAvgProj, countHdiff);
+			CheckDifferences(backslashDiagAvgProj, countBslashDiff);
+			CheckDifferences(slashDiagAvgProj, countSlashDiff);
+			CheckDifferences(mat, countDiff);
 
 #undef CheckDifferences
 
-		return true;
+			return true;
 #endif // DEBUG, UNIT_TESTING
-	});
-	cout<<"The "<<symsCount<<" symbols were clustered in "<<clustersCount<<" groups"<<endl;
+		});
+		cout<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
+			<<rawClusters.clustersCount<<" groups"<<endl;
 
 #if defined _DEBUG && !defined UNIT_TESTING
-	PRINTLN(countAvgPixDiff);
-	PRINTLN(countMcsOffset);
-	PRINTLN(countVdiff);
-	PRINTLN(countHdiff);
-	PRINTLN(countBslashDiff);
-	PRINTLN(countSlashDiff);
-	PRINTLN(countDiff);
+		PRINTLN(countAvgPixDiff);
+		PRINTLN(countMcsOffset);
+		PRINTLN(countVdiff);
+		PRINTLN(countHdiff);
+		PRINTLN(countBslashDiff);
+		PRINTLN(countSlashDiff);
+		PRINTLN(countDiff);
 #endif // DEBUG, UNIT_TESTING
+		
+		rawClusters.saveTo(clusteredSetFile.string());
+	}
 
-	symsIndicesPerCluster.resize(clustersCount);
-	for(unsigned i = 0U; i<symsCount; ++i)
-		symsIndicesPerCluster[clusterLabels[i]].push_back(i);
+	// Adapt clusters for filtered cmap
+	symsIndicesPerCluster.assign(rawClusters.clustersCount, vector<unsigned>());
+	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
+		symsIndicesPerCluster[rawClusters.clusterLabels[symsToGroup[i].symIdx]].push_back(i);
+	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
+							   [] (const vector<unsigned> &elem) { return elem.empty(); });
+	symsIndicesPerCluster.resize(distance(symsIndicesPerCluster.begin(), newEndIt));
 
 	partitionClustering.taskDone();
 
-	return clustersCount;
+	return (unsigned)symsIndicesPerCluster.size();
 }

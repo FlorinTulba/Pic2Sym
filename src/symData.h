@@ -89,6 +89,9 @@ struct SymData {
 	/// Constructor that allows filling only the relevant matrices from MatArray
 	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
 			const cv::Point2d &mc_, const IdxMatMap &relevantMats);
+
+	/// A clone with different symIdx
+	SymData clone(size_t symIdx_);
 #endif
 
 protected:

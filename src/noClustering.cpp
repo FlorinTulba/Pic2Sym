@@ -40,12 +40,15 @@
 
 using namespace std;
 
-unsigned NoClustering::formGroups(const vector<const TinySymData> &smallSyms,
-								  vector<vector<unsigned>> &symsIndicesPerCluster) {
+const string NoClustering::Name("None");
+
+unsigned NoClustering::formGroups(const VSymData &symsToGroup,
+								  vector<vector<unsigned>> &symsIndicesPerCluster,
+								  const string &/*fontType = ""*/) {
 	static TaskMonitor trivialClustering("trivial clustering", *symsMonitor);
 
 	// One cluster per symbol - each symbol forms its own cluster
-	const unsigned clustersCount = (unsigned)smallSyms.size();
+	const unsigned clustersCount = (unsigned)symsToGroup.size();
 
 	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>(1));
 	for(unsigned i = 0U; i<clustersCount; ++i)

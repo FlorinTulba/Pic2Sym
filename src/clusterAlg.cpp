@@ -45,14 +45,14 @@ using namespace std;
 
 ClusterAlg& ClusterAlg::algByName(const string &algName) {
 	ClusterAlg *pAlg = nullptr;
-	if(0 == algName.compare("TTSAS")) {
+	if(0 == algName.compare(TTSAS_Clustering::Name)) {
 		static TTSAS_Clustering alg;
 		pAlg = &alg;
-	} else if(0 == algName.compare("Partition")) {
+	} else if(0 == algName.compare(PartitionClustering::Name)) {
 		static PartitionClustering alg;
 		pAlg = &alg;
 	} else {
-		if(0 != algName.compare("None")) {
+		if(0 != algName.compare(NoClustering::Name)) {
 			cerr<<"Unaware of clustering algorithm '"<<algName
 				<<"'! Therefore no clustering will be used!"<<endl;
 		}
@@ -60,6 +60,11 @@ ClusterAlg& ClusterAlg::algByName(const string &algName) {
 		pAlg = &alg;
 	}
 	return *pAlg;
+}
+
+ClusterAlg& ClusterAlg::setTinySymsProvider(ITinySymsProvider &tsp_) {
+	tsp = &tsp_;
+	return *this;
 }
 
 ClusterAlg& ClusterAlg::useSymsMonitor(AbsJobMonitor &symsMonitor_) {

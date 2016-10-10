@@ -42,9 +42,12 @@
 
 /// Fallback solution when no clustering is desired
 struct NoClustering final : ClusterAlg {
+	static const std::string Name;	///< name of 'no clustering' algorithm from varConfig.txt
+
 	/// Puts each symbol into its own cluster
-	unsigned formGroups(const std::vector<const TinySymData> &smallSyms,
-						std::vector<std::vector<unsigned>> &symsIndicesPerCluster) override;
+	unsigned formGroups(const VSymData &symsToGroup,
+						std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+						const std::string &fontType = "") override;
 };
 
 #endif

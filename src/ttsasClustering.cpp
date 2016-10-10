@@ -36,7 +36,11 @@
  ****************************************************************************************/
 
 #include "ttsasClustering.h"
+#include "clusterEngine.h"
+#include "clusterSerialization.h"
 #include "taskMonitor.h"
+#include "tinySym.h"
+#include "tinySymsProvider.h"
 #include "misc.h"
 
 #include <set>
@@ -93,9 +97,9 @@ namespace {
 	/// Representative of a cluster of symbols
 	struct Cluster {
 		vector<SymIdx> memberIndices;	///< indices of the member symbols
-		TinySymData centroid;			///< characteristics of the centroid
+		TinySym centroid;			///< characteristics of the centroid
 
-		Cluster(const TinySymData &sym, SymIdx symIdx) :
+		Cluster(const TinySym &sym, SymIdx symIdx) :
 			memberIndices({ symIdx }),
 
 			/*
@@ -114,7 +118,7 @@ namespace {
 		SymIdx idxOfLastMember() const { return memberIndices.back(); }
 		
 		/// Updates centroid for the expanded cluster that considers also sym as a member
-		void addMember(const TinySymData &sym, SymIdx symIdx) {
+		void addMember(const TinySym &sym, SymIdx symIdx) {
 			memberIndices.push_back(symIdx);
 			const double invNewMembersCount = 1./memberIndices.size(),
 						oneMinusInvNewMembersCount = 1. - invNewMembersCount;
@@ -160,8 +164,8 @@ namespace {
 	*/
 	class ParentClusterFinder {
 	protected:
-		const TinySymData &sym;
-		const vector<Cluster> &clusters;
+		const TinySym &sym;					///< the symbol whose parent cluster needs to be found
+		const vector<Cluster> &clusters;	///< the clusters known so far
 
 		/// clusters located in TTSAS_Threshold_Member*[1/(Cluster_Size+1) .. threshOutsider(Cluster_Size)] range from sym
 		NearbyClusters reserves;
@@ -176,7 +180,7 @@ namespace {
 		for every increase in the size of the cluster.
 		In this way, the centroid of each expanding cluster remains close enough to any of its members.
 		*/
-		Dist distToCluster(const TinySymData &centroidCluster, size_t clusterSz) {
+		Dist distToCluster(const TinySym &centroidCluster, size_t clusterSz) {
 			const double thresholdOutsider = threshOutsider(clusterSz);
 
 			if(!FastDistSymToClusterComputation) {
@@ -239,7 +243,7 @@ namespace {
 		}
 
 	public:
-		ParentClusterFinder(const TinySymData &sym_, const vector<Cluster> &clusters_) :
+		ParentClusterFinder(const TinySym &sym_, const vector<Cluster> &clusters_) :
 			sym(sym_), clusters(clusters_) {}
 
 		bool found() const { return idxOfParentCluster.is_initialized(); }
@@ -277,7 +281,7 @@ namespace {
 				return clustIdx == idxOfParentCluster.get(); // keep current parent
 			
 			const Cluster &cluster = clusters[clustIdx];
-			const TinySymData &centroidCluster = cluster.centroid;
+			const TinySym &centroidCluster = cluster.centroid;
 			const size_t clusterSz = cluster.membersCount();
 			const double expandedClusterSz = double(clusterSz + (size_t)1U);
 
@@ -329,189 +333,221 @@ namespace {
 	};
 } // anonymous namespace
 
-unsigned TTSAS_Clustering::formGroups(const vector<const TinySymData> &smallSyms,
-									  vector<vector<unsigned>> &symsIndicesPerCluster) {
+const string TTSAS_Clustering::Name("TTSAS");
+
+unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
+									  vector<vector<unsigned>> &symsIndicesPerCluster,
+									  const string &fontType/* = ""*/) {
 	static TaskMonitor ttsasClustering("TTSAS clustering", *symsMonitor);
-	const size_t symsToCluster = smallSyms.size();
-	ttsasClustering.setTotalSteps(symsToCluster);
-	size_t clusteredSyms = 0U;
 
-	// Symbols that still don't belong to the known clusters together with their known neighbor clusters
-	map<SymIdx, NearbyClusters> ambiguousSyms;
-	for(SymIdx i = 0U, symsCount = (unsigned)symsToCluster; i < symsCount; ++i)
-		ambiguousSyms.emplace_hint(ambiguousSyms.end(), i, NearbyClusters());
+	boost::filesystem::path clusteredSetFile;
+	ClusterIO rawClustersIO;
+	if(!ClusterEngine::clusteredAlready(fontType, Name, clusteredSetFile)
+			|| !rawClustersIO.loadFrom(clusteredSetFile.string())) {
+		if(tsp == nullptr)
+			THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after calling setTinySymsProvider()!", logic_error);
 
-	vector<Cluster> clusters; // known clusters
-	set<ClusterIdx> prevNewClusters,	// indices into clusters to clusters created during the previous loop
-					prevUpdatedClusters,// indices into clusters to clusters updated during the previous loop
-					newClusters,		// indices into clusters to clusters created during the current loop
-					updatedClusters;	// indices into clusters to clusters updated during the current loop
+		const auto &tinySyms = tsp->getTinySyms();
 
-	while(!ambiguousSyms.empty()) { // leave when no more ambiguous symbols
-		prevNewClusters = std::move(newClusters); 
-		prevUpdatedClusters = std::move(updatedClusters);
+		const size_t countOfTinySymsToGroup = tinySyms.size();
+		ttsasClustering.setTotalSteps(countOfTinySymsToGroup);
+		
+		rawClustersIO.clusterLabels.resize(countOfTinySymsToGroup);
 
-		auto itAmbigSym = ambiguousSyms.begin(); 
-		SymIdx ambigSymIdx = itAmbigSym->first; // first index of the remaining ambiguous symbol
+		size_t clusteredTinySyms = 0U;
 
-		const auto newSymClustered = [&] {
-			itAmbigSym = ambiguousSyms.erase(itAmbigSym);
-			ttsasClustering.taskAdvanced(++clusteredSyms);
-		};
+		// Symbols that still don't belong to the known clusters together with their known neighbor clusters
+		map<SymIdx, NearbyClusters> ambiguousTinySyms;
+		for(SymIdx i = 0U, tinySymsCount = (unsigned)countOfTinySymsToGroup; i < tinySymsCount; ++i)
+			ambiguousTinySyms.emplace_hint(ambiguousTinySyms.end(), i, NearbyClusters());
 
-		const auto createNewCluster = [&] {
-			newClusters.emplace_hint(newClusters.end(), (unsigned)clusters.size());
-			clusters.emplace_back(smallSyms[ambigSymIdx], ambigSymIdx);
-			newSymClustered();
-		};
+		vector<Cluster> rawClusters; // known clusters
+		set<ClusterIdx> prevNewClusters,	// indices into clusters to clusters created during the previous loop
+			prevUpdatedClusters,// indices into clusters to clusters updated during the previous loop
+			newClusters,		// indices into clusters to clusters created during the current loop
+			updatedClusters;	// indices into clusters to clusters updated during the current loop
 
-		/*
-		Facts:
-		- the last added member of each existing cluster is a removed index from ambiguousSyms during a previous loop
-		- ambiguous symbols are traversed in ascending order of their indices
-		Conclusions:
-		- If a cluster was created/updated during the previous loop after ambigSymIdx,
-		  it is suffixed with an index > ambigSymIdx
-		- If a cluster was created/updated during the previous loop before ambigSymIdx,
-		  it is suffixed with an index < ambigSymIdx
-		  and can be ignored by all ambiguous symbols with indices >= ambigSymIdx,
-		  since it was already checked:
-		*/
-		const auto ignoreAlreadyCheckedClusters = [&] (set<ClusterIdx> &prevClusters) {
-			// Remove_if doesn't work on sets, so here's the required code
-			for(auto itPrevClust = prevClusters.begin(); itPrevClust != prevClusters.end();) {
-				if(clusters[*itPrevClust].idxOfLastMember() < ambigSymIdx)
-					itPrevClust = prevClusters.erase(itPrevClust); // remove already processed cluster
-				else // > ambigSymIdx
-					++itPrevClust; // cluster yet to be processed, keeping it
+		while(!ambiguousTinySyms.empty()) { // leave when no more ambiguous symbols
+			prevNewClusters = std::move(newClusters);
+			prevUpdatedClusters = std::move(updatedClusters);
+
+			auto itAmbigSym = ambiguousTinySyms.begin();
+			SymIdx ambigSymIdx = itAmbigSym->first; // first index of the remaining ambiguous symbol
+
+			const auto newSymClustered = [&] {
+				itAmbigSym = ambiguousTinySyms.erase(itAmbigSym);
+				ttsasClustering.taskAdvanced(++clusteredTinySyms);
+			};
+
+			const auto createNewCluster = [&] {
+				newClusters.emplace_hint(newClusters.end(), (unsigned)rawClusters.size());
+				rawClusters.emplace_back(tinySyms[ambigSymIdx], ambigSymIdx);
+				newSymClustered();
+			};
+
+			/*
+			Facts:
+			- the last added member of each existing cluster is a removed index from ambiguousTinySyms during a previous loop
+			- ambiguous symbols are traversed in ascending order of their indices
+			Conclusions:
+			- If a cluster was created/updated during the previous loop after ambigSymIdx,
+			it is suffixed with an index > ambigSymIdx
+			- If a cluster was created/updated during the previous loop before ambigSymIdx,
+			it is suffixed with an index < ambigSymIdx
+			and can be ignored by all ambiguous symbols with indices >= ambigSymIdx,
+			since it was already checked:
+			*/
+			const auto ignoreAlreadyCheckedClusters = [&] (set<ClusterIdx> &prevClusters) {
+				// Remove_if doesn't work on sets, so here's the required code
+				for(auto itPrevClust = prevClusters.begin(); itPrevClust != prevClusters.end();) {
+					if(rawClusters[*itPrevClust].idxOfLastMember() < ambigSymIdx)
+						itPrevClust = prevClusters.erase(itPrevClust); // remove already processed cluster
+					else // > ambigSymIdx
+						++itPrevClust; // cluster yet to be processed, keeping it
+				}
+			};
+
+			/*
+			If previous loop didn't introduce/affect any cluster,
+			then this first ambiguous symbol already has checked the known clusters
+			and has detected some neighbor ones which unfortunately didn't expand towards this symbol.
+			So this symbol must initiate its own cluster:
+			*/
+			if(prevNewClusters.empty() && prevUpdatedClusters.empty()) {
+				createNewCluster();
+				if(ambiguousTinySyms.empty())
+					break; // leave when no more ambiguous symbols
 			}
-		};
 
-		/*
-		If previous loop didn't introduce/affect any cluster,
-		then this first ambiguous symbol already has checked the known clusters
-		and has detected some neighbor ones which unfortunately didn't expand towards this symbol.
-		So this symbol must initiate its own cluster:
-		*/
-		if(prevNewClusters.empty() && prevUpdatedClusters.empty()) {
-			createNewCluster();
-			if(ambiguousSyms.empty()) 
-				break; // leave when no more ambiguous symbols
-		}
+			// Traverse the remaining ambiguous symbols and distribute them
+			// to new/existing clusters whenever possible
+			do {
+				ambigSymIdx = itAmbigSym->first; // first index of the remaining ambiguous symbol
+				auto &neighborClusters = itAmbigSym->second; // reference to its modifiable set of neighbors
 
-		// Traverse the remaining ambiguous symbols and distribute them
-		// to new/existing clusters whenever possible
-		do {
-			ambigSymIdx = itAmbigSym->first; // first index of the remaining ambiguous symbol
-			auto &neighborClusters = itAmbigSym->second; // reference to its modifiable set of neighbors
+				ParentClusterFinder pcf(tinySyms[ambigSymIdx], rawClusters);
+				if(TTSAS_Accept1stClusterThatQualifiesAsParent) {
+					// Clusters created/updated later than the previous examination of this symbol must always be checked for paternal match.
+					if(!pcf.examine(BOUNDS(newClusters))) {
+						ignoreAlreadyCheckedClusters(prevNewClusters); // shrink set before the next check
+						if(!pcf.examine(BOUNDS(prevNewClusters))) {
+							/*
+							The symbol ambigSymIdx was already aware at the start of this loop
+							of the clusters updated during previous and current loop.
 
-			ParentClusterFinder pcf(smallSyms[ambigSymIdx], clusters);
-			if(TTSAS_Accept1stClusterThatQualifiesAsParent) {
-				// Clusters created/updated later than the previous examination of this symbol must always be checked for paternal match.
-				if(!pcf.examine(BOUNDS(newClusters))) {
-					ignoreAlreadyCheckedClusters(prevNewClusters); // shrink set before the next check
-					if(!pcf.examine(BOUNDS(prevNewClusters))) {
-						/*
-						The symbol ambigSymIdx was already aware at the start of this loop
-						of the clusters updated during previous and current loop.
+							It already detected which from them are the nearest and
+							it is highly unlikely that some of the rest of the meanwhile updated clusters
+							to become neighbors, as well.
 
-						It already detected which from them are the nearest and
-						it is highly unlikely that some of the rest of the meanwhile updated clusters
-						to become neighbors, as well.
-						
-						Therefore, among all updated clusters, only those who were already neighbors
-						are examined closely.
-						*/
-						ignoreAlreadyCheckedClusters(prevUpdatedClusters); // shrink set before the checks from next for loop
-						for(const ClusterIdx neighborIdx : neighborClusters) {
-							if(updatedClusters.find(neighborIdx) != updatedClusters.end()
-								   || prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end()) {
-								if(pcf.examine(neighborIdx))
-									// reachable as demonstrated in Unit Test:
-									// CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster
-									break;
-							} else pcf.rememberReserve(neighborIdx);
+							Therefore, among all updated clusters, only those who were already neighbors
+							are examined closely.
+							*/
+							ignoreAlreadyCheckedClusters(prevUpdatedClusters); // shrink set before the checks from next for loop
+							for(const ClusterIdx neighborIdx : neighborClusters) {
+								if(updatedClusters.find(neighborIdx) != updatedClusters.end()
+										|| prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end()) {
+									if(pcf.examine(neighborIdx))
+										// reachable as demonstrated in Unit Test:
+										// CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster
+										break;
+								} else pcf.rememberReserve(neighborIdx);
+							}
 						}
+					}
+
+				} else { // TTSAS_Accept1stClusterThatQualifiesAsParent == false
+					// Clusters created/updated later than the previous examination of this symbol must always be checked for paternal match.
+					pcf.examine(BOUNDS(newClusters));
+					ignoreAlreadyCheckedClusters(prevNewClusters); // shrink set before the next check
+					pcf.examine(BOUNDS(prevNewClusters));
+
+					/*
+					The symbol ambigSymIdx was already aware at the start of this loop
+					of the clusters updated during previous and current loop.
+
+					It already detected which from them are the nearest and
+					it is highly unlikely that some of the rest of the meanwhile updated clusters
+					to become neighbors, as well.
+
+					Therefore, among all updated clusters, only those who were already neighbors
+					are examined closely.
+					*/
+					ignoreAlreadyCheckedClusters(prevUpdatedClusters); // shrink set before the checks from next for loop
+					for(const ClusterIdx neighborIdx : neighborClusters) {
+						if(updatedClusters.find(neighborIdx) != updatedClusters.end()
+							   || prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end())
+						   pcf.examine(neighborIdx);
+						else if(!pcf.found()) // Reserves don't matter after a parent has been found
+							pcf.rememberReserve(neighborIdx);
 					}
 				}
 
-			} else { // TTSAS_Accept1stClusterThatQualifiesAsParent == false
-				// Clusters created/updated later than the previous examination of this symbol must always be checked for paternal match.
-				pcf.examine(BOUNDS(newClusters));
-				ignoreAlreadyCheckedClusters(prevNewClusters); // shrink set before the next check
-				pcf.examine(BOUNDS(prevNewClusters));
+				pcf.prepareReport();
 
-				/*
-				The symbol ambigSymIdx was already aware at the start of this loop
-				of the clusters updated during previous and current loop.
-
-				It already detected which from them are the nearest and
-				it is highly unlikely that some of the rest of the meanwhile updated clusters
-				to become neighbors, as well.
-
-				Therefore, among all updated clusters, only those who were already neighbors
-				are examined closely.
-				*/
-				ignoreAlreadyCheckedClusters(prevUpdatedClusters); // shrink set before the checks from next for loop
-				for(const ClusterIdx neighborIdx : neighborClusters) {
-					if(updatedClusters.find(neighborIdx) != updatedClusters.end()
-							|| prevUpdatedClusters.find(neighborIdx) != prevUpdatedClusters.end())
-						pcf.examine(neighborIdx);
-					else if(!pcf.found()) // Reserves don't matter after a parent has been found
-						pcf.rememberReserve(neighborIdx);
-				}
-			}
-
-			pcf.prepareReport();
-
-			if(pcf.found()) { // identified a cluster for this symbol
-				const ClusterIdx parentClusterIdx = pcf.result().get();
-				auto &updatedCluster = clusters[parentClusterIdx];
-				updatedCluster.addMember(smallSyms[ambigSymIdx], ambigSymIdx);
+				if(pcf.found()) { // identified a cluster for this symbol
+					const ClusterIdx parentClusterIdx = pcf.result().get();
+					auto &updatedCluster = rawClusters[parentClusterIdx];
+					updatedCluster.addMember(tinySyms[ambigSymIdx], ambigSymIdx);
 
 #ifdef _DEBUG
-				// Check that centroid's parameters stay within 0.645*Original_Threshold from each member.
-				// (see Doxy comment for ParentClusterFinder for details)
-				static const double BaselSum_1 = M_PI * M_PI / 6. - 1., // ~0.645
-								maxDiffAvgPixelVal = BaselSum_1 * MaxDiffAvgPixelValForTTSAS_Clustering,
-								maxRelMcOffset = BaselSum_1 * MaxRelMcOffsetForTTSAS_Clustering,
-								threshold_Member = BaselSum_1 * TTSAS_Threshold_Member;
-				const double threshold_Outsider = threshOutsider(updatedCluster.membersCount());
-				const auto &centroid = updatedCluster.centroid;
-				for(const auto &memberIdx : updatedCluster.memberIndices) {
-					const auto &member = smallSyms[memberIdx];
-					assert(abs(member.avgPixVal - centroid.avgPixVal) < maxDiffAvgPixelVal);
-					assert(norm(member.mc - centroid.mc) < maxRelMcOffset);
-					assert(norm(member.hAvgProj - centroid.hAvgProj, NORM_L1) < threshold_Outsider);
-					assert(norm(member.vAvgProj - centroid.vAvgProj, NORM_L1) < threshold_Outsider);
-					assert(norm(member.backslashDiagAvgProj - centroid.backslashDiagAvgProj, NORM_L1) < threshold_Outsider);
-					assert(norm(member.slashDiagAvgProj - centroid.slashDiagAvgProj, NORM_L1) < threshold_Outsider);
-					assert(norm(member.mat - centroid.mat, NORM_L1) < threshold_Member);
-				}
+					// Check that centroid's parameters stay within 0.645*Original_Threshold from each member.
+					// (see Doxy comment for ParentClusterFinder for details)
+					static const double BaselSum_1 = M_PI * M_PI / 6. - 1., // ~0.645
+									maxDiffAvgPixelVal = BaselSum_1 * MaxDiffAvgPixelValForTTSAS_Clustering,
+									maxRelMcOffset = BaselSum_1 * MaxRelMcOffsetForTTSAS_Clustering,
+									threshold_Member = BaselSum_1 * TTSAS_Threshold_Member;
+					const double threshold_Outsider = threshOutsider(updatedCluster.membersCount());
+					const auto &centroid = updatedCluster.centroid;
+					for(const auto &memberIdx : updatedCluster.memberIndices) {
+						const auto &member = tinySyms[memberIdx];
+						assert(abs(member.avgPixVal - centroid.avgPixVal) < maxDiffAvgPixelVal);
+						assert(norm(member.mc - centroid.mc) < maxRelMcOffset);
+						assert(norm(member.hAvgProj - centroid.hAvgProj, NORM_L1) < threshold_Outsider);
+						assert(norm(member.vAvgProj - centroid.vAvgProj, NORM_L1) < threshold_Outsider);
+						assert(norm(member.backslashDiagAvgProj - centroid.backslashDiagAvgProj, NORM_L1) < threshold_Outsider);
+						assert(norm(member.slashDiagAvgProj - centroid.slashDiagAvgProj, NORM_L1) < threshold_Outsider);
+						assert(norm(member.mat - centroid.mat, NORM_L1) < threshold_Member);
+					}
 #endif // _DEBUG
 
-				if(newClusters.end() == newClusters.find(parentClusterIdx))
-					updatedClusters.insert(parentClusterIdx); // add parentClusterIdx, unless it already appears in newClusters
-				newSymClustered();
+					if(newClusters.end() == newClusters.find(parentClusterIdx))
+						updatedClusters.insert(parentClusterIdx); // add parentClusterIdx, unless it already appears in newClusters
+					newSymClustered();
 
-			} else if(pcf.reserveCandidates().empty()) { // way too far from all current clusters
-				createNewCluster();
+				} else if(pcf.reserveCandidates().empty()) { // way too far from all current clusters
+					createNewCluster();
 
-			} else { // not too close, neither too far from existing clusters
-				neighborClusters = std::move(pcf.reserveCandidates()); // updating the neighbors
-				++itAmbigSym;
-			}
+				} else { // not too close, neither too far from existing clusters
+					neighborClusters = std::move(pcf.reserveCandidates()); // updating the neighbors
+					++itAmbigSym;
+				}
 
-		} while(itAmbigSym != ambiguousSyms.end());
+			} while(itAmbigSym != ambiguousTinySyms.end());
+		}
+
+		// Fill in rawClustersIO fields
+		rawClustersIO.clustersCount = (unsigned)rawClusters.size();
+		for(int i = 0, lim = (int)rawClustersIO.clustersCount; i < lim; ++i) {
+			const auto &clustMembers = rawClusters[i].memberIndices;
+			for(const auto member : clustMembers)
+				rawClustersIO.clusterLabels[member] = i;
+		}
+		
+		cout<<"All the "<<countOfTinySymsToGroup<<" symbols of the charmap were clustered in "
+			<<rawClustersIO.clustersCount<<" groups"<<endl;
+
+		rawClustersIO.saveTo(clusteredSetFile.string());
 	}
 
-	// Transcribe cluster members to the output parameter symsIndicesPerCluster:
-	const unsigned clustersCount = (unsigned)clusters.size();
-	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>());
-	for(unsigned i = 0U; i<clustersCount; ++i)
-		symsIndicesPerCluster[i] = std::move(clusters[i].memberIndices);
+	// Adapt rawClusters for filtered cmap
+	symsIndicesPerCluster.assign(rawClustersIO.clustersCount, vector<unsigned>());
+	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
+		symsIndicesPerCluster[rawClustersIO.clusterLabels[symsToGroup[i].symIdx]].push_back(i);
+	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
+									[] (const vector<unsigned> &elem) { return elem.empty(); });
+	symsIndicesPerCluster.resize(distance(symsIndicesPerCluster.begin(), newEndIt));
 
 	ttsasClustering.taskDone();
 
-	return clustersCount;
+	return (unsigned)symsIndicesPerCluster.size();
 }

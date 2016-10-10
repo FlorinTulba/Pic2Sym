@@ -54,17 +54,20 @@ It was customized to:
 - allow choosing either the first suitable parent cluster, or considering only the best paternal match
 */
 struct TTSAS_Clustering : ClusterAlg {
-	/**
-	Performs clustering of tiny versions of a set of symbols.
-	The same grouping is applied to the initial larger symbols.
+	static const std::string Name;	///< name of TTSAS algorithm from varConfig.txt
 
-	@param smallSyms tiny symbols to be grouped by similarity
-	@param symsIndicesPerCluster returned vector of clusters, each cluster with the indices towards member tiny symbols
+	/**
+	Performs clustering of a set of symbols.
+
+	@param symsToGroup symbols to be grouped by similarity
+	@param symsIndicesPerCluster returned vector of clusters, each cluster with the indices towards member symbols
+	@param fontType font family, style and encoding (not the size); empty for various unit tests
 
 	@return number of clusters obtained
 	*/
-	unsigned formGroups(const std::vector<const TinySymData> &smallSyms,
-						std::vector<std::vector<unsigned>> &symsIndicesPerCluster) override;
+	unsigned formGroups(const VSymData &symsToGroup,
+						std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+						const std::string &fontType = "") override;
 };
 
 #endif

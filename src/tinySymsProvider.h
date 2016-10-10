@@ -35,29 +35,19 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_APP_START
-#define H_APP_START
+#ifndef H_TINY_SYMS_PROVIDER
+#define H_TINY_SYMS_PROVIDER
 
-#include <string>
+#include <vector>
 
-#include <boost/filesystem/path.hpp>
+struct TinySym; // Forward declaration
 
-/**
-Utility to provide the location of the executed application and also of the:
-- 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
-- 'Output' folder
-- 'ClusteredSets' folder
-- 'SymsSelections' folder
-*/
-class AppStart {
-	static boost::filesystem::path folder;	///< location of the executed application
+/// Allows providing tiny symbols both from FontEngine and from UnitTesting
+struct ITinySymsProvider {
+	virtual ~ITinySymsProvider() = 0 {}
 
-public:
-	/// Setting the directory of the executed application provided as parameter
-	static void determinedBy(const std::string &appFile);
-
-	/// @return the location of the executed application
-	static const boost::filesystem::path& dir();
+	/// Return a list of tiny symbols to cluster
+	virtual const std::vector<const TinySym>& getTinySyms() = 0;
 };
 
-#endif // H_APP_START
+#endif // H_TINY_SYMS_PROVIDER

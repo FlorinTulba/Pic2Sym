@@ -35,29 +35,45 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_APP_START
-#define H_APP_START
+#ifndef UNIT_TESTING
 
-#include <string>
+#include "clusterSerialization.h"
 
-#include <boost/filesystem/path.hpp>
+#include <fstream>
+#include <iostream>
 
-/**
-Utility to provide the location of the executed application and also of the:
-- 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
-- 'Output' folder
-- 'ClusteredSets' folder
-- 'SymsSelections' folder
-*/
-class AppStart {
-	static boost::filesystem::path folder;	///< location of the executed application
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
-public:
-	/// Setting the directory of the executed application provided as parameter
-	static void determinedBy(const std::string &appFile);
+using namespace std;
+using namespace boost::archive;
 
-	/// @return the location of the executed application
-	static const boost::filesystem::path& dir();
-};
+bool ClusterIO::loadFrom(const string &path) {
+	try {
+		ifstream ifs(path, ios::binary);
+		binary_iarchive ia(ifs);
+		ia>>*this;
 
-#endif // H_APP_START
+		return true;
+
+	} catch(...) {
+		cerr<<"Couldn't load clustering results from: " <<path<<endl;
+		return false;
+	}
+}
+
+bool ClusterIO::saveTo(const string &path) const {
+	try {
+		ofstream ofs(path, ios::binary);
+		binary_oarchive oa(ofs);
+		oa<<*this;
+
+		return true;
+
+	} catch(...) {
+		cerr<<"Couldn't save clustering results to: " <<path<<endl;
+		return false;
+	}
+}
+
+#endif // UNIT_TESTING

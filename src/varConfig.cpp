@@ -369,6 +369,11 @@ extern READ_DOUBLE_PROP(BlurStandardDeviation, positiveD(), lessThan5D());
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 
+extern unsigned TinySymsSz() {
+	static READ_UINT_PROP(TinySymsSize, oddU(), atLeast5U(), atMost9U()); // must be an odd value between 5 and 9
+	return TinySymsSize;
+}
+
 extern READ_STR_PROP_CONVERT(ControlPanel_selectImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_transformImgLabel, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_selectFontLabel, String);

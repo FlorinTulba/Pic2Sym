@@ -300,6 +300,15 @@
     <ClInclude Include="src\appStart.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
+    <ClInclude Include="src\clusterSerialization.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tinySym.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tinySymsProvider.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -445,6 +454,12 @@
     </ClCompile>
     <ClCompile Include="src\appStart.cpp">
       <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterSerialization.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tinySym.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

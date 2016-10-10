@@ -40,60 +40,25 @@
 #include "taskMonitor.h"
 #include "misc.h"
 
+#ifndef UNIT_TESTING
+#include "appStart.h"
+#endif // UNIT_TESTING
+
 #include <set>
 #include <iostream>
 #include <numeric>
 
 #include <opencv2/imgproc/imgproc.hpp>
+#include <boost/filesystem/operations.hpp>
 
 using namespace std;
 using namespace cv;
+using namespace boost::filesystem;
 
 extern const string ClusterAlgName;
+extern unsigned TinySymsSz();
 
 namespace {
-	/// Creates the vector smallSyms of smaller versions (5x5) of the symbols from symsSet.
-	void initSmallSyms(const VSymData &symsSet, vector<const TinySymData> &smallSyms) {
-		static const Size SmallSymDim(TinySymData::TinySymSz, TinySymData::TinySymSz);
-		static const unsigned DiagsCountU = 2U * TinySymData::TinySymSz - 1U;
-		static const double InvDiagsCount = 1. / DiagsCountU,
-			InvSmallSymSz = 1. / TinySymData::TinySymSz,
-			InvSmallSymArea = 1. / (TinySymData::TinySymSz * TinySymData::TinySymSz);
-
-		smallSyms.reserve(symsSet.size());
-		const double invInitFontSz = 1. / symsSet[0].symAndMasks[SymData::NEG_SYM_IDX].rows,
-			invInitFontArea = invInitFontSz * invInitFontSz;
-		for(const auto &symData : symsSet) {
-			const Mat &gsi = symData.symAndMasks[SymData::GROUNDED_SYM_IDX]; // double values, 0..1 range
-			Mat smallSym, flippedSmallSym,
-				hAvgProj, vAvgProj,
-				backslashDiagAvgProj(1, DiagsCountU, CV_64FC1, 0.),
-				slashDiagAvgProj(1, DiagsCountU, CV_64FC1, 0.);
-			resize(gsi, smallSym, SmallSymDim, 0., 0., CV_INTER_AREA);
-
-			// computing average projections
-			reduce(smallSym, hAvgProj, 0, CV_REDUCE_AVG);
-			reduce(smallSym, vAvgProj, 1, CV_REDUCE_AVG);
-			flip(smallSym, flippedSmallSym, 1); // flip around vertical axis
-			for(int diagIdx = -TinySymData::TinySymSz+1, i = 0;
-				diagIdx < TinySymData::TinySymSz; ++diagIdx, ++i) {
-				const Mat backslashDiag = smallSym.diag(diagIdx);
-				backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
-
-				const Mat slashDiag = flippedSmallSym.diag(-diagIdx);
-				slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
-			}
-
-			smallSyms.emplace_back(symData.mc * invInitFontSz, // mapping original mc to the unit square
-								   symData.pixelSum * invInitFontArea, // average pixel value (0..1)
-								   smallSym * InvSmallSymArea, // all pixels divided by area of tiny sym
-
-								   // all elements of the resulted projections divided by their count
-								   hAvgProj * InvSmallSymSz, vAvgProj * InvSmallSymSz,
-								   backslashDiagAvgProj * InvDiagsCount, slashDiagAvgProj * InvDiagsCount);
-		}
-	}
-
 	/// Reorders the clusters by their size - largest ones first and collects the offsets of each cluster
 	void computeClusterOffsets(vector<vector<unsigned>> &symsIndicesPerCluster, unsigned clustersCount,
 							   VSymData &symsSet, VClusterData &clusters, set<unsigned> &clusterOffsets) {
@@ -145,26 +110,6 @@ namespace {
 	}
 } // anonymous namespace
 
-ClusterEngine::ClusterEngine() : clustAlg(ClusterAlg::algByName(ClusterAlgName)) {}
-
-void ClusterEngine::process(VSymData &symsSet) {
-	assert(!symsSet.empty());
-
-	static TaskMonitor initClusteringOnSmallSyms("preparing clustering on smaller symbols", *symsMonitor);
-	vector<const TinySymData> smallSyms;
-	initSmallSyms(symsSet, smallSyms);
-	initClusteringOnSmallSyms.taskDone(); // mark it as already finished
-
-	// cluster smallSyms
-	vector<vector<unsigned>> symsIndicesPerCluster;
-	const unsigned clustersCount = clustAlg.formGroups(smallSyms, symsIndicesPerCluster);
-
-	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
-	clusters.clear(); clusterOffsets.clear();
-	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet, clusters, clusterOffsets);
-	reorderClusters.taskDone(); // mark it as already finished
-}
-
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 const vector<unsigned> &clusterSymIndices) : SymData(),
 		idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
@@ -205,8 +150,41 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	const_cast<Mat&>(symAndMasks[VARIANCE_GR_SYM_IDX]) = varianceOfGroundedGlyph;
 }
 
+ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
+	clustAlg(ClusterAlg::algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
+
+void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) {
+	if(symsSet.empty())
+		return;
+
+	vector<vector<unsigned>> symsIndicesPerCluster;
+	const unsigned clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
+
+	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
+	clusters.clear(); clusterOffsets.clear();
+	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet, clusters, clusterOffsets);
+	reorderClusters.taskDone(); // mark it as already finished
+}
+
 ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
 	clustAlg.useSymsMonitor(symsMonitor_);
 	return *this;
 }
+
+#ifndef UNIT_TESTING
+
+bool ClusterEngine::clusteredAlready(const string &fontType, const string &algName, path &clusteredSetFile) {
+	if(fontType.empty())
+		return false; // Branch used within Unit Testing
+
+	clusteredSetFile = AppStart::dir();
+	if(!exists(clusteredSetFile.append("ClusteredSets")))
+		create_directory(clusteredSetFile);
+
+	clusteredSetFile.append(fontType).concat("_").concat(algName).concat(".clf");
+
+	return exists(clusteredSetFile);
+}
+
+#endif // UNIT_TESTING
