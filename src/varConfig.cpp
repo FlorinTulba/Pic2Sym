@@ -80,13 +80,16 @@ namespace {
 	template<class Type, typename = enable_if_t<is_integral<Type>::value>>
 	struct IsOddOrEven : ConfigItemValidator<Type> {
 		void examine(const string &itemName, const Type &itemVal) const override {
-			if(isOdd) {
-				if((Type)0 == (itemVal & (Type)1))
-					THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be odd!", invalid_argument);
-			} else { // is even
-				if((Type)1 == (itemVal & (Type)1))
-					THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be even!", invalid_argument);
+#define REQUIRE_PARITY(ParityType, Mod2Remainder) \
+			if((Type)Mod2Remainder != (itemVal & (Type)1)) { \
+				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
+									"' needs to be " ParityType "!", invalid_argument); \
 			}
+
+			if(isOdd) { REQUIRE_PARITY("odd", 1); }
+			else { REQUIRE_PARITY("even", 0); }
+
+#undef REQUIRE_PARITY
 		}
 
 	protected:
@@ -98,37 +101,35 @@ namespace {
 	/// Throws for non-odd configuration items
 	template<class Type>
 	struct IsOdd : IsOddOrEven<Type> {
-		IsOdd(void** /*hackParam*/ = nullptr) : IsOddOrEven(true) {}
+		IsOdd() : IsOddOrEven(true) {}
 	};
 
 	/// Throws for non-even configuration items
 	template<class Type>
 	struct IsEven : IsOddOrEven<Type> {
-		IsEven(void** /*hackParam*/ = nullptr) : IsOddOrEven(false) {}
+		IsEven() : IsOddOrEven(false) {}
 	};
 
 	/// Base class for IsLessThan and IsGreaterThan from below
 	template<class Type, typename = enable_if_t<is_arithmetic<Type>::value>>
 	struct IsLessOrGreaterThan : ConfigItemValidator<Type> {
 		void examine(const string &itemName, const Type &itemVal) const override {
+#define REQUIRE_REL(RelationType) \
+			if(!(itemVal RelationType refVal)) { \
+				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
+					"' needs to be " #RelationType " " + to_string(refVal) + "!", out_of_range); \
+			}
+
 			if(isLess) {
-				if(orEqual) {
-					if(itemVal > refVal)
-						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be <= " + to_string(refVal) + "!", out_of_range);
-				} else { // orEqual is false
-					if(itemVal >= refVal)
-						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be < " + to_string(refVal) + "!", out_of_range);
-				}
+				if(orEqual) { REQUIRE_REL(<=); }
+				else { REQUIRE_REL(<); }
 
 			} else { // isGreater
-				if(orEqual) {
-					if(itemVal < refVal)
-						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be >= " + to_string(refVal) + "!", out_of_range);
-				} else { // orEqual is false
-					if(itemVal <= refVal)
-						THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be > " + to_string(refVal) + "!", out_of_range);
-				}
+				if(orEqual) { REQUIRE_REL(>=); }
+				else { REQUIRE_REL(>); }
 			}
+
+#undef REQUIRE_REL
 		}
 
 	protected:
@@ -162,7 +163,8 @@ namespace {
 
 		void examine(const string &itemName, const Type &itemVal) const override {
 			if(allowedSet.cend() == allowedSet.find(itemVal))
-				THROW_WITH_VAR_MSG("Configuration item '" + itemName + "' needs to be among these values: " + allowedSetStr + "!", invalid_argument);
+				THROW_WITH_VAR_MSG("Configuration item '" + itemName +
+					"' needs to be among these values: " + allowedSetStr + "!", invalid_argument);
 		}
 
 	protected:
@@ -178,24 +180,24 @@ namespace {
 		const string allowedSetStr;	///< same set in string format
 	};
 
-	/// Checks that itemName's value (itemValue) is approved by all validators, in which case it returns it.
-	template<class Type>
-	const Type& checkItem(const string &itemName, const Type &itemVal,
-						  const list< const ConfigItemValidator<Type> * > &validators) {
-		for(const auto validator : validators) {
-			if(validator == nullptr)
-				continue;
-			validator->examine(itemName, itemVal);
-		}
-		return itemVal;
+	// Template-recursive version of checkItem
+	/// End of template-recursion for checkItem - no more validators to check
+	template<class ItemType>
+	const ItemType& checkItem(const string&, const ItemType &itemVal) { return itemVal; }
+
+	/// Template-recursion for checkItem - at least one firstValidator, optionally followed by some nextValidators
+	template<class ItemType, class TypeOfFirstValidator, class ... TypesOfNextValidators>
+	const ItemType& checkItem(const string &itemName, const ItemType &itemVal,
+							  const TypeOfFirstValidator &firstValidator,
+							  const TypesOfNextValidators& ... nextValidators) {
+		firstValidator.examine(itemName, itemVal);
+		return checkItem(itemName, itemVal, nextValidators...);
 	}
 } // anonymous namespace
 
 // Macros for reading the properties from 'varConfig.txt'
 #define READ_PROP(prop, type, ...) \
-	const type prop = checkItem<type>(#prop, varConfigRef().read<type>(#prop), \
-									/* Builds a list from the validators provided in '...': */ \
-									list< const ConfigItemValidator<type> * > {__VA_ARGS__} );
+	const type prop = checkItem(#prop, varConfigRef().read<type>(#prop), __VA_ARGS__);
 
 #define READ_PROP_COND(prop, type, cond, defaultVal) \
 	const type prop = (cond) ? varConfigRef().read<type>(#prop) : (defaultVal)
@@ -228,14 +230,20 @@ namespace {
 	const wstring prop = str2wstr(varConfigRef().read<string>(#prop))
 
 // Limits for read data
-#define VALIDATOR(Name, Kind, Type, ...) \
-	const Kind<Type>* Name() { \
-		static const Kind<Type> validator(__VA_ARGS__); \
-		return &validator; \
+#define VALIDATOR_NO_ARGS(Name, Kind, Type) \
+	const Kind<Type>& Name() { \
+		static const Kind<Type> validator; \
+		return validator; \
 	} 
 
-static VALIDATOR(oddI, IsOdd, int, nullptr);
-static VALIDATOR(oddU, IsOdd, unsigned, nullptr);
+#define VALIDATOR(Name, Kind, Type, ...) \
+	const Kind<Type>& Name() { \
+		static const Kind<Type> validator(__VA_ARGS__); \
+		return validator; \
+	} 
+
+static VALIDATOR_NO_ARGS(oddI, IsOdd, int);
+static VALIDATOR_NO_ARGS(oddU, IsOdd, unsigned);
 
 static VALIDATOR(lessThan20i,	IsLessThan, int, 20);
 static VALIDATOR(lessThan600i,	IsLessThan, int, 600, true);
@@ -458,3 +466,6 @@ extern READ_WSTR_PROP(BestMatch_HEADER) + MatchParams_HEADER;
 #undef READ_DOUBLE_PROP
 #undef READ_STR_PROP
 #undef READ_WSTR_PROP
+
+#undef VALIDATOR_NO_ARGS
+#undef VALIDATOR	
