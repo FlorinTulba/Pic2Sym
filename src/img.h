@@ -61,20 +61,6 @@ public: // Providing reset(Mat) as public for Unit Testing
 	bool reset(const cv::Mat &source_);
 
 public:
-	/**
-	Creates an Img object with default fields.
-	
-	The parameter just supports a macro mechanism that creates several object types
-	with variable number of parameters.
-	
-	For Img, instead of 'Img field;', it would generate 'Img field();'   
-	which is interpreted as a function declaration.
-
-	Adding this extra param generates no harm in the rest of the project,
-	but allows the macro to see it as object 'Img field(nullptr);', not a function.
-	*/
-	Img(void** /*hackParam*/ = nullptr) {} 
-
 	/// setting a new source image. Returns false for invalid images
 	bool reset(const std::string &picName);
 

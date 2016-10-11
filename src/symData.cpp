@@ -63,18 +63,17 @@ SymData::SymData(SymData &&other) : SymData(other) {
 
 SymData& SymData::operator=(const SymData &other) {
 	if(this != &other) {
-#define REPLACE_FIELD(Field, Type) \
-		const_cast<Type&>(Field) = other.Field
+#define REPLACE_FIELD(Field) \
+		overwriteConstItem(Field, other.Field)
 
-		REPLACE_FIELD(code, unsigned long);
-		REPLACE_FIELD(symIdx, size_t);
-		REPLACE_FIELD(minVal, double);
-		REPLACE_FIELD(diffMinMax, double);
-		REPLACE_FIELD(pixelSum, double);
-		REPLACE_FIELD(mc, Point2d);
-		REPLACE_FIELD(code, unsigned long);
+		REPLACE_FIELD(code);
+		REPLACE_FIELD(symIdx);
+		REPLACE_FIELD(minVal);
+		REPLACE_FIELD(diffMinMax);
+		REPLACE_FIELD(pixelSum);
+		REPLACE_FIELD(mc);
 		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-			REPLACE_FIELD(symAndMasks[i], Mat);
+			REPLACE_FIELD(symAndMasks[i]);
 
 #undef REPLACE_FIELD
 	}

@@ -92,4 +92,10 @@ Second version should be used when the exception message is variable (reports sp
 		throw excType(varErrMsgForConsoleAndThrow); \
 	}
 
-#endif
+// Updates item toUpdate with newValue, despite its stated const value.
+template<class T>
+inline void overwriteConstItem(const T &toUpdate, const T &newValue) {
+	const_cast<T&>(toUpdate) = newValue;
+}
+
+#endif // H_MISC

@@ -547,16 +547,20 @@ void Controller::saveSettings() const {
 // Methods from below have different definitions for UnitTesting project
 #ifndef UNIT_TESTING
 
+#define GET_FIELD_NO_ARGS(FieldType) \
+	static FieldType field; \
+	return field
+
 #define GET_FIELD(FieldType, ...) \
 	static FieldType field(__VA_ARGS__); \
 	return field
 
 Img& Controller::getImg() {
-	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
+	GET_FIELD_NO_ARGS(Img);
 }
 
 Comparator& Controller::getComparator() {
-	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
+	GET_FIELD_NO_ARGS(Comparator);
 }
 
 FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
@@ -575,6 +579,7 @@ ControlPanel& Controller::getControlPanel(Settings &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
 
+#undef GET_FIELD_NO_ARGS
 #undef GET_FIELD
 
 #endif // UNIT_TESTING not defined

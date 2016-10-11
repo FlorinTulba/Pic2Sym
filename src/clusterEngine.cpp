@@ -117,16 +117,16 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
 	const Mat &firstNegSym = symsSet[0].symAndMasks[NEG_SYM_IDX];
 	const int rows = firstNegSym.rows, cols = firstNegSym.cols;
-	double pixelSum = 0.;
-	Point2d mc;
+	double pixelSum_ = 0.;
+	Point2d mc_;
 	Mat synthesizedSym, negSynthesizedSym(rows, cols, CV_64FC1, Scalar(0.));
 	for(const auto clusterSymIdx : clusterSymIndices) {
 		const SymData &symData = symsSet[clusterSymIdx];
 		Mat negSym;
 		symData.symAndMasks[NEG_SYM_IDX].convertTo(negSym, CV_64FC1);
 		negSynthesizedSym += negSym;
-		pixelSum += symData.pixelSum;
-		mc += symData.mc;
+		pixelSum_ += symData.pixelSum;
+		mc_ += symData.mc;
 	}
 	const double invClusterSz = 1./sz;
 	negSynthesizedSym *= invClusterSz;
@@ -134,21 +134,22 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	negSynthesizedSym.convertTo(negSynthesizedSym, CV_8UC1);
 
 	Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-	double minVal, maxVal; // for very small fonts, minVal might be > 0 and maxVal might be < 255
+	double minVal_, maxVal; // for very small fonts, minVal_ might be > 0 and maxVal might be < 255
 	computeFields(synthesizedSym, fgMask, bgMask, edgeMask,
 				  groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph,
-				  minVal, maxVal);
-	const_cast<double&>(this->minVal) = minVal;
-	const_cast<double&>(diffMinMax) = maxVal - minVal;
-	const_cast<double&>(this->pixelSum) = pixelSum * invClusterSz;
-	const_cast<Point2d&>(this->mc) = mc * invClusterSz;
-	const_cast<Mat&>(symAndMasks[FG_MASK_IDX]) = fgMask;
-	const_cast<Mat&>(symAndMasks[BG_MASK_IDX]) = bgMask;
-	const_cast<Mat&>(symAndMasks[EDGE_MASK_IDX]) = edgeMask;
-	const_cast<Mat&>(symAndMasks[NEG_SYM_IDX]) = negSynthesizedSym;
-	const_cast<Mat&>(symAndMasks[GROUNDED_SYM_IDX]) = groundedGlyph;
-	const_cast<Mat&>(symAndMasks[BLURRED_GR_SYM_IDX]) = blurOfGroundedGlyph;
-	const_cast<Mat&>(symAndMasks[VARIANCE_GR_SYM_IDX]) = varianceOfGroundedGlyph;
+				  minVal_, maxVal);
+
+	overwriteConstItem(minVal,		minVal_);
+	overwriteConstItem(diffMinMax,	maxVal - minVal_);
+	overwriteConstItem(pixelSum,	pixelSum_ * invClusterSz);
+	overwriteConstItem(mc,			mc_ * invClusterSz);
+	overwriteConstItem(symAndMasks[FG_MASK_IDX],		fgMask);
+	overwriteConstItem(symAndMasks[BG_MASK_IDX],		bgMask);
+	overwriteConstItem(symAndMasks[EDGE_MASK_IDX],		edgeMask);
+	overwriteConstItem(symAndMasks[NEG_SYM_IDX],		negSynthesizedSym);
+	overwriteConstItem(symAndMasks[GROUNDED_SYM_IDX],	groundedGlyph);
+	overwriteConstItem(symAndMasks[BLURRED_GR_SYM_IDX],	blurOfGroundedGlyph);
+	overwriteConstItem(symAndMasks[VARIANCE_GR_SYM_IDX],varianceOfGroundedGlyph);
 }
 
 ClusterData::ClusterData(const ClusterData &other) : SymData(other),
@@ -161,11 +162,11 @@ ClusterData& ClusterData::operator=(const ClusterData &other) {
 	SymData::operator=(other);
 
 	if(this != &other) {
-#define REPLACE_FIELD(Field, Type) \
-		const_cast<Type&>(Field) = other.Field
+#define REPLACE_FIELD(Field) \
+		overwriteConstItem(Field, other.Field)
 
-		REPLACE_FIELD(idxOfFirstSym, unsigned);
-		REPLACE_FIELD(sz, unsigned);
+		REPLACE_FIELD(idxOfFirstSym);
+		REPLACE_FIELD(sz);
 
 #undef REPLACE_FIELD
 	}
@@ -177,11 +178,11 @@ ClusterData& ClusterData::operator=(ClusterData &&other) {
 	SymData::operator=(move(other));
 
 	if(this != &other) {
-#define REPLACE_FIELD(Field, Type) \
-		const_cast<Type&>(Field) = other.Field
+#define REPLACE_FIELD(Field) \
+		overwriteConstItem(Field, other.Field)
 
-		REPLACE_FIELD(idxOfFirstSym, unsigned);
-		REPLACE_FIELD(sz, unsigned);
+		REPLACE_FIELD(idxOfFirstSym);
+		REPLACE_FIELD(sz);
 
 #undef REPLACE_FIELD
 	}

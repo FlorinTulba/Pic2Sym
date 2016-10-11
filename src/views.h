@@ -92,20 +92,8 @@ protected:
 
 	void setTransparency(double transparency);	///< called from updateTransparency
 
-public:
-	/**
-	Creating a Comparator window.
-
-	The parameter just supports a macro mechanism that creates several object types
-	with variable number of parameters.
-
-	For Comparator, instead of 'Comparator field;', it would generate 'Comparator field();'
-	which is interpreted as a function declaration.
-
-	Adding this extra param generates no harm in the rest of the project,
-	but allows the macro to see it as object 'Comparator field(nullptr);', not a function.
-	*/
-	Comparator(void** /*hackParam*/ =nullptr);
+public:	
+	Comparator(); ///< Creating a Comparator window.
 
 	static void updateTransparency(int newTransp, void *userdata); ///< slider's callback
 

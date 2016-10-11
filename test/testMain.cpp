@@ -333,11 +333,11 @@ MatchSettings::MatchSettings() {}
 	return *pField
 
 Img& Controller::getImg() {
-	GET_FIELD(Img, nullptr); // Here's useful the hack mentioned at Img's constructor declaration
+	GET_FIELD(Img);
 }
 
 Comparator& Controller::getComparator() {
-	GET_FIELD(Comparator, nullptr); // Here's useful the hack mentioned at Comparator's constructor declaration
+	GET_FIELD(Comparator);
 }
 
 FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {

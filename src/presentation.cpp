@@ -573,7 +573,7 @@ void Controller::symbolsReadyToInvestigate() const {
 	symsToInvestigate.clear();
 }
 
-Comparator::Comparator(void** /*hackParam = nullptr*/) : CvWin("Pic2Sym") {
+Comparator::Comparator() : CvWin("Pic2Sym") {
 	content = noImage;
 
 	extern const int Comparator_trackMax;

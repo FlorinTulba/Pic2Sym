@@ -82,4 +82,4 @@ public:
 	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };
 
-#endif
+#endif // H_CLUSTER_ENGINE
