@@ -61,6 +61,12 @@ struct ClusterData : SymData {
 	*/
 	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 				const std::vector<unsigned> &clusterSymIndices);
+
+	ClusterData(const ClusterData &other);
+	ClusterData(ClusterData &&other);
+
+	ClusterData& operator=(const ClusterData &other);
+	ClusterData& operator=(ClusterData &&other);
 };
 
 /// VClusterData - vector with most information about each cluster

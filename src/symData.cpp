@@ -52,6 +52,15 @@ SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double dif
 
 SymData::SymData() : symAndMasks({ { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {}
 
+SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
+		minVal(other.minVal), diffMinMax(other.diffMinMax),
+		pixelSum(other.pixelSum), mc(other.mc), symAndMasks(other.symAndMasks) {}
+
+SymData::SymData(SymData &&other) : SymData(other) {
+	for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
+		const_cast<Mat&>(other.symAndMasks[i]).release();
+}
+
 SymData& SymData::operator=(const SymData &other) {
 	if(this != &other) {
 #define REPLACE_FIELD(Field, Type) \
@@ -68,6 +77,17 @@ SymData& SymData::operator=(const SymData &other) {
 			REPLACE_FIELD(symAndMasks[i], Mat);
 
 #undef REPLACE_FIELD
+	}
+
+	return *this;
+}
+
+SymData& SymData::operator=(SymData &&other) {
+	operator=(other);
+
+	if(this != &other) {
+		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
+			const_cast<Mat&>(other.symAndMasks[i]).release();
 	}
 
 	return *this;

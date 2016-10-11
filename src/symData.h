@@ -80,9 +80,12 @@ struct SymData {
 
 	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
 			const cv::Point2d &mc_, const MatArray &symAndMasks_);
+	SymData(const SymData &other);
+	SymData(SymData &&other);
 
 	SymData& operator=(const SymData &other);
-	
+	SymData& operator=(SymData &&other);
+
 #ifdef UNIT_TESTING
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
 

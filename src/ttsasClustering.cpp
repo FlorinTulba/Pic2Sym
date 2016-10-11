@@ -518,7 +518,7 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 					createNewCluster();
 
 				} else { // not too close, neither too far from existing clusters
-					neighborClusters = std::move(pcf.reserveCandidates()); // updating the neighbors
+					neighborClusters = std::move(const_cast<NearbyClusters&>(pcf.reserveCandidates())); // updating the neighbors
 					++itAmbigSym;
 				}
 

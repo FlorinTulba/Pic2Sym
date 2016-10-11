@@ -148,6 +148,8 @@ PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulatio
 		pixels(move(other.pixels)),
 		rowSums(other.rowSums), colSums(other.colSums),
 		removable(other.removable) {
+	other.rowSums.release();
+	other.colSums.release();
 }
 
 PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
@@ -159,8 +161,8 @@ PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 		rows = other.rows; cols = other.cols;
 		left = other.left; top = other.top;
 		pixels = move(other.pixels);
-		rowSums = other.rowSums;
-		colSums = other.colSums;
+		rowSums = other.rowSums; other.rowSums.release();
+		colSums = other.colSums; other.colSums.release();
 		removable = other.removable;
 	}
 	return *this;
@@ -376,7 +378,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 		const_cast<PixMapSym&>(pms).removable = true;
 	}
 
-	syms.push_back(move(pms));
+	syms.push_back(move(const_cast<PixMapSym&>(pms)));
 
 	const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
 }

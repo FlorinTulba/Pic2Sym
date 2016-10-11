@@ -49,8 +49,9 @@ Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
 Timer::Timer(std::shared_ptr<ITimerActions> observer) :
 		Timer(vector<std::shared_ptr<ITimerActions>> { observer }) {}
 
-Timer::Timer(Timer &&other) : observers(std::move(other.observers)),
-		lastStart(std::move(other.lastStart)), elapsedS(std::move(other.elapsedS)),
+Timer::Timer(Timer &&other) :
+		observers(std::move(const_cast<vector<std::shared_ptr<ITimerActions>>&>(other.observers))),
+		lastStart(other.lastStart), elapsedS(other.elapsedS),
 		paused(other.paused), valid(other.valid) {
 	other.valid = false;
 }

@@ -87,8 +87,8 @@ namespace {
 		});
 
 		const unsigned nonTrivialClusters = (unsigned)distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem),
-			symsCount = (unsigned)symsSet.size(),
-			clusteredSyms = symsCount - ((unsigned)symsIndicesPerCluster.size() - nonTrivialClusters);
+					symsCount = (unsigned)symsSet.size(),
+					clusteredSyms = symsCount - ((unsigned)symsIndicesPerCluster.size() - nonTrivialClusters);
 		cout<<"There are "<<nonTrivialClusters
 			<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
 		cout<<"Largest cluster contains "<<symsIndicesPerCluster[0].size()<<" symbols"<<endl;
@@ -101,7 +101,8 @@ namespace {
 			clusterOffsets.insert(offset);
 			clusters.emplace_back(symsSet, offset, symsIndices); // needs symsSet[symsIndices] !!
 			for(const auto idx : symsIndices)
-				newSymsSet.push_back(move(symsSet[idx])); // destroys symsSet[idx] !!
+				// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
+				newSymsSet.push_back(symsSet[idx]);
 
 			offset += clusterSz;
 		}
@@ -148,6 +149,44 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	const_cast<Mat&>(symAndMasks[GROUNDED_SYM_IDX]) = groundedGlyph;
 	const_cast<Mat&>(symAndMasks[BLURRED_GR_SYM_IDX]) = blurOfGroundedGlyph;
 	const_cast<Mat&>(symAndMasks[VARIANCE_GR_SYM_IDX]) = varianceOfGroundedGlyph;
+}
+
+ClusterData::ClusterData(const ClusterData &other) : SymData(other),
+	idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}
+
+ClusterData::ClusterData(ClusterData &&other) : SymData(move(other)),
+	idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}
+
+ClusterData& ClusterData::operator=(const ClusterData &other) {
+	SymData::operator=(other);
+
+	if(this != &other) {
+#define REPLACE_FIELD(Field, Type) \
+		const_cast<Type&>(Field) = other.Field
+
+		REPLACE_FIELD(idxOfFirstSym, unsigned);
+		REPLACE_FIELD(sz, unsigned);
+
+#undef REPLACE_FIELD
+	}
+
+	return *this;
+}
+
+ClusterData& ClusterData::operator=(ClusterData &&other) {
+	SymData::operator=(move(other));
+
+	if(this != &other) {
+#define REPLACE_FIELD(Field, Type) \
+		const_cast<Type&>(Field) = other.Field
+
+		REPLACE_FIELD(idxOfFirstSym, unsigned);
+		REPLACE_FIELD(sz, unsigned);
+
+#undef REPLACE_FIELD
+	}
+
+	return *this;
 }
 
 ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
