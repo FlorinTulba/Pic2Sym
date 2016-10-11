@@ -70,6 +70,6 @@ struct ClusterData : SymData {
 };
 
 /// VClusterData - vector with most information about each cluster
-typedef std::vector<ClusterData> VClusterData;
+typedef std::vector<const ClusterData> VClusterData;
 
-#endif
+#endif // H_CLUSTER_DATA
