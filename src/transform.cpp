@@ -159,7 +159,7 @@ static void logDataForBestMatches(volatile bool &isCanceled,
 
 extern const Size BlurWinSize;
 extern const double BlurStandardDeviation;
-extern const bool ParallelizeTr_PatchRowLoops;
+extern const bool UsingOMP, ParallelizeTr_PatchRowLoops;
 extern const unsigned SymsBatch_defaultSz;
 
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
@@ -247,13 +247,15 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 		resized = resizedVersion; isColor = img.isColor();
 		GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
 		
-		draftMatches.clear(); draftMatches.reserve(patchesPerCol);
-		for(int r = 0; r<h; r += sz) {
-			const Range rowRange(r, r+sz);
+		draftMatches.clear(); draftMatches.resize(patchesPerCol);
 
-			draftMatches.emplace_back();
-			auto &draftMatchesRow = draftMatches.back(); draftMatchesRow.reserve(patchesPerRow);
-			for(int c = 0; c<w; c += sz) {
+#pragma omp parallel if(UsingOMP)
+#pragma omp for schedule(static, 1) nowait
+		for(int r = 0; r < h; r += (int)sz) {
+			const Range rowRange(r, r+(int)sz);
+
+			auto &draftMatchesRow = draftMatches[r/(int)sz]; draftMatchesRow.reserve(patchesPerRow);
+			for(unsigned c = 0U; c < (unsigned)w; c += sz) {
 				const Range colRange(c, c+sz);
 				const Mat patch(resized, rowRange, colRange),
 					blurredPatch(resizedBlurred, rowRange, colRange);
@@ -263,9 +265,11 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 			}
 		}
 	} else { // processing same ResizedImg
-		for(unsigned r = 0U; r<patchesPerCol; ++r) {
+#pragma omp parallel if(UsingOMP)
+#pragma omp for schedule(static, 1) nowait
+		for(int r = 0; r < (int)patchesPerCol; ++r) {
 			auto &draftMatchesRow = draftMatches[r];
-			for(unsigned c = 0U; c<patchesPerRow; ++c) {
+			for(unsigned c = 0U; c < patchesPerRow; ++c) {
 				auto &draftMatch = draftMatchesRow[c];
 				draftMatch.reset(); // leave nothing but the Patch field
 			}
@@ -274,6 +278,8 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 }
 
 void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor) {
+	// Cannot set finalizedRows as reduction(+ : finalizedRows) in the for below,
+	// since its value is checked during the loop - the same story as for isCanceled
 	volatile size_t finalizedRows = 0U;
 	const size_t rowsOfPatches = size_t((unsigned)h/sz),
 				batchSz = size_t(upperIdx - fromIdx),
@@ -281,7 +287,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
-	for(int r = 0; r<h; r += sz) {
+	for(int r = 0; r < h; r += sz) {
 		if(isCanceled)
 			continue; // OpenMP doesn't accept break, so just continue with empty iterations
 
@@ -289,10 +295,10 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 		const Range rowRange(r, r+sz);
 		auto &draftMatchesRow = draftMatches[(unsigned)r/sz];
 
-		for(int c = 0; c<w; c += sz) {
-			const Range colRange(c, c+sz);
+		for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
+			const Range colRange(c, c+(int)sz);
 
-			auto &draftMatch = draftMatchesRow[(unsigned)c/sz];
+			auto &draftMatch = draftMatchesRow[patchColumn];
 			if(me.findBetterMatch(draftMatch, fromIdx, upperIdx)) {
 				const Mat &approximation = draftMatch.bestVariant.approx;
 				Mat destRegion(result, rowRange, colRange);

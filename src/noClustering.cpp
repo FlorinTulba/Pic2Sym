@@ -40,6 +40,8 @@
 
 using namespace std;
 
+extern const bool UsingOMP;
+
 const string NoClustering::Name("None");
 
 unsigned NoClustering::formGroups(const VSymData &symsToGroup,
@@ -48,13 +50,17 @@ unsigned NoClustering::formGroups(const VSymData &symsToGroup,
 	static TaskMonitor trivialClustering("trivial clustering", *symsMonitor);
 
 	// One cluster per symbol - each symbol forms its own cluster
-	const unsigned clustersCount = (unsigned)symsToGroup.size();
+	const int clustersCount = (int)symsToGroup.size();
 
 	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>(1));
-	for(unsigned i = 0U; i<clustersCount; ++i)
-		symsIndicesPerCluster[i][0] = i;
+
+	// Accessing different vector elements => ok to parallelize
+#pragma omp parallel if(UsingOMP)
+#pragma omp for schedule(static, 8) nowait
+	for(int i = 0; i < clustersCount; ++i)
+		symsIndicesPerCluster[i][0] = (unsigned)i;
 
 	trivialClustering.taskDone();
 
-	return clustersCount;
+	return (unsigned)clustersCount;
 }

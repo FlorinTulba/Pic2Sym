@@ -105,7 +105,7 @@ void MatchEngine::updateSymbols() {
 	const unsigned sz = cfg.symSettings().getFontSz();
 
 #pragma omp parallel if(PrepareMoreGlyphsAtOnce)
-#pragma omp for schedule(static, 1) nowait ordered
+#pragma omp for schedule(static, 1) nowait // ordered would be useful only for debugging (ompPrintf)
 	for(int i = 0; i<symsCount; ++i) {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
@@ -114,12 +114,13 @@ void MatchEngine::updateSymbols() {
 				negGlyph = pms.toMat(sz, !pms.removable);
 		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		double minVal, maxVal; // for very small fonts, minVal might be > 0 and maxVal might be < 255
+
+		// Computing SymData fields separately, to keep the critical emplace from below as short as possible
 		SymData::computeFields(glyph, fgMask, bgMask, edgeMask,
 							   groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph,
 							   minVal, maxVal);
 
-#pragma omp ordered
-//#pragma omp critical - implied by ordered from above
+#pragma omp critical // ordered instead of critical would be useful only for debugging
 		symsSet.emplace_back(pms.symCode,
 							 pms.symIdx,
 							 minVal, maxVal-minVal,
