@@ -180,18 +180,21 @@ namespace {
 		const string allowedSetStr;	///< same set in string format
 	};
 
-	// Template-recursive version of checkItem
-	/// End of template-recursion for checkItem - no more validators to check
-	template<class ItemType>
-	const ItemType& checkItem(const string&, const ItemType &itemVal) { return itemVal; }
-
-	/// Template-recursion for checkItem - at least one firstValidator, optionally followed by some nextValidators
-	template<class ItemType, class TypeOfFirstValidator, class ... TypesOfNextValidators>
+	/// Checks that itemName's value (itemValue) is approved by all validators, in which case it returns it.
+	/// (Non-template-recursive solution of the function)
+	template<class ItemType, class ... ValidatorTypes>
 	const ItemType& checkItem(const string &itemName, const ItemType &itemVal,
-							  const TypeOfFirstValidator &firstValidator,
-							  const TypesOfNextValidators& ... nextValidators) {
-		firstValidator.examine(itemName, itemVal);
-		return checkItem(itemName, itemVal, nextValidators...);
+							  const ValidatorTypes& ... validators) {
+		// Declaring a dummy non-empty array that is ending in the validators' expansion
+		int dummyArray[] {
+			0, // a first element to ensure the array won't be empty
+
+			// Series of 2 terms comma-expressions, each getting evaluated to 0,
+			// but every one also calling 'examine' for a different validator
+			(validators.examine(itemName, itemVal), 0)...
+		};
+		(void)dummyArray; // Avoids warning about unused variable
+		return itemVal;
 	}
 } // anonymous namespace
 
