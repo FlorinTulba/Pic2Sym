@@ -60,18 +60,19 @@ namespace {
 	}
 
 	/// Checks if the provided symbol range within the current cluster contains a better match
-	bool checkRangeWithinCluster(unsigned from, unsigned upperLimit,
+	bool checkRangeWithinCluster(unsigned fromIdx, unsigned lastIdx,
 								 const MatchEngine &me, const Mat &toApprox,
-								 const VSymData &symsSet, const valarray<double> &invMaxIncreaseFactors,
+								 const VSymData &symsSet,
+								 const valarray<double> &invMaxIncreaseFactors,
+								 valarray<double> &scoresToBeatBySyms,
 								 BestMatch &draftMatch, MatchParams &mp) {
 		bool betterMatchFound = false;
-		valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors);
-		for(unsigned i = from; i < upperLimit; ++i) {
+		for(unsigned idx = fromIdx; idx <= lastIdx; ++idx) {
 			mp.reset(); // preserves patch-invariant fields
-			const auto &symData = symsSet[i];
+			const auto &symData = symsSet[idx];
 			double score;
 			if(me.isBetterMatch(toApprox, symData, mp, scoresToBeatBySyms, score)) {
-				draftMatch.update(score, symData.code, i, symData, mp);
+				draftMatch.update(score, symData.code, idx, symData, mp);
 				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
 				betterMatchFound = true;
 			}
@@ -271,18 +272,11 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 	const bool previouslyQualified =
 		draftMatch.lastSelectedCandidateCluster.is_initialized() &&
 		*draftMatch.lastSelectedCandidateCluster == fromCluster;
-
-	// If fromCluster wasn't considered previously worthy enough to investigate,
-	// increment fromCluster and reset firstSymIdxWithinFromCluster
-	if(firstSymIdxWithinFromCluster > 0U && !previouslyQualified) {
-		++fromCluster;
-		firstSymIdxWithinFromCluster = 0U;
-	}
-
-	bool betterMatchFound = false;
 	const Mat &toApprox = patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
 	const auto &clusters = ce.getClusters();
+
+	bool betterMatchFound = false;
 
 	// Multi-element clusters still qualify with slightly inferior scores,
 	// as individual symbols within the cluster might deliver a superior score.
@@ -290,24 +284,29 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 	valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors),
 		scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
 
-	for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster;
-		++clusterIdx, firstSymIdxWithinFromCluster = 0) {
-		const auto &cluster = clusters[clusterIdx];
-
-		// 1st cluster might already have been qualified for thorough examination
-		if(clusterIdx == fromCluster && previouslyQualified) { // cluster already qualified
-			const unsigned upperLimit =
-				(clusterIdx < lastCluster) ? cluster.sz : (lastSymIdxWithinLastCluster + 1U);
-			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-				*this, toApprox, symsSet, invMaxIncreaseFactors,
-				draftMatch, mp)) {
-				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
-				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
-				betterMatchFound = true;
-			}
-
-			continue;
+	// 1st cluster might have already been qualified for thorough examination
+	if(previouslyQualified) { // cluster already qualified
+		const unsigned upperLimit = (fromCluster < lastCluster) ?
+										clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
+		if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
+								*this, toApprox, symsSet,
+								invMaxIncreaseFactors, scoresToBeatBySyms,
+								draftMatch, mp)) {
+			scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+			betterMatchFound = true;
 		}
+
+		++fromCluster; // nothing else to investigate from this cluster
+
+	} else if(firstSymIdxWithinFromCluster > 0U) {
+		// If cluster fromCluster was already analyzed, but wasn't considered worthy enough
+		// to investigate symbol by symbol, increment fromCluster
+		++fromCluster;
+	}
+
+	// Examine all remaining unchecked clusters (if any) within current batch
+	for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster; ++clusterIdx) {
+		const auto &cluster = clusters[clusterIdx];
 
 		// Current cluster attempts qualification - it computes its own score
 		mp.reset(); // preserves patch-invariant fields
@@ -332,12 +331,12 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 			// Nontrivial cluster
 			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
 
-			const unsigned upperLimit = (clusterIdx < lastCluster) ? cluster.sz :
-				(lastSymIdxWithinLastCluster + 1U);
-			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-				*this, toApprox, symsSet, invMaxIncreaseFactors,
-				draftMatch, mp)) {
-				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
+			const unsigned upperLimit = (clusterIdx < lastCluster) ?
+											cluster.sz : lastSymIdxWithinLastCluster;
+			if(checkRangeWithinCluster(0U, upperLimit,
+										*this, toApprox, symsSet,
+										invMaxIncreaseFactors, scoresToBeatBySyms,
+										draftMatch, mp)) {
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
 			}
