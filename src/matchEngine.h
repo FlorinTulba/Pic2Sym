@@ -114,6 +114,13 @@ public:
 
 	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
 
+	void newlyEnabledMatchAspect();		///< increments enabledAspectsCount
+	void newlyDisabledMatchAspect();	///< decrements enabledAspectsCount
+	
+	void updateEnabledMatchAspectsCount();		///< updates enabledAspectsCount by checking which aspects are enabled
+	
+	size_t enabledMatchAspectsCount() const;	///< provides enabledAspectsCount
+
 #ifdef _DEBUG
 	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
 	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects

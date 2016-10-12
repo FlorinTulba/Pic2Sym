@@ -84,6 +84,8 @@ MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(
 			MatchAspectsFactory::create(aspectName, cachedData, cfg_.matchSettings()));
+
+	updateEnabledMatchAspectsCount();
 }
 
 void MatchEngine::updateSymbols() {
@@ -173,6 +175,25 @@ const vector<std::shared_ptr<MatchAspect>>& MatchEngine::availMatchAspects() con
 	return availAspects;
 }
 
+void MatchEngine::newlyEnabledMatchAspect() {
+	++enabledAspectsCount;
+}
+
+void MatchEngine::newlyDisabledMatchAspect() {
+	--enabledAspectsCount; 
+}
+
+void MatchEngine::updateEnabledMatchAspectsCount() {
+	enabledAspectsCount = 0U;
+	for(auto pAspect : availAspects)
+		if(pAspect->enabled())
+			++enabledAspectsCount;
+}
+
+size_t MatchEngine::enabledMatchAspectsCount() const {
+	return enabledAspectsCount;
+}
+
 void MatchEngine::getReady() {
 	updateSymbols();
 
@@ -182,6 +203,8 @@ void MatchEngine::getReady() {
 	for(auto pAspect : availAspects)
 		if(pAspect->enabled())
 			enabledAspects.push_back(&*pAspect);
+
+	assert(enabledAspectsCount == enabledAspects.size());
 
 	/*
 	Reorder the aspects based on their complexity and their max score.
@@ -213,8 +236,6 @@ void MatchEngine::getReady() {
 		// Descending by max score
 		return maxScoreA >= maxScoreB;
 	});
-
-	enabledAspectsCount = enabledAspects.size();
 
 #ifdef _DEBUG
 	totalIsBetterMatchCalls = 0U;
@@ -257,7 +278,7 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 		++fromCluster;
 		firstSymIdxWithinFromCluster = 0U;
 	}
-	
+
 	bool betterMatchFound = false;
 	const Mat &toApprox = patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
@@ -270,7 +291,7 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 		scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
 
 	for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster;
-			++clusterIdx, firstSymIdxWithinFromCluster = 0) {
+		++clusterIdx, firstSymIdxWithinFromCluster = 0) {
 		const auto &cluster = clusters[clusterIdx];
 
 		// 1st cluster might already have been qualified for thorough examination
@@ -278,8 +299,8 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 			const unsigned upperLimit =
 				(clusterIdx < lastCluster) ? cluster.sz : (lastSymIdxWithinLastCluster + 1U);
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-									*this, toApprox, symsSet, invMaxIncreaseFactors,
-									draftMatch, mp)) {
+				*this, toApprox, symsSet, invMaxIncreaseFactors,
+				draftMatch, mp)) {
 				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
@@ -312,10 +333,10 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
 
 			const unsigned upperLimit = (clusterIdx < lastCluster) ? cluster.sz :
-											(lastSymIdxWithinLastCluster + 1U);
+				(lastSymIdxWithinLastCluster + 1U);
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-										*this, toApprox, symsSet, invMaxIncreaseFactors,
-										draftMatch, mp)) {
+				*this, toApprox, symsSet, invMaxIncreaseFactors,
+				draftMatch, mp)) {
 				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
@@ -336,8 +357,8 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchP
 #endif // _DEBUG
 
 	// There is at least one enabled match aspect,
-	// since findBetterMatch prevents further calls when there are no enabled aspects.
-	assert(enabledAspectsCount > 0U);
+	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
+	assert(enabledAspectsCount > 0U && enabledAspectsCount == enabledAspects.size());
 
 	score = enabledAspects[0]->assessMatch(patch, symData, mp);
 	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;

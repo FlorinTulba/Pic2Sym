@@ -89,13 +89,9 @@ Settings::Settings() :
 	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
-	bool noEnabledMatchAspects = false;
-	if((imageOk || !imageRequired) && fontFamilyOk) {
-		for(auto pAspect : me.availMatchAspects())
-			if(pAspect->enabled())
-				return true;
-		noEnabledMatchAspects = true;
-	}
+	const bool noEnabledMatchAspects = (me.enabledMatchAspectsCount() == 0U);
+	if((imageOk || !imageRequired) && fontFamilyOk && !noEnabledMatchAspects)
+		return true;
 
 	ostringstream oss;
 	oss<<"The problems are:"<<endl<<endl;
@@ -333,14 +329,24 @@ void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 		cfg.ms.setBlankThreshold(threshold);
 }
 
+#define UPDATE_MATCH_ASPECT_VALUE(AspectName, NewValue) \
+	const double PrevVal = cfg.ms.get_k##AspectName(); \
+	if(NewValue != PrevVal) { \
+		cfg.ms.set_k##AspectName(NewValue); \
+		if(PrevVal == 0.) { /* just enabled this aspect */ \
+			me.newlyEnabledMatchAspect(); \
+		} else if(NewValue == 0.) { /* just disabled this aspect */ \
+			me.newlyDisabledMatchAspect(); \
+		} \
+	}
+
 void Controller::newContrastFactor(double k) {
 	extern const cv::String ControlPanel_moreContrastTrName;
 	const auto permit = cp.actionDemand(ControlPanel_moreContrastTrName);
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kContrast())
-		cfg.ms.set_kContrast(k);
+	UPDATE_MATCH_ASPECT_VALUE(Contrast, k);
 }
 
 void Controller::newStructuralSimilarityFactor(double k) {
@@ -349,8 +355,7 @@ void Controller::newStructuralSimilarityFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kSsim())
-		cfg.ms.set_kSsim(k);
+	UPDATE_MATCH_ASPECT_VALUE(Ssim, k);
 }
 
 void Controller::newUnderGlyphCorrectnessFactor(double k) {
@@ -359,8 +364,7 @@ void Controller::newUnderGlyphCorrectnessFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kSdevFg())
-		cfg.ms.set_kSdevFg(k);
+	UPDATE_MATCH_ASPECT_VALUE(SdevFg, k);
 }
 
 void Controller::newAsideGlyphCorrectnessFactor(double k) {
@@ -369,8 +373,7 @@ void Controller::newAsideGlyphCorrectnessFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kSdevBg())
-		cfg.ms.set_kSdevBg(k);
+	UPDATE_MATCH_ASPECT_VALUE(SdevBg, k);
 }
 
 void Controller::newGlyphEdgeCorrectnessFactor(double k) {
@@ -379,8 +382,7 @@ void Controller::newGlyphEdgeCorrectnessFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kSdevEdge())
-		cfg.ms.set_kSdevEdge(k);
+	UPDATE_MATCH_ASPECT_VALUE(SdevEdge, k);
 }
 
 void Controller::newDirectionalSmoothnessFactor(double k) {
@@ -389,8 +391,7 @@ void Controller::newDirectionalSmoothnessFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kCosAngleMCs())
-		cfg.ms.set_kCosAngleMCs(k);
+	UPDATE_MATCH_ASPECT_VALUE(CosAngleMCs, k);
 }
 
 void Controller::newGravitationalSmoothnessFactor(double k) {
@@ -399,8 +400,7 @@ void Controller::newGravitationalSmoothnessFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kMCsOffset())
-		cfg.ms.set_kMCsOffset(k);
+	UPDATE_MATCH_ASPECT_VALUE(MCsOffset, k);
 }
 
 void Controller::newGlyphWeightFactor(double k) {
@@ -409,9 +409,10 @@ void Controller::newGlyphWeightFactor(double k) {
 	if(nullptr == permit)
 		return;
 
-	if(k != cfg.ms.get_kSymDensity())
-		cfg.ms.set_kSymDensity(k);
+	UPDATE_MATCH_ASPECT_VALUE(SymDensity, k);
 }
+
+#undef UPDATE_MATCH_ASPECT_VALUE
 
 bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
 	if(!resizedImg_)
@@ -451,6 +452,7 @@ void Controller::restoreUserDefaultMatchSettings() {
 	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
 #endif
 	cp.updateMatchSettings(cfg.ms);
+	me.updateEnabledMatchAspectsCount();
 }
 
 void Controller::setUserDefaultMatchSettings() const {
@@ -486,6 +488,7 @@ void Controller::loadSettings() {
 	}
 
 	cp.updateMatchSettings(cfg.ms);
+	me.updateEnabledMatchAspectsCount();
 	cp.updateImgSettings(cfg.is);
 
 	if(prevSymSettings==cfg.ss)
