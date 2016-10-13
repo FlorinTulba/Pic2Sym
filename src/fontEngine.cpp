@@ -581,8 +581,10 @@ const vector<const TinySym>& FontEngine::getTinySyms() {
 		const unsigned bboxHeight = unsigned(bbox.yMax - bbox.yMin + 1),
 					bboxWidth = unsigned(bbox.xMax - bbox.xMin + 1);
 		const double RefSymsSizeD = (double)RefSymsSize,
-					vertRatio = RefSymsSizeD / bboxHeight,
-					horizRatio = RefSymsSizeD / bboxWidth;
+			vertRatio = RefSymsSizeD / bboxHeight,
+			horizRatio = RefSymsSizeD / bboxWidth;
+		static const double maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
+
 		bbox.xMin = (FT_Pos)round(bbox.xMin*horizRatio); bbox.xMax = (FT_Pos)(bbox.xMin + RefSymsSize - 1);
 		bbox.yMin = (FT_Pos)round(bbox.yMin*vertRatio); bbox.yMax = (FT_Pos)(bbox.yMin + RefSymsSize - 1);
 
@@ -623,7 +625,7 @@ const vector<const TinySym>& FontEngine::getTinySyms() {
 					THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize) + "  Error: " + to_string(error), invalid_argument);
 			}
 			const FT_Int left = g->bitmap_left, top = g->bitmap_top;
-			const PixMapSym refSym((unsigned long)c, i, b, (int)left, (int)top, (int)RefSymsSize, consec, revConsec, bbox);
+			const PixMapSym refSym((unsigned long)c, i, b, (int)left, (int)top, (int)RefSymsSize, maxGlyphSum, consec, revConsec, bbox);
 			tinySyms.emplace_back(refSym);
 		}
 	}

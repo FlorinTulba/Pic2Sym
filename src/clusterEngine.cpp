@@ -73,17 +73,17 @@ namespace {
 		});
 
 		// Sort non-trivial clusters in descending order of their size
-		// and then in ascending order of pixelSum (taken from last cluster member)
+		// and then in ascending order of avgPixVal (taken from last cluster member)
 		sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
 					[&] (const vector<unsigned> &a, const vector<unsigned> &b) {
 			const size_t szA = a.size(), szB = b.size();
-			return (szA > szB) || ((szA == szB) && (symsSet[a.back()].pixelSum < symsSet[b.back()].pixelSum));
+			return (szA > szB) || ((szA == szB) && (symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal));
 		});
 
-		// Sort trivial clusters in ascending order of pixelSum
+		// Sort trivial clusters in ascending order of avgPixVal
 		sort(itFirstClusterWithOneItem, end(symsIndicesPerCluster),
 			 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
-			return symsSet[a.back()].pixelSum < symsSet[b.back()].pixelSum;
+			return symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal;
 		});
 
 		const unsigned nonTrivialClusters = (unsigned)distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem),
@@ -117,7 +117,7 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
 	const Mat &firstNegSym = symsSet[0].symAndMasks[NEG_SYM_IDX];
 	const int rows = firstNegSym.rows, cols = firstNegSym.cols;
-	double pixelSum_ = 0.;
+	double avgPixVal_ = 0.;
 	Point2d mc_;
 	Mat synthesizedSym, negSynthesizedSym(rows, cols, CV_64FC1, Scalar(0.));
 	for(const auto clusterSymIdx : clusterSymIndices) {
@@ -125,7 +125,7 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 		Mat negSym;
 		symData.symAndMasks[NEG_SYM_IDX].convertTo(negSym, CV_64FC1);
 		negSynthesizedSym += negSym;
-		pixelSum_ += symData.pixelSum;
+		avgPixVal_ += symData.avgPixVal;
 		mc_ += symData.mc;
 	}
 	const double invClusterSz = 1./sz;
@@ -141,7 +141,7 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 
 	overwriteConstItem(minVal,		minVal_);
 	overwriteConstItem(diffMinMax,	maxVal - minVal_);
-	overwriteConstItem(pixelSum,	pixelSum_ * invClusterSz);
+	overwriteConstItem(avgPixVal,	avgPixVal_ * invClusterSz);
 	overwriteConstItem(mc,			mc_ * invClusterSz);
 	overwriteConstItem(symAndMasks[FG_MASK_IDX],		fgMask);
 	overwriteConstItem(symAndMasks[BG_MASK_IDX],		bgMask);

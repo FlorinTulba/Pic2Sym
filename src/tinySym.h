@@ -48,7 +48,7 @@ struct TinySym {
 	enum { RatioRefTiny = 8 };
 
 	cv::Point2d mc = cv::Point2d(.5, .5);	///< reference mc (coordinates are within a unit-square: 0..1 x 0..1)
-	double avgPixVal = 0.;					///< reference pixelSum divided by font area (0..1 range)
+	double avgPixVal = 0.;					///< reference average pixel value (0..1 range)
 
 	cv::Mat mat;		///< grounded version of the small symbol
 

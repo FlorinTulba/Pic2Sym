@@ -89,7 +89,7 @@ struct MatchParams {
 	void computeSdevFg(const cv::Mat &patch, const SymData &symData);
 	void computeSdevBg(const cv::Mat &patch, const SymData &symData);
 	void computeSdevEdge(const cv::Mat &patch, const SymData &symData);
-	void computeSymDensity(const SymData &symData, const CachedData &cachedData);
+	void computeSymDensity(const SymData &symData);
 	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData);
 	void computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
 							  const CachedData &cachedData);

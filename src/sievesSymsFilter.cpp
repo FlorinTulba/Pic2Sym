@@ -58,7 +58,7 @@ namespace {
 		// threshold ratio between 1/4 of the symbol sum and the sum of each quadrant
 		static const double SumQuarterThreshold = 1.5364;
 
-		double sumBrightGlyph = (toInvert ? (sfc.areaD - pms.glyphSum) : pms.glyphSum);
+		double sumBrightGlyph = (toInvert ? (1. - pms.avgPixVal) : pms.avgPixVal) * sfc.areaD;
 
 		// Ignore central lines when sz is odd
 		if(lastSzBit != 0U) {
@@ -247,7 +247,7 @@ bool SievesSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &
 				lastSzBit = sz & 1U;	// 1 for odd sz, 0 for even sz
 
 	// Using inverted glyph if original is too dark
-	const bool toInvert = (pms.glyphSum * 2. < sfc.areaD);
+	const bool toInvert = (pms.avgPixVal < .5);
 	Mat brightGlyph = pms.toMatD01(sz);
 	if(toInvert)
 		brightGlyph = 1. - brightGlyph;

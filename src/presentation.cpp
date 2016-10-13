@@ -204,7 +204,7 @@ namespace {
 #ifndef UNIT_TESTING
 		vector<double> symSums;
 		for(const auto &pms : theSyms)
-			symSums.push_back(pms.glyphSum);
+			symSums.push_back(pms.avgPixVal);
 
 		static const unsigned MaxBinHeight = 256U;
 		const unsigned binsCount = min(256U, (unsigned)symSums.size());

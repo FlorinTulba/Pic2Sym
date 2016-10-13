@@ -167,11 +167,13 @@ void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 	assert(*sdevEdge < EPSpSdevMaxEdge);
 }
 
-void MatchParams::computeSymDensity(const SymData &symData, const CachedData &cachedData) {
+void MatchParams::computeSymDensity(const SymData &symData) {
 	if(symDensity)
 		return;
 
-	symDensity = symData.pixelSum / cachedData.sz2;
+	// The method 'MatchAspect::score(const MatchParams &mp)' needs symData.avgPixVal stored within MatchParams mp
+	// That's why the mere value copy from below:
+	symDensity = symData.avgPixVal;
 	static const double EPSp1 = 1. + EPS;
 	assert(*symDensity < EPSp1);
 }
@@ -203,7 +205,7 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 		return;
 
 	computeContrast(patch, symData);
-	computeSymDensity(symData, cachedData);
+	computeSymDensity(symData);
 
 	// Obtaining glyph's mass center
 	const double k = symDensity.value() * contrast.value(),

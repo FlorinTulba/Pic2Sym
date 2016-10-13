@@ -289,10 +289,10 @@ double LargerSym::score(const MatchParams &mp) const {
 void LargerSym::fillRequiredMatchParams(const Mat&,
 										const SymData &symData,
 										MatchParams &mp) const {
-	mp.computeSymDensity(symData, cachedData);
+	mp.computeSymDensity(symData);
 }
 
 double LargerSym::relativeComplexity() const {	
-	return 0.001; // Performs only a division
+	return 0.001; // Performs only a value copy
 }
 

@@ -127,7 +127,7 @@ void MatchEngine::updateSymbols() {
 		symsSet.emplace_back(pms.symCode,
 							 pms.symIdx,
 							 minVal, maxVal-minVal,
-							 pms.glyphSum, pms.mc,
+							 pms.avgPixVal, pms.mc,
 							 SymData::MatArray { {
 										fgMask,					// FG_MASK_IDX
 										bgMask,					// BG_MASK_IDX

@@ -99,6 +99,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 const FT_Bitmap &bm,			// the bitmap to process
 					 int leftBound, int topBound,	// initial position of the symbol
 					 int sz,						// font size
+					 double maxGlyphSum,			// max sum of a glyph's pixels
 					 const Mat &consec,				// vector of consecutive values 0 .. sz-1
 					 const Mat &revConsec,			// vector of consecutive values sz-1 .. 0
 					 const FT_BBox &bb) :			// the bounding box to fit
@@ -125,14 +126,14 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	left = (unsigned char)left_;
 	top = (unsigned char)top_;
 
-	computeMcAndGlyphSum((unsigned)sz, pixels, rows, cols, left, top, consec, revConsec,
-						 mc, glyphSum, &colSums, &rowSums);
+	computeMcAndAvgPixVal((unsigned)sz, maxGlyphSum, pixels, rows, cols, left, top, consec, revConsec,
+						  mc, avgPixVal, &colSums, &rowSums);
 }
 
 PixMapSym::PixMapSym(const PixMapSym &other) :
 		symCode(other.symCode),
 		symIdx(other.symIdx),
-		glyphSum(other.glyphSum),
+		avgPixVal(other.avgPixVal),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		pixels(other.pixels),
@@ -142,7 +143,7 @@ PixMapSym::PixMapSym(const PixMapSym &other) :
 PixMapSym::PixMapSym(PixMapSym &&other) : // required by some vector manipulations
 		symCode(other.symCode),
 		symIdx(other.symIdx),
-		glyphSum(other.glyphSum),
+		avgPixVal(other.avgPixVal),
 		mc(other.mc),
 		rows(other.rows), cols(other.cols), left(other.left), top(other.top),
 		pixels(move(other.pixels)),
@@ -156,7 +157,7 @@ PixMapSym& PixMapSym::operator=(PixMapSym &&other) {
 	if(this != &other) {
 		symCode = other.symCode;
 		symIdx = other.symIdx;
-		glyphSum = other.glyphSum;
+		avgPixVal = other.avgPixVal;
 		mc = other.mc;
 		rows = other.rows; cols = other.cols;
 		left = other.left; top = other.top;
@@ -173,7 +174,7 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		return true;
 
 	return
-		glyphSum == other.glyphSum &&
+		avgPixVal == other.avgPixVal &&
 		left == other.left && top == other.top &&
 		rows == other.rows && cols == other.cols &&
 		mc == other.mc &&
@@ -213,20 +214,20 @@ Mat PixMapSym::toMatD01(unsigned fontSz) const {
 	return result;
 }
 
-void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &pixels_,
-									 unsigned char rows_, unsigned char cols_,
-									 unsigned char left_, unsigned char top_,
-									 const Mat &consec, const Mat &revConsec,
-									 Point2d &mc, double &glyphSum,
-									 Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
+void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vector<unsigned char> &pixels_,
+									  unsigned char rows_, unsigned char cols_,
+									  unsigned char left_, unsigned char top_,
+									  const Mat &consec, const Mat &revConsec,
+									  Point2d &mc, double &avgPixVal,
+									  Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
 	static const Point2d center(.5, .5);
-	const int diagsCount = (int)(sz<<1) | 1;
 	const double szM1 = sz - 1.;
+
 	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
 	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
 
 	if(rows_ == 0U || cols_ == 0U) {
-		mc = center; glyphSum = 0.;
+		mc = center; avgPixVal = 0.;
 		return;
 	}
 
@@ -234,12 +235,13 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 	Mat sumPerColumn, sumPerRow;
 
 	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
-	glyphSum = *sum(sumPerColumn).val / 255.;
+	const double glyphSum = *sum(sumPerColumn).val;
+	avgPixVal = glyphSum / maxGlyphSum;
 	
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	static const double NO_PIXELS_SET_THRESHOLD = .9/(255U*Settings_MAX_FONT_SIZE*Settings_MAX_FONT_SIZE);
-	if(glyphSum < NO_PIXELS_SET_THRESHOLD) {
-		mc = center; glyphSum = 0.;
+	// Checking if the glyph with non-empty bounding box contains only zeros, or only ones (a Blank)
+	static const double OneMinEPS = 1. - EPS;
+	if(avgPixVal < EPS || avgPixVal > OneMinEPS) {
+		mc = center;
 		return;
 	}
 
@@ -258,7 +260,7 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
 				sumY = sumPerRow.dot(Mat(revConsec, topRange));
 
-	mc = Point2d(sumX, sumY) / (255. * glyphSum * szM1);
+	mc = Point2d(sumX, sumY) / (glyphSum * szM1);
 }
 
 PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
@@ -317,8 +319,8 @@ const vector<const PixMapSym>& PmsCont::getSyms() const {
 void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	ready = false;
 	fontSz = fontSz_;
+	maxGlyphSum = (double)(255U * fontSz_ * fontSz_);
 	blanks = duplicates = 0U;
-	sz2 = (double)fontSz_ * fontSz_;
 	coverageOfSmallGlyphs = 0.;
 
 	removableSymsByCateg.clear();
@@ -348,8 +350,9 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 	}
 
 	const PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
-						(int)fontSz, consec, revConsec, bb);
-	if(pms.glyphSum < EPS || sz2 - pms.glyphSum < EPS) { // discard disguised Space characters
+						(int)fontSz, maxGlyphSum, consec, revConsec, bb);
+	static const double OneMinEPS = 1. - EPS;
+	if(pms.avgPixVal < EPS || pms.avgPixVal > OneMinEPS) { // discard disguised Space characters
 		++blanks;
 		return;
 	}
@@ -395,10 +398,10 @@ void PmsCont::setAsReady() {
 	auto itToNthGlyphSum = next(begin(syms), smallGlyphsQty);
 	nth_element(begin(syms), itToNthGlyphSum, end(syms),
 				[] (const PixMapSym &first, const PixMapSym &second) {
-		return first.glyphSum < second.glyphSum;
+		return first.avgPixVal < second.avgPixVal;
 	});
 
-	coverageOfSmallGlyphs = itToNthGlyphSum->glyphSum / sz2;
+	coverageOfSmallGlyphs = itToNthGlyphSum->avgPixVal;
 
 	ready = true;
 }

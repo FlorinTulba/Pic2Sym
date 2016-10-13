@@ -62,7 +62,7 @@ Fields 'left' and 'top' indicate the position of the top-left corner within the 
 struct PixMapSym {
 	unsigned long symCode = 0UL;	///< symbol code
 	size_t symIdx = 0U;				///< symbol index within cmap
-	double glyphSum = 0.;			///< sum of the pixel values divided by 255
+	double avgPixVal = 0.;			///< average of the pixel values divided by 255
 	
 	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc;
@@ -73,8 +73,8 @@ struct PixMapSym {
 	/// 256-shades of gray rectangle describing the character (top-down, left-right traversal)
 	std::vector<unsigned char> pixels;
 
-	cv::Mat colSums;		///< row with the sums of the pixels of each column of the symbol
-	cv::Mat rowSums;		///< row with the sums of the pixels of each row of the symbol
+	cv::Mat colSums; ///< row with the sums of the pixels of each column of the symbol (each pixel in 0..1)
+	cv::Mat rowSums; ///< row with the sums of the pixels of each row of the symbol (each pixel in 0..1)
 
 	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
 
@@ -98,6 +98,7 @@ struct PixMapSym {
 			  int leftBound,			///< initial position of the symbol considered from the left
 			  int topBound,				///< initial position of the symbol considered from the top
 			  int sz,					///< font size
+			  double maxGlyphSum,		///< max sum of a glyph's pixels
 			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
 			  const cv::Mat &revConsec,	///< vector of consecutive values sz-1 .. 0
 			  const FT_BBox &bb			///< the bounding box to fit
@@ -119,17 +120,16 @@ struct PixMapSym {
 	cv::Mat toMatD01(unsigned fontSz) const;
 
 	/**
-	Computing the mass center (mc) and glyphSum of a given symbol.
-	When the parameters colSums, rowSums are not nullptr,
-	the corresponding sum is returned.
+	Computing the mass center (mc) and average pixel value (divided by 255) of a given symbol.
+	When the parameters colSums, rowSums are not nullptr, the corresponding sum is returned.
 
 	It's static for easier Unit Testing.
 	*/
-	static void computeMcAndGlyphSum(unsigned sz, const std::vector<unsigned char> &data,
-									 unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
-									 const cv::Mat &consec, const cv::Mat &revConsec,
-									 cv::Point2d &mc, double &glyphSum,
-									 cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
+	static void computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const std::vector<unsigned char> &data,
+									  unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
+									  const cv::Mat &consec, const cv::Mat &revConsec,
+									  cv::Point2d &mc, double &avgPixVal,
+									  cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
 
 #ifdef UNIT_TESTING
 	/// Constructs a PixMapSym in Unit Testing mode
@@ -150,12 +150,13 @@ protected:
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
 	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
 	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
+	
+	double maxGlyphSum;				///< max sum of a glyph's pixels
 	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
 
 	// Precomputed entities during reset
 	cv::Mat consec;					///< vector of consecutive values 0..fontSz-1
 	cv::Mat revConsec;				///< consec reversed
-	double sz2;						///< fontSz^2
 
 	const IPresentCmap &cmapViewUpdater;	///< updates Cmap View as soon as there are enough symbols for 1 page
 

@@ -177,7 +177,7 @@ namespace ut {
 				NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				0., // min glyph value (0..1 range)
 				1.,	// difference between min and max glyph (0..1 range)
-				sz*sz/2.,	// pixelSum = 255*(sz^2/2)/255 = sz^2/2
+				.5,	// avgPixVal = 255*(sz^2/2)/(255*sz^2) = 1/2
 				Point2d(.5, (sz/2.-1.) / (2. * (sz-1U))), // glyph's mass center downscaled by (sz-1)
 				SymData::IdxMatMap {
 					{ SymData::FG_MASK_IDX, halfUc },
@@ -536,7 +536,7 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 
 	BOOST_AUTO_TEST_CASE(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5) {
 		BOOST_TEST_MESSAGE("Running ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5");
-		mp.computeSymDensity(*getSdWithHorizEdgeMask(), getCd());
+		mp.computeSymDensity(*getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == 0.5, test_tools::tolerance(1e-4));
 	}
@@ -654,7 +654,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min in range 0..1 (not relevant here)
 				   1., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -700,7 +700,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min in range 0..1 (not relevant here)
 				   1., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -735,7 +735,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
@@ -760,7 +760,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
@@ -786,7 +786,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
 
@@ -840,7 +840,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -893,7 +893,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -947,7 +947,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -1010,7 +1010,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, // min brightness value 0..1 range (not relevant here)
 				   maxGlyph/255., // diff between min..max, each in range 0..1
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -1049,7 +1049,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
@@ -1077,7 +1077,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
@@ -1106,7 +1106,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
@@ -1147,7 +1147,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -1181,7 +1181,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -1214,7 +1214,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   NOT_RELEVANT_D, // pixelSum (not relevant here)
+				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, diagFgMask },
@@ -1236,7 +1236,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const GravitationalSmoothness gs(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
@@ -1246,7 +1246,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1279,7 +1279,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const GravitationalSmoothness gs(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
@@ -1289,7 +1289,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1325,7 +1325,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const GravitationalSmoothness gs(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
@@ -1335,7 +1335,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1369,7 +1369,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const DirectionalSmoothness ds(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1378,7 +1378,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1408,7 +1408,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const DirectionalSmoothness ds(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1417,7 +1417,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1448,7 +1448,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const DirectionalSmoothness ds(cd, cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
-		double pixelSum = 1.; // a single pixel set to max
+		double avgPixVal = 1. / getArea(); // a single pixel set to max
 		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1457,7 +1457,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   pixelSum,
+				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
 					   { SymData::FG_MASK_IDX, fgMask },
@@ -1489,11 +1489,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   0., // pixelSum (INITIALLY, AN EMPTY SYMBOL IS CONSIDERED)
+				   0., // avgPixVal (INITIALLY, AN EMPTY SYMBOL IS CONSIDERED)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {});
 
-		// Testing with an empty symbol (sd.pixelSum == 0)
+		// Testing with an empty symbol (sd.avgPixVal == 0)
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == 0., test_tools::tolerance(1e-4));
@@ -1510,7 +1510,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   getArea() * cd.smallGlyphsCoverage, // pixelSum (symbol that just enters the 'large symbols' category)
+				   cd.smallGlyphsCoverage, // avgPixVal (symbol that just enters the 'large symbols' category)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {});
 
@@ -1530,7 +1530,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
-				   getArea(), // pixelSum (largest possible symbol)
+				   1., // avgPixVal (largest possible symbol)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {});
 

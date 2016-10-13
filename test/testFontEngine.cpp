@@ -55,6 +55,8 @@ namespace ut {
 	/// Fixture reducing some declarative effort from tests
 	class FontEngineFixtComputations : public Fixt {
 		unsigned sz;			///< patch side length. Use setSz and getSz to access it within tests
+		double area;			///< square of sz
+		double maxGlyphSum;		///< max pixel sum for a glyph
 		Mat consec, revConsec;	///< column/row vectors of consecutive values (updated by setSz; getters available)
 
 	protected:
@@ -63,16 +65,20 @@ namespace ut {
 		unsigned char left = 0U, top = 0U;	///< location of glyph within the wrapping square
 
 	public:
-		double gs = 0.; ///< glyph sum to be computed within each test case
-		Point2d mc;		///< mass-center to be computed within each test case
+		double apv = 0.;	///< average pixel value to be computed within each test case
+		Point2d mc;			///< mass-center to be computed within each test case
 
 		const Mat& getConsec() const { return consec; }
 		const Mat& getRevConsec() const { return revConsec; }
 		unsigned getSz() const { return sz; }
+		double getArea() const { return area; }
+		double getMaxGlyphSum() const { return maxGlyphSum; }
 
 		/// Setter of sz. Updates consec and revConsec
 		void setSz(unsigned sz_) {
 			sz = sz_;
+			area = double(sz * sz);
+			maxGlyphSum = 255. * area;
 			consec = Mat(1, sz_, CV_64FC1);
 			iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.); // 0..sz-1
 			flip(consec, revConsec, 1);	// sz-1..0
@@ -133,8 +139,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0");
 		cols = 5U; top = getSz()-1U;
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
-		BOOST_REQUIRE(gs == 0.);
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
+										 getConsec(), getRevConsec(), mc, apv); // measured based on a DESCENDING vertical axis
+		BOOST_REQUIRE(apv == 0.);
 		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
@@ -143,8 +150,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0");
 		rows = 4U; top = getSz()-1U;
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
-		BOOST_REQUIRE(gs == 0.);
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, 
+										 getConsec(), getRevConsec(), mc, apv); // measured based on a DESCENDING vertical axis
+		BOOST_REQUIRE(apv == 0.);
 		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
@@ -154,8 +162,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		rows = cols = 5U; top = getSz()-1U;
 		pixels.assign(rows*cols, 0U);
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
-		BOOST_TEST(gs == 0., test_tools::tolerance(1e-4));
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, 
+										 getConsec(), getRevConsec(), mc, apv); // measured based on a DESCENDING vertical axis
+		BOOST_TEST(apv == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
@@ -167,8 +176,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
 		pixels[0] = 170; pixels[cols-1] = 85; // 170 = 85*2, and 170 + 85 = 255
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
-		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4)); // 170 + 85 = 255
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, 
+										 getConsec(), getRevConsec(), mc, apv);
+		BOOST_TEST(apv == 1. / getArea(), test_tools::tolerance(1e-4)); // 170 + 85 = 255
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == 4. / (getSz() - 1U), test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
 		BOOST_TEST(mc.y == 0., test_tools::tolerance(1e-4));
@@ -181,8 +191,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
 		pixels.assign(rows*cols, uc);
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
-		BOOST_TEST(gs == getSz()*getSz()*uc/255., test_tools::tolerance(1e-4));
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, 
+										 getConsec(), getRevConsec(), mc, apv);
+		BOOST_TEST(apv == getArea()*uc / getMaxGlyphSum(), test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
@@ -198,8 +209,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		cout<<"Checking patch with a single non-zero pixel at: top="
 			<<(unsigned)top<<", left="<<(unsigned)left<<endl;
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
-		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
+										 getConsec(), getRevConsec(), mc, apv);
+		BOOST_TEST(apv == uc / getMaxGlyphSum(), test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)left / (getSz() - 1U), test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == (double)top / (getSz() - 1U), test_tools::tolerance(1e-4));
@@ -213,8 +225,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		const auto uc = ut::randUnsignedChar(1U);
 		pixels.assign(rows*cols, uc); // all pixels are 'uc'
 
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
-		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
+										 getConsec(), getRevConsec(), mc, apv);
+		BOOST_TEST(apv == rows*cols*uc / getMaxGlyphSum(), test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
 		BOOST_TEST(mc.x == (double)(left + 1U) / (getSz() - 1U), test_tools::tolerance(1e-4));
 		BOOST_TEST(mc.y == (double)(top - 1U) / (getSz() - 1U), test_tools::tolerance(1e-4));
@@ -236,8 +249,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 			<<(unsigned)p1<<'('<<(unsigned)x1<<','<<(unsigned)y1<<"); "
 			<<(unsigned)p2<<'('<<(unsigned)x2<<','<<(unsigned)y2<<')'<<endl;
 		
-		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
-		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
+		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
+										 getConsec(), getRevConsec(), mc, apv);
+		BOOST_TEST(apv == ((double)p1+p2) / getMaxGlyphSum(), test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
 		// mc is measured based on a DESCENDING vertical axis
 		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) ) all downscaled by (sz-1)
 		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2) / (((double)p1+p2) * (getSz() - 1U)), test_tools::tolerance(1e-4));

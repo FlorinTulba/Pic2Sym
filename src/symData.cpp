@@ -45,16 +45,16 @@
 using namespace std;
 using namespace cv;
 
-SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double pixelSum_,
+SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
 				 const Point2d &mc_, const MatArray &symAndMasks_) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-	pixelSum(pixelSum_), mc(mc_), symAndMasks(symAndMasks_) {}
+	avgPixVal(avgPixVal_), mc(mc_), symAndMasks(symAndMasks_) {}
 
 SymData::SymData() : symAndMasks({ { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {}
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
-		pixelSum(other.pixelSum), mc(other.mc), symAndMasks(other.symAndMasks) {}
+		avgPixVal(other.avgPixVal), mc(other.mc), symAndMasks(other.symAndMasks) {}
 
 SymData::SymData(SymData &&other) : SymData(other) {
 	for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
@@ -70,7 +70,7 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(symIdx);
 		REPLACE_FIELD(minVal);
 		REPLACE_FIELD(diffMinMax);
-		REPLACE_FIELD(pixelSum);
+		REPLACE_FIELD(avgPixVal);
 		REPLACE_FIELD(mc);
 		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
 			REPLACE_FIELD(symAndMasks[i]);
