@@ -178,7 +178,7 @@ namespace ut {
 				0., // min glyph value (0..1 range)
 				1.,	// difference between min and max glyph (0..1 range)
 				sz*sz/2.,	// pixelSum = 255*(sz^2/2)/255 = sz^2/2
-				Point2d(cd.patchCenter.x, (sz/2.-1U)/2.), // glyph's mass center
+				Point2d(.5, (sz/2.-1.) / (2. * (sz-1U))), // glyph's mass center downscaled by (sz-1)
 				SymData::IdxMatMap {
 					{ SymData::FG_MASK_IDX, halfUc },
 					{ SymData::BG_MASK_IDX, invHalfUc },
@@ -311,8 +311,8 @@ namespace ut {
 		// Its mass-center will be ( (sz-1)/2 , (sz-1)/2 )
 		mp.computeMcPatchApprox(unifPatchD255, symData, cd);
 		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == .5, test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(unifPatchD255, symData);
 		BOOST_REQUIRE(mp.sdevEdge);
 		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
@@ -330,11 +330,11 @@ namespace ut {
 		minMaxIdx(mp.patchApprox.value()-invHalfD255, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
-		// Its mass-center will be ( (sz-1)/2 ,  (3*sz/2-1)/2 )
+		// Its mass-center will be ( (sz-1)/2 ,  (3*sz/2-1)/2 ) all downsized by (sz-1)
 		mp.computeMcPatchApprox(invHalfD255, symData, cd); \
 		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (3*sz/2.-1U)/2., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == (3*sz/2.-1U) / (2. * (sz-1U)), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(invHalfD255, symData);
 		BOOST_REQUIRE(mp.sdevEdge);
 		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
@@ -359,8 +359,8 @@ namespace ut {
 		// Its mass-center will be ( (sz-1)/2 ,  (5*sz-6)/12 )
 		mp.computeMcPatchApprox(twoBandsD255, symData, cd);
 		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (5*sz-6)/12., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == (5*sz-6) / (12. * (sz-1)), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(twoBandsD255, symData);
 		BOOST_REQUIRE(mp.sdevEdge);
 		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
@@ -525,13 +525,13 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		MatchParams::computeSdev(halfD255, getFullUc(), miu, sdev);
 		BOOST_REQUIRE(miu && sdev);
 		BOOST_TEST(*miu == 127.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(*sdev == CachedData::sdevMaxFgBg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*sdev == CachedData::sdevMaxFgBg(), test_tools::tolerance(1e-4));
 		MatchParams mp;
 		mp.computeMcPatch(halfD255, getCd());
 		BOOST_REQUIRE(mp.mcPatch);
-		// mass-center = ( (sz-1)/2 ,  255*((sz/2-1)*(sz/2)/2)/(255*sz/2) = (sz/2-1)/2 )
-		BOOST_TEST(mp.mcPatch->x == getCd().patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == (getSz()/2.-1U)/2., test_tools::tolerance(1e-4));
+		// mass-center = ( (sz-1)/2 ,  255*((sz/2-1)*(sz/2)/2)/(255*sz/2) = (sz/2-1)/2 ) all downsized by (sz-1)
+		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatch->y == (getSz()/2.-1.) / (2. * (getSz() - 1)), test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5) {
@@ -571,8 +571,8 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithVertEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_RowValuesSameAsRowIndeces_PredictedParams) {
-		BOOST_TEST_MESSAGE("Running CheckParams_RowValuesSameAsRowIndeces_PredictedParams");
+	BOOST_AUTO_TEST_CASE(CheckParams_RowValuesSameAsRowIndices_PredictedParams) {
+		BOOST_TEST_MESSAGE("Running CheckParams_RowValuesSameAsRowIndices_PredictedParams");
 		// Testing on a patch with uniform rows of values gradually growing from 0 to sz-1
 		Mat szBandsD255 = getEmptyD().clone();
 		for(unsigned i = 0U; i<getSz(); ++i)
@@ -594,8 +594,8 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
 		mp.computeMcPatch(szBandsD255, getCd());
 		BOOST_REQUIRE(mp.mcPatch);
-		BOOST_TEST(mp.mcPatch->x == getCd().patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == (2*getSz()-1)/3., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatch->y == (2*getSz()-1) / (3. * (getSz()-1)), test_tools::tolerance(1e-4));
 		mp.computeFg(szBandsD255, *getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.fg);
 		BOOST_TEST(*mp.fg == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
@@ -610,8 +610,8 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		BOOST_TEST(*mp.sdevBg == expectedSdev, test_tools::tolerance(1e-4));
 		mp.computeMcPatchApprox(szBandsD255, *getSdWithHorizEdgeMask(), getCd());
 		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == getCd().patchCenter.x, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (*mp.fg * *mp.fg + *mp.bg * *mp.bg)/(getSz()-1.), test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->y == (*mp.fg * *mp.fg + *mp.bg * *mp.bg) / pow(getSz()-1U, 2), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(szBandsD255, *getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.sdevEdge);
 		BOOST_TEST(*mp.sdevEdge == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
@@ -774,8 +774,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndeces_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndeces_ImperfectMatch");
+	BOOST_AUTO_TEST_CASE(CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch) {
+		BOOST_TEST_MESSAGE("Running CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch");
 		cfg.set_kSdevFg(1.);
 		const FgMatch fm(cd, cfg);
 		const auto valRand = randUnsignedChar(1U);
@@ -912,8 +912,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-valRand/510., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndeces_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndeces_ImperfectMatch");
+	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch) {
+		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch");
 		cfg.set_kSdevEdge(1);
 		const EdgeMatch em(cd, cfg);
 		const auto valRand = randUnsignedChar(1U);
@@ -1090,8 +1090,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndeces_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndeces_ImperfectMatch");
+	BOOST_AUTO_TEST_CASE(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch) {
+		BOOST_TEST_MESSAGE("Running CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch");
 		cfg.set_kSdevBg(1.);
 		const BgMatch bm(cd, cfg);
 		const auto valRand = randUnsignedChar(1U);
@@ -1237,7 +1237,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1263,11 +1263,12 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(2)*.5*(sz_1 - 1./(getSz()+1))) * cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(2)*.5*(1. - 1./(pow(getSz(), 2) - 1U))) *
+				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters) {
@@ -1279,7 +1280,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1307,13 +1308,13 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		double dx = .5/(getSz()+1), dy = .5*(sz_1 - 1/(getSz()+1.));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) *
-				   cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
+		double dx = .5/(pow(getSz(), 2) - 1U), dy = .5*(1. - 1./(pow(getSz(), 2) - 1U));
+		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
+				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters) {
@@ -1325,7 +1326,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1),
 			bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
@@ -1351,13 +1352,13 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == (double)sz_1, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatch->x == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		double dx = .5*(sz_1 + 1/(getSz()+1.)), dy = .5*(sz_1 - 1/(getSz()+1.));
-		BOOST_TEST(res == 1. + (cd.preferredMaxMcDist - sqrt(dx*dx + dy*dy)) *
-				   cd.invComplPrefMaxMcDist, test_tools::tolerance(1e-8));
+		double dx = .5*(1. + 1/(pow(getSz(), 2) - 1U)), dy = .5*(1. - 1/(pow(getSz(), 2) - 1U));
+		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
+				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch) {
@@ -1369,7 +1370,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
@@ -1391,11 +1392,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
 	}
 
@@ -1408,7 +1409,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
@@ -1431,11 +1432,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == cd.patchCenter.x, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+		BOOST_TEST(res == (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
 	}
 
@@ -1448,7 +1449,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double pixelSum = 1.; // a single pixel set to max
-		Point2d origMcSym(sz_1, sz_1);
+		Point2d origMcSym(1., 1.);
 		Mat fgMask = Mat::zeros(getSz(), getSz(), CV_8UC1), bgMask(getSz(), getSz(), CV_8UC1, Scalar(255U));
 		fgMask.at<unsigned char>(sz_1, sz_1) = 255U;
 		bgMask.at<unsigned char>(sz_1, sz_1) = 0U;
@@ -1470,11 +1471,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == cd.patchCenter.x - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == cd.patchCenter.y - .5/(getSz()+1), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == (double)sz_1, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.mcPatch->x == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (2.-sqrt(2.)) * (cd.a_mcsOffsetFactor * *mp.mcsOffset + cd.b_mcsOffsetFactor),
+		BOOST_TEST(res == (2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
 	}
 

@@ -114,8 +114,8 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 		pixels.resize(rows_ * cols_);
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
 			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
-			&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
-			cols_);
+					&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
+					cols_);
 	}
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
@@ -219,9 +219,9 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 									 const Mat &consec, const Mat &revConsec,
 									 Point2d &mc, double &glyphSum,
 									 Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
+	static const Point2d center(.5, .5);
 	const int diagsCount = (int)(sz<<1) | 1;
-	const double centerCoord = (sz-1U)/2.;
-	const Point2d center(centerCoord, centerCoord);
+	const double szM1 = sz - 1.;
 	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
 	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
 
@@ -258,7 +258,7 @@ void PixMapSym::computeMcAndGlyphSum(unsigned sz, const vector<unsigned char> &p
 	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
 				sumY = sumPerRow.dot(Mat(revConsec, topRange));
 
-	mc = Point2d(sumX, sumY) / (255. * glyphSum);
+	mc = Point2d(sumX, sumY) / (255. * glyphSum * szM1);
 }
 
 PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :

@@ -96,7 +96,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double FgMatch::score(const MatchParams &mp) const {
-	return pow(1. - mp.sdevFg.value() / CachedData::sdevMaxFgBg, k);
+	return pow(1. - mp.sdevFg.value() / CachedData::sdevMaxFgBg(), k);
 }
 
 void FgMatch::fillRequiredMatchParams(const Mat &patch,
@@ -124,7 +124,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double BgMatch::score(const MatchParams &mp) const {
-	return pow(1. - mp.sdevBg.value()/CachedData::sdevMaxFgBg, k);
+	return pow(1. - mp.sdevBg.value()/CachedData::sdevMaxFgBg(), k);
 }
 
 void BgMatch::fillRequiredMatchParams(const Mat &patch,
@@ -152,7 +152,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double EdgeMatch::score(const MatchParams &mp) const {
-	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMaxEdge, k);
+	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMaxEdge(), k);
 }
 
 void EdgeMatch::fillRequiredMatchParams(const Mat &patch,
@@ -202,8 +202,8 @@ Larger k induces larger penalty for large mcsOffset and
 also larger reward for small mcsOffset
 */
 double GravitationalSmoothness::score(const MatchParams &mp) const {
-	return pow(1. + (cachedData.preferredMaxMcDist - mp.mcsOffset.value()) *
-			   cachedData.invComplPrefMaxMcDist, k);
+	return pow(1. + (CachedData::preferredMaxMcDist() - mp.mcsOffset.value()) *
+			   CachedData::invComplPrefMaxMcDist(), k);
 }
 
 void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
@@ -234,8 +234,8 @@ double DirectionalSmoothness::score(const MatchParams &mp) const {
 	static const Point2d ORIGIN; // (0, 0)
 	static const double TWOmSQRT2 = 2. - sqrt(2);
 
-	const Point2d relMcPatch = mp.mcPatch.value() - cachedData.patchCenter;
-	const Point2d relMcGlyph = mp.mcPatchApprox.value() - cachedData.patchCenter;
+	const Point2d relMcPatch = mp.mcPatch.value() - CachedData::unitSquareCenter();
+	const Point2d relMcGlyph = mp.mcPatchApprox.value() - CachedData::unitSquareCenter();
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1	
 	double cosAngleMCs = 0.; // -1..1 range, best when 1
@@ -257,7 +257,7 @@ double DirectionalSmoothness::score(const MatchParams &mp) const {
 	- >1 for mcsOffset < PreferredMaxMcDist
 	*/
 	const double mcsOffsetFactor = 
-		cachedData.a_mcsOffsetFactor * mp.mcsOffset.value() + cachedData.b_mcsOffsetFactor;
+		CachedData::a_mcsOffsetFactor() * mp.mcsOffset.value() + CachedData::b_mcsOffsetFactor();
 
 	return pow(angleFactor * mcsOffsetFactor, k);
 }

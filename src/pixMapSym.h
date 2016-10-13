@@ -63,7 +63,9 @@ struct PixMapSym {
 	unsigned long symCode = 0UL;	///< symbol code
 	size_t symIdx = 0U;				///< symbol index within cmap
 	double glyphSum = 0.;			///< sum of the pixel values divided by 255
-	cv::Point2d mc;					///< glyph's mass center
+	
+	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
+	cv::Point2d mc;
 
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'pixels' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square

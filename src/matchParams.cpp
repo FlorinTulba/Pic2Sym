@@ -86,7 +86,8 @@ void MatchParams::computeMean(const Mat &patch, const Mat &mask, optional<double
 		return;
 
 	miu = *mean(patch, mask).val;
-	assert(*miu > -EPS && *miu < 255.+EPS);
+	static const double EPSp255 = 255. + EPS;
+	assert(*miu > -EPS && *miu < EPSp255);
 }
 
 void MatchParams::computeFg(const Mat &patch, const SymData &symData) {
@@ -121,7 +122,8 @@ void MatchParams::computeSdev(const Mat &patch, const Mat &mask,
 		miu = *miu_.val;
 		sdev = *sdev_.val;
 	}
-	assert(*sdev < CachedData::sdevMaxFgBg+EPS);
+	static const double EPSpSdevMaxFgBg = CachedData::sdevMaxFgBg() + EPS;
+	assert(*sdev < EPSpSdevMaxFgBg);
 }
 
 void MatchParams::computeSdevFg(const Mat &patch, const SymData &symData) {
@@ -161,7 +163,8 @@ void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 	computePatchApprox(patch, symData);
 
 	sdevEdge = norm(patch, patchApprox.value(), NORM_L2, edgeMask) / sqrt(cnz);
-	assert(*sdevEdge < CachedData::sdevMaxEdge+EPS);
+	static const double EPSpSdevMaxEdge = CachedData::sdevMaxEdge() + EPS;
+	assert(*sdevEdge < EPSpSdevMaxEdge);
 }
 
 void MatchParams::computeSymDensity(const SymData &symData, const CachedData &cachedData) {
@@ -169,7 +172,8 @@ void MatchParams::computeSymDensity(const SymData &symData, const CachedData &ca
 		return;
 
 	symDensity = symData.pixelSum / cachedData.sz2;
-	assert(*symDensity < 1.+EPS);
+	static const double EPSp1 = 1. + EPS;
+	assert(*symDensity < EPSp1);
 }
 
 void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData) {
@@ -187,9 +191,10 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	reduce(patch, temp, 1, CV_REDUCE_SUM);	// sum all columns
 	mcY = temp.t().dot(cachedData.consec);
 
-	mcPatch = Point2d(mcX, mcY) / patchSum;
-	assert(mcPatch->x > -EPS && mcPatch->x < cachedData.sz_1+EPS);
-	assert(mcPatch->y > -EPS && mcPatch->y < cachedData.sz_1+EPS);
+	mcPatch = Point2d(mcX, mcY) / (patchSum * cachedData.sz_1);
+	static const double EPSp1 = 1. + EPS;
+	assert(mcPatch->x > -EPS && mcPatch->x < EPSp1);
+	assert(mcPatch->y > -EPS && mcPatch->y < EPSp1);
 }
 
 void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
@@ -202,14 +207,15 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 
 	// Obtaining glyph's mass center
 	const double k = symDensity.value() * contrast.value(),
-		delta = .5 * bg.value() * cachedData.sz_1,
-		denominator = k + bg.value();
+				delta = .5 * bg.value(),
+				denominator = k + bg.value();
 	if(denominator == 0.)
-		mcPatchApprox = cachedData.patchCenter;
+		mcPatchApprox = CachedData::unitSquareCenter();
 	else
 		mcPatchApprox = (k * symData.mc + Point2d(delta, delta)) / denominator;
-	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < cachedData.sz_1+EPS);
-	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < cachedData.sz_1+EPS);
+	static const double EPSp1 = 1. + EPS;
+	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < EPSp1);
+	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < EPSp1);
 }
 
 void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
@@ -221,7 +227,8 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	computeMcPatchApprox(patch, symData, cachedData);
 
 	mcsOffset = norm(mcPatch.value() - mcPatchApprox.value());
-	assert(mcsOffset < cachedData.sz_1*sqrt(2) + EPS);
+	static const double EPSpSqrt2 = sqrt(2.) + EPS;
+	assert(mcsOffset < EPSpSqrt2);
 }
 
 BestMatch& BestMatch::reset() {

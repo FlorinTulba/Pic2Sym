@@ -57,8 +57,7 @@ namespace {
 						DiagsCountTinySym = 2U * TinySymsSize - 1U;
 	static const double invTinySymSz = 1. / TinySymsSize,
 						invTinySymArea = invTinySymSz * invTinySymSz,
-						invRefSymSz = 1. / RefSymSz,
-						invRefSymArea = invRefSymSz * invRefSymSz,
+						invRefSymArea = 1. / (RefSymSz * RefSymSz),
 						invDiagsCountTinySym = 1. / DiagsCountTinySym;
 	static const Size SizeTinySyms(TinySymsSize, TinySymsSize);
 
@@ -68,9 +67,8 @@ namespace {
 #define RefSymSz				(TinySymsSize * (unsigned)TinySym::RatioRefTiny)
 #define DiagsCountTinySym		((TinySymsSize << 1) - 1U)
 #define invTinySymSz			(1. / TinySymsSize)
-#define invTinySymArea			(invRefSymSz * invRefSymSz)
-#define invRefSymSz				(1. / RefSymSz)
-#define invRefSymArea			(invRefSymSz * invRefSymSz)
+#define invTinySymArea			(invTinySymSz * invTinySymSz)
+#define invRefSymArea			(1. / (RefSymSz * RefSymSz))
 #define invDiagsCountTinySym	(1. / DiagsCountTinySym)
 #define SizeTinySyms			Size(TinySymsSize, TinySymsSize)
 
@@ -83,7 +81,7 @@ TinySym::TinySym() :
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.) {}
 
 TinySym::TinySym(const PixMapSym &refSym) :
-		mc(refSym.mc * invRefSymSz), avgPixVal(refSym.glyphSum * invRefSymArea),
+		mc(refSym.mc), avgPixVal(refSym.glyphSum * invRefSymArea),
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1) {
 	const Mat refSymMat = refSym.toMatD01(RefSymSz);
 	double minVal;
@@ -127,7 +125,6 @@ TinySym::TinySym(const Point2d &mc_, double avgPixVal_, const Mat &mat_,
 #undef DiagsCountTinySym
 #undef invTinySymSz
 #undef invTinySymArea
-#undef invRefSymSz
 #undef invRefSymArea
 #undef invDiagsCountTinySym
 #undef SizeTinySyms

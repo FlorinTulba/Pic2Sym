@@ -54,15 +54,15 @@ struct MatchParams {
 	static const MatchParams& perfectMatch();
 
 	// These params are computed only once, if necessary, when approximating the patch
-	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch
+	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch (range 0..1 x 0..1)
 	boost::optional<cv::Mat> blurredPatch;		///< blurred version of the patch
 	boost::optional<cv::Mat> blurredPatchSq;	///< blurredPatch element-wise squared
 	boost::optional<cv::Mat> variancePatch;		///< blur(patch^2) - blurredPatchSq
 
 	// These params are evaluated for each symbol compared to the patch
 	boost::optional<cv::Mat> patchApprox;		///< patch approximated by a given symbol
-	boost::optional<cv::Point2d> mcPatchApprox;	///< mass center for the approximation of the patch
-	boost::optional<double> mcsOffset;			///< distance between the 2 mass centers
+	boost::optional<cv::Point2d> mcPatchApprox;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
+	boost::optional<double> mcsOffset;			///< distance between the 2 mass centers (range 0..sqrt(2))
 	boost::optional<double> symDensity;			///< % of the box covered by the glyph (0..1)
 	boost::optional<double> fg;					///< color for fg (range 0..255)
 	boost::optional<double> bg;					///< color for bg (range 0..255)

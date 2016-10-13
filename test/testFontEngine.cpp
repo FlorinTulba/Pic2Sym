@@ -135,8 +135,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_REQUIRE(gs == 0.);
-		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0) {
@@ -145,8 +145,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_REQUIRE(gs == 0.);
-		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_AllDataIs0_CenterAnd0) {
@@ -156,8 +156,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs); // measured based on a DESCENDING vertical axis
 		BOOST_TEST(gs == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2ChosenPixels_ExpectedValues) {
@@ -170,7 +170,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == 1., test_tools::tolerance(1e-4)); // 170 + 85 = 255
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == 4., test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
+		BOOST_TEST(mc.x == 4. / (getSz() - 1U), test_tools::tolerance(1e-4)); // 4 is at one third the distance 2..8
 		BOOST_TEST(mc.y == 0., test_tools::tolerance(1e-4));
 	}
 
@@ -184,8 +184,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == getSz()*getSz()*uc/255., test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == 4.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == 4.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_SinglePixelNon0_PixelPositionAndPixelValueDiv255) {
@@ -201,8 +201,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == uc/255., test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == (double)left, test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)top, test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == (double)left / (getSz() - 1U), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)top / (getSz() - 1U), test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255) {
@@ -216,8 +216,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == rows*cols*uc/255., test_tools::tolerance(1e-4));
 		// mc is measured based on a DESCENDING vertical axis
-		BOOST_TEST(mc.x == (double)(left+1U), test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == (double)(top - 1U), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.x == (double)(left + 1U) / (getSz() - 1U), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == (double)(top - 1U) / (getSz() - 1U), test_tools::tolerance(1e-4));
 	}
 
 	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues) {
@@ -239,9 +239,9 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		PixMapSym::computeMcAndGlyphSum(getSz(), pixels, rows, cols, left, top, getConsec(), getRevConsec(), mc, gs);
 		BOOST_TEST(gs == ((double)p1+p2)/255., test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
 		// mc is measured based on a DESCENDING vertical axis
-		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) )
-		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
-		BOOST_TEST(mc.y == getSz()-1U-((double)y1*p1+y2*p2)/((double)p1+p2), test_tools::tolerance(1e-4));
+		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) ) all downscaled by (sz-1)
+		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2) / (((double)p1+p2) * (getSz() - 1U)), test_tools::tolerance(1e-4));
+		BOOST_TEST(mc.y == 1. - (((double)y1*p1+y2*p2) / (((double)p1+p2) * (getSz() - 1U))), test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Computations
 

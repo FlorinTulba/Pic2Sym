@@ -45,7 +45,6 @@
 #include <valarray>
 
 // Forward declarations
-struct CachedData;
 struct MatchParams;
 struct BestMatch;
 class Patch;

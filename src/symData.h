@@ -48,7 +48,13 @@
 
 /// Most symbol information
 struct SymData {
-	/// Computes most information about a symbol based on glyph parameter
+	/**
+	Computes most information about a symbol based on glyph parameter.
+	It's also used to spare the constructor of SymData from performing computeFields' job.
+	That can be useful when multiple threads add SymData items to a vector within a critical section,
+	so each new SymData's fields are prepared outside the critical section to minimize blocking of
+	other threads.
+	*/
 	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
 							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
 							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal);
@@ -58,7 +64,9 @@ struct SymData {
 	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
 	const double pixelSum = 0.;		///< sum of the values of the pixels, each in 0..1
-	const cv::Point2d mc;			///< mass center of the symbol given original fg & bg
+	
+	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
+	const cv::Point2d mc;
 
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
