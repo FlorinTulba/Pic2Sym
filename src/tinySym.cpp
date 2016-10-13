@@ -79,7 +79,7 @@ namespace {
 
 TinySym::TinySym() :
 		mat(TinySymsSize, TinySymsSize, CV_64FC1, 0.),
-		hAvgProj(1, TinySymsSize, CV_64FC1, 0.), vAvgProj(1, TinySymsSize, CV_64FC1, 0.),
+		hAvgProj(1, TinySymsSize, CV_64FC1, 0.), vAvgProj(TinySymsSize, 1, CV_64FC1, 0.),
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.) {}
 
 TinySym::TinySym(const PixMapSym &refSym) :
