@@ -104,10 +104,11 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
 
 	minMaxIdx(glyph, &minVal, &maxVal);
+	const double contrastD = maxVal - minVal;
 	groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
 
-	fgMask = (glyph >= (minVal + STILL_FG * (maxVal-minVal)));
-	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * (maxVal-minVal)));
+	fgMask = (glyph >= (minVal + STILL_FG * contrastD));
+	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * contrastD));
 
 	// Storing a blurred version of the grounded glyph for structural similarity match aspect
 	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph);
