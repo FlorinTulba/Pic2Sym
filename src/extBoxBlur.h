@@ -46,10 +46,10 @@ Extended Box blurring with border repetition.
 Based on the considerations found in:
 http://www.mia.uni-saarland.de/Publications/gwosdek-ssvm11.pdf
 
-The standard deviation and the repetitions count are configurable.
+The standard deviation and the iterations count are configurable.
 
 This blur still has O(1) / pixel time-performance, like the box blur and was introduced due to its quality:
-results are extremely similar to Gaussian filtering after only 2 repetitions.
+results are extremely similar to Gaussian filtering after only 2 iterations.
 */
 class ExtBoxBlur : public BlurEngine {
 	static const ExtBoxBlur& configuredInstance();	///< Returns a fully configured instance
@@ -59,18 +59,19 @@ protected:
 	/// Handle class
 	class Impl;
 
-	static Impl& impl(); ///< singleton to the Cheshire
+	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
+	static Impl& tinySyms();	///< handler for tiny symbols
 
 	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const override;
+	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
 
 public:
-	/// Configure the filter through the desired standard deviation and the repetitions count
-	ExtBoxBlur(double desiredSigma, unsigned repetitions_ = 1U);
+	/// Configure the filter through the desired standard deviation and the iterations count
+	ExtBoxBlur(double desiredSigma, unsigned iterations_ = 1U);
 
-	/// Reconfigure the filter through a new desired standard deviation and a new repetitions count
-	ExtBoxBlur& setSigma(double desiredSigma, unsigned repetitions_ = 1U);
-	ExtBoxBlur& setRepetitions(unsigned repetitions_);	///< Reconfigure repetitions count
+	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
+	ExtBoxBlur& setSigma(double desiredSigma, unsigned iterations_ = 1U);
+	ExtBoxBlur& setIterations(unsigned iterations_);	///< Reconfigure iterations count
 };
 
 #endif // H_EXT_BOX_BLUR

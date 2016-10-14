@@ -50,7 +50,7 @@ class ExtBoxBlur::Impl {
 	friend class ExtBoxBlur;
 
 	double sigma;			///< desired standard deviation
-	unsigned times;			///< repetitions count
+	unsigned times;			///< iterations count
 
 	// Following fields all are derived from sigma and times. See extendedBoxKernel
 	unsigned kernelWidth;	///< width of the mask (extended box)
@@ -80,25 +80,25 @@ class ExtBoxBlur::Impl {
 		w1 = boxHeight - w;
 	}
 
-	/// Reconfigure the filter through a new desired standard deviation and a new repetitions count
-	Impl& setSigma(double desiredSigma, unsigned repetitions_ = 1U) {
-		if(0U == repetitions_)
-			THROW_WITH_CONST_MSG("Repetitions should be > 0 in " __FUNCTION__, invalid_argument);
+	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
+	Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) {
+		if(0U == iterations_)
+			THROW_WITH_CONST_MSG("iterations should be > 0 in " __FUNCTION__, invalid_argument);
 
 		if(desiredSigma < 0.)
 			THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
 
-		extendedBoxKernel(desiredSigma, repetitions_);
+		extendedBoxKernel(desiredSigma, iterations_);
 
 		return *this;
 	}
 
-	/// Reconfigure repetitions count for wl and destroys the wu mask
-	Impl& setRepetitions(unsigned repetitions_) {
-		if(0U == repetitions_)
-			THROW_WITH_CONST_MSG("Repetitions should be > 0 in " __FUNCTION__, invalid_argument);
+	/// Reconfigure iterations count for wl and destroys the wu mask
+	Impl& setIterations(unsigned iterations_) {
+		if(0U == iterations_)
+			THROW_WITH_CONST_MSG("iterations should be > 0 in " __FUNCTION__, invalid_argument);
 
-		extendedBoxKernel(sigma, repetitions_);
+		extendedBoxKernel(sigma, iterations_);
 
 		return *this;
 	}
@@ -184,31 +184,45 @@ class ExtBoxBlur::Impl {
 	}
 };
 
-ExtBoxBlur::Impl& ExtBoxBlur::impl() {
+ExtBoxBlur::Impl& ExtBoxBlur::nonTinySyms() {
 	static ExtBoxBlur::Impl implem;
 	return implem;
 }
 
-ExtBoxBlur::ExtBoxBlur(double desiredSigma, unsigned repetitions_/* = 1U*/) {
-	impl().setSigma(desiredSigma, repetitions_);
+ExtBoxBlur::Impl& ExtBoxBlur::tinySyms() {
+	static ExtBoxBlur::Impl implem;
+	return implem;
 }
 
-ExtBoxBlur& ExtBoxBlur::setSigma(double desiredSigma, unsigned repetitions_/* = 1U*/) {
-	impl().setSigma(desiredSigma, repetitions_);
+ExtBoxBlur::ExtBoxBlur(double desiredSigma, unsigned iterations_/* = 1U*/) {
+	setSigma(desiredSigma, iterations_);
+}
+
+ExtBoxBlur& ExtBoxBlur::setSigma(double desiredSigma, unsigned iterations_/* = 1U*/) {
+	nonTinySyms().setSigma(desiredSigma, iterations_);
+
+	// Tiny symbols should use a sigma = desiredSigma/2.
+	tinySyms().setSigma(desiredSigma * .5, iterations_);
+
 	return *this;
 }
 
-ExtBoxBlur& ExtBoxBlur::setRepetitions(unsigned repetitions_) {
-	impl().setRepetitions(repetitions_);
+ExtBoxBlur& ExtBoxBlur::setIterations(unsigned iterations_) {
+	nonTinySyms().setIterations(iterations_);
+	tinySyms().setIterations(iterations_);
+
 	return *this;
 }
 
-void ExtBoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const {
-	impl().apply(toBlur, blurred);
+void ExtBoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
+	if(forTinySym)
+		tinySyms().apply(toBlur, blurred);
+	else
+		nonTinySyms().apply(toBlur, blurred);
 }
 
 const ExtBoxBlur& ExtBoxBlur::configuredInstance() {
-	// Extended Box blur with no repetitions and desired standard deviation
+	// Extended Box blur with no iterations and desired standard deviation
 	extern const double StructuralSimilarity_SIGMA;
 	static ExtBoxBlur result(StructuralSimilarity_SIGMA);
 	return result;

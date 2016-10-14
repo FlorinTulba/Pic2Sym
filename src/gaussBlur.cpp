@@ -54,13 +54,26 @@ GaussBlur& GaussBlur::configure(double desiredSigma, unsigned kernelWidth_/* = 0
 	if(kernelWidth_ != 0U && (kernelWidth_ & 1U) != 1U)
 		THROW_WITH_CONST_MSG("kernelWidth_ should be an odd value or 0 in " __FUNCTION__, invalid_argument);
 
-	sigma = desiredSigma; kernelWidth = kernelWidth_;
+	nonTinySymsParams.sigma = desiredSigma;
+	nonTinySymsParams.kernelWidth = kernelWidth_;
+
+	// Tiny symbols should use a sigma = desiredSigma/2. and kernel whose width is
+	// next odd value >= kernelWidth_/2.
+	tinySymsParams.sigma = desiredSigma * .5;
+	tinySymsParams.kernelWidth = (kernelWidth_>>1) | 1U;
 
 	return *this;
 }
 
-void GaussBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const {
-	GaussianBlur(toBlur, blurred, Size(kernelWidth, kernelWidth), sigma, sigma, BORDER_REPLICATE);
+void GaussBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
+	if(forTinySym)
+		GaussianBlur(toBlur, blurred,
+					Size(tinySymsParams.kernelWidth, tinySymsParams.kernelWidth),
+					tinySymsParams.sigma, tinySymsParams.sigma, BORDER_REPLICATE);
+	else
+		GaussianBlur(toBlur, blurred,
+					Size(nonTinySymsParams.kernelWidth, nonTinySymsParams.kernelWidth),
+					nonTinySymsParams.sigma, nonTinySymsParams.sigma, BORDER_REPLICATE);
 }
 
 const GaussBlur& GaussBlur::configuredInstance() {

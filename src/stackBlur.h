@@ -62,10 +62,11 @@ protected:
 	/// Handle class
 	class Impl;
 
-	static Impl& impl(); ///< singleton to the Cheshire
+	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
+	static Impl& tinySyms();	///< handler for tiny symbols
 
 	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const override;
+	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
 
 public:
 	/// Configure the filter through the desired radius

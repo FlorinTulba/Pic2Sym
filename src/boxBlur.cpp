@@ -49,49 +49,52 @@ class BoxBlur::Impl {
 
 	unsigned wl = 0U;	///< first odd width of the box mask less than the ideal width
 	unsigned wu = 0U;	///< first odd width of the box mask greater than the ideal width
-	unsigned countWl = 0U;	///< the number of times to repeat the filter of width wl
-	unsigned countWu = 0U;	///< the number of times to repeat the filter of width wu
+	unsigned countWl = 0U;	///< the number of times to iterate the filter of width wl
+	unsigned countWu = 0U;	///< the number of times to iterate the filter of width wu
+	unsigned iterations = 0U;	///< desired number of iterations (countWl + countWu)
 
 	Impl() {}
 
-	/// Reconfigure the filter through a new desired standard deviation and a new repetitions count
+	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
 	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details
-	Impl& setSigma(double desiredSigma, unsigned repetitions_ = 1U) {
-		if(0U == repetitions_)
-			THROW_WITH_CONST_MSG("Repetitions should be > 0 in " __FUNCTION__, invalid_argument);
+	Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) {
+		if(0U == iterations_)
+			THROW_WITH_CONST_MSG("iterations_ should be > 0 in " __FUNCTION__, invalid_argument);
 
 		if(desiredSigma < 0.)
 			THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
 
+		iterations = iterations_;
 		const double common = 12. * desiredSigma * desiredSigma,
-					idealBoxWidth = sqrt(1. + common / repetitions_);
+					idealBoxWidth = sqrt(1. + common / iterations_);
 		wl = (((unsigned((idealBoxWidth-1.)/2.))<<1) | 1U);
 		wu = wl + 2U; // next odd value
 
-		countWl = int(round((common - repetitions_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U))));
-		countWu = repetitions_ - countWl;
+		countWl = int(round((common - iterations_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U))));
+		countWu = iterations_ - countWl;
 
 		return *this;
 	}
 
-	/// Reconfigure mask width (wl) and destroys the wu mask
+	/// Reconfigure mask width (wl) for performing all iterations and destroys the wu mask
 	Impl& setWidth(unsigned boxWidth_) {
 		if(0U == (boxWidth_ & 1U))
 			THROW_WITH_CONST_MSG("Parameter should be an odd value in " __FUNCTION__, invalid_argument);
 
 		wl = boxWidth_;
-		countWu = 0U; // cancels any repetitions for filters with width wu
+		countWu = 0U; // cancels any iterations for filters with width wu
+		countWl = iterations;
 
 		return *this;
 	}
 
-	/// Reconfigure repetitions count for wl and destroys the wu mask
-	Impl& setRepetitions(unsigned repetitions_) {
-		if(0U == repetitions_)
-			THROW_WITH_CONST_MSG("Repetitions should be > 0 in " __FUNCTION__, invalid_argument);
+	/// Reconfigure iterations count for wl and destroys the wu mask
+	Impl& setIterations(unsigned iterations_) {
+		if(0U == iterations_)
+			THROW_WITH_CONST_MSG("iterations_ should be > 0 in " __FUNCTION__, invalid_argument);
 
-		countWl = repetitions_;
-		countWu = 0U; // cancels any repetitions for filters with width wu
+		iterations = countWl = iterations_;
+		countWu = 0U; // cancels any iterations for filters with width wu
 		
 		return *this;
 	}
@@ -136,32 +139,50 @@ class BoxBlur::Impl {
 	}
 };
 
-BoxBlur::Impl& BoxBlur::impl() {
+BoxBlur::Impl& BoxBlur::nonTinySyms() {
 	static BoxBlur::Impl implem;
 	return implem;
 }
 
-BoxBlur::BoxBlur(unsigned boxWidth_/* = 1U*/, unsigned repetitions_/* = 1U*/) {
-	impl().setWidth(boxWidth_).setRepetitions(repetitions_);
+BoxBlur::Impl& BoxBlur::tinySyms() {
+	static BoxBlur::Impl implem;
+	return implem;
 }
 
-BoxBlur& BoxBlur::setSigma(double desiredSigma, unsigned repetitions_/* = 1U*/) {
-	impl().setSigma(desiredSigma, repetitions_);
+BoxBlur::BoxBlur(unsigned boxWidth_/* = 1U*/, unsigned iterations_/* = 1U*/) {
+	setWidth(boxWidth_).setIterations(iterations_);
+}
+
+BoxBlur& BoxBlur::setSigma(double desiredSigma, unsigned iterations_/* = 1U*/) {
+	nonTinySyms().setSigma(desiredSigma, iterations_);
+
+	// Tiny symbols should use a sigma = desiredSigma/2.
+	tinySyms().setSigma(desiredSigma * .5, iterations_);
+
 	return *this;
 }
 
 BoxBlur& BoxBlur::setWidth(unsigned boxWidth_) {
-	impl().setWidth(boxWidth_);
+	nonTinySyms().setWidth(boxWidth_);
+
+	// Tiny symbols should use a box whose width is next odd value >= boxWidth_/2.
+	tinySyms().setWidth((boxWidth_>>1) | 1U);
+
 	return *this;
 }
 
-BoxBlur& BoxBlur::setRepetitions(unsigned repetitions_) {
-	impl().setRepetitions(repetitions_);
+BoxBlur& BoxBlur::setIterations(unsigned iterations_) {
+	nonTinySyms().setIterations(iterations_);
+	tinySyms().setIterations(iterations_);
+
 	return *this;
 }
 
-void BoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const {
-	impl().apply(toBlur, blurred);
+void BoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
+	if(forTinySym)
+		tinySyms().apply(toBlur, blurred);
+	else
+		nonTinySyms().apply(toBlur, blurred);
 }
 
 const BoxBlur& BoxBlur::configuredInstance() {
@@ -169,7 +190,7 @@ const BoxBlur& BoxBlur::configuredInstance() {
 	static BoxBlur result;
 	static bool initialized = false;
 	if(!initialized) {
-		// Box blur with no repetitions and desired standard deviation
+		// Box blur with single iteration and desired standard deviation
 		result.setSigma(StructuralSimilarity_SIGMA);
 		initialized = true;
 	}

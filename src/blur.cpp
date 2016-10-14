@@ -60,10 +60,10 @@ const BlurEngine& BlurEngine::byName(const string &blurType) {
 	}
 }
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred) const {
+void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym/* = false*/) const {
 	if(toBlur.empty() || toBlur.type() != CV_64FC1)
 		THROW_WITH_CONST_MSG("Parameter toBlur from " __FUNCTION__ " needs to be a non-empty, single channel matrix with values of type double!", invalid_argument);
 	blurred = Mat(toBlur.size(), CV_64FC1, 0.);
 	
-	doProcess(toBlur, blurred);
+	doProcess(toBlur, blurred, forTinySym);
 }

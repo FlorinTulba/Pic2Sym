@@ -51,11 +51,17 @@ class GaussBlur : public BlurEngine {
 	static ConfInstRegistrator cir;					///< Registers the configured instance plus its name
 
 protected:
-	double sigma;			///< desired standard deviation
-	unsigned kernelWidth;	///< mask width (must be an odd value, or 0 - to let it be set from sigma)
+	/// Relevant Gaussian blur parameters
+	struct BlurParams {
+		double sigma;			///< desired standard deviation
+		unsigned kernelWidth;	///< mask width (must be an odd value, or 0 - to let it be set from sigma)
+	};
+
+	BlurParams nonTinySymsParams;	///< parameters for non-tiny symbols
+	BlurParams tinySymsParams;		///< parameters for tiny symbols
 
 	/// Forwarding to GaussianBlur. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const override;
+	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
 
 public:
 	/// Configure the filter through the desired standard deviation and the mask width

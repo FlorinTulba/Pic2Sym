@@ -40,7 +40,7 @@ Stack blurring algorithm
 
 Note this is a different algorithm than Stacked Integral Image (SII).
 
-Brought minor modifications (see comments from StackBlur::impl::apply()) to:
+Brought minor modifications (see comments from StackBlur::Impl::apply()) to:
 Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
 http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
 under license: http://www.codeproject.com/info/cpol10.aspx
@@ -272,26 +272,42 @@ const int StackBlur::Impl::stack_blur8_shr[] = {
 	24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
 };
 
-StackBlur::Impl& StackBlur::impl() {
+StackBlur::Impl& StackBlur::nonTinySyms() {
 	static Impl implem;
 	return implem;
 }
 
-void StackBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const {
-	impl().apply(toBlur, blurred);
+StackBlur::Impl& StackBlur::tinySyms() {
+	static Impl implem;
+	return implem;
+}
+
+void StackBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
+	if(forTinySym)
+		tinySyms().apply(toBlur, blurred);
+	else
+		nonTinySyms().apply(toBlur, blurred);
 }
 
 StackBlur::StackBlur(unsigned radius) {
-	impl().setRadius(radius);
+	setRadius(radius);
 }
 
 StackBlur& StackBlur::setSigma(double desiredSigma) {
-	impl().setSigma(desiredSigma);
+	nonTinySyms().setSigma(desiredSigma);
+
+	// Tiny symbols should use a sigma = desiredSigma/2.
+	tinySyms().setSigma(desiredSigma * .5);
+
 	return *this;
 }
 
 StackBlur& StackBlur::setRadius(unsigned radius) {
-	impl().setRadius(radius);
+	nonTinySyms().setRadius(radius);
+
+	// Tiny symbols should use half the radius from normal symbols
+	tinySyms().setRadius(max((radius>>1), 1U));
+
 	return *this;
 }
 

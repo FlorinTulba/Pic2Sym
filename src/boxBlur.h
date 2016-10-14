@@ -49,12 +49,12 @@ http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf
 
 For the basic standalone box filtering, blur from OpenCV was used.
 
-This blur type was included to provide the quickest available sequential blur (this happens when repetitions_ is 1).
-Its performance doesn't depend on the boxWidth / sigma and is only proportional to repetitions_.
-For sigma = 1.5 (typical value used during this application) and repetitions_ = 1,
+This blur type was included to provide the quickest available sequential blur (this happens when iterations_ is 1).
+Its performance doesn't depend on the boxWidth / sigma and is only proportional to iterations_.
+For sigma = 1.5 (typical value used during this application) and iterations_ = 1,
 box blur normally needs just 1/3 of the time of GaussianBlur with the same sigma.
 
-However, box blur quality depends on repetitions_. For values larger than 2 it gets more similar to Gaussian's quality.
+However, box blur quality depends on iterations_. For values larger than 2 it gets more similar to Gaussian's quality.
 */
 class BoxBlur : public BlurEngine {
 	static const BoxBlur& configuredInstance();	///< Returns a fully configured instance
@@ -64,20 +64,21 @@ protected:
 	/// Handle class
 	class Impl;
 
-	static Impl& impl(); ///< singleton to the Cheshire
+	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
+	static Impl& tinySyms();	///< handler for tiny symbols
 
 	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const override;
+	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
 
 public:
-	/// Configure the filter through the mask width and the repetitions count
-	BoxBlur(unsigned boxWidth_ = 1U, unsigned repetitions_ = 1U);
+	/// Configure the filter through the mask width and the iterations count
+	BoxBlur(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
 
-	/// Reconfigure the filter through a new desired standard deviation and a new repetitions count
-	BoxBlur& setSigma(double desiredSigma, unsigned repetitions_ = 1U);
+	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
+	BoxBlur& setSigma(double desiredSigma, unsigned iterations_ = 1U);
 	
 	BoxBlur& setWidth(unsigned boxWidth_);			///< Reconfigure mask width
-	BoxBlur& setRepetitions(unsigned repetitions_);	///< Reconfigure repetitions count
+	BoxBlur& setIterations(unsigned iterations_);	///< Reconfigure iterations count
 };
 
 #endif // H_BOX_BLUR

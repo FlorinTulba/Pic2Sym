@@ -113,8 +113,10 @@ protected:
 
 	@param toBlur is a single channel matrix with values of type double
 	@param blurred the result of the blur (already initialized when method gets called)
+	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
+			for tiny symbols
 	*/
-	virtual void doProcess(const cv::Mat &toBlur, cv::Mat &blurred) const = 0;
+	virtual void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const = 0;
 
 public:
 	/// Provides a specific, completely configured blur engine. Throws invalid_argument for an unrecognized blurType
@@ -122,8 +124,15 @@ public:
 
 	virtual ~BlurEngine() = 0 {}
 
-	/// Template method checking toBlur, initializing blurred and calling doProcess
-	void process(const cv::Mat &toBlur, cv::Mat &blurred) const;
+	/**
+	Template method checking toBlur, initializing blurred and calling doProcess
+
+	@param toBlur is a single channel matrix with values of type double
+	@param blurred the result of the blur (not initialized when method gets called)
+	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
+			for tiny symbols
+	*/
+	void process(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym = false) const;
 };
 
 #endif // H_BLUR
