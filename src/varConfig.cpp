@@ -276,8 +276,8 @@ static VALIDATOR(atLeast640i,	IsGreaterThan, int, 640, true);
 static VALIDATOR(atLeast1U,		IsGreaterThan, unsigned, 1U, true);
 static VALIDATOR(atLeast5U,		IsGreaterThan, unsigned, 5U, true);
 static VALIDATOR(atLeast3U,		IsGreaterThan, unsigned, 3U, true);
-static VALIDATOR(atLeast1dot6,	IsGreaterThan, double, 1.6);
 static VALIDATOR(atLeast14D,	IsGreaterThan, double, 14.);
+static VALIDATOR(atLeast1dot6,	IsGreaterThan, double, 1.6);
 static VALIDATOR(atLeast0dot8,	IsGreaterThan, double, 0.8, true);
 static VALIDATOR(atLeast0dot15,	IsGreaterThan, double, 0.15, true);
 static VALIDATOR(atLeast0dot01, IsGreaterThan, double, 0.01, true);
@@ -360,7 +360,7 @@ extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs, atLeast0dot8
 
 extern READ_STR_PROP(StructuralSimilarity_BlurType, availBlurAlgsForStrSim());
 extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide, oddI(), atLeast3i(), lessThan20i());
-extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA, positiveD(), lessThan5D());
+extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA, atLeast0dot8(), lessThan5D());
 extern READ_DOUBLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
 extern READ_DOUBLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
 
@@ -375,7 +375,7 @@ const BlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(Structu
 
 static READ_INT_PROP(BlurWindowSize, oddI(), atLeast3i(), lessThan20i());
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
-extern READ_DOUBLE_PROP(BlurStandardDeviation, positiveD(), lessThan5D());
+extern READ_DOUBLE_PROP(BlurStandardDeviation, atLeast0dot8(), lessThan5D());
 
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
