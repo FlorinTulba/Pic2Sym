@@ -231,9 +231,9 @@ namespace {
 	}
 } // anonymous namespace
 
-string MatchEngine::getFontType() {
+string FontEngine::getFontType() {
 	ostringstream oss;
-	oss<<fe.getFamily()<<'_'<<fe.getStyle()<<'_'<<fe.getEncoding();
+	oss<<getFamily()<<'_'<<getStyle()<<'_'<<getEncoding();
 	// throws logic_error if no family/style
 
 	return oss.str();
@@ -245,7 +245,7 @@ string MatchEngine::getIdForSymsToUse() {
 		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(sz) + ") in " __FUNCTION__, logic_error);
 
 	ostringstream oss;
-	oss<<getFontType()<<'_'<<sz;
+	oss<<fe.getFontType()<<'_'<<sz;
 
 	return oss.str();
 }

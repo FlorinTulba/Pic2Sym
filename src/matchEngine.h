@@ -76,8 +76,6 @@ protected:
 	std::vector<MatchAspect*> enabledAspects;				///< only the enabled aspects
 	size_t enabledAspectsCount = 0U;						///< count of the enabled aspects
 
-	std::string getFontType(); ///< type of the symbols determined by fe, independent of font size
-
 #ifdef UNIT_TESTING // UnitTesting project needs access to invMaxIncreaseFactors
 public:
 #endif // UNIT_TESTING

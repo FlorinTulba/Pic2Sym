@@ -35,17 +35,39 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_TINY_SYMS_PROVIDER
-#define H_TINY_SYMS_PROVIDER
+// Serialization support for cv::Mat 
 
-#include "tinySym.h"
+// Code adapted from the one provided by user1520427 in thread:
+// http://stackoverflow.com/questions/4170745/serializing-opencv-mat-vec3f
 
-/// Allows providing tiny symbols both from FontEngine and from UnitTesting
-struct ITinySymsProvider {
-	virtual ~ITinySymsProvider() = 0 {}
+#ifndef H_MAT_SERIALIZATION
+#define H_MAT_SERIALIZATION
 
-	/// Return a list of tiny symbols from current cmap
-	virtual const VTinySyms& getTinySyms() = 0;
-};
+#include <opencv2/core/core.hpp>
 
-#endif // H_TINY_SYMS_PROVIDER
+namespace boost {
+	namespace serialization {
+		template<class Archive>
+		void serialize(Archive &ar, cv::Mat& mat, const unsigned int) {
+			ar & mat.rows & mat.cols;
+
+			ar & mat.flags; // provides the matrix type and continuity flag
+
+			const bool continuous = mat.isContinuous();
+
+			if(Archive::is_loading::value)
+				mat.create(mat.rows, mat.cols, mat.type());
+
+			if(continuous) {
+				const auto data_size = mat.total() * mat.elemSize();
+				ar & boost::serialization::make_array(mat.ptr(), data_size);
+			} else {
+				const auto row_size = mat.cols * mat.elemSize();
+				for(int i = 0; i < mat.rows; i++)
+					ar & boost::serialization::make_array(mat.ptr(i), row_size);
+			}
+		}
+	}
+}
+
+#endif // H_MAT_SERIALIZATION

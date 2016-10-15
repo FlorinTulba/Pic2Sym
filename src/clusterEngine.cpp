@@ -228,7 +228,8 @@ bool ClusterEngine::clusteredAlready(const string &fontType, const string &algNa
 	if(!exists(clusteredSetFile.append("ClusteredSets")))
 		create_directory(clusteredSetFile);
 
-	clusteredSetFile.append(fontType).concat("_").concat(algName).concat(".clf");
+	clusteredSetFile.append(fontType).concat("_").concat(algName).
+		concat(".clf"); // CLustered Fonts => clf
 
 	return exists(clusteredSetFile);
 }

@@ -35,17 +35,36 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_TINY_SYMS_PROVIDER
-#define H_TINY_SYMS_PROVIDER
+#ifndef H_TINY_SYMS_DATA_SERIALIZATION
+#define H_TINY_SYMS_DATA_SERIALIZATION
 
 #include "tinySym.h"
 
-/// Allows providing tiny symbols both from FontEngine and from UnitTesting
-struct ITinySymsProvider {
-	virtual ~ITinySymsProvider() = 0 {}
+#include <boost/serialization/vector.hpp>
 
-	/// Return a list of tiny symbols from current cmap
-	virtual const VTinySyms& getTinySyms() = 0;
+/// Clusters data that needs to be serialized
+struct VTinySymsIO {
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of VTinySymsIO class
+
+	/// reference to the tiny symbols to be serialized
+	VTinySyms &tinySyms;
+
+	VTinySymsIO(VTinySyms &tinySyms_);
+
+	/// Serializes this VTinySymsIO object to ar
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version) {
+		ar & tinySyms;
+	}
+
+	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
+	bool loadFrom(const std::string &path);
+
+	/// Writes current content to file located at path. Returns false when saving fails.
+	bool saveTo(const std::string &path) const;
 };
 
-#endif // H_TINY_SYMS_PROVIDER
+BOOST_CLASS_VERSION(VTinySymsIO, VTinySymsIO::VERSION);
+
+#endif // H_TINY_SYMS_DATA_SERIALIZATION

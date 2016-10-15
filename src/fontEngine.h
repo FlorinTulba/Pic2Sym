@@ -68,7 +68,7 @@ protected:
 	FT_Library library	= nullptr;	///< the FreeType lib
 	FT_Face face		= nullptr;	///< a loaded font
 
-	std::vector<const TinySym> tinySyms;	///< small version of all the symbols from current cmap
+	VTinySyms tinySyms;	///< small version of all the symbols from current cmap
 
 	const SymSettings &ss;			///< settings of this font engine
 	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
@@ -112,9 +112,17 @@ public:
 	const std::string& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
 	FT_String* getFamily() const;					///< get font family
 	FT_String* getStyle() const;					///< get font style
+	std::string getFontType();						///< type of the symbols, independent of font size
 
-	/// (Creates and) Returns the small versions of all the symbols from current cmap
+	/// (Creates/Loads and) Returns(/Saves) the small versions of all the symbols from current cmap
 	const VTinySyms& getTinySyms() override;
+	/**
+	Determines if fontType was already processed.
+	The path to the file supposed to contain the desired tiny symbols data 
+	is returned in the tinySymsDataFile parameter.
+	*/
+	static bool isTinySymsDataSavedOnDisk(const std::string &fontType, 
+										  boost::filesystem::path &tinySymsDataFile);
 
 	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };

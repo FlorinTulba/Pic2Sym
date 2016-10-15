@@ -50,7 +50,6 @@
 #include <sstream>
 #include <set>
 #include <algorithm>
-#include <numeric>
 
 #include <boost/filesystem/operations.hpp>
 #include FT_TRUETYPE_IDS_H
@@ -543,92 +542,4 @@ FT_String* FontEngine::getStyle() const {
 FontEngine& FontEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
 	return *this;
-}
-
-const vector<const TinySym>& FontEngine::getTinySyms() {
-	// Making sure the generation of small symbols doesn't overlap with filling symsCont with normal symbols
-	if(!symsCont.isReady())
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after symsCont.setAsReady()!", logic_error);
-	
-	if(tinySyms.empty()) {
-		tinySyms.reserve(symsCount);
-
-		extern unsigned TinySymsSz();
-		static const unsigned TinySymsSize = TinySymsSz();
-		/*
-		Instead of requesting directly fonts of size TinySymsSize, fonts of a larger size are loaded,
-		then resized to TinySymsSize, so to get more precise approximations (non-zero fractional parts)
-		and to avoid hinting that increases for small font sizes.
-		*/
-		static const unsigned RefSymsSize = TinySymsSize * (unsigned)TinySym::RatioRefTiny;
-
-		static Mat consec(1, RefSymsSize, CV_64FC1), revConsec;
-		if(revConsec.empty()) {
-			iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-			flip(consec, revConsec, 1);
-			revConsec = revConsec.t();
-		}
-
-		FT_Size_RequestRec  req;
-		req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
-		req.horiResolution = req.vertResolution = 72U;
-		req.height = req.width = (FT_ULong)(RefSymsSize << 6);
-		FT_Error error = FT_Request_Size(face, &req);
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize) + "  Error: " + to_string(error), invalid_argument);
-
-		FT_BBox bbox = face->bbox;
-		const unsigned bboxHeight = unsigned(bbox.yMax - bbox.yMin + 1),
-					bboxWidth = unsigned(bbox.xMax - bbox.xMin + 1);
-		const double RefSymsSizeD = (double)RefSymsSize,
-			vertRatio = RefSymsSizeD / bboxHeight,
-			horizRatio = RefSymsSizeD / bboxWidth;
-		static const double maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
-
-		bbox.xMin = (FT_Pos)round(bbox.xMin*horizRatio); bbox.xMax = (FT_Pos)(bbox.xMin + RefSymsSize - 1);
-		bbox.yMin = (FT_Pos)round(bbox.yMin*vertRatio); bbox.yMax = (FT_Pos)(bbox.yMin + RefSymsSize - 1);
-
-		size_t i = 0U;
-		FT_UInt idx;
-		for(FT_ULong c = FT_Get_First_Char(face, &idx); idx != 0; c = FT_Get_Next_Char(face, c, &idx), ++i) {
-			error = FT_Load_Char(face, c, FT_LOAD_RENDER);
-			if(error != FT_Err_Ok)
-				THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
-			FT_GlyphSlot g = face->glyph;
-			FT_Bitmap b = g->bitmap;
-			const unsigned height = b.rows, width = b.width;
-			if(height == 0U || width == 0U) {
-				tinySyms.emplace_back();
-				continue;
-			}
-
-			if(width > RefSymsSize || height > RefSymsSize) {
-				// Adjust font size to fit the RefSymsSize x RefSymsSize square
-				req.height = (FT_ULong)floor(((FT_ULong)(RefSymsSize)<<6) / max(1., height/RefSymsSizeD));
-				req.width = (FT_ULong)floor(((FT_ULong)(RefSymsSize)<<6) / max(1., width/RefSymsSizeD));
-				error = FT_Request_Size(face, &req);
-				if(error != FT_Err_Ok)
-					THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize*max(1., height/RefSymsSizeD)) +
-										" x " + to_string(RefSymsSize*max(1., width/RefSymsSizeD)) +
-										"  Error: " + to_string(error), invalid_argument);
-				
-				error = FT_Load_Char(face, c, FT_LOAD_RENDER);
-				if(error != FT_Err_Ok)
-					THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
-				g = face->glyph;
-				b = g->bitmap;
-
-				// Restore font size
-				req.height = req.width = (FT_ULong)(RefSymsSize << 6);
-				error = FT_Request_Size(face, &req);
-				if(error != FT_Err_Ok)
-					THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize) + "  Error: " + to_string(error), invalid_argument);
-			}
-			const FT_Int left = g->bitmap_left, top = g->bitmap_top;
-			const PixMapSym refSym((unsigned long)c, i, b, (int)left, (int)top, (int)RefSymsSize, maxGlyphSum, consec, revConsec, bbox);
-			tinySyms.emplace_back(refSym);
-		}
-	}
-	
-	return tinySyms;
 }

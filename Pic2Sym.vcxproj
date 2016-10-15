@@ -50,6 +50,7 @@
     <ClInclude Include="src\matchEngine.h" />
     <ClInclude Include="src\matchParams.h" />
     <ClInclude Include="src\matchSettingsManip.h" />
+    <ClInclude Include="src\matSerialization.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\matchSettings.h" />
     <ClInclude Include="src\noClustering.h" />
@@ -76,6 +77,7 @@
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\tinySym.h" />
+    <ClInclude Include="src\tinySymsDataSerialization.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformTrace.h" />
@@ -130,6 +132,8 @@
     <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\tinySym.cpp" />
+    <ClCompile Include="src\tinySymsDataSerialization.cpp" />
+    <ClCompile Include="src\tinySymsProvider.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />

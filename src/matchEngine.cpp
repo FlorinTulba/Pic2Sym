@@ -146,7 +146,7 @@ void MatchEngine::updateSymbols() {
 	fieldsComputations.taskDone();
 
 	// Clustering symsSet (which gets reordered) - clusterOffsets will point where each cluster starts
-	ce.process(symsSet, getFontType());
+	ce.process(symsSet, fe.getFontType());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }

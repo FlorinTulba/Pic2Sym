@@ -46,6 +46,9 @@ struct PixMapSym; // Forward declaration
 
 /// Data for tiny symbols
 struct TinySym : SymData {
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of TinySym class
+
 	/// Ratio between reference symbols and the shrunken symbol
 	enum { RatioRefTiny = 8 };
 
@@ -87,6 +90,20 @@ struct TinySym : SymData {
 	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
 			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
 			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);
+
+	/// Serializes this TinySym object to ar
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version) {
+		SymData::serialize(ar, version);
+		ar & mat & 
+			hAvgProj & vAvgProj & 
+			backslashDiagAvgProj & slashDiagAvgProj;
+	}
 };
+
+BOOST_CLASS_VERSION(TinySym, TinySym::VERSION);
+
+/// container with TinySym-s
+typedef std::vector<const TinySym> VTinySyms;
 
 #endif // H_TINY_SYM

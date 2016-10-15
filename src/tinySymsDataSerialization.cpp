@@ -35,17 +35,47 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_TINY_SYMS_PROVIDER
-#define H_TINY_SYMS_PROVIDER
+#include "tinySymsDataSerialization.h"
 
-#include "tinySym.h"
+VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
 
-/// Allows providing tiny symbols both from FontEngine and from UnitTesting
-struct ITinySymsProvider {
-	virtual ~ITinySymsProvider() = 0 {}
+#ifndef UNIT_TESTING
 
-	/// Return a list of tiny symbols from current cmap
-	virtual const VTinySyms& getTinySyms() = 0;
-};
+#include <fstream>
+#include <iostream>
 
-#endif // H_TINY_SYMS_PROVIDER
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
+using namespace std;
+using namespace boost::archive;
+
+bool VTinySymsIO::loadFrom(const string &path) {
+	try {
+		ifstream ifs(path, ios::binary);
+		binary_iarchive ia(ifs);
+		ia>>*this;
+
+		return true;
+
+	} catch(...) {
+		cerr<<"Couldn't load tiny symbols data from: " <<path<<endl;
+		return false;
+	}
+}
+
+bool VTinySymsIO::saveTo(const string &path) const {
+	try {
+		ofstream ofs(path, ios::binary);
+		binary_oarchive oa(ofs);
+		oa<<*this;
+
+		return true;
+
+	} catch(...) {
+		cerr<<"Couldn't save tiny symbols data to: " <<path<<endl;
+		return false;
+	}
+}
+
+#endif // UNIT_TESTING

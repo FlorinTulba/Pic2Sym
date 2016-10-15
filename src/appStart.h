@@ -47,6 +47,7 @@ Utility to provide the location of the executed application and also of the:
 - 'res/defaultMatchSettings.txt' and 'initMatchSettings.cfg'
 - 'Output' folder
 - 'ClusteredSets' folder
+- 'TinySymsDataSets' folder
 - 'SymsSelections' folder
 */
 class AppStart {

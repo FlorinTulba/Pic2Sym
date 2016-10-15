@@ -47,6 +47,8 @@
 #include "matchEngine.cpp"
 #include "clusterEngine.cpp"
 #include "tinySym.cpp"
+#include "tinySymsProvider.cpp"
+#include "tinySymsDataSerialization.cpp"
 #include "symData.cpp"
 #include "match.cpp"
 #include "patch.cpp"
@@ -460,7 +462,12 @@ static const Mat blurredVersionOf(const Mat &orig_) {
 
 Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
 
+// Implementations of next 3 methods can be changed to actually test also the branches they avoid now
 bool ClusterEngine::clusteredAlready(const string&, const string&, boost::filesystem::path&) { return false; }
-
 bool ClusterIO::loadFrom(const string&) { return false; }
 bool ClusterIO::saveTo(const string&) const { return false; }
+
+// Implementations of next 3 methods can be changed to actually test also the branches avoided now
+bool FontEngine::isTinySymsDataSavedOnDisk(const string&, boost::filesystem::path &tinySymsDataFile) { return false; }
+bool VTinySymsIO::loadFrom(const string&) { return false; }
+bool VTinySymsIO::saveTo(const string&) const { return false; }

@@ -38,16 +38,23 @@
 #ifndef H_SYM_DATA
 #define H_SYM_DATA
 
+#include "matSerialization.h"
+
 #include <array>
+#include <boost/serialization/array.hpp>
 
 #ifdef UNIT_TESTING
 #	include <map>
 #endif
 
+#include <boost/serialization/version.hpp>
 #include <opencv2/core/core.hpp>
 
 /// Most symbol information
 struct SymData {
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of SymData class
+
 	/**
 	Computes most information about a symbol based on glyph parameter.
 	It's also used to spare the constructor of SymData from performing computeFields' job.
@@ -97,6 +104,14 @@ struct SymData {
 	SymData& operator=(const SymData &other);
 	SymData& operator=(SymData &&other); ///< moves the matrices from other (instead of just copying them)
 
+	/// Serializes this SymData object to ar
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version) {
+		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
+		ar & mc.x & mc.y;
+		ar & symAndMasks;
+	}
+
 #ifdef UNIT_TESTING
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
 
@@ -118,6 +133,8 @@ protected:
 	/// Used to create the TinySym centroid of a cluster 
 	SymData(const cv::Point2d &mc_, double avgPixVal_);
 };
+
+BOOST_CLASS_VERSION(SymData, SymData::VERSION);
 
 /// VSymData - vector with most information about each symbol
 typedef std::vector<const SymData> VSymData;

@@ -309,6 +309,12 @@
     <ClInclude Include="src\tinySymsProvider.h">
       <Filter>Header Files\Charmap</Filter>
     </ClInclude>
+    <ClInclude Include="src\tinySymsDataSerialization.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matSerialization.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -459,6 +465,12 @@
       <Filter>Source Files\Charmap\Clustering</Filter>
     </ClCompile>
     <ClCompile Include="src\tinySym.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tinySymsProvider.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tinySymsDataSerialization.cpp">
       <Filter>Source Files\Charmap</Filter>
     </ClCompile>
   </ItemGroup>
