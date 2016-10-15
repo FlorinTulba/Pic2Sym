@@ -222,7 +222,7 @@ ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 
 bool ClusterEngine::clusteredAlready(const string &fontType, const string &algName, path &clusteredSetFile) {
 	if(fontType.empty())
-		return false; // Branch used within Unit Testing
+		return false;
 
 	clusteredSetFile = AppStart::dir();
 	if(!exists(clusteredSetFile.append("ClusteredSets")))
