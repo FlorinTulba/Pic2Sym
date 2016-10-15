@@ -35,41 +35,16 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "tinySymsDataSerialization.h"
+#ifndef H_FORCED_INCLUDE
+#define H_FORCED_INCLUDE
 
-VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
+/**
+USE_ZLIB_COMPRESSION should be defined when (de)compression of generated files is desired.
+Comment the define when the mentioned feature is not desired.
+*/
+#define USE_ZLIB_COMPRESSION
+#ifdef USE_ZLIB_COMPRESSION
+#	define BOOST_IOSTREAMS_NO_LIB
+#endif // USE_ZLIB_COMPRESSION
 
-#ifndef UNIT_TESTING
-
-#include "serializer.h"
-
-#include <fstream>
-#include <iostream>
-
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
-using namespace std;
-using namespace boost::archive;
-
-bool VTinySymsIO::loadFrom(const string &path) {
-	ifstream ifs(path, ios::binary);
-	if(!ifs) {
-		cerr<<"Couldn't find / open: " <<path<<endl;
-		return false;
-	}
-
-	return load<binary_iarchive>(ifs, path, *this);
-}
-
-bool VTinySymsIO::saveTo(const string &path) const {
-	ofstream ofs(path, ios::binary | ios::trunc);
-	if(!ofs) {
-		cerr<<"Couldn't create / truncate: " <<path<<endl;
-		return false;
-	}
-
-	return save<binary_oarchive>(ofs, path, *this);;
-}
-
-#endif // UNIT_TESTING
+#endif // H_FORCED_INCLUDE

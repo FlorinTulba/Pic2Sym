@@ -38,6 +38,7 @@
 #ifndef UNIT_TESTING
 
 #include "clusterSerialization.h"
+#include "serializer.h"
 
 #include <fstream>
 #include <iostream>
@@ -49,31 +50,23 @@ using namespace std;
 using namespace boost::archive;
 
 bool ClusterIO::loadFrom(const string &path) {
-	try {
-		ifstream ifs(path, ios::binary);
-		binary_iarchive ia(ifs);
-		ia>>*this;
-
-		return true;
-
-	} catch(...) {
-		cerr<<"Couldn't load clustering results from: " <<path<<endl;
+	ifstream ifs(path, ios::binary);
+	if(!ifs) {
+		cerr<<"Couldn't find / open: " <<path<<endl;
 		return false;
 	}
+
+	return load<binary_iarchive>(ifs, path, *this);
 }
 
 bool ClusterIO::saveTo(const string &path) const {
-	try {
-		ofstream ofs(path, ios::binary);
-		binary_oarchive oa(ofs);
-		oa<<*this;
-
-		return true;
-
-	} catch(...) {
-		cerr<<"Couldn't save clustering results to: " <<path<<endl;
+	ofstream ofs(path, ios::binary | ios::trunc);
+	if(!ofs) {
+		cerr<<"Couldn't create / truncate: " <<path<<endl;
 		return false;
 	}
+
+	return save<binary_oarchive>(ofs, path, *this);;
 }
 
 #endif // UNIT_TESTING

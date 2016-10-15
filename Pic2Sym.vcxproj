@@ -32,6 +32,9 @@
     <ClInclude Include="src\controlPanelActions.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
+    <ClInclude Include="src\forcedInclude.h" />
+    <ClInclude Include="src\presentCmap.h" />
+    <ClInclude Include="src\serializer.h" />
     <ClInclude Include="src\gaussBlur.h" />
     <ClInclude Include="src\glyphsProgressTracker.h" />
     <ClInclude Include="src\gridBarsFilter.h" />
@@ -59,7 +62,6 @@
     <ClInclude Include="src\patch.h" />
     <ClInclude Include="src\picTransformProgressTracker.h" />
     <ClInclude Include="src\pixMapSym.h" />
-    <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\progressNotifier.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
@@ -140,6 +142,7 @@
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\views.cpp" />
+    <ClCompile Include="src\zlib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="doc\appendix.md" />

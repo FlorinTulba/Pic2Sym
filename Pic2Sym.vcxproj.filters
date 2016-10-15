@@ -315,6 +315,12 @@
     <ClInclude Include="src\matSerialization.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
+    <ClInclude Include="src\serializer.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\forcedInclude.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -472,6 +478,9 @@
     </ClCompile>
     <ClCompile Include="src\tinySymsDataSerialization.cpp">
       <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\zlib.cpp">
+      <Filter>Source Files\Var</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
