@@ -42,12 +42,15 @@
 
 struct TinySym; // Forward declaration
 
+/// container with TinySym-s
+typedef std::vector<const TinySym> VTinySyms;
+
 /// Allows providing tiny symbols both from FontEngine and from UnitTesting
 struct ITinySymsProvider {
 	virtual ~ITinySymsProvider() = 0 {}
 
 	/// Return a list of tiny symbols to cluster
-	virtual const std::vector<const TinySym>& getTinySyms() = 0;
+	virtual const VTinySyms& getTinySyms() = 0;
 };
 
 #endif // H_TINY_SYMS_PROVIDER

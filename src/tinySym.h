@@ -38,26 +38,52 @@
 #ifndef H_TINY_SYM
 #define H_TINY_SYM
 
+#include "symData.h"
+
 #include <opencv2/core/core.hpp>
 
 struct PixMapSym; // Forward declaration
 
 /// Data for tiny symbols
-struct TinySym {
+struct TinySym : SymData {
 	/// Ratio between reference symbols and the shrunken symbol
 	enum { RatioRefTiny = 8 };
 
-	cv::Point2d mc = cv::Point2d(.5, .5);	///< reference mc (coordinates are within a unit-square: 0..1 x 0..1)
-	double avgPixVal = 0.;					///< reference average pixel value (0..1 range)
+	static void computeFields(const PixMapSym &refSym,
+							  double &minVal, double &maxVal,
+							  MatArray &symAndMasks,
+							  cv::Mat &hAvgProj, cv::Mat &vAvgProj,
+							  cv::Mat &backslashDiagAvgProj, cv::Mat &slashDiagAvgProj);
 
-	cv::Mat mat;		///< grounded version of the small symbol
+	/*
+	Next 5 matrices from below are for the grounded version, not the original.
+	Each would normally contain elements in range 0..1, but all of them were
+	divided by the number of elements of the corresponding matrix.
+	The reason behind this division is that the matrices are norm() compared and when the matrices
+	are normalized (by the above mentioned division), the norm() result ranges for all of them
+	in 0..1.
+	So, despite they have, respectively: n^2, n, n, 2*n-1 and 2*n-1 elements,
+	comparing 2 of the same kind with norm() produces values within a UNIQUE range 0..1.
+	Knowing that, we can define a SINGLE threshold for all 5 matrices that establishes
+	when 2 matrices of the same kind are similar.
+	
+	The alternative was to define/derive a threshold for each individual category (n^2, n, 2*n-1),
+	but this requires adapting these new thresholds to every n - configurable size of tiny symbols.
 
-	// The average projections from below are for the grounded version, not the original
-	cv::Mat hAvgProj, vAvgProj;						// horizontal and vertical projection
-	cv::Mat backslashDiagAvgProj, slashDiagAvgProj;	// normal and inverse diagonal projections
+	So, the normalization allows setting a single threshold for comparing tiny symbols of any configured size:
+	- MaxAvgProjErrForPartitionClustering for partition clustering
+	- TTSAS_Threshold_Member for TTSAS clustering
+	*/
+	cv::Mat mat;					///< grounded version of the small symbol divided by TinySymArea
+	cv::Mat hAvgProj;				///< horizontal projection divided by TinySymSz
+	cv::Mat vAvgProj;				///< vertical projection divided by TinySymSz
+	cv::Mat backslashDiagAvgProj;	///< normal diagonal projection divided by TinySymDiagsCount
+	cv::Mat slashDiagAvgProj;		///< inverse diagonal projection divided by TinySymDiagsCount
 
-	TinySym();
-	TinySym(const PixMapSym &refSym);
+	TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0U); ///< Empty symbols with the code & index from cmap
+	TinySym(const PixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
+
+	/// Used to create the centroid of a cluster
 	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
 			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
 			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);

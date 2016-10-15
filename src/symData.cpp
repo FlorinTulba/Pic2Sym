@@ -50,7 +50,11 @@ SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double dif
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
 	avgPixVal(avgPixVal_), mc(mc_), symAndMasks(symAndMasks_) {}
 
-SymData::SymData() : symAndMasks({ { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {}
+SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/,
+				 double avgPixVal_/* = 0.*/, const cv::Point2d &mc_/* = Point2d(.5, .5)*/) :
+	code(code_), symIdx(symIdx_), avgPixVal(avgPixVal_), mc(mc_) {}
+
+SymData::SymData(const cv::Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVal_), mc(mc_) {}
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
@@ -64,7 +68,7 @@ SymData::SymData(SymData &&other) : SymData(other) {
 SymData& SymData::operator=(const SymData &other) {
 	if(this != &other) {
 #define REPLACE_FIELD(Field) \
-		overwriteConstItem(Field, other.Field)
+		Field = other.Field
 
 		REPLACE_FIELD(code);
 		REPLACE_FIELD(symIdx);
@@ -94,7 +98,7 @@ SymData& SymData::operator=(SymData &&other) {
 
 void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
 							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
-							double &minVal, double &maxVal) {
+							double &minVal, double &maxVal, bool forTinySym/* = false*/) {
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
@@ -111,7 +115,7 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * contrastD));
 
 	// Storing a blurred version of the grounded glyph for structural similarity match aspect
-	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph);
+	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph, forTinySym);
 
 	// edgeMask selects all pixels that are not minVal, nor maxVal
 	inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);

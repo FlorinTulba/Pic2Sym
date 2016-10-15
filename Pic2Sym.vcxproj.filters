@@ -304,10 +304,10 @@
       <Filter>Header Files\Charmap\Clustering</Filter>
     </ClInclude>
     <ClInclude Include="src\tinySym.h">
-      <Filter>Header Files\Charmap\Clustering</Filter>
+      <Filter>Header Files\Charmap</Filter>
     </ClInclude>
     <ClInclude Include="src\tinySymsProvider.h">
-      <Filter>Header Files\Charmap\Clustering</Filter>
+      <Filter>Header Files\Charmap</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -459,7 +459,7 @@
       <Filter>Source Files\Charmap\Clustering</Filter>
     </ClCompile>
     <ClCompile Include="src\tinySym.cpp">
-      <Filter>Source Files\Charmap\Clustering</Filter>
+      <Filter>Source Files\Charmap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

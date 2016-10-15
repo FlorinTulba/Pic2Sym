@@ -73,19 +73,35 @@ namespace {
 #endif // UNIT_TESTING
 } // anonymous namespace
 
-TinySym::TinySym() :
+TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/) : SymData(code_, symIdx_),
 		mat(TinySymsSize, TinySymsSize, CV_64FC1, 0.),
 		hAvgProj(1, TinySymsSize, CV_64FC1, 0.), vAvgProj(TinySymsSize, 1, CV_64FC1, 0.),
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.) {}
 
-TinySym::TinySym(const PixMapSym &refSym) :
-		mc(refSym.mc), avgPixVal(refSym.avgPixVal),
+TinySym::TinySym(const PixMapSym &refSym) : 
+		SymData(refSym.symCode, refSym.symIdx, refSym.avgPixVal, refSym.mc),
+		mat(symAndMasks[GROUNDED_SYM_IDX] * invTinySymArea),
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1) {
+
 	const Mat refSymMat = refSym.toMatD01(RefSymSz);
-	double minVal;
-	minMaxIdx(refSymMat, &minVal);
-	const Mat groundedRefSymMat = (minVal == 0.) ? refSymMat : (refSymMat - minVal);
-	resize(groundedRefSymMat, mat, SizeTinySyms, 0., 0., INTER_AREA);
+
+	Mat tinySymMat;
+	resize(refSymMat, tinySymMat, SizeTinySyms, 0., 0., INTER_AREA);
+
+	double maxVal;
+	SymData::computeFields(tinySymMat,
+						   symAndMasks[FG_MASK_IDX], symAndMasks[BG_MASK_IDX], 
+						   symAndMasks[EDGE_MASK_IDX], symAndMasks[GROUNDED_SYM_IDX], 
+						   symAndMasks[BLURRED_GR_SYM_IDX], symAndMasks[VARIANCE_GR_SYM_IDX],
+						   minVal, maxVal, true);
+	diffMinMax = maxVal - minVal;
+
+#ifdef _DEBUG
+	// Generate the negative of the glyph only in DEBUG mode, for easier inspecting each TinySym
+	tinySymMat.convertTo(symAndMasks[NEG_SYM_IDX], CV_8UC1, -255., 255.);
+#endif
+
+	mat = symAndMasks[GROUNDED_SYM_IDX].clone();
 
 	// computing average projections
 	reduce(mat, hAvgProj, 0, CV_REDUCE_AVG);
@@ -113,7 +129,7 @@ TinySym::TinySym(const PixMapSym &refSym) :
 TinySym::TinySym(const Point2d &mc_, double avgPixVal_, const Mat &mat_,
 				 const Mat &hAvgProj_, const Mat &vAvgProj_,
 				 const Mat &backslashDiagAvgProj_, const Mat &slashDiagAvgProj_) :
-	mc(mc_), avgPixVal(avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
+	SymData(mc_, avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
 	backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
 
 #ifdef UNIT_TESTING

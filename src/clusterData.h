@@ -49,8 +49,8 @@ the clustering regroups the symbols by clusters, so only the index of 1st cluste
 the cluster size appear as fields.
 */
 struct ClusterData : SymData {
-	const unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
-	const unsigned sz;				///< size of the cluster - how many symbols form the cluster
+	unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
+	unsigned sz;			///< size of the cluster - how many symbols form the cluster
 
 	/**
 	Constructs a cluster representative for the selected symbols before they get reordered.

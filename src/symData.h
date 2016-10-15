@@ -57,16 +57,17 @@ struct SymData {
 	*/
 	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
 							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
-							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal);
+							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal,
+							  bool forTinySym = false);
 
-	const unsigned long code = ULONG_MAX;	///< the code of the symbol
-	const size_t symIdx = 0U;				///< symbol index within cmap
-	const double minVal = 0.;		///< the value of darkest pixel, range 0..1
-	const double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
-	const double avgPixVal = 0.;	///< average pixel value, each pixel in 0..1
+	unsigned long code = ULONG_MAX;	///< the code of the symbol
+	size_t symIdx = 0U;				///< symbol index within cmap
+	double minVal = 0.;		///< the value of darkest pixel, range 0..1
+	double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
+	double avgPixVal = 0.;	///< average pixel value, each pixel in 0..1
 	
 	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
-	const cv::Point2d mc;
+	cv::Point2d mc = cv::Point2d(.5, .5);
 
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
@@ -82,17 +83,19 @@ struct SymData {
 
 	// For each symbol from cmap, there'll be several additional helpful matrices to store
 	// along with the one for the given glyph. The enum from above should be used for selection.
-	typedef std::array< const cv::Mat, MATRICES_COUNT > MatArray;
+	typedef std::array< cv::Mat, MATRICES_COUNT > MatArray;
 
-	const MatArray symAndMasks;		///< symbol + other matrices & masks
+	MatArray symAndMasks;		///< symbol + other matrices & masks
 
+	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
 	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
 			const cv::Point2d &mc_, const MatArray &symAndMasks_);
+
 	SymData(const SymData &other);
-	SymData(SymData &&other);
+	SymData(SymData &&other); ///< moves the matrices from other (instead of just copying them)
 
 	SymData& operator=(const SymData &other);
-	SymData& operator=(SymData &&other);
+	SymData& operator=(SymData &&other); ///< moves the matrices from other (instead of just copying them)
 
 #ifdef UNIT_TESTING
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
@@ -106,7 +109,14 @@ struct SymData {
 #endif
 
 protected:
-	SymData(); ///< convenience base constructor for derived classes
+	/* Constructors callable from derived classes only */
+
+	/// Used for creation of TinySym and ClusterData
+	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0U,
+			double avgPixVal_ = 0., const cv::Point2d &mc_ = cv::Point2d(.5, .5));
+
+	/// Used to create the TinySym centroid of a cluster 
+	SymData(const cv::Point2d &mc_, double avgPixVal_);
 };
 
 /// VSymData - vector with most information about each symbol

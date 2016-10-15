@@ -139,17 +139,23 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 				  groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph,
 				  minVal_, maxVal);
 
-	overwriteConstItem(minVal,		minVal_);
-	overwriteConstItem(diffMinMax,	maxVal - minVal_);
-	overwriteConstItem(avgPixVal,	avgPixVal_ * invClusterSz);
-	overwriteConstItem(mc,			mc_ * invClusterSz);
-	overwriteConstItem(symAndMasks[FG_MASK_IDX],		fgMask);
-	overwriteConstItem(symAndMasks[BG_MASK_IDX],		bgMask);
-	overwriteConstItem(symAndMasks[EDGE_MASK_IDX],		edgeMask);
-	overwriteConstItem(symAndMasks[NEG_SYM_IDX],		negSynthesizedSym);
-	overwriteConstItem(symAndMasks[GROUNDED_SYM_IDX],	groundedGlyph);
-	overwriteConstItem(symAndMasks[BLURRED_GR_SYM_IDX],	blurOfGroundedGlyph);
-	overwriteConstItem(symAndMasks[VARIANCE_GR_SYM_IDX],varianceOfGroundedGlyph);
+#define UPDATE_FIELD(Field, NewVal) \
+		Field = NewVal
+
+	UPDATE_FIELD(minVal,		minVal_);
+	UPDATE_FIELD(diffMinMax,	maxVal - minVal_);
+	UPDATE_FIELD(avgPixVal,		avgPixVal_ * invClusterSz);
+	UPDATE_FIELD(mc,			mc_ * invClusterSz);
+
+	UPDATE_FIELD(symAndMasks[FG_MASK_IDX],			fgMask);
+	UPDATE_FIELD(symAndMasks[BG_MASK_IDX],			bgMask);
+	UPDATE_FIELD(symAndMasks[EDGE_MASK_IDX],		edgeMask);
+	UPDATE_FIELD(symAndMasks[NEG_SYM_IDX],			negSynthesizedSym);
+	UPDATE_FIELD(symAndMasks[GROUNDED_SYM_IDX],		groundedGlyph);
+	UPDATE_FIELD(symAndMasks[BLURRED_GR_SYM_IDX],	blurOfGroundedGlyph);
+	UPDATE_FIELD(symAndMasks[VARIANCE_GR_SYM_IDX],	varianceOfGroundedGlyph);
+
+#undef UPDATE_FIELD
 }
 
 ClusterData::ClusterData(const ClusterData &other) : SymData(other),
@@ -163,7 +169,7 @@ ClusterData& ClusterData::operator=(const ClusterData &other) {
 
 	if(this != &other) {
 #define REPLACE_FIELD(Field) \
-		overwriteConstItem(Field, other.Field)
+		Field = other.Field
 
 		REPLACE_FIELD(idxOfFirstSym);
 		REPLACE_FIELD(sz);
@@ -179,7 +185,7 @@ ClusterData& ClusterData::operator=(ClusterData &&other) {
 
 	if(this != &other) {
 #define REPLACE_FIELD(Field) \
-		overwriteConstItem(Field, other.Field)
+		Field = other.Field
 
 		REPLACE_FIELD(idxOfFirstSym);
 		REPLACE_FIELD(sz);

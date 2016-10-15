@@ -114,7 +114,7 @@ public:
 	FT_String* getStyle() const;					///< get font style
 
 	/// (Creates and) Returns the small versions of all the symbols from current cmap
-	const std::vector<const TinySym>& getTinySyms() override;
+	const VTinySyms& getTinySyms() override;
 
 	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };
