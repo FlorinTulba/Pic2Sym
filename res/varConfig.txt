@@ -1,4 +1,4 @@
-;#####################################################################################
+;/*###################################################################################
 ; This file contains many configurable texts and parameters of the application.      #
 ; Grouping them here means they can be modified without recompiling any source file. #
 ;#####################################################################################
@@ -215,3 +215,5 @@ ControlPanel_instructionsText	"The Control Panel allows setting:\n\n- which imag
 
 ; Copyright note
 copyrightText	"Running 'Pic2Sym' application, which approximates images by a grid of colored\nsymbols with colored backgrounds.\n\n\nThe entire project can be found at: <https://github.com/FlorinTulba/Pic2Sym>\n\nThis program is free software: you can use its results,\nredistribute it and/or modify it under the terms of the GNU\nAffero General Public License version 3 as published by the\nFree Software Foundation.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\nGNU Affero General Public License for more details.\n\nYou should have received a copy of the GNU Affero General Public License\nalong with this program ('agpl-3.0.txt').\nIf not, see <http://www.gnu.org/licenses/agpl-3.0.txt>."
+
+; Line closing a C/C++ style comment started at the top of the file (Prevents reports of errors from automatic parsing when editing the file in C/C++ mode) */
