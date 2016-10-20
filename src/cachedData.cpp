@@ -95,7 +95,6 @@ const double CachedData::b_mcsOffsetFactor() {
 void CachedData::useNewSymSize(unsigned sz_) {
 	const double szd = (double)sz_;
 	sz_1 = szd - 1.;
-	sz2 = szd * szd;
 
 	consec = Mat(1, sz_, CV_64FC1);
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);

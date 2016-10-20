@@ -1483,7 +1483,6 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_EmptyGlyph_Density0");
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		cd.sz2 = getArea();
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -1504,7 +1503,6 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge");
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		cd.sz2 = getArea();
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -1524,7 +1522,6 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_LargestPosibleSymbol_LargestScore");
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		cd.sz2 = getArea();
 		const LargerSym ls(cd, cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)

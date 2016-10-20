@@ -84,7 +84,6 @@ struct CachedData {
 	static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
 
 	double sz_1;				///< double version of sz - 1
-	double sz2;					///< sz^2
 	double smallGlyphsCoverage;	///< max density for symbols considered small
 
 	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
