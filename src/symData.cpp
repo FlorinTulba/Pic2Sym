@@ -45,10 +45,10 @@
 using namespace std;
 using namespace cv;
 
-SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-				 const Point2d &mc_, const MatArray &symAndMasks_) :
+SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
+				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-	avgPixVal(avgPixVal_), mc(mc_), symAndMasks(symAndMasks_) {}
+	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), masks(masks_) {}
 
 SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/,
 				 double avgPixVal_/* = 0.*/, const cv::Point2d &mc_/* = Point2d(.5, .5)*/) :
@@ -58,11 +58,13 @@ SymData::SymData(const cv::Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVa
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
-		avgPixVal(other.avgPixVal), mc(other.mc), symAndMasks(other.symAndMasks) {}
+		avgPixVal(other.avgPixVal), mc(other.mc),
+		negSym(other.negSym), masks(other.masks) {}
 
 SymData::SymData(SymData &&other) : SymData(other) {
-	for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-		other.symAndMasks[i].release();
+	other.negSym.release();
+	for(auto &m : other.masks)
+		m.release();
 }
 
 SymData& SymData::operator=(const SymData &other) {
@@ -76,8 +78,10 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(diffMinMax);
 		REPLACE_FIELD(avgPixVal);
 		REPLACE_FIELD(mc);
+		REPLACE_FIELD(negSym);
+
 		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-			REPLACE_FIELD(symAndMasks[i]);
+			REPLACE_FIELD(masks[i]);
 
 #undef REPLACE_FIELD
 	}
@@ -89,7 +93,9 @@ SymData& SymData::operator=(SymData &&other) {
 	operator=(other);
 
 	if(this != &other) {
-		for(auto &m : other.symAndMasks)
+		other.negSym.release();
+
+		for(auto &m : other.masks)
 			m.release();
 	}
 
@@ -98,7 +104,7 @@ SymData& SymData::operator=(SymData &&other) {
 
 void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
 							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
-							double &minVal, double &maxVal, bool forTinySym/* = false*/) {
+							double &minVal, double &diffMinMax, bool forTinySym/* = false*/) {
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
@@ -107,12 +113,13 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	extern const double SymData_computeFields_STILL_BG;					// darkest shades
 	static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
 	
+	double maxVal;
 	minMaxIdx(glyph, &minVal, &maxVal);
-	const double contrastD = maxVal - minVal;
-	groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
+	diffMinMax = maxVal - minVal;
+	groundedGlyph = (minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0
 
-	fgMask = (glyph >= (minVal + STILL_FG * contrastD));
-	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * contrastD));
+	fgMask = (glyph >= (minVal + STILL_FG * diffMinMax));
+	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * diffMinMax));
 
 	// Storing a blurred version of the grounded glyph for structural similarity match aspect
 	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph, forTinySym);

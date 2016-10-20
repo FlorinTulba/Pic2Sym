@@ -183,14 +183,14 @@ namespace ut {
 					{ SymData::FG_MASK_IDX, halfUc },
 					{ SymData::BG_MASK_IDX, invHalfUc },
 					{ SymData::EDGE_MASK_IDX, horBeltUc },
-					{ SymData::NEG_SYM_IDX, invHalfUc },
 
 					// grounded glyph is same as glyph (min is already 0)
-					{ SymData::GROUNDED_SYM_IDX, halfD1 }});
+					{ SymData::GROUNDED_SYM_IDX, halfD1 }},
+				invHalfUc);
 		
 		// copy sdWithHorizEdgeMask and adapt it for vert. edge
 		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask);
-		const_cast<Mat&>(sdWithVertEdgeMask->symAndMasks[SymData::EDGE_MASK_IDX]) = verBeltUc;
+		sdWithVertEdgeMask->masks[SymData::EDGE_MASK_IDX] = verBeltUc;
 	}
 
 	/// Fixture helping tests computing matching parameters 
@@ -438,7 +438,7 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		if(idx % step == 0U) // report progress
 			cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
 
-		const Mat &negGlyph = it->symAndMasks[SymData::NEG_SYM_IDX]; // byte 0..255
+		const Mat &negGlyph = it->negSym; // byte 0..255
 		Mat patchD255;
 		negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
 		alterFgBg(patchD255, it->minVal, it->diffMinMax);
@@ -646,8 +646,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		blurSupport.process(diagSymD1, blurOfGroundedGlyph);
-		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph, false);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, false);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -692,8 +692,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		blurSupport.process(diagSymD1, blurOfGroundedGlyph);
-		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph, false);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, false);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)

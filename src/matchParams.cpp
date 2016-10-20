@@ -91,11 +91,11 @@ void MatchParams::computeMean(const Mat &patch, const Mat &mask, optional<double
 }
 
 void MatchParams::computeFg(const Mat &patch, const SymData &symData) {
-	computeMean(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg);
+	computeMean(patch, symData.masks[SymData::FG_MASK_IDX], fg);
 }
 
 void MatchParams::computeBg(const Mat &patch, const SymData &symData) {
-	computeMean(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg);
+	computeMean(patch, symData.masks[SymData::BG_MASK_IDX], bg);
 }
 
 void MatchParams::computeContrast(const Mat &patch, const SymData &symData) {
@@ -127,11 +127,11 @@ void MatchParams::computeSdev(const Mat &patch, const Mat &mask,
 }
 
 void MatchParams::computeSdevFg(const Mat &patch, const SymData &symData) {
-	computeSdev(patch, symData.symAndMasks[SymData::FG_MASK_IDX], fg, sdevFg);
+	computeSdev(patch, symData.masks[SymData::FG_MASK_IDX], fg, sdevFg);
 }
 
 void MatchParams::computeSdevBg(const Mat &patch, const SymData &symData) {
-	computeSdev(patch, symData.symAndMasks[SymData::BG_MASK_IDX], bg, sdevBg);
+	computeSdev(patch, symData.masks[SymData::BG_MASK_IDX], bg, sdevBg);
 }
 
 void MatchParams::computePatchApprox(const Mat &patch, const SymData &symData) {
@@ -146,14 +146,14 @@ void MatchParams::computePatchApprox(const Mat &patch, const SymData &symData) {
 	}
 
 	patchApprox = bg.value() +
-		symData.symAndMasks[SymData::GROUNDED_SYM_IDX] * (contrast.value() / symData.diffMinMax);
+		symData.masks[SymData::GROUNDED_SYM_IDX] * (contrast.value() / symData.diffMinMax);
 }
 
 void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 	if(sdevEdge)
 		return;
 
-	const auto &edgeMask = symData.symAndMasks[SymData::EDGE_MASK_IDX];
+	const auto &edgeMask = symData.masks[SymData::EDGE_MASK_IDX];
 	const int cnz = countNonZero(edgeMask);
 	if(cnz == 0) {
 		sdevEdge = 0.;
@@ -260,7 +260,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	}
 
 	const auto &dataOfBest = *pSymData;
-	const auto &matricesForBest = dataOfBest.symAndMasks;
+	const auto &matricesForBest = dataOfBest.masks;
 	const Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
 
 	Mat patchResult;

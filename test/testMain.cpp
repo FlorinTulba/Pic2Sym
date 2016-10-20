@@ -425,17 +425,18 @@ void JobMonitor::taskDone(unsigned) {}
 
 void JobMonitor::taskAborted(unsigned) {}
 
-SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats) :
+SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
+				 double avgPixVal_, const Point2d &mc_, const SymData::IdxMatMap &relevantMats,
+				 const Mat &negSym_/* = Mat()*/) :
 		code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-		avgPixVal(avgPixVal_), mc(mc_),
-		symAndMasks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {
+		avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_),
+		masks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {
 	for(const auto &idxAndMat : relevantMats)
-		const_cast<Mat&>(symAndMasks[idxAndMat.first]) = idxAndMat.second;
+		masks[idxAndMat.first] = idxAndMat.second;
 }
 
 SymData SymData::clone(size_t symIdx_) {
-	return SymData(code, symIdx_, minVal, diffMinMax, avgPixVal, mc, symAndMasks);
+	return SymData(negSym, code, symIdx_, minVal, diffMinMax, avgPixVal, mc, masks);
 }
 
 PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const Mat &revConsec) : 

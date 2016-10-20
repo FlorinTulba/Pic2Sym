@@ -113,53 +113,47 @@ namespace {
 
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 const vector<unsigned> &clusterSymIndices) : SymData(),
-		idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
+						 idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
-	const Mat &firstNegSym = symsSet[0].symAndMasks[NEG_SYM_IDX];
+	const Mat &firstNegSym = symsSet[0].negSym;
 	const int rows = firstNegSym.rows, cols = firstNegSym.cols;
 	double avgPixVal_ = 0.;
 	Point2d mc_;
 	Mat synthesizedSym, negSynthesizedSym(rows, cols, CV_64FC1, Scalar(0.));
 	for(const auto clusterSymIdx : clusterSymIndices) {
 		const SymData &symData = symsSet[clusterSymIdx];
-		Mat negSym;
-		symData.symAndMasks[NEG_SYM_IDX].convertTo(negSym, CV_64FC1);
-		negSynthesizedSym += negSym;
+		Mat negSymD;
+		symData.negSym.convertTo(negSymD, CV_64FC1);
+		negSynthesizedSym += negSymD;
 		avgPixVal_ += symData.avgPixVal;
 		mc_ += symData.mc;
 	}
 	const double invClusterSz = 1./sz;
 	negSynthesizedSym *= invClusterSz;
 	synthesizedSym = 255. - negSynthesizedSym;
-	negSynthesizedSym.convertTo(negSynthesizedSym, CV_8UC1);
+	negSynthesizedSym.convertTo(negSym, CV_8UC1);
 
 	Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-	double minVal_, maxVal; // for very small fonts, minVal_ might be > 0 and maxVal might be < 255
+	double minVal_, diffMinMax_; // for very small fonts, minVal_ might be > 0 and diffMinMax_ might be < 255
 	computeFields(synthesizedSym, fgMask, bgMask, edgeMask,
 				  groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph,
-				  minVal_, maxVal);
+				  minVal_, diffMinMax_, forTinySyms);
 
-#define UPDATE_FIELD(Field, NewVal) \
-		Field = NewVal
+	minVal		= minVal_;
+	diffMinMax	= diffMinMax_;
+	avgPixVal	= avgPixVal_ * invClusterSz;
+	mc			= mc_ * invClusterSz;
 
-	UPDATE_FIELD(minVal,		minVal_);
-	UPDATE_FIELD(diffMinMax,	maxVal - minVal_);
-	UPDATE_FIELD(avgPixVal,		avgPixVal_ * invClusterSz);
-	UPDATE_FIELD(mc,			mc_ * invClusterSz);
-
-	UPDATE_FIELD(symAndMasks[FG_MASK_IDX],			fgMask);
-	UPDATE_FIELD(symAndMasks[BG_MASK_IDX],			bgMask);
-	UPDATE_FIELD(symAndMasks[EDGE_MASK_IDX],		edgeMask);
-	UPDATE_FIELD(symAndMasks[NEG_SYM_IDX],			negSynthesizedSym);
-	UPDATE_FIELD(symAndMasks[GROUNDED_SYM_IDX],		groundedGlyph);
-	UPDATE_FIELD(symAndMasks[BLURRED_GR_SYM_IDX],	blurOfGroundedGlyph);
-	UPDATE_FIELD(symAndMasks[VARIANCE_GR_SYM_IDX],	varianceOfGroundedGlyph);
-
-#undef UPDATE_FIELD
+	masks[FG_MASK_IDX]			= fgMask;
+	masks[BG_MASK_IDX]			= bgMask;
+	masks[EDGE_MASK_IDX]		= edgeMask;
+	masks[GROUNDED_SYM_IDX]		= groundedGlyph;
+	masks[BLURRED_GR_SYM_IDX]	= blurOfGroundedGlyph;
+	masks[VARIANCE_GR_SYM_IDX]	= varianceOfGroundedGlyph;
 }
 
 ClusterData::ClusterData(const ClusterData &other) : SymData(other),
-	idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}
+idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}
 
 ClusterData::ClusterData(ClusterData &&other) : SymData(move(other)),
 	idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}

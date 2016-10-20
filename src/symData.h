@@ -64,7 +64,7 @@ struct SymData {
 	*/
 	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
 							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
-							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &maxVal,
+							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &diffMinMax,
 							  bool forTinySym = false);
 
 	unsigned long code = ULONG_MAX;	///< the code of the symbol
@@ -76,11 +76,12 @@ struct SymData {
 	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc = cv::Point2d(.5, .5);
 
+	cv::Mat negSym;			///< negative of the symbol (0..255 byte)
+
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
 		BG_MASK_IDX,			///< mask isolating the background of the glyph 
 		EDGE_MASK_IDX,			///< mask isolating the edge of the glyph (transition region fg-bg)
-		NEG_SYM_IDX,			///< negative of the symbol (0..255 byte)
 		GROUNDED_SYM_IDX,		///< symbol shifted (in brightness) to have black background (0..1)
 		BLURRED_GR_SYM_IDX,		///< blurred version of the grounded symbol (0..1)
 		VARIANCE_GR_SYM_IDX,	///< variance of the grounded symbol
@@ -92,11 +93,11 @@ struct SymData {
 	// along with the one for the given glyph. The enum from above should be used for selection.
 	typedef std::array< cv::Mat, MATRICES_COUNT > MatArray;
 
-	MatArray symAndMasks;		///< symbol + other matrices & masks
+	MatArray masks;				///< various masks
 
 	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
-	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-			const cv::Point2d &mc_, const MatArray &symAndMasks_);
+	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
+			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_);
 
 	SymData(const SymData &other);
 	SymData(SymData &&other); ///< moves the matrices from other (instead of just copying them)
@@ -109,15 +110,16 @@ struct SymData {
 	void serialize(Archive &ar, const unsigned int version) {
 		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
 		ar & mc.x & mc.y;
-		ar & symAndMasks;
+		ar & negSym;
+		ar & masks;
 	}
 
 #ifdef UNIT_TESTING
-	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor
+	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
 	/// Constructor that allows filling only the relevant matrices from MatArray
 	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-			const cv::Point2d &mc_, const IdxMatMap &relevantMats);
+			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
 
 	/// A clone with different symIdx
 	SymData clone(size_t symIdx_);

@@ -136,8 +136,8 @@ namespace ut {
 				UnitSquareCenter(.5, .5);
 
 	const SymData EmptySymData5x5(0UL, 0U, 0., 0., 0., TinySymCenter,
-					{ { SymData::NEG_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_8UC1, Scalar(255U)) },
-					{ SymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_64FC1, Scalar(0.)) } });
+					{ { SymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_64FC1, Scalar(0.)) } },
+					Mat(TinySymsSize, TinySymsSize, CV_8UC1, Scalar(255U)));
 
 	const TinySym EmptyTinySym,
 		MainDiagTinySym(Point2d(.5, .5), .2, Mat::eye(TinySymsSize, TinySymsSize, CV_64FC1),

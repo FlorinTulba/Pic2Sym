@@ -553,7 +553,7 @@ void Controller::displaySymCode(unsigned long symCode) const {
 
 void Controller::enlistSymbolForInvestigation(const SymData &sd) const {
 	cout<<"Appending symbol "<<sd.code<<" to the list needed for further investigations"<<endl;
-	symsToInvestigate.push_back(255U - sd.symAndMasks[SymData::NEG_SYM_IDX]); // enlist actual symbol, not its negative
+	symsToInvestigate.push_back(255U - sd.negSym); // enlist actual symbol, not its negative
 }
 
 void Controller::symbolsReadyToInvestigate() const {
@@ -703,7 +703,7 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair,
 	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
 				   (NegSymExtractor<MatchEngine::VSymDataCIt>) // conversion
-				   [](const MatchEngine::VSymDataCIt &iter) { return iter->symAndMasks[SymData::NEG_SYM_IDX]; },
+				   [](const MatchEngine::VSymDataCIt &iter) { return iter->negSym; },
 				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
 }
 

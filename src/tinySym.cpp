@@ -80,7 +80,6 @@ TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/) :
 
 TinySym::TinySym(const PixMapSym &refSym) : 
 		SymData(refSym.symCode, refSym.symIdx, refSym.avgPixVal, refSym.mc),
-		mat(symAndMasks[GROUNDED_SYM_IDX] * invTinySymArea),
 		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1) {
 
 	const Mat refSymMat = refSym.toMatD01(RefSymSz);
@@ -88,20 +87,15 @@ TinySym::TinySym(const PixMapSym &refSym) :
 	Mat tinySymMat;
 	resize(refSymMat, tinySymMat, SizeTinySyms, 0., 0., INTER_AREA);
 
-	double maxVal;
 	SymData::computeFields(tinySymMat,
-						   symAndMasks[FG_MASK_IDX], symAndMasks[BG_MASK_IDX], 
-						   symAndMasks[EDGE_MASK_IDX], symAndMasks[GROUNDED_SYM_IDX], 
-						   symAndMasks[BLURRED_GR_SYM_IDX], symAndMasks[VARIANCE_GR_SYM_IDX],
-						   minVal, maxVal, true);
-	diffMinMax = maxVal - minVal;
+						   masks[FG_MASK_IDX], masks[BG_MASK_IDX], 
+						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX], 
+						   masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
+						   minVal, diffMinMax, true);
 
-#ifdef _DEBUG
-	// Generate the negative of the glyph only in DEBUG mode, for easier inspecting each TinySym
-	tinySymMat.convertTo(symAndMasks[NEG_SYM_IDX], CV_8UC1, -255., 255.);
-#endif
+	tinySymMat.convertTo(negSym, CV_8UC1, -255., 255.);
 
-	mat = symAndMasks[GROUNDED_SYM_IDX].clone();
+	mat = masks[GROUNDED_SYM_IDX].clone();
 
 	// computing average projections
 	reduce(mat, hAvgProj, 0, CV_REDUCE_AVG);
