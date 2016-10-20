@@ -39,6 +39,7 @@
 #include "appStart.h"
 #include "settings.h"
 #include "study.h"
+#include "ompTraceSwitch.h"
 
 #include <omp.h>
 

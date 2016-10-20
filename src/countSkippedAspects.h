@@ -35,31 +35,26 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_OMP_TRACE
-#define H_OMP_TRACE
+#ifndef H_COUNT_SKIPPED_ASPECTS
+#define H_COUNT_SKIPPED_ASPECTS
 
-#include "ompTraceSwitch.h"
+#ifndef UNIT_TESTING
 
-#ifdef GENERATE_OPEN_MP_TRACE
+/**
+Square patches from an image must be approximated by some fonts of the same size.
+The approximation takes into account several matching aspects.
+The process investigates all fonts to find the best match for a given image patch.
+The score of the best known match is compared against the score of each following
+font.
+However, when a symbol is a much worse match than the current best match,
+only a few matching aspects will be enough to conclude the poor match.
+The remaining matching aspects will be skipped.
 
-#include <cstdio>
-#include <omp.h>
+Use MONITOR_SKIPPED_MATCHING_ASPECTS to count and report the skipped matching aspects
+by category, together with their relative computational complexity.
+*/
+#define MONITOR_SKIPPED_MATCHING_ASPECTS
 
-extern omp_lock_t ompTraceLock;
+#endif // UNIT_TESTING
 
-/// Defines 'ompPrintf' function as 'printf' in Debug mode for original thread's team
-#define ompPrintf(cond, formatText, ...) \
-	if(cond) { \
-			omp_set_lock(&ompTraceLock); \
-			printf("[Thread %d] " #cond " : " formatText " (" __FILE__ ":%d)\n", \
-				omp_get_thread_num(), __VA_ARGS__, __LINE__); \
-			omp_unset_lock(&ompTraceLock); \
-		}
-
-#else // GENERATE_OPEN_MP_TRACE not defined
-
-#define ompPrintf(...)
-
-#endif // GENERATE_OPEN_MP_TRACE
-
-#endif // H_OMP_TRACE
+#endif // H_COUNT_SKIPPED_ASPECTS

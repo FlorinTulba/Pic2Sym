@@ -35,7 +35,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "matchEngine.h"
+#include "countSkippedAspects.h" // keep this before the include of "matchEngine.h"
+#include "matchEngine.h" // keep this after the include of "countSkippedAspects.h"
 #include "clusterEngine.h"
 #include "matchAspectsFactory.h"
 #include "matchParams.h"

@@ -3,13 +3,18 @@
 This file was copied from the Boost distribution, as needed by zlib compression / decompression.
 The links from below provide the argumentation behind this file inclusion.
 
-The original content of the file is enclosed in a guarding #ifdef BOOST_IOSTREAMS_NO_LIB region.
-So, when the OPTIONAL support for compression / decompression isn't desired, 
-just #undef BOOST_IOSTREAMS_NO_LIB, or remove this macro from 'Common.props' file
+The original content of the file is enclosed in a guarding
+#if defined(USE_ZLIB_COMPRESSION) && defined(BOOST_IOSTREAMS_NO_LIB)
+
+So, when the OPTIONAL support for compression / decompression isn't desired,
+just comment USE_ZLIB_COMPRESSION in the 'compressOption.h' file
 
 ************************************************************************************************/
 
+#include "compressOption.h"
+
 // Compiling the file only when the compression / decompression feature is desired.
+// Specify your option in 'compressOption.h'
 #if defined(USE_ZLIB_COMPRESSION) && defined(BOOST_IOSTREAMS_NO_LIB)
 
 // (C) Copyright 2008 CodeRage, LLC (turkanis at coderage dot com)

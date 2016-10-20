@@ -28,11 +28,13 @@
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterEngine.h" />
     <ClInclude Include="src\clusterSerialization.h" />
+    <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
+    <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
-    <ClInclude Include="src\forcedInclude.h" />
+    <ClInclude Include="src\ompTraceSwitch.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\serializer.h" />

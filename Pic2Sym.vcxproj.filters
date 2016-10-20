@@ -318,11 +318,17 @@
     <ClInclude Include="src\serializer.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
-    <ClInclude Include="src\forcedInclude.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\preselectSyms.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compressOption.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\countSkippedAspects.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ompTraceSwitch.h">
+      <Filter>Header Files\Var</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

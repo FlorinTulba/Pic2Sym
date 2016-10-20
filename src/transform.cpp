@@ -35,7 +35,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "transform.h"
+#include "countSkippedAspects.h" // keep this before the include of "transform.h"
+#include "transform.h" // keep this after the include of "countSkippedAspects.h"
 #include "match.h"
 #include "picTransformProgressTracker.h"
 #include "misc.h"

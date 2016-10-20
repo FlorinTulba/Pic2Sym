@@ -95,6 +95,13 @@ namespace {
 		return (minQsum > minSumQuarterBrightGlyph && maxQsum < maxSumQuarterBrightGlyph);
 	}
 
+	/**
+	INSPECT_FFT_MAGNITUDE_SPECTRUM can be used in Debug mode to view the magnitude spectrum
+	from a 2D FFT transform in natural order.
+	A breakpoint should be set on a line after the shifting of the spectrum was performed
+	and the spectrum can be inspected as a matrix.
+	*/
+//#define INSPECT_FFT_MAGNITUDE_SPECTRUM
 #if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
 	/**
 	Rearranging the quadrants of the magnitude spectrum from the 3412 order to their natural position.

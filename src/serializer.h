@@ -49,12 +49,14 @@ and it's used rarely only for saving some disk space.
 That's why zlib wasn't included in the generic license header.
 
 So, when the OPTIONAL support for compression / decompression isn't desired,
-just #undef USE_ZLIB_COMPRESSION, or comment its definition in 'forcedInclude.h' file
+just comment its definition in 'compressOption.h' file
 
 =======================================================================================*/
 
 #ifndef H_SERIALIZER
 #define H_SERIALIZER
+
+#include "compressOption.h"
 
 #ifdef USE_ZLIB_COMPRESSION
 

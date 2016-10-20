@@ -455,7 +455,15 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	symsCont.setAsReady();
 	determineCoverageOfSmallGlyphs.taskDone(); // mark it as already finished
 
-#ifdef VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
+	/**
+	Original provided fonts are typically not square, so they need to be reshaped
+	sometimes even twice, to fit within a square of a desired size - symbol's size.
+
+	VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS should be defined when interested
+	in the details about a set of reshaped fonts.
+	*/
+//#define VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
+#if defined(VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS) && !defined(UNIT_TESTING)
 	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
@@ -469,7 +477,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	}
 
 	cout<<endl;
-#endif // VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
+#endif // VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS, UNIT_TESTING
 
 	if(symsCont.getBlanksCount() != 0U)
 		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;

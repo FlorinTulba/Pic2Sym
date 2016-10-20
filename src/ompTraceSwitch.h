@@ -35,31 +35,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#ifndef H_OMP_TRACE
-#define H_OMP_TRACE
+#ifndef H_OMP_TRACE_SWITCH
+#define H_OMP_TRACE_SWITCH
 
-#include "ompTraceSwitch.h"
+#ifndef UNIT_TESTING
 
-#ifdef GENERATE_OPEN_MP_TRACE
+/**
+GENERATE_OPEN_MP_TRACE should be defined when traces from OpenMP are desired
+in the main project. The UnitTesting project doesn't generate any OpenMP traces.
+*/
+//#define GENERATE_OPEN_MP_TRACE
 
-#include <cstdio>
-#include <omp.h>
+#endif // UNIT_TESTING
 
-extern omp_lock_t ompTraceLock;
-
-/// Defines 'ompPrintf' function as 'printf' in Debug mode for original thread's team
-#define ompPrintf(cond, formatText, ...) \
-	if(cond) { \
-			omp_set_lock(&ompTraceLock); \
-			printf("[Thread %d] " #cond " : " formatText " (" __FILE__ ":%d)\n", \
-				omp_get_thread_num(), __VA_ARGS__, __LINE__); \
-			omp_unset_lock(&ompTraceLock); \
-		}
-
-#else // GENERATE_OPEN_MP_TRACE not defined
-
-#define ompPrintf(...)
-
-#endif // GENERATE_OPEN_MP_TRACE
-
-#endif // H_OMP_TRACE
+#endif // H_OMP_TRACE_SWITCH
