@@ -73,7 +73,7 @@ protected:
 
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
-	std::vector<MatchAspect*> enabledAspects;				///< only the enabled aspects
+	std::vector<const MatchAspect*> enabledAspects;			///< the enabled aspects only
 	size_t enabledAspectsCount = 0U;						///< count of the enabled aspects
 
 #ifdef UNIT_TESTING // UnitTesting project needs access to invMaxIncreaseFactors
@@ -118,10 +118,13 @@ public:
 	
 	size_t enabledMatchAspectsCount() const;	///< provides enabledAspectsCount
 
-#ifdef _DEBUG
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
 	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects
-#endif
+
+	/// While reporting, the particular aspects that were used during the transformation are required
+	const std::vector<const MatchAspect*>& getEnabledAspects() const { return enabledAspects; }
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
 };
 
-#endif
+#endif // H_MATCH_ENGINE

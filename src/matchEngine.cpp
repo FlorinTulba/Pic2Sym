@@ -1,39 +1,39 @@
 /****************************************************************************************
- The application Pic2Sym approximates images by a
- grid of colored symbols with colored backgrounds.
+The application Pic2Sym approximates images by a
+grid of colored symbols with colored backgrounds.
 
- This file belongs to the Pic2Sym project.
+This file belongs to the Pic2Sym project.
 
- Copyrights from the libraries used by the program:
- - (c) 2015 Boost (www.boost.org)
-   License: <http://www.boost.org/LICENSE_1_0.txt>
-            or doc/licenses/Boost.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
- - (c) 2015 OpenCV (www.opencv.org)
-   License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- 
- (c) 2016 Florin Tulba <florintulba@yahoo.com>
+Copyrights from the libraries used by the program:
+- (c) 2015 Boost (www.boost.org)
+License: <http://www.boost.org/LICENSE_1_0.txt>
+or doc/licenses/Boost.lic
+- (c) 2015 The FreeType Project (www.freetype.org)
+License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
+or doc/licenses/FTL.txt
+- (c) 2015 OpenCV (www.opencv.org)
+License: <http://opencv.org/license.html>
+or doc/licenses/OpenCV.lic
+- (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+(c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
+See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
 
- This program is free software: you can use its results,
- redistribute it and/or modify it under the terms of the GNU
- Affero General Public License version 3 as published by the
- Free Software Foundation.
+(c) 2016 Florin Tulba <florintulba@yahoo.com>
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU Affero General Public License for more details.
+This program is free software: you can use its results,
+redistribute it and/or modify it under the terms of the GNU
+Affero General Public License version 3 as published by the
+Free Software Foundation.
 
- You should have received a copy of the GNU Affero General Public License
- along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ****************************************************************************************/
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program ('agpl-3.0.txt').
+If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
+****************************************************************************************/
 
 #include "matchEngine.h"
 #include "clusterEngine.h"
@@ -84,7 +84,7 @@ namespace {
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce(fe_) {
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(
-			MatchAspectsFactory::create(aspectName, cachedData, cfg_.matchSettings()));
+		MatchAspectsFactory::create(aspectName, cachedData, cfg_.matchSettings()));
 
 	updateEnabledMatchAspectsCount();
 }
@@ -114,7 +114,7 @@ void MatchEngine::updateSymbols() {
 
 		const auto &pms = rawSyms[i];
 		const Mat glyph = pms.toMatD01(sz),
-				negGlyph = pms.toMat(sz, !pms.removable);
+			negGlyph = pms.toMat(sz, !pms.removable);
 		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		double minVal, maxVal; // for very small fonts, minVal might be > 0 and maxVal might be < 255
 
@@ -129,14 +129,14 @@ void MatchEngine::updateSymbols() {
 							 minVal, maxVal-minVal,
 							 pms.avgPixVal, pms.mc,
 							 SymData::MatArray { {
-										fgMask,					// FG_MASK_IDX
-										bgMask,					// BG_MASK_IDX
-										edgeMask,				// EDGE_MASK_IDX
-										negGlyph,				// NEG_SYM_IDX
-										groundedGlyph,			// GROUNDED_SYM_IDX
-										blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
-										varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
-									} });
+									 fgMask,					// FG_MASK_IDX
+									 bgMask,					// BG_MASK_IDX
+									 edgeMask,				// EDGE_MASK_IDX
+									 negGlyph,				// NEG_SYM_IDX
+									 groundedGlyph,			// GROUNDED_SYM_IDX
+									 blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
+									 varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
+								 } });
 
 		// #pragma omp master not allowed in for
 		if(omp_get_thread_num() == 0)
@@ -181,7 +181,7 @@ void MatchEngine::newlyEnabledMatchAspect() {
 }
 
 void MatchEngine::newlyDisabledMatchAspect() {
-	--enabledAspectsCount; 
+	--enabledAspectsCount;
 }
 
 void MatchEngine::updateEnabledMatchAspectsCount() {
@@ -217,11 +217,11 @@ void MatchEngine::getReady() {
 	Thus, reorder the enabled aspects as follows:
 	- rearrange aspects in increasing order of their complexity
 	- for equally complex aspects, consider first those with a higher max score,
-	  to reduce the chance that other aspects are needed
+	to reduce the chance that other aspects are needed
 	*/
 	sort(BOUNDS(enabledAspects), [] (const MatchAspect *a, const MatchAspect *b) -> bool {
 		const double relComplexityA = a->relativeComplexity(),
-					relComplexityB = b->relativeComplexity();
+			relComplexityB = b->relativeComplexity();
 		// Ascending by complexity
 		if(relComplexityA < relComplexityB)
 			return true;
@@ -232,17 +232,16 @@ void MatchEngine::getReady() {
 		// Equal complexity here already
 
 		const double maxScoreA = a->maxScore(),
-					maxScoreB = b->maxScore();
+			maxScoreB = b->maxScore();
 
 		// Descending by max score
 		return maxScoreA >= maxScoreB;
 	});
 
-#ifdef _DEBUG
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 	totalIsBetterMatchCalls = 0U;
-	skippedAspects.resize(enabledAspectsCount);
-	fill(BOUNDS(skippedAspects), 0U);
-#endif
+	skippedAspects.assign(enabledAspectsCount, 0U);
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
 
 	// Adjust max increase factors for every enabled aspect
 	invMaxIncreaseFactors.resize(enabledAspectsCount);
@@ -287,11 +286,11 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 	// 1st cluster might have already been qualified for thorough examination
 	if(previouslyQualified) { // cluster already qualified
 		const unsigned upperLimit = (fromCluster < lastCluster) ?
-										clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
+			clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
 		if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-								*this, toApprox, symsSet,
-								invMaxIncreaseFactors, scoresToBeatBySyms,
-								draftMatch, mp)) {
+			*this, toApprox, symsSet,
+			invMaxIncreaseFactors, scoresToBeatBySyms,
+			draftMatch, mp)) {
 			scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 			betterMatchFound = true;
 		}
@@ -314,7 +313,7 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 		double score;
 		const bool trivialCluster = (cluster.sz == 1U);
 		if(isBetterMatch(toApprox, cluster, mp,
-						trivialCluster ? scoresToBeatBySyms : scoresToBeatByClusters, score)) {
+			trivialCluster ? scoresToBeatBySyms : scoresToBeatByClusters, score)) {
 			// Single element clusters have same score as their content.
 			// So, making sure the score won't be computed twice:
 			if(trivialCluster) {
@@ -332,11 +331,11 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
 
 			const unsigned upperLimit = (clusterIdx < lastCluster) ?
-											cluster.sz : lastSymIdxWithinLastCluster;
+				cluster.sz : lastSymIdxWithinLastCluster;
 			if(checkRangeWithinCluster(0U, upperLimit,
-										*this, toApprox, symsSet,
-										invMaxIncreaseFactors, scoresToBeatBySyms,
-										draftMatch, mp)) {
+				*this, toApprox, symsSet,
+				invMaxIncreaseFactors, scoresToBeatBySyms,
+				draftMatch, mp)) {
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				betterMatchFound = true;
 			}
@@ -351,9 +350,9 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 
 bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchParams &mp,
 								const valarray<double> &scoresToBeat, double &score) const {
-#ifdef _DEBUG
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 	++totalIsBetterMatchCalls;
-#endif // _DEBUG
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
 
 	// There is at least one enabled match aspect,
 	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
@@ -363,10 +362,10 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchP
 	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;
 	while(++i <= lim) {
 		if(score < scoresToBeat[i]) {
-#ifdef _DEBUG
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 			for(unsigned j = i; j <= lim; ++j)
 				++skippedAspects[j];
-#endif // _DEBUG
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
 			return false; // skip further aspects checking when score can't beat best match score
 		}
 		score *= enabledAspects[i]->assessMatch(patch, symData, mp);

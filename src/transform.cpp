@@ -36,6 +36,7 @@
  ****************************************************************************************/
 
 #include "transform.h"
+#include "match.h"
 #include "picTransformProgressTracker.h"
 #include "misc.h"
 #include "timing.h"
@@ -228,11 +229,18 @@ void Transformer::run() {
 		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
 
 	if(!isCanceled) {
-#ifdef _DEBUG
-		cout<<"Transformation finished. Reporting skipped aspects from a total of "<<me.totalIsBetterMatchCalls<<" isBetterMatch calls: ";
-		copy(CBOUNDS(me.skippedAspects), ostream_iterator<size_t>(cout, ", "));
-		cout<<"\b\b  "<<endl;
-#endif // _DEBUG
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+		cout<<"Transformation finished. Reporting skipped aspects from a total of "
+			<<me.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
+		const auto &enabledAspects = me.getEnabledAspects();
+		for(unsigned i = 0U, lim = (unsigned)me.enabledMatchAspectsCount(); i < lim; ++i) {
+			if(me.skippedAspects[i] == 0U)
+				continue;
+			cout<<"\t\t"<<setw(25)<<left<<enabledAspects[i]->name()
+				<<" : "<<setw(10)<<right<<me.skippedAspects[i]<<" times"
+				<<" (Complexity : "<<enabledAspects[i]->relativeComplexity()<<")"<<endl;
+		}
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
 
 		imgTransformTaskMonitor.taskDone();
 	}
@@ -246,23 +254,23 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 	if(newResizedImg || draftMatches.empty()) {
 		resized = resizedVersion; isColor = img.isColor();
 		GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
-		
+
 		draftMatches.clear(); draftMatches.resize(patchesPerCol);
 
 #pragma omp parallel if(UsingOMP)
 #pragma omp for schedule(static, 1) nowait
-		for(int r = 0; r < h; r += (int)sz) {
-			const Range rowRange(r, r+(int)sz);
+			for(int r = 0; r < h; r += (int)sz) {
+				const Range rowRange(r, r+(int)sz);
 
-			auto &draftMatchesRow = draftMatches[r/(int)sz]; draftMatchesRow.reserve(patchesPerRow);
-			for(unsigned c = 0U; c < (unsigned)w; c += sz) {
-				const Range colRange(c, c+sz);
-				const Mat patch(resized, rowRange, colRange),
-					blurredPatch(resizedBlurred, rowRange, colRange);
+				auto &draftMatchesRow = draftMatches[r/(int)sz]; draftMatchesRow.reserve(patchesPerRow);
+				for(unsigned c = 0U; c < (unsigned)w; c += sz) {
+					const Range colRange(c, c+sz);
+					const Mat patch(resized, rowRange, colRange),
+						blurredPatch(resizedBlurred, rowRange, colRange);
 
-				// Building a Patch with the blurred patch computed for its actual borders
-				draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
-			}
+					// Building a Patch with the blurred patch computed for its actual borders
+					draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
+				}
 		}
 	} else { // processing same ResizedImg
 #pragma omp parallel if(UsingOMP)
@@ -319,7 +327,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 			}
 		}
 	} // rows loop
-	
+
 	if(!isCanceled)
 		imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * rowsOfPatches);
 
