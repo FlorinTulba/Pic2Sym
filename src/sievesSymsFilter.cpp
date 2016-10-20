@@ -95,7 +95,7 @@ namespace {
 		return (minQsum > minSumQuarterBrightGlyph && maxQsum < maxSumQuarterBrightGlyph);
 	}
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
 	/**
 	Rearranging the quadrants of the magnitude spectrum from the 3412 order to their natural position.
 	The method is for debugging, to get a clearer perspective on the magnitude spectrum.
@@ -118,7 +118,7 @@ namespace {
 
 		return result;
 	}
-#endif // _DEBUG
+#endif // _DEBUG, INSPECT_FFT_MAGNITUDE_SPECTRUM
 
 	/// Computes the magnitude of the DFT spectrum in raw quadrants order 3412.
 	Mat magnitudeSpectrum(const Mat &brightGlyph, unsigned sz) {
@@ -161,11 +161,11 @@ namespace {
 								unsigned sz, unsigned halfSz, unsigned lastSzBit,
 								unsigned &hFreq13, unsigned &vFreq13,
 								unsigned &hFreq24, unsigned &vFreq24) {
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
 		// Useful while Debugging, to visualize the spectrum quadrants in natural 1234 order
 		Mat shiftedMagnSpectrum = fftShift(rawMagnSpectrum, sz, halfSz, lastSzBit);
 		shiftedMagnSpectrum.at<double>(halfSz, halfSz) = 0; // DC value = 0 to maximize the contrast for rest 
-#endif // _DEBUG
+#endif // _DEBUG, INSPECT_FFT_MAGNITUDE_SPECTRUM
 
 		/* Building q13 and q24 as representatives for quadrants 1&3 and 2&4 */
 

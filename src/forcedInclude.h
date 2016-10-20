@@ -66,4 +66,13 @@ in the details about a set of reshaped fonts.
 */
 //#define VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
 
+
+/**
+INSPECT_FFT_MAGNITUDE_SPECTRUM can be used in Debug mode to view the magnitude spectrum
+from a 2D FFT transform in natural order.
+A breakpoint should be set on a line after the shifting of the spectrum was performed
+and the spectrum can be inspected as a matrix.
+*/
+//#define INSPECT_FFT_MAGNITUDE_SPECTRUM
+
 #endif // H_FORCED_INCLUDE
