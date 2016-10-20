@@ -321,6 +321,9 @@
     <ClInclude Include="src\forcedInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\preselectSyms.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -481,6 +484,9 @@
     </ClCompile>
     <ClCompile Include="src\zlib.cpp">
       <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\preselectSyms.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

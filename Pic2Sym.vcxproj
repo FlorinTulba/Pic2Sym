@@ -33,6 +33,7 @@
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\forcedInclude.h" />
+    <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\serializer.h" />
     <ClInclude Include="src\gaussBlur.h" />
@@ -111,6 +112,7 @@
     <ClCompile Include="src\noClustering.cpp" />
     <ClCompile Include="src\partitionClustering.cpp" />
     <ClCompile Include="src\patch.cpp" />
+    <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\img.cpp" />
     <ClCompile Include="src\main.cpp" />
