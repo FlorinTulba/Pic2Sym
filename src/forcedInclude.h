@@ -47,4 +47,10 @@ Comment the define when the mentioned feature is not desired.
 #	define BOOST_IOSTREAMS_NO_LIB
 #endif // USE_ZLIB_COMPRESSION
 
+/**
+GENERATE_OPEN_MP_TRACE should be defined when traces from OpenMP are desired
+in the main project. The UnitTesting project doesn't generate any OpenMP traces.
+*/
+//#define GENERATE_OPEN_MP_TRACE
+
 #endif // H_FORCED_INCLUDE

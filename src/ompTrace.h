@@ -38,13 +38,10 @@
 #ifndef H_OMP_TRACE
 #define H_OMP_TRACE
 
-#ifndef UNIT_TESTING
-#include <omp.h>
-#endif
-
-#if defined _DEBUG && !defined UNIT_TESTING
+#if defined GENERATE_OPEN_MP_TRACE && !defined UNIT_TESTING
 
 #include <cstdio>
+#include <omp.h>
 
 extern omp_lock_t ompTraceLock;
 
@@ -57,10 +54,10 @@ extern omp_lock_t ompTraceLock;
 			omp_unset_lock(&ompTraceLock); \
 		}
 
-#else // _DEBUG not defined or in UNIT_TESTING mode
+#else // GENERATE_OPEN_MP_TRACE not defined or in UNIT_TESTING mode
 
 #define ompPrintf(...)
 
-#endif // _DEBUG
+#endif // GENERATE_OPEN_MP_TRACE, UNIT_TESTING
 
 #endif // H_OMP_TRACE
