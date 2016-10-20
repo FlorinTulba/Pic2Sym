@@ -62,7 +62,7 @@ SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 
 SymData::SymData(SymData &&other) : SymData(other) {
 	for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-		const_cast<Mat&>(other.symAndMasks[i]).release();
+		other.symAndMasks[i].release();
 }
 
 SymData& SymData::operator=(const SymData &other) {
@@ -89,8 +89,8 @@ SymData& SymData::operator=(SymData &&other) {
 	operator=(other);
 
 	if(this != &other) {
-		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-			const_cast<Mat&>(other.symAndMasks[i]).release();
+		for(auto &m : other.symAndMasks)
+			m.release();
 	}
 
 	return *this;
@@ -106,7 +106,7 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	// But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
 	extern const double SymData_computeFields_STILL_BG;					// darkest shades
 	static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
-
+	
 	minMaxIdx(glyph, &minVal, &maxVal);
 	const double contrastD = maxVal - minVal;
 	groundedGlyph = (minVal==0. ? glyph : (glyph - minVal)); // min val on 0
@@ -122,7 +122,8 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 
 	// Storing also the variance of the grounded glyph for structural similarity match aspect
 	// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
-	StructuralSimilarity::supportBlur.process(groundedGlyph.mul(groundedGlyph), varianceOfGroundedGlyph);
+	StructuralSimilarity::supportBlur.process(groundedGlyph.mul(groundedGlyph),
+											  varianceOfGroundedGlyph, forTinySym);
 
 	varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 }
