@@ -238,10 +238,10 @@ void MatchEngine::getReady() {
 		return maxScoreA >= maxScoreB;
 	});
 
-#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 	totalIsBetterMatchCalls = 0U;
 	skippedAspects.assign(enabledAspectsCount, 0U);
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
 	// Adjust max increase factors for every enabled aspect
 	invMaxIncreaseFactors.resize(enabledAspectsCount);
@@ -350,9 +350,9 @@ bool MatchEngine::findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, un
 
 bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchParams &mp,
 								const valarray<double> &scoresToBeat, double &score) const {
-#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 	++totalIsBetterMatchCalls;
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
 	// There is at least one enabled match aspect,
 	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
@@ -362,10 +362,10 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, MatchP
 	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;
 	while(++i <= lim) {
 		if(score < scoresToBeat[i]) {
-#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 			for(unsigned j = i; j <= lim; ++j)
 				++skippedAspects[j];
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 			return false; // skip further aspects checking when score can't beat best match score
 		}
 		score *= enabledAspects[i]->assessMatch(patch, symData, mp);

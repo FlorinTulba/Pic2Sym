@@ -51,6 +51,37 @@ Comment the define when the mentioned feature is not desired.
 
 
 /**
+INSPECT_FFT_MAGNITUDE_SPECTRUM can be used in Debug mode to view the magnitude spectrum
+from a 2D FFT transform in natural order.
+A breakpoint should be set on a line after the shifting of the spectrum was performed
+and the spectrum can be inspected as a matrix.
+*/
+//#define INSPECT_FFT_MAGNITUDE_SPECTRUM
+
+
+
+/**********************************************************
+Following defines won't be available in UnitTesting project
+**********************************************************/
+#ifndef UNIT_TESTING
+
+/**
+Square patches from an image must be approximated by some fonts of the same size.
+The approximation takes into account several matching aspects.
+The process investigates all fonts to find the best match for a given image patch.
+The score of the best known match is compared against the score of each following
+font.
+However, when a symbol is a much worse match than the current best match,
+only a few matching aspects will be enough to conclude the poor match.
+The remaining matching aspects will be skipped.
+
+Use MONITOR_SKIPPED_MATCHING_ASPECTS to count and report the skipped matching aspects
+by category, together with their relative computational complexity.
+*/
+//#define MONITOR_SKIPPED_MATCHING_ASPECTS
+
+
+/**
 GENERATE_OPEN_MP_TRACE should be defined when traces from OpenMP are desired
 in the main project. The UnitTesting project doesn't generate any OpenMP traces.
 */
@@ -67,28 +98,6 @@ in the details about a set of reshaped fonts.
 //#define VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
 
 
-/**
-INSPECT_FFT_MAGNITUDE_SPECTRUM can be used in Debug mode to view the magnitude spectrum
-from a 2D FFT transform in natural order.
-A breakpoint should be set on a line after the shifting of the spectrum was performed
-and the spectrum can be inspected as a matrix.
-*/
-//#define INSPECT_FFT_MAGNITUDE_SPECTRUM
-
-
-/**
-Square patches from an image must be approximated by some fonts of the same size.
-The approximation takes into account several matching aspects.
-The process investigates all fonts to find the best match for a given image patch.
-The score of the best known match is compared against the score of each following
-font.
-However, when a symbol is a much worse match than the current best match,
-only a few matching aspects will be enough to conclude the poor match.
-The remaining matching aspects will be skipped.
-
-Use MONITOR_SKIPPED_MATCHING_ASPECTS to count and report the skipped matching aspects
-by category, together with their relative computational complexity.
-*/
-//#define MONITOR_SKIPPED_MATCHING_ASPECTS
+#endif // UNIT_TESTING not defined
 
 #endif // H_FORCED_INCLUDE

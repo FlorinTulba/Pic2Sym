@@ -118,13 +118,13 @@ public:
 	
 	size_t enabledMatchAspectsCount() const;	///< provides enabledAspectsCount
 
-#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
 	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects
 
 	/// While reporting, the particular aspects that were used during the transformation are required
 	const std::vector<const MatchAspect*>& getEnabledAspects() const { return enabledAspects; }
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 };
 
 #endif // H_MATCH_ENGINE

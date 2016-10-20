@@ -229,7 +229,7 @@ void Transformer::run() {
 		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
 
 	if(!isCanceled) {
-#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 		cout<<"Transformation finished. Reporting skipped aspects from a total of "
 			<<me.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
 		const auto &enabledAspects = me.getEnabledAspects();
@@ -240,7 +240,7 @@ void Transformer::run() {
 				<<" : "<<setw(10)<<right<<me.skippedAspects[i]<<" times"
 				<<" (Complexity : "<<enabledAspects[i]->relativeComplexity()<<")"<<endl;
 		}
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS, UNIT_TESTING
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
 		imgTransformTaskMonitor.taskDone();
 	}
