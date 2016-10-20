@@ -74,7 +74,6 @@ bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
 
 #endif // UNIT_TESTING
 
-
 const VTinySyms& FontEngine::getTinySyms() {
 	/*
 	Making sure the generation of small symbols doesn't overlap with filling symsCont with normal symbols
@@ -177,4 +176,8 @@ const VTinySyms& FontEngine::getTinySyms() {
 	}
 
 	return tinySyms;
+}
+
+void FontEngine::disposeTinySyms() {
+	tinySyms.clear();
 }

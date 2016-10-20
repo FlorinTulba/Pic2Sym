@@ -46,6 +46,9 @@ struct ITinySymsProvider {
 
 	/// Return a list of tiny symbols from current cmap
 	virtual const VTinySyms& getTinySyms() = 0;
+
+	/// Releases tiny symbols data
+	virtual void disposeTinySyms() = 0;
 };
 
 #endif // H_TINY_SYMS_PROVIDER

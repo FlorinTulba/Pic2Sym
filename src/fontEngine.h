@@ -116,6 +116,7 @@ public:
 
 	/// (Creates/Loads and) Returns(/Saves) the small versions of all the symbols from current cmap
 	const VTinySyms& getTinySyms() override;
+	void disposeTinySyms() override; ///< Releases tiny symbols data
 	/**
 	Determines if fontType was already processed.
 	The path to the file supposed to contain the desired tiny symbols data 

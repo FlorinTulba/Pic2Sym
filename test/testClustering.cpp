@@ -68,6 +68,10 @@ namespace ut {
 		const vector<const TinySym>& getTinySyms() override {
 			return tinySyms;
 		}
+
+		void disposeTinySyms() override {
+			tinySyms.clear();
+		}
 	};
 
 	/// Provides a way to use specific clustering settings during each test and revert them afterwards
