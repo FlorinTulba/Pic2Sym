@@ -57,9 +57,8 @@ protected:
 
 public:
 	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
-	const cv::Mat orig;		///< the patch to approximate
-	const unsigned sz;		///< patch size
 	const bool isColor;		///< is the patch color or grayscale?
+	const cv::Mat orig;		///< the patch to approximate
 	const cv::Mat blurred;	///< the blurred version of the orig
 
 	/**

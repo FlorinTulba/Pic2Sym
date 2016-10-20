@@ -171,7 +171,7 @@ void MatchParams::computeSymDensity(const SymData &symData) {
 	if(symDensity)
 		return;
 
-	// The method 'MatchAspect::score(const MatchParams &mp)' needs symData.avgPixVal stored within MatchParams mp
+	// The method 'MatchAspect::score(const MatchParams &mp)' needs symData.avgPixVal stored within MatchParams mp. 
 	// That's why the mere value copy from below:
 	symDensity = symData.avgPixVal;
 	static const double EPSp1 = 1. + EPS;
@@ -200,7 +200,7 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 }
 
 void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
-									   const CachedData &cachedData) {
+									   const CachedData&) {
 	if(mcPatchApprox)
 		return;
 
@@ -262,9 +262,9 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 	const auto &dataOfBest = *pSymData;
 	const auto &matricesForBest = dataOfBest.masks;
 	const Mat &groundedBest = matricesForBest[SymData::GROUNDED_SYM_IDX];
+	const auto patchSz = patch.orig.rows;
 
 	Mat patchResult;
-
 	if(patch.isColor) {
 		const Mat &fgMask = matricesForBest[SymData::FG_MASK_IDX],
 				&bgMask = matricesForBest[SymData::BG_MASK_IDX];
@@ -288,7 +288,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		}
 
 		if(diffFgBg < channelsCount * ms.getBlankThreshold())
-			patchResult = Mat(patch.sz, patch.sz, CV_8UC3, mean(patch.orig));
+			patchResult = Mat(patchSz, patchSz, CV_8UC3, mean(patch.orig));
 		else
 			merge(channels, patchResult);
 
@@ -297,7 +297,7 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 		params.computeContrast(patch.orig, *pSymData);
 
 		if(abs(*params.contrast) < ms.getBlankThreshold())
-			patchResult = Mat(patch.sz, patch.sz, CV_8UC1, Scalar(*mean(patch.orig).val));
+			patchResult = Mat(patchSz, patchSz, CV_8UC1, Scalar(*mean(patch.orig).val));
 		else
 			groundedBest.convertTo(patchResult, CV_8UC1,
 								*params.contrast / dataOfBest.diffMinMax,

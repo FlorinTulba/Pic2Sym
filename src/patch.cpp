@@ -52,7 +52,7 @@ const Mat& Patch::matrixToApprox() const {
 }
 
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
-		orig(orig_), blurred(blurred_), sz(orig_.rows), isColor(isColor_) {
+		orig(orig_), blurred(blurred_), isColor(isColor_) {
 	// Don't approximate rather uniform patches
 	Mat grayBlurred;
 	if(isColor)
