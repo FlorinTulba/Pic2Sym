@@ -35,6 +35,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+// Header included first by all files from both projects
+
 #ifndef H_FORCED_INCLUDE
 #define H_FORCED_INCLUDE
 
@@ -47,10 +49,21 @@ Comment the define when the mentioned feature is not desired.
 #	define BOOST_IOSTREAMS_NO_LIB
 #endif // USE_ZLIB_COMPRESSION
 
+
 /**
 GENERATE_OPEN_MP_TRACE should be defined when traces from OpenMP are desired
 in the main project. The UnitTesting project doesn't generate any OpenMP traces.
 */
 //#define GENERATE_OPEN_MP_TRACE
+
+
+/**
+Original provided fonts are typically not square, so they need to be reshaped
+sometimes even twice, to fit within a square of a desired size - symbol's size.
+
+VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS should be defined when interested
+in the details about a set of reshaped fonts.
+*/
+//#define VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
 
 #endif // H_FORCED_INCLUDE
