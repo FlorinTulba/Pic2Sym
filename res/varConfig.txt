@@ -130,6 +130,13 @@ TTSAS_Threshold_Member	0.044
 ; 0.1 means that smallest 10% of all glyphs are considered small
 PmsCont_SMALL_GLYPHS_PERCENT	0.1
 
+; Switches for symbol filters that can remove specific categories of undesired glyphs
+BulkySymsFilterEnabled			true
+UnreadableSymsFilterEnabled		true
+SievesSymsFilterEnabled			true
+FilledRectanglesFilterEnabled	true
+GridBarsFilterEnabled			true
+
 ; Switch that allows visualizing the symbols that normally are removed in the Cmap Viewer
 ; Note they will appear inverted and they also will participate in the matching process
 PreserveRemovableSymbolsForExamination	false

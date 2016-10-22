@@ -42,6 +42,8 @@ If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
 
 /// Detects bulky symbols
 struct BulkySymsFilter : public TSymFilter<BulkySymsFilter> {
+	CHECK_ENABLED_SYM_FILTER(BulkySymsFilter);
+	
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	BulkySymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);

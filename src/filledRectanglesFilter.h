@@ -45,6 +45,8 @@ namespace cv { class Mat; }
 
 /// Detects filled symbols with a rectangular shape, even degenerate ones - basic lines.
 struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {
+	CHECK_ENABLED_SYM_FILTER(FilledRectanglesFilter);
+		
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache&); // static polymorphism
 
 	FilledRectanglesFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);

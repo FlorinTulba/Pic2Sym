@@ -38,6 +38,7 @@
 #include "sievesSymsFilter.h"
 #include "pixMapSym.h"
 #include "symFilterCache.h"
+#include "misc.h"
 
 #include <iostream>
 
@@ -242,13 +243,16 @@ namespace {
 } // anonymous namespace
 
 SievesSymsFilter::SievesSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
-		TSymFilter(5U, "sieve-like symbols", std::move(nextFilter_)) {}
+		TSymFilter(4U, "sieve-like symbols", std::move(nextFilter_)) {}
 
 /**
 Determines if provided pms looks like a sieve by comparing its magnitude of the Fourier transform
 with the geometric signature of sieves - a rectangle with minimum sides and area values.
 */
 bool SievesSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+	if(!isEnabled())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
+
 	const unsigned sz = sfc.szU,		// symbol size
 				halfSz = sz >> 1U,		// floor(sz/2.)
 				lastSzBit = sz & 1U;	// 1 for odd sz, 0 for even sz

@@ -38,6 +38,7 @@
 #include "unreadableSymsFilter.h"
 #include "pixMapSym.h"
 #include "symFilterCache.h"
+#include "misc.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -45,9 +46,12 @@ using namespace std;
 using namespace cv;
 
 UnreadableSymsFilter::UnreadableSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
-		TSymFilter(4U, "less readable symbols", std::move(nextFilter_)) {}
+		TSymFilter(3U, "less readable symbols", std::move(nextFilter_)) {}
 
 bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+	if(!isEnabled())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
+
 	// Usually, fonts of size >= 20 are quite readable
 	if(sfc.szU >= 20)
 		return false;

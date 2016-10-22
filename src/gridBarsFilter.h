@@ -62,6 +62,8 @@ It would be much easier just to provide a set of positives and negatives to a ma
 algorithm and then check its accuracy.
 */
 struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
+	CHECK_ENABLED_SYM_FILTER(GridBarsFilter);
+
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	GridBarsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);

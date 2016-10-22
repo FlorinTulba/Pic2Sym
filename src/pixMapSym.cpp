@@ -266,7 +266,6 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
 		cmapViewUpdater(cmapViewUpdater_),
 		
-		// Remove symFilter altogether from here if no filtering is desired
 		// Add any additional filters as 'make_unique<NewFilter>()' in the last set of unfilled '()'
 		symFilter(make_unique<FilledRectanglesFilter>
 				(make_unique<GridBarsFilter>
@@ -366,11 +365,11 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	sfc.setBoundingBox(height, width);
 
-	const unsigned matchingFilterId = symFilter->matchingFilterId(pms, sfc);
-	if(matchingFilterId != 0U) {
-		auto it = removableSymsByCateg.find(matchingFilterId);
+	const auto matchingFilterId = symFilter->matchingFilterId(pms, sfc);
+	if(matchingFilterId) {
+		auto it = removableSymsByCateg.find(*matchingFilterId);
 		if(it == removableSymsByCateg.end())
-			removableSymsByCateg.emplace(matchingFilterId, 1U);
+			removableSymsByCateg.emplace(*matchingFilterId, 1U);
 		else
 			++it->second;
 

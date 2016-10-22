@@ -70,6 +70,12 @@ For each symbol filter type, count:
 and report large values of False Negatives/Positives.
 */
 
+extern const bool BulkySymsFilterEnabled;
+extern const bool UnreadableSymsFilterEnabled;
+extern const bool SievesSymsFilterEnabled;
+extern const bool FilledRectanglesFilterEnabled;
+extern const bool GridBarsFilterEnabled;
+
 namespace ut {
 	/**
 	When detecting misfiltered symbols during Unit Testing, it displays a window with them.
@@ -94,7 +100,7 @@ namespace ut {
 	The test is successful if only less than 10% of the symbols from each group get miscategorized.
 	*/
 	template<class SymFilterType>
-	class TestSymFilter {
+	struct TestSymFilter {
 		/**
 		Tests SymFilterType on a single group of symbols.
 
@@ -109,7 +115,8 @@ namespace ut {
 		static bool testCategory(const bool disposableCateg,
 								 const string &pathForCateg, const string &prefixStem) {
 			static const double WrongCategThreshold = .1; // the 10% threshold mentioned above
-			
+			const bool filteringEnabled = SymFilterType::isEnabled();
+
 			vector<const Mat> symsToTest;
 			loadSymsSelection(pathForCateg, symsToTest);
 
@@ -133,7 +140,7 @@ namespace ut {
 						consec.colRange(Range(0, rows)), // take only rows values from [rev]consec
 						revConsec.rowRange(Range(Settings_MAX_FONT_SIZE-rows, Settings_MAX_FONT_SIZE)));
 
-				const bool isDisposable = SymFilterType::isDisposable(*pms, sfc);
+				const bool isDisposable = filteringEnabled && SymFilterType::isDisposable(*pms, sfc);
 				if(disposableCateg != isDisposable)
 					wrongCateg.push_back(pms); // found new miscategorized symbol
 			}
@@ -156,7 +163,6 @@ namespace ut {
 			return true; // less than 10% miscategorized symbols within current group
 		}
 
-	public:
 		/**
 		Tests SymFilterType on a both group of symbols (positives and negatives)
 
@@ -180,35 +186,116 @@ namespace ut {
 		}
 	};
 
+	/// Ensuring the desired enabled/disabled state for all the filters while testing them
+	template<bool desiredEnabledState>
+	struct SymFiltersFixt {
+		PixMapSym pms;		///< dummy PixMapSym
+		SymFilterCache sfc;	///< dummy SymFilterCache
+
+#define SAVE_PREV_ENABLED_STATE(FilterType) \
+		const bool old##FilterType##Enabled = FilterType##Enabled;
+
+		SAVE_PREV_ENABLED_STATE(BulkySymsFilter);
+		SAVE_PREV_ENABLED_STATE(UnreadableSymsFilter);
+		SAVE_PREV_ENABLED_STATE(SievesSymsFilter);
+		SAVE_PREV_ENABLED_STATE(FilledRectanglesFilter);
+		SAVE_PREV_ENABLED_STATE(GridBarsFilter);
+
+#undef SAVE_PREV_ENABLED_STATE
+
+		SymFiltersFixt() : 
+				pms({ 128U }, Mat::ones(1, 1, CV_64FC1), Mat::ones(1, 1, CV_64FC1)),
+				sfc() {
+
+#define ENSURE_ENABLED(FilterType) \
+			if(FilterType##Enabled != desiredEnabledState) \
+				const_cast<bool&>(FilterType##Enabled) = desiredEnabledState
+
+			ENSURE_ENABLED(BulkySymsFilter);
+			ENSURE_ENABLED(UnreadableSymsFilter);
+			ENSURE_ENABLED(SievesSymsFilter);
+			ENSURE_ENABLED(FilledRectanglesFilter);
+			ENSURE_ENABLED(GridBarsFilter);
+
+#undef ENSURE_ENABLED
+		}
+
+		~SymFiltersFixt() {
+#define RESTORE_PREV_ENABLED_STATE(FilterType) \
+			if(old##FilterType##Enabled != FilterType##Enabled) \
+				const_cast<bool&>(FilterType##Enabled) = old##FilterType##Enabled
+
+			RESTORE_PREV_ENABLED_STATE(BulkySymsFilter);
+			RESTORE_PREV_ENABLED_STATE(UnreadableSymsFilter);
+			RESTORE_PREV_ENABLED_STATE(SievesSymsFilter);
+			RESTORE_PREV_ENABLED_STATE(FilledRectanglesFilter);
+			RESTORE_PREV_ENABLED_STATE(GridBarsFilter);
+
+#undef RESTORE_PREV_ENABLED_STATE
+		}
+	};
+
 	/// folder containing the test files for symbol filters
 	const path testSymFiltersDir("res\\TestSymFilters");
 }
 
 using namespace ut;
 
-BOOST_AUTO_TEST_SUITE(SymFilters_Tests)
+BOOST_FIXTURE_TEST_SUITE(EnabledSymFilters, SymFiltersFixt<true>)
 	AutoTestCase(CheckFilledRectanglesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
+		BOOST_REQUIRE(FilledRectanglesFilter::isEnabled());
 		BOOST_REQUIRE(TestSymFilter<FilledRectanglesFilter>::against(
 			path(testSymFiltersDir).append("filledRectangles")));
 	}
 
 	AutoTestCase(CheckGridBarsSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
+		BOOST_REQUIRE(GridBarsFilter::isEnabled());
 		BOOST_REQUIRE(TestSymFilter<GridBarsFilter>::against(
 			path(testSymFiltersDir).append("gridBars")));
 	}
 
 	AutoTestCase(CheckUnreadableSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
+		BOOST_REQUIRE(UnreadableSymsFilter::isEnabled());
 		BOOST_REQUIRE(TestSymFilter<UnreadableSymsFilter>::against(
 			path(testSymFiltersDir).append("unreadable")));
 	}
 
 	AutoTestCase(CheckBulkiesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
+		BOOST_REQUIRE(BulkySymsFilter::isEnabled());
 		BOOST_REQUIRE(TestSymFilter<BulkySymsFilter>::against(
 			path(testSymFiltersDir).append("bulky")));
 	}
 
 	AutoTestCase(CheckSievesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
+		BOOST_REQUIRE(SievesSymsFilter::isEnabled());
 		BOOST_REQUIRE(TestSymFilter<SievesSymsFilter>::against(
 			path(testSymFiltersDir).append("sieves")));
 	}
-BOOST_AUTO_TEST_SUITE_END() // SymFilters_Tests
+BOOST_AUTO_TEST_SUITE_END() // EnabledSymFilters
+
+BOOST_FIXTURE_TEST_SUITE(DisabledSymFilters, SymFiltersFixt<false>)
+	AutoTestCase(CheckFilledRectanglesSymFilter_Disabled_NoFiltering);
+		BOOST_REQUIRE(!FilledRectanglesFilter::isEnabled());
+		BOOST_REQUIRE_THROW(FilledRectanglesFilter::isDisposable(pms, sfc), logic_error);
+	}
+
+	AutoTestCase(CheckGridBarsSymFilter_Disabled_NoFiltering);
+		BOOST_REQUIRE(!GridBarsFilter::isEnabled());
+		BOOST_REQUIRE_THROW(GridBarsFilter::isDisposable(pms, sfc), logic_error);
+	}
+
+	AutoTestCase(CheckUnreadableSymFilter_Disabled_NoFiltering);
+		BOOST_REQUIRE(!UnreadableSymsFilter::isEnabled());
+		BOOST_REQUIRE_THROW(UnreadableSymsFilter::isDisposable(pms, sfc), logic_error);
+	}
+
+	AutoTestCase(CheckBulkiesSymFilter_Disabled_NoFiltering);
+		BOOST_REQUIRE(!BulkySymsFilter::isEnabled());
+		BOOST_REQUIRE_THROW(BulkySymsFilter::isDisposable(pms, sfc), logic_error);
+	}
+
+	AutoTestCase(CheckSievesSymFilter_Disabled_NoFiltering);
+		BOOST_REQUIRE(!SievesSymsFilter::isEnabled());
+		BOOST_REQUIRE_THROW(SievesSymsFilter::isDisposable(pms, sfc), logic_error);
+	}
+BOOST_AUTO_TEST_SUITE_END() // DisabledSymFilters

@@ -61,9 +61,6 @@ SymFilter::SymFilter(unsigned filterId_, const string &filterName,
 				filterId(filterId_) {
 	static set<const string> filterNames;
 
-	if(filterId_ == 0U)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " must use only filterId-s greater than 0!", invalid_argument);
-
 #ifndef UNIT_TESTING
 	if(filterTypes.find(filterId_) != filterTypes.end())
 		THROW_WITH_VAR_MSG(__FUNCTION__ " called with non-unique filterId_: " + to_string(filterId_), invalid_argument);

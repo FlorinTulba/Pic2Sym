@@ -56,7 +56,7 @@ private: // SymFilter cannot be directly derived, except by the friend TSymFilte
 	static std::map<unsigned, const std::string> filterTypes;
 
 	std::unique_ptr<ISymFilter> nextFilter;	///< null or a derivate from SymFilter
-	const unsigned filterId;				///< id of the filter (must be &gt; 0)
+	const unsigned filterId;				///< id of the filter
 
 	/**
 	Constructs a new SymFilter with the provided id and name, which both must be unique.
@@ -65,11 +65,11 @@ private: // SymFilter cannot be directly derived, except by the friend TSymFilte
 	@param filterName name of the filter
 	@param nextFilter_ optional successor filter
 
-	@throw invalid_argument for a 0 / non-unique filterId_ or for a non-unique filterName
+	@throw invalid_argument for a non-unique filterId_ or for a non-unique filterName
 	*/
 	SymFilter(unsigned filterId_, const std::string &filterName,
 			  std::unique_ptr<ISymFilter> nextFilter_);
-	virtual ~SymFilter() = 0 {}
+	~SymFilter() {}
 };
 
 /**
@@ -78,11 +78,12 @@ TSymFilter is a template layer over SymFilter to use CRTP.
 Normal polymorphism isn't necessary, as the used filters don't have state,
 so static methods would be enough - that is static polymorphism does the job.
 
-As a consequence, derived classes from TSymFilter must have a public method with following signature:
+As a consequence, derived classes from TSymFilter must have 2 public methods with following signature:
+	static bool isEnabled()
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc)
 */
 template<class DerivedFromTSymFilter>
-struct TSymFilter : SymFilter {
+struct TSymFilter /*abstract*/ : SymFilter {
 	/**
 	Constructs a new TSymFilter with the provided id and name, which both must be unique.
 
@@ -90,7 +91,7 @@ struct TSymFilter : SymFilter {
 	@param filterName name of the filter
 	@param nextFilter_ optional successor filter
 
-	@throw invalid_argument for a 0 / non-unique filterId_ or for a non-unique filterName
+	@throw invalid_argument for a non-unique filterId_ or for a non-unique filterName
 	*/
 	TSymFilter(unsigned filterId_, const std::string &filterName,
 			   std::unique_ptr<ISymFilter> nextFilter_) :
@@ -98,17 +99,25 @@ struct TSymFilter : SymFilter {
 
 	/**
 	Returns the id of the filter which detected that the symbol exhibits some undesired features.
-	0 means no filters considered the glyph as disposable.
 
-	Derived classes from TSymFilter must have a public method with following signature:
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc)
+	Derived classes from TSymFilter must have 2 public methods with following signature:
+		static bool isEnabled()
+		static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc)
 	*/
-	unsigned matchingFilterId(const PixMapSym &pms, const SymFilterCache &sfc) const override {
-		if(DerivedFromTSymFilter::isDisposable(pms, sfc)) // using static polymorphism
+	boost::optional<unsigned> matchingFilterId(const PixMapSym &pms, const SymFilterCache &sfc) const override {
+		// Using static polymorphism
+		if(DerivedFromTSymFilter::isEnabled() && DerivedFromTSymFilter::isDisposable(pms, sfc))
 			return filterId;
 
 		return nextFilter->matchingFilterId(pms, sfc);
 	}
 };
+
+/// Macro for defining DerivedFromTSymFilter::isEnabled() method within each DerivedFromTSymFilter class
+#define CHECK_ENABLED_SYM_FILTER(DerivedFromTSymFilter) \
+	static bool isEnabled() { \
+		extern const bool DerivedFromTSymFilter##Enabled; \
+		return DerivedFromTSymFilter##Enabled; \
+	}			
 
 #endif

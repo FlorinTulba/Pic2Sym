@@ -38,6 +38,7 @@
 #include "filledRectanglesFilter.h"
 #include "symFilterCache.h"
 #include "pixMapSym.h"
+#include "misc.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -84,9 +85,12 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 }
 
 FilledRectanglesFilter::FilledRectanglesFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
-		TSymFilter(1U, "filled rectangles", std::move(nextFilter_)) {}
+		TSymFilter(0U, "filled rectangles", std::move(nextFilter_)) {}
 
 bool FilledRectanglesFilter::isDisposable(const PixMapSym &pms, const SymFilterCache&) {
+	if(!isEnabled())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
+
 	const Mat narrowGlyph = pms.asNarrowMat();
 	double brightestVal;
 	minMaxIdx(narrowGlyph, nullptr, &brightestVal);

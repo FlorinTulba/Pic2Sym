@@ -38,6 +38,7 @@
 #include "bulkySymsFilter.h"
 #include "pixMapSym.h"
 #include "symFilterCache.h"
+#include "misc.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -45,9 +46,12 @@ using namespace std;
 using namespace cv;
 
 BulkySymsFilter::BulkySymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
-		TSymFilter(3U, "bulky symbols", std::move(nextFilter_)) {}
+		TSymFilter(2U, "bulky symbols", std::move(nextFilter_)) {}
 
 bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+	if(!isEnabled())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
+
 	static const auto compErMaskSide = [] (unsigned fontSz) {
 		return max(3, (((int)fontSz/2) | 1));
 	};

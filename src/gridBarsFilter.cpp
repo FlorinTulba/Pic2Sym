@@ -133,7 +133,7 @@ static bool acceptableProfile(const Mat &narrowGlyph,	///< bounding box (BB) reg
 }
 
 GridBarsFilter::GridBarsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
-		TSymFilter(2U, "grid-like symbols", std::move(nextFilter_)) {}
+		TSymFilter(1U, "grid-like symbols", std::move(nextFilter_)) {}
 
 /**
 Checks if sums might be the projection of a grid bar symbol.
@@ -229,6 +229,9 @@ bool GridBarsFilter::checkProjectionForGridSymbols(const Mat &sums) {
 }
 
 bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+	if(!isEnabled())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
+
 	// At least one side of the bounding box needs to be larger than half sz
 	if(max(pms.rows, pms.cols) < (sfc.szU>>1))
 		return false;

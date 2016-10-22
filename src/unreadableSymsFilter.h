@@ -64,6 +64,8 @@ The current implementation is a compromise surprising the fact that smaller font
 progressively less readable.
 */
 struct UnreadableSymsFilter : public TSymFilter<UnreadableSymsFilter> {
+	CHECK_ENABLED_SYM_FILTER(UnreadableSymsFilter);
+
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	UnreadableSymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);

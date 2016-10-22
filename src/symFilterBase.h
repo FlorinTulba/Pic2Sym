@@ -38,22 +38,23 @@
 #ifndef H_SYM_FILTER_BASE
 #define H_SYM_FILTER_BASE
 
+#include <boost/optional/optional.hpp>
+
 // Forward declarations
 struct PixMapSym;
 struct SymFilterCache;
 
 /// Interface used for filtering out some of the symbols from the charmap
 struct ISymFilter /*abstract*/ {
-	/**
-	Returns the id of the filter which detected that the symbol exhibits some undesired features.
-	0 means no filters considered the glyph as disposable.
-	*/
-	virtual unsigned matchingFilterId(const PixMapSym&, const SymFilterCache&) const { return 0U; }
+	/// Returns the id of the filter which detected that the symbol exhibits some undesired features.
+	virtual boost::optional<unsigned> matchingFilterId(const PixMapSym&, const SymFilterCache&) const = 0;
 
 	virtual ~ISymFilter() = 0 {}
 };
 
-/// Implicit Symbol Filter, which just approves any symbol
-struct DefSymFilter : ISymFilter {};
+/// Implicit Symbol Filter, which just approves any symbol and is enabled by default
+struct DefSymFilter : ISymFilter {
+	boost::optional<unsigned> matchingFilterId(const PixMapSym&, const SymFilterCache&) const override { return boost::none; }
+};
 
 #endif

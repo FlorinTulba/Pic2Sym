@@ -353,7 +353,14 @@ extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT, atLeast0dot05(), lessThan0
 extern READ_DOUBLE_PROP(SymData_computeFields_STILL_BG, nonNegativeD(), lessThan0dot04());
 extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED, nonNegativeD(), lessThan20D());
 
+extern READ_BOOL_PROP(BulkySymsFilterEnabled);
+extern READ_BOOL_PROP(UnreadableSymsFilterEnabled);
+extern READ_BOOL_PROP(SievesSymsFilterEnabled);
+extern READ_BOOL_PROP(FilledRectanglesFilterEnabled);
+extern READ_BOOL_PROP(GridBarsFilterEnabled);
+
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
+
 extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB, atLeast0dot15(), lessThan1D());
 
 extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs, atLeast0dot8(), lessThan1D());
