@@ -41,32 +41,12 @@
 #include <set>
 #include <map>
 #include <sstream>
+#include <atomic>
 
 #include <opencv2/core/core.hpp>
 
 using namespace std;
 using namespace cv;
-
-/// Permit for actions that can be performed without altering the existing application state
-struct NoTraceActionPermit : ActionPermit {};
-
-/// Basic permit - sets a state when the permit is acquired, and clears it when the sequential action finishes
-class NormalActionPermit : public ActionPermit {
-protected:
-	volatile AppStateType &appState;	///< application status
-	const AppStateType statesToToggle;	///< the states to set when starting the action and clear when finishing
-
-public:
-	NormalActionPermit(volatile AppStateType &appState_,	///< existing state before the start of this action
-					   AppStateType statesToToggle_			///< the change to inflict on the state
-					   ) : appState(appState_), statesToToggle(statesToToggle_) {
-		appState = appState | statesToToggle;
-	}
-
-	~NormalActionPermit() {
-		appState = appState & ~statesToToggle;
-	}
-};
 
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
@@ -94,6 +74,56 @@ extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 
 namespace {
+	atomic_flag stateAccess = ATOMIC_FLAG_INIT;
+
+	/// Waits until nobody uses appState, then locks it and releases it after inspecting/changing
+	class LockAppState {
+		bool owned = false;	///< true while this thread is using appState
+
+	public:
+		LockAppState() {
+			while(stateAccess.test_and_set());
+			owned = true;
+		}
+
+		~LockAppState() {
+			release();
+		}
+
+		/// Handy for holding the lock over appState as short as possible
+		void release() {
+			if(owned) {
+				stateAccess.clear();
+				owned = false;
+			}
+		}
+	};
+
+	/// Permit for actions that can be performed without altering the existing application state
+	struct NoTraceActionPermit : ActionPermit {};
+
+	/// Basic permit - sets a state when the permit is acquired, and clears it when the sequential action finishes
+	class NormalActionPermit : public ActionPermit {
+	protected:
+		volatile AppStateType &appState;	///< application status
+		const AppStateType statesToToggle;	///< the states to set when starting the action and clear when finishing
+
+	public:
+		NormalActionPermit(volatile AppStateType &appState_,	///< existing state before the start of this action
+						   AppStateType statesToToggle_			///< the change to inflict on the state
+						   ) : appState(appState_), statesToToggle(statesToToggle_) {
+			// No need to guard appState change from below, as the permit generation occurs
+			// already in a guarded region where:
+			// appState is first consulted, the permit is issued and then the lock is released
+			appState = appState | statesToToggle;
+		}
+
+		~NormalActionPermit() {
+			LockAppState lock; // Mandatory, as the finalization of the action is not guarded
+			appState = appState & ~statesToToggle;
+		}
+	};
+
 	/// Shared body for the controls updating the symbols settings
 	unique_ptr<ActionPermit> updateSettingDemand(ControlPanel &cp,
 												 volatile AppStateType &appState,
@@ -112,10 +142,15 @@ namespace {
 		if(pLuckySliderName == &controlName)
 			return std::move(make_unique<NoTraceActionPermit>());
 
+		LockAppState lock;
+
 		if(0U != (bannedMask & appState)) {
+			lock.release();
+			
 			errMsg(msgWhenBanned);
 			if(isSlider)
 				cp.restoreSliderValue(controlName);
+			
 			return nullptr;
 		}
 		return std::move(make_unique<NormalActionPermit>(appState, statesToSet));
@@ -129,10 +164,11 @@ namespace {
 													const String &controlName) {
 		return std::move(
 			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
-			(AppStateType)AppState::ImgTransform | (AppStateType)AppState::UpdateImg
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::SaveAllSettings,
-			"Please don't update the image settings while they're saved or when an image transformation is performed based on them!",
-			(AppStateType)AppState::UpdateImgSettings));
+				ST(ImgTransform) | ST(UpdateImg) | ST(LoadAllSettings) | ST(SaveAllSettings),
+				"Please don't update the image settings "
+					"while they're saved "
+					"or when an image transformation is performed based on them!",
+				ST(UpdateImgSettings)));
 	}
 
 	/// Shared body for the controls updating the symbols settings
@@ -144,10 +180,12 @@ namespace {
 													bool isSlider = true) {
 		return std::move(
 			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
-			(AppStateType)AppState::ImgTransform  | (AppStateType)AppState::UpdateSymSettings
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::SaveAllSettings,
-			"Please don't update the symbols settings before the completion of similar previous updates, nor while they're saved and neither when an image transformation is performed based on them!",
-			(AppStateType)AppState::UpdateSymSettings, isSlider));
+				ST(ImgTransform)  | ST(UpdateSymSettings) | ST(LoadAllSettings) | ST(SaveAllSettings),
+				"Please don't update the symbols settings "
+					"before the completion of similar previous updates, "
+					"nor while they're saved and "
+					"neither when an image transformation is performed based on them!",
+				ST(UpdateSymSettings), isSlider));
 	}
 
 	/// Shared body for the sliders updating the match settings
@@ -158,13 +196,14 @@ namespace {
 													  const String &controlName) {
 		return std::move(
 			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
-			(AppStateType)AppState::ImgTransform
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings
-			| (AppStateType)AppState::SaveAllSettings | (AppStateType)AppState::SaveMatchSettings,
-			"Please don't update the match aspects settings before the completion of similar previous updates, nor while they're saved and neither when an image transformation is performed based on them!",
-			(AppStateType)AppState::UpdateMatchSettings));
+				ST(ImgTransform) | ST(LoadAllSettings) | ST(LoadMatchSettings)
+					| ST(SaveAllSettings) | ST(SaveMatchSettings),
+				"Please don't update the match aspects settings "
+					"before the completion of similar previous updates, "
+					"nor while they're saved and "
+					"neither when an image transformation is performed based on them!",
+				ST(UpdateMatchSettings)));
 	}
-
 } // anonymous namespace
 
 unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
@@ -203,81 +242,129 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 	static const auto itEndSymSettCtrls = symSettingsControls.cend();
 
 	if(independentActions.find(&controlName) != itEndIndepActions)
-		return std::move(make_unique<NoTraceActionPermit>());
+		return std::move(
+			make_unique<NoTraceActionPermit>());
+
 	if(imgSettingsSliders.find(&controlName) != itEndImgSettSliders)
-		return std::move(updateImgSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+		return std::move(
+			updateImgSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+
 	const auto it = symSettingsControls.find(&controlName);
 	if(it != itEndSymSettCtrls)
-		return std::move(updateSymSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName, it->second));
+		return std::move(
+			updateSymSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName,
+									it->second));
+
 	if(matchAspectsSliders.find(&controlName) != itEndMatchAspSliders)
-		return std::move(updateMatchSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+		return std::move(
+			updateMatchSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+
+	LockAppState lock; // the actions from above who affect appState are guarded individually
 
 	if(&controlName == &ControlPanel_selectImgLabel) {
-		if(((AppStateType)AppState::ImgTransform 
-			| (AppStateType)AppState::UpdateImg | (AppStateType)AppState::UpdateImgSettings) & appState) {
+		if((ST(ImgTransform) | ST(UpdateImg)) & appState) {
+			lock.release();
+
 			ostringstream oss;
-			oss<<"Please don't load a new image while one is being loaded / transformed!";
+			oss<<"Please don't load a new image "
+				"while one is being loaded / transformed!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::UpdateImg));
 
-	} else if(&controlName == &ControlPanel_transformImgLabel) {
-		if(((AppStateType)AppState::ImgTransform | (AppStateType)AppState::UpdateImg 
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings
-			| (AppStateType)AppState::UpdateSymSettings | (AppStateType)AppState::UpdateImgSettings | (AppStateType)AppState::UpdateMatchSettings) & appState) {
+		return std::move(make_unique<NormalActionPermit>(appState, ST(UpdateImg)));
+	}
+
+	if(&controlName == &ControlPanel_transformImgLabel) {
+		if((ST(ImgTransform) | ST(UpdateImg)
+				| ST(LoadAllSettings) | ST(LoadMatchSettings)
+				| ST(UpdateSymSettings) | ST(UpdateImgSettings) | ST(UpdateMatchSettings)) & appState) {
+			lock.release();
+
 			ostringstream oss;
-			oss<<"Please don't demand a transformation while one is being performed, nor while the settings are changing and neither while a new image is loaded!";
+			oss<<"Please don't demand a transformation "
+				"while one is being performed, "
+				"nor while the settings are changing and "
+				"neither while a new image is loaded!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::ImgTransform));
+		return std::move(make_unique<NormalActionPermit>(appState, ST(ImgTransform)));
+	}
+	
+	if(&controlName == &ControlPanel_restoreDefaultsLabel) {
+		if((ST(ImgTransform) | ST(UpdateMatchSettings)
+				| ST(LoadAllSettings) | ST(LoadMatchSettings)
+				| ST(SaveAllSettings) | ST(SaveMatchSettings)) & appState) {
+			lock.release();
 
-	} else if(&controlName == &ControlPanel_restoreDefaultsLabel) {
-		if(((AppStateType)AppState::ImgTransform | (AppStateType)AppState::UpdateMatchSettings
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings
-			| (AppStateType)AppState::SaveAllSettings | (AppStateType)AppState::SaveMatchSettings) & appState) {
 			ostringstream oss;
-			oss<<"Please don't update the match aspects settings before the completion of similar previous updates, nor while they're saved and neither when an image transformation is performed based on them!";
+			oss<<"Please don't update the match aspects settings "
+				"before the completion of similar previous updates, "
+				"nor while they're saved and "
+				"neither when an image transformation is performed based on them!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::LoadMatchSettings 
-			| (AppStateType)AppState::UpdateMatchSettings));
+		return std::move(make_unique<NormalActionPermit>(appState,
+				ST(LoadMatchSettings) | ST(UpdateMatchSettings)));
+	}
+	
+	if(&controlName == &ControlPanel_saveAsDefaultsLabel) {
+		if((ST(UpdateMatchSettings) | ST(SaveMatchSettings)
+				| ST(LoadAllSettings) | ST(LoadMatchSettings)) & appState) {
+			lock.release();
 
-	} else if(&controlName == &ControlPanel_saveAsDefaultsLabel) {
-		if(((AppStateType)AppState::UpdateMatchSettings | (AppStateType)AppState::SaveMatchSettings
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings) & appState) {
 			ostringstream oss;
-			oss<<"Please don't save the match aspects settings before the completion of the same command issued previously, nor when these settings are being updated!";
+			oss<<"Please don't save the match aspects settings "
+				"before the completion of the same command issued previously, "
+				"nor when these settings are being updated!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::SaveMatchSettings));
+		return std::move(make_unique<NormalActionPermit>(appState, ST(SaveMatchSettings)));
+	}
+	
+	if(&controlName == &ControlPanel_loadSettingsLabel) {
+		if((ST(ImgTransform) | ST(UpdateImgSettings) | ST(UpdateSymSettings) | ST(UpdateMatchSettings)
+				| ST(LoadAllSettings) | ST(LoadMatchSettings)
+				| ST(SaveAllSettings) | ST(SaveMatchSettings)) & appState) {
+			lock.release();
 
-	} else if(&controlName == &ControlPanel_loadSettingsLabel) {
-		if(((AppStateType)AppState::ImgTransform
-			| (AppStateType)AppState::UpdateImgSettings | (AppStateType)AppState::UpdateSymSettings | (AppStateType)AppState::UpdateMatchSettings
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings
-			| (AppStateType)AppState::SaveAllSettings | (AppStateType)AppState::SaveMatchSettings) & appState) {
 			ostringstream oss;
-			oss<<"Please don't update the settings before the completion of similar previous updates, nor while they're saved and neither when an image transformation is performed based on them!";
+			oss<<"Please don't update the settings "
+				"before the completion of similar previous updates, "
+				"nor while they're saved and "
+				"neither when an image transformation is performed based on them!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::LoadAllSettings 
-			| (AppStateType)AppState::UpdateImgSettings | (AppStateType)AppState::UpdateSymSettings | (AppStateType)AppState::UpdateMatchSettings));
+		return std::move(make_unique<NormalActionPermit>(appState,
+				ST(LoadAllSettings) | ST(UpdateImgSettings)
+					| ST(UpdateSymSettings) | ST(UpdateMatchSettings)));
+	}
+	
+	if(&controlName == &ControlPanel_saveSettingsLabel) {
+		if((ST(UpdateImgSettings) | ST(UpdateSymSettings) | ST(UpdateMatchSettings)
+				| ST(LoadAllSettings) | ST(LoadMatchSettings)
+				| ST(SaveAllSettings)) & appState) {
+			lock.release();
 
-	} else if(&controlName == &ControlPanel_saveSettingsLabel) {
-		if(((AppStateType)AppState::UpdateImgSettings | (AppStateType)AppState::UpdateSymSettings | (AppStateType)AppState::UpdateMatchSettings
-			| (AppStateType)AppState::LoadAllSettings | (AppStateType)AppState::LoadMatchSettings 
-			| (AppStateType)AppState::SaveAllSettings) & appState) {
 			ostringstream oss;
-			oss<<"Please don't save the settings before the completion of the same command issued previously, nor when these settings are being updated!";
+			oss<<"Please don't save the settings "
+				"before the completion of the same command issued previously, "
+				"nor when these settings are being updated!";
 			errMsg(oss.str());
+
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, (AppStateType)AppState::SaveAllSettings));
-
-	} else THROW_WITH_VAR_MSG("No handling yet for " + controlName + " in " __FUNCTION__, domain_error);
+		return std::move(make_unique<NormalActionPermit>(appState, ST(SaveAllSettings)));
+	}
+	
+	THROW_WITH_VAR_MSG("No handling yet for " + controlName + " in " __FUNCTION__, domain_error);
 }

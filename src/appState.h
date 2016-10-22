@@ -58,6 +58,10 @@ enum struct AppState : AppStateType {
 	ImgTransform		= UpdateImg<<8		///< Performing an approximation of an image
 };
 
+/// More readable states
+#define ST(State) \
+	(AppStateType)AppState::State
+
 /**
 Every operation from the Control Panel must be authorized.
 They must acquire such a permit when they start.
