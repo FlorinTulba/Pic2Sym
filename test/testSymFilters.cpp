@@ -35,6 +35,7 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+#include "testMain.h"
 #include "filledRectanglesFilter.h"
 #include "gridBarsFilter.h"
 #include "bulkySymsFilter.h"
@@ -186,32 +187,27 @@ namespace ut {
 using namespace ut;
 
 BOOST_AUTO_TEST_SUITE(SymFilters_Tests)
-	BOOST_AUTO_TEST_CASE(CheckFilledRectanglesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling) {
-		BOOST_TEST_MESSAGE("CheckFilledRectanglesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling");
+	AutoTestCase(CheckFilledRectanglesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
 		BOOST_REQUIRE(TestSymFilter<FilledRectanglesFilter>::against(
 			path(testSymFiltersDir).append("filledRectangles")));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckGridBarsSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling) {
-		BOOST_TEST_MESSAGE("CheckGridBarsSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling");
+	AutoTestCase(CheckGridBarsSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
 		BOOST_REQUIRE(TestSymFilter<GridBarsFilter>::against(
 			path(testSymFiltersDir).append("gridBars")));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckUnreadableSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling) {
-		BOOST_TEST_MESSAGE("CheckUnreadableSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling");
+	AutoTestCase(CheckUnreadableSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
 		BOOST_REQUIRE(TestSymFilter<UnreadableSymsFilter>::against(
 			path(testSymFiltersDir).append("unreadable")));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckBulkiesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling) {
-		BOOST_TEST_MESSAGE("CheckBulkiesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling");
+	AutoTestCase(CheckBulkiesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
 		BOOST_REQUIRE(TestSymFilter<BulkySymsFilter>::against(
 			path(testSymFiltersDir).append("bulky")));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckSievesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling) {
-		BOOST_TEST_MESSAGE("CheckSievesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling");
+	AutoTestCase(CheckSievesSymFilter_SeveralPositivesAndNegatives_MinFalseLabeling);
 		BOOST_REQUIRE(TestSymFilter<SievesSymsFilter>::against(
 			path(testSymFiltersDir).append("sieves")));
 	}

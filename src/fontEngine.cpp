@@ -62,127 +62,6 @@ using namespace boost::bimaps;
 extern const bool ParallelizePixMapStatistics;
 
 namespace {
-	/**
-	adjustScaling enforces sz as vertical size and determines an optimal horizontal size,
-	so that most symbols will widen enough to fill more of the drawing square,
-	while preserving the designer's placement.
-
-	@param face charmap providing the symbols whose size needs to be adjusted
-	@param sz desired size of these symbols
-	@param bb [out] estimated future bounding box
-	@param symsCount [out] count of glyphs within selected charmap
-
-	@return pair with the scaling factors to remember.
-	*/
-	pair<double, double>
-				adjustScaling(FT_Face face, unsigned sz, FT_BBox &bb, unsigned &symsCount) {
-		vector<double> vTop, vBottom, vLeft, vRight, vHeight, vWidth;
-		FT_Size_RequestRec  req;
-		req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX, ...
-		req.height = sz<<6; // 26.6 format
-		req.width = req.height; // initial check for square drawing board
-		req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
-		FT_Error error = FT_Request_Size(face, &req);
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
-
-		symsCount = 0U;
-		FT_UInt idx;
-		for(FT_ULong c = FT_Get_First_Char(face, &idx);
-				idx != 0;
-				c = FT_Get_Next_Char(face, c, &idx), ++symsCount) {
-			error = FT_Load_Char(face, c, FT_LOAD_RENDER);
-			if(error != FT_Err_Ok)
-				THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
-			const FT_GlyphSlot g = face->glyph;
-			const FT_Bitmap b = g->bitmap;
-
-			const unsigned height = b.rows, width = b.width;
-			vHeight.push_back(height); vWidth.push_back(width);
-			
-			const int left = g->bitmap_left, right = left+width - 1,
-					top = g->bitmap_top, bottom = top - (int)height + 1;
-			vLeft.push_back(left); vRight.push_back(right);
-			vTop.push_back(top); vBottom.push_back(bottom);
-		}
-
-		// Compute some means and standard deviations
-		Vec<double, 1> avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
-		Scalar avgHeight, avgWidth;
-#pragma omp parallel if(ParallelizePixMapStatistics)
-#pragma omp sections nowait
-		{
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "height");
-				avgHeight = mean(Mat(1, symsCount, CV_64FC1, vHeight.data()));
-			}
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "width");
-				avgWidth = mean(Mat(1, symsCount, CV_64FC1, vWidth.data()));
-			}
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "top");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
-			}
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "bottom");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
-			}
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "left");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
-			}
-#pragma omp section
-			{
-				ompPrintf(ParallelizePixMapStatistics, "right");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
-			}
-		}
-
-		const double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
-
-		// Enlarge factors, forcing the average width + lateral std. devs
-		// to fit the width of the drawing square.
-		const double factorH = sz / ( *avgWidth.val + kh*( *sdLeft.val + *sdRight.val)),
-					factorV = sz / ( *avgHeight.val + kv*( *sdTop.val + *sdBottom.val));
-
-		// Computing new height & width
-		req.height = (FT_ULong)floor(factorV * req.height);
-		req.width = (FT_ULong)floor(factorH * req.width);
-
-		error = FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
-
-		// Positioning the Bounding box to best cover the estimated future position & size of the symbols
-		double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
-			yMax = factorV * (*avgTop.val + *sdTop.val),			// top
-			yDiff2 = (yMax-yMin+1-sz)/2.,	// the difference to divide equally between top & bottom
-			xMin = factorH * (*avgLeft.val - *sdLeft.val),		// current left scaled by factorH
-			xMax = factorH * (*avgRight.val + *sdRight.val);		// right
-		const double xDiff2 = (xMax-xMin+1-sz)/2.;	// the difference to divide equally between left & right
-
-		// distributing the differences
-		yMin += yDiff2; yMax -= yDiff2;
-		xMin += xDiff2; xMax -= xDiff2;
-
-		// ensure yMin <= 0 (should be at most the baseline y coord, which is 0)
-		if(yMin > 0) {
-			yMax -= yMin;
-			yMin = 0;
-		}
-
-		bb.xMin = (FT_Pos)round(xMin); bb.xMax = (FT_Pos)round(xMax);
-		bb.yMin = (FT_Pos)round(yMin); bb.yMax = (FT_Pos)round(yMax);
-
-		return make_pair(factorH, factorV);
-	}
-
 	/// Creates a bimap using initializer_list. Needed in 'encodingsMap' below
 	template <typename L, typename R>
 	bimap<L, R> make_bimap(initializer_list<typename bimap<L, R>::value_type> il) {
@@ -376,6 +255,112 @@ bool FontEngine::newFont(const string &fontFile_) {
 	return true;
 }
 
+void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, double &factorH, double &factorV) {
+	vector<double> vTop, vBottom, vLeft, vRight, vHeight, vWidth;
+	FT_Size_RequestRec  req;
+	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX, ...
+	req.height = sz<<6; // 26.6 format
+	req.width = req.height; // initial check for square drawing board
+	req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
+	FT_Error error = FT_Request_Size(face, &req);
+	if(error != FT_Err_Ok)
+		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
+
+	symsCount = 0U;
+	FT_UInt idx;
+	for(FT_ULong c = FT_Get_First_Char(face, &idx);
+		idx != 0;
+		c = FT_Get_Next_Char(face, c, &idx), ++symsCount) {
+		error = FT_Load_Char(face, c, FT_LOAD_RENDER);
+		if(error != FT_Err_Ok)
+			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
+		const FT_GlyphSlot g = face->glyph;
+		const FT_Bitmap b = g->bitmap;
+
+		const unsigned height = b.rows, width = b.width;
+		vHeight.push_back(height); vWidth.push_back(width);
+
+		const int left = g->bitmap_left, right = left+width - 1,
+			top = g->bitmap_top, bottom = top - (int)height + 1;
+		vLeft.push_back(left); vRight.push_back(right);
+		vTop.push_back(top); vBottom.push_back(bottom);
+	}
+
+	// Compute some means and standard deviations
+	Vec<double, 1> avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
+	Scalar avgHeight, avgWidth;
+#pragma omp parallel if(ParallelizePixMapStatistics)
+#pragma omp sections nowait
+	{
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "height");
+				avgHeight = mean(Mat(1, symsCount, CV_64FC1, vHeight.data()));
+			}
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "width");
+				avgWidth = mean(Mat(1, symsCount, CV_64FC1, vWidth.data()));
+			}
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "top");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+			}
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "bottom");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+			}
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "left");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+			}
+#pragma omp section
+			{
+				ompPrintf(ParallelizePixMapStatistics, "right");
+				meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+			}
+	}
+
+	const double kv = 1., kh = 1.; // 1. means a single standard deviation => ~68% of the data
+
+	// Enlarge factors, forcing the average width + lateral std. devs
+	// to fit the width of the drawing square.
+	factorH = sz / (*avgWidth.val + kh*(*sdLeft.val + *sdRight.val));
+	factorV = sz / (*avgHeight.val + kv*(*sdTop.val + *sdBottom.val));
+
+	// Computing new height & width
+	req.height = (FT_ULong)floor(factorV * req.height);
+	req.width = (FT_ULong)floor(factorH * req.width);
+
+	error = FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
+	if(error != FT_Err_Ok)
+		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
+
+	// Positioning the Bounding box to best cover the estimated future position & size of the symbols
+	double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
+		yMax = factorV * (*avgTop.val + *sdTop.val),			// top
+		yDiff2 = (yMax-yMin+1-sz)/2.,	// the difference to divide equally between top & bottom
+		xMin = factorH * (*avgLeft.val - *sdLeft.val),		// current left scaled by factorH
+		xMax = factorH * (*avgRight.val + *sdRight.val);		// right
+	const double xDiff2 = (xMax-xMin+1-sz)/2.;	// the difference to divide equally between left & right
+
+	// distributing the differences
+	yMin += yDiff2; yMax -= yDiff2;
+	xMin += xDiff2; xMax -= xDiff2;
+
+	// ensure yMin <= 0 (should be at most the baseline y coord, which is 0)
+	if(yMin > 0) {
+		yMax -= yMin;
+		yMin = 0;
+	}
+
+	bb.xMin = (FT_Pos)round(xMin); bb.xMax = (FT_Pos)round(xMax);
+	bb.yMin = (FT_Pos)round(yMin); bb.yMax = (FT_Pos)round(yMax);
+}
+
 void FontEngine::setFontSz(unsigned fontSz_) {
 	if(symsCont.isReady() && symsCont.getFontSz() == fontSz_)
 		return; // same font size
@@ -401,7 +386,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.horiResolution = req.vertResolution = 72U;
 
 	static TaskMonitor determineOptimalSquareFittingSymbols("determine optimal square-fitting for the symbols", *symsMonitor);
-	tie(factorH, factorV) = adjustScaling(face, fontSz_, bb, symsCount);
+	adjustScaling(fontSz_, bb, symsCount, factorH, factorV);
 	determineOptimalSquareFittingSymbols.taskDone(); // mark it as already finished
 
 	static TaskMonitor loadFitSymbols("load & filter symbols that fit the square", *symsMonitor);

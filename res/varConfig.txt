@@ -68,8 +68,25 @@ Transform_ProgressReportsIncrement	0.01
 ; 0.05 means reporting every 5%
 SymbolsProcessing_ProgressReportsIncrement	0.01
 
-; Size of the fonts used when providing support for faster clustering.
-; Must be an odd value >= 5.
+; The image approximation by symbols could be accelerated by preselecting just several candidate symbols.
+; The preselection might be accomplished based on the same matching aspects, but using shrunken
+; versions of the image patches and symbols.
+; Also clustering the symbols used for approximation is performed faster by grouping the shrunken
+; versions of the symbols.
+; Setting a unique shrunken size for the symbols has the advantage that it can be used for all
+; actual symbol sizes, thus it can be computed only once and stored on disk for eventual later reuses.
+PreselectionByTinySyms	true
+
+; Length of the preselected candidate symbols
+; Must be > 0
+ShortListLength	2
+
+; Accept tiny symbols candidates on the short list even for a lower score than from the best match
+; Range 0.8 .. 1
+AdmitOnShortListEvenForInferiorScoreFactor	0.999
+
+; Size of the fonts used when providing support for faster clustering and image approximation.
+; Must be an odd value between 5 and 9.
 ; To be used through function 'extern unsigned TinySymsSz()'
 TinySymsSize	5
 
@@ -117,7 +134,7 @@ PmsCont_SMALL_GLYPHS_PERCENT	0.1
 ; Note they will appear inverted and they also will participate in the matching process
 PreserveRemovableSymbolsForExamination	false
 
- Detection of unreadable glyphs
+; Detection of unreadable glyphs
 ; MinAreaRatioForUnreadableSymsBB is in 0..1 range
 ; ForegroundThresholdDelta is in 0..255 range
 ; StillForegroundThreshold brightness threshold (1/255 =~ 0.004)

@@ -95,10 +95,10 @@ struct MatchParams {
 							  const CachedData &cachedData);
 	void computeMcsOffset(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
 	void computePatchApprox(const cv::Mat &patch, const SymData &symData);
-	void computeBlurredPatch(const cv::Mat &patch);
-	void computeBlurredPatchSq(const cv::Mat &patch);
-	void computeVariancePatch(const cv::Mat &patch);
-	void computeSsim(const cv::Mat &patch, const SymData &symData);
+	void computeBlurredPatch(const cv::Mat &patch, const CachedData &cachedData);
+	void computeBlurredPatchSq(const cv::Mat &patch, const CachedData &cachedData);
+	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData);
+	void computeSsim(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	
@@ -140,12 +140,7 @@ struct BestMatch {
 
 	ApproxVariant bestVariant;	///< best approximating variant 
 
-	/**
-	Index within vector<SymData>.
-	none if patch approximation is blur-based only.
-	Useful during debug, but mainly during unit testing,
-	when verifying that some particular symbol can be recognized.
-	*/
+	/// Index within vector<SymData>. none if patch approximation is blur-based only.
 	boost::optional<unsigned> symIdx;
 
 	/// Index of last cluster that was worth investigating thoroughly
@@ -157,8 +152,8 @@ struct BestMatch {
 	/// glyph code. none if patch approximation is blur-based only
 	boost::optional<unsigned long> symCode;
 
-	/// score of the best match. If patch approximation is blur-based only, score will remain -inf
-	double score = std::numeric_limits<double>::lowest();
+	/// score of the best match. If patch approximation is blur-based only, score will remain 0.
+	double score = 0.;
 
 	/// Resets everything apart the patch
 	BestMatch& reset();

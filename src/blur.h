@@ -132,7 +132,7 @@ public:
 	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
 			for tiny symbols
 	*/
-	void process(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym = false) const;
+	void process(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const;
 };
 
 #endif // H_BLUR

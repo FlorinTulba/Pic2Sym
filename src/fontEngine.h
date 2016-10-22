@@ -80,12 +80,25 @@ protected:
 	unsigned symsCount = 0U;		///< Count of glyphs within current charmap (blanks & duplicates included)
 
 	/**
-	checkFontFile Validates a new font file.
+	Validates a new font file.
 	
 	When fName is valid, face_ parameter will return the successfully loaded font.
 	*/
 	bool checkFontFile(const boost::filesystem::path &fontPath, FT_Face &face_) const;
 	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/); ///< Installs a new font
+
+	/**
+	Enforces sz as vertical size and determines an optimal horizontal size,
+	so that most symbols will widen enough to fill more of the drawing square,
+	while preserving the designer's placement.
+
+	@param sz desired size of these symbols
+	@param bb [out] estimated future bounding box
+	@param symsCount [out] count of glyphs within selected charmap
+	@param factorH [out] horizontal scaling factor
+	@param factorV [out] vertical scaling factor
+	*/
+	void adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, double &factorH, double &factorV);
 
 public:
 	/**
@@ -96,7 +109,7 @@ public:
 	*/
 	FontEngine(const IController &ctrler_, const SymSettings &ss_);
 	~FontEngine();
-	
+
 	bool newFont(const std::string &fontFile_);		///< Tries to use the font from 'fontFile_'
 	void setFontSz(unsigned fontSz_);				///< Sets the desired font height in pixels
 

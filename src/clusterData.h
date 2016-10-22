@@ -55,18 +55,21 @@ struct ClusterData : SymData {
 	/**
 	Constructs a cluster representative for the selected symbols before they get reordered.
 
-	@param symsSet the set of all symbols (before clustering)
+	@param symsSet the set of all normal / tiny symbols (before clustering)
 	@param idxOfFirstSym_ index of the first symbol from symsSet that belongs to this cluster
 	@param clusterSymIndices_ the indices towards the symbols from symsSet which belong to this cluster
+	@param forTinySyms set on true when using tiny symbols preselection, so that
+			the generated clusters are formed from tiny symbols
 	*/
 	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
-				const std::vector<unsigned> &clusterSymIndices);
+				const std::vector<unsigned> &clusterSymIndices,
+				bool forTinySyms);
 
-	ClusterData(const ClusterData &other);
 	ClusterData(ClusterData &&other);
 
-	ClusterData& operator=(const ClusterData &other);
-	ClusterData& operator=(ClusterData &&other);
+	ClusterData(const ClusterData&) = delete;
+	void operator=(const ClusterData&) = delete;
+	void operator=(ClusterData&&) = delete;
 };
 
 /// VClusterData - vector with most information about each cluster

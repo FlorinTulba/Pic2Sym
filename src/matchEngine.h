@@ -41,6 +41,8 @@
 #include "fontEngine.h"
 #include "clusterEngine.h"
 #include "cachedData.h"
+#include "preselectSyms.h"
+#include "countSkippedAspects.h"
 
 #include <valarray>
 
@@ -67,18 +69,21 @@ protected:
 
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
 	VSymData symsSet;			///< set of most information on each symbol
+	VSymData tinySymsSet;		///< set of most information on each tiny symbol
 	ClusterEngine ce;			///< clusters manager
 
-	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
+	CachedData cachedDataForTinySyms;	///< data precomputed for tiny symbols preselection
 
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
 	std::vector<const MatchAspect*> enabledAspects;			///< the enabled aspects only
 	size_t enabledAspectsCount = 0U;						///< count of the enabled aspects
 
-#ifdef UNIT_TESTING // UnitTesting project needs access to invMaxIncreaseFactors
+#ifdef UNIT_TESTING // UnitTesting project needs access to cachedData and invMaxIncreaseFactors
 public:
 #endif // UNIT_TESTING
+	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
+
 	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
 public:
@@ -92,16 +97,26 @@ public:
 	const std::set<unsigned>& getClusterOffsets() const;
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
-	void getReady();		///< called before a series of findBetterMatch
+	void getReady();		///< called before a series of improvesBasedOnBatch
 
-	/// Returns true if a new better match was found.
-	bool findBetterMatch(BestMatch &draftMatch, unsigned fromSymIdx, unsigned upperSymIdx) const;
+	/// @return true if a new better match is found within the new batch of symbols
+	bool improvesBasedOnBatch(unsigned fromSymIdx,		///< start of the batch
+							  unsigned upperSymIdx,		///< end of the batch (exclusive)
+							  BestMatch &draftMatch,	///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
+							  TopCandidateMatches *tcm = nullptr ///< preselection manager when performing tiny symbols preselection
+							  ) const;
+
+	/// @return true if a new better match is found within this short list
+	bool improvesBasedOnBatchShortList(CandidatesShortList &shortList,	///< most promising candidates from current batch of symbols
+									   BestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
+									   ) const;
 
 	/// Determines if symData is a better match for patch than previous matching symbol.
 	bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
 					   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
-					   MatchParams &mp,			///< matching parameters resulted from the comparison
+					   const CachedData &cd,	///< precomputed values
 					   const std::valarray<double> &scoresToBeat,///< scores after each aspect that beat the current best match
+					   MatchParams &mp,			///< matching parameters resulted from the comparison
 					   double &score			///< achieved score of the new assessment
 					   ) const;
 

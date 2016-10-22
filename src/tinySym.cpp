@@ -86,14 +86,13 @@ TinySym::TinySym(const PixMapSym &refSym) :
 
 	Mat tinySymMat;
 	resize(refSymMat, tinySymMat, SizeTinySyms, 0., 0., INTER_AREA);
+	negSym = 255. - 255. * tinySymMat; // keep the double type for negSym of tiny symbols
 
 	SymData::computeFields(tinySymMat,
 						   masks[FG_MASK_IDX], masks[BG_MASK_IDX], 
 						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX], 
 						   masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
 						   minVal, diffMinMax, true);
-
-	tinySymMat.convertTo(negSym, CV_8UC1, -255., 255.);
 
 	mat = masks[GROUNDED_SYM_IDX].clone();
 

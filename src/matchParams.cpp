@@ -171,8 +171,8 @@ void MatchParams::computeSymDensity(const SymData &symData) {
 	if(symDensity)
 		return;
 
-	// The method 'MatchAspect::score(const MatchParams &mp)' needs symData.avgPixVal stored within MatchParams mp. 
-	// That's why the mere value copy from below:
+	// The method 'MatchAspect::score(const MatchParams &mp, const CachedData &cachedData)'
+	// needs symData.avgPixVal stored within MatchParams mp. That's why the mere value copy from below:
 	symDensity = symData.avgPixVal;
 	static const double EPSp1 = 1. + EPS;
 	assert(*symDensity < EPSp1);
@@ -234,7 +234,7 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 }
 
 BestMatch& BestMatch::reset() {
-	score = std::numeric_limits<double>::lowest();
+	score = 0.;
 	symCode = none;
 	symIdx = lastSelectedCandidateCluster = none;
 	pSymData = nullptr;

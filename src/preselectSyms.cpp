@@ -57,7 +57,7 @@ bool TopCandidateMatches::Candidate::
 }
 
 TopCandidateMatches::TopCandidateMatches(unsigned shortListLength/* = 1U*/,
-										 double origThreshScore/* = numeric_limits<double>::lowest()*/) :
+										 double origThreshScore/* = 0.*/) :
 		thresholdScore(origThreshScore), n(shortListLength) {
 	if(shortListLength == 0U)
 		THROW_WITH_CONST_MSG(__FUNCTION__ " requires a shortListLength > 0!", invalid_argument);

@@ -52,6 +52,7 @@ struct IMatch /*abstract*/ {
 	/// scores the match between a gray patch and a symbol
 	virtual double assessMatch(const cv::Mat &patch,
 							   const SymData &symData,
+							   const CachedData &cachedData,
 							   MatchParams &mp) const = 0;
 	virtual ~IMatch() = 0 {}
 };
@@ -77,19 +78,19 @@ protected:
 		NameRegistrator(const std::string &aspectType);
 	};
 
-	const CachedData &cachedData; ///< cached information from matching engine
 	const double &k; ///< cached coefficient from MatchSettings, corresponding to current aspect
 
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	virtual double score(const MatchParams &mp) const = 0;
+	virtual double score(const MatchParams &mp, const CachedData &cachedData) const = 0;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	virtual void fillRequiredMatchParams(const cv::Mat &patch,
 										 const SymData &symData,
+										 const CachedData &cachedData,
 										 MatchParams &mp) const = 0;
 
 	/// Base class constructor
-	MatchAspect(const CachedData &cachedData_, const double &k_);
+	MatchAspect(const double &k_);
 
 public:
 	virtual ~MatchAspect() = 0 {}
@@ -97,13 +98,16 @@ public:
 	/// Scores the match between a gray patch and a symbol based on current aspect (IMatch override)
 	double assessMatch(const cv::Mat &patch,
 					   const SymData &symData,
+					   const CachedData &cachedData,
 					   MatchParams &mp) const override final; // Template method (reason to set it final)
 
 	/// Computing max score of a this MatchAspect
-	double maxScore() const;
+	double maxScore(const CachedData &cachedData) const;
 
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	virtual double relativeComplexity() const = 0;
+
+	virtual const std::string& name() const = 0; ///< provides aspect's name
 
 	/// All aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
 	bool enabled() const;
@@ -112,17 +116,25 @@ public:
 	static const std::vector<const std::string>& aspectNames();
 };
 
-/// Place this call in a private region of an aspect class to register (HEADER file).
-/// This is only the declaration of 'nameRegistrator'.
+/// Place this call at the end of an aspect class to register (HEADER file).
+/// Definitions of 'NAME', 'nameRegistrator' and name() are provided by REGISTERED_MATCH_ASPECT.
 #define REGISTER_MATCH_ASPECT(AspectName) \
-	static const NameRegistrator nameRegistrator; /** Instance that registers this Aspect */ \
-	/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
-	friend class std::_Ref_count_obj<AspectName>
+	public: \
+		const std::string& name() const override;		/** provides aspect's name */ \
+	\
+	protected: \
+		static const std::string NAME;					/** aspect's name */ \
+		static const NameRegistrator nameRegistrator;	/** Instance that registers this Aspect */ \
+		/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
+		friend class std::_Ref_count_obj<AspectName>
 
-/// Place this call in a SOURCE file, to define the declared static 'nameRegistrator'.
+/// Place this call in a SOURCE file, to define the entities declared by REGISTER_MATCH_ASPECT
 /// This is the definition of 'nameRegistrator'.
 #define REGISTERED_MATCH_ASPECT(AspectName) \
-const AspectName::NameRegistrator AspectName::nameRegistrator(#AspectName)
+	const std::string					AspectName::NAME(#AspectName); \
+	const AspectName::NameRegistrator	AspectName::nameRegistrator(#AspectName); \
+	\
+	const std::string& AspectName::name() const { return NAME; }
 
 /*
 STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
@@ -132,19 +144,20 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 
 	/// Class Details
 	class <NewAspect> : public MatchAspect {
-		REGISTER_MATCH_ASPECT(<NewAspect>);
-
 	public:
 		/// scores the match between a gray patch and a symbol based on current aspect
 		double assessMatch(const cv::Mat &patch,
 						   const SymData &symData,
-						   MatchParams &mp) const override; // IMatch override
+						   MatchParams &mp,
+						   const CachedData &cachedData) const override; // IMatch override
 
 	#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 	protected:
 	#endif
 		/// Constructor Details
-		<NewAspect>(const CachedData &cachedData_, const MatchSettings &ms);
+		<NewAspect>(const MatchSettings &ms);
+
+		REGISTER_MATCH_ASPECT(<NewAspect>);
 	};
 
 (2) Place following call in a cpp unit:

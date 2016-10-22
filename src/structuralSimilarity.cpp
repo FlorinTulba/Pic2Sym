@@ -48,8 +48,8 @@ using namespace cv;
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
-StructuralSimilarity::StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kSsim()) {}
+StructuralSimilarity::StructuralSimilarity(const MatchSettings &cfg) :
+	MatchAspect(cfg.get_kSsim()) {}
 
 /**
 Poor structural similarity produces ssim close to -1.
@@ -58,7 +58,7 @@ The returned value is in 0..1 range,
 		small for small ssim-s or large k (>1)
 		larger for good ssim-s or 0 < k <= 1
 */
-double StructuralSimilarity::score(const MatchParams &mp) const {
+double StructuralSimilarity::score(const MatchParams &mp, const CachedData&) const {
 	return pow((1. + mp.ssim.value()) / 2., k);
 }
 
@@ -70,50 +70,51 @@ enlarging the regions of interest.
 */
 void StructuralSimilarity::fillRequiredMatchParams(const Mat &patch,
 												   const SymData &symData,
+												   const CachedData &cachedData,
 												   MatchParams &mp) const {
-	mp.computeSsim(patch, symData);
+	mp.computeSsim(patch, symData, cachedData);
 }
 
 double StructuralSimilarity::relativeComplexity() const {
 	return 1000.; // extremely complex compared to the rest of the aspects
 }
 
-void MatchParams::computeBlurredPatch(const Mat &patch) {
+void MatchParams::computeBlurredPatch(const Mat &patch, const CachedData &cachedData) {
 	if(blurredPatch)
 		return;
 
 	Mat blurredPatch_;
-	StructuralSimilarity::supportBlur.process(patch, blurredPatch_);
+	StructuralSimilarity::supportBlur.process(patch, blurredPatch_, cachedData.forTinySyms);
 	blurredPatch = blurredPatch_;
 }
 
-void MatchParams::computeBlurredPatchSq(const Mat &patch) {
+void MatchParams::computeBlurredPatchSq(const Mat &patch, const CachedData &cachedData) {
 	if(blurredPatchSq)
 		return;
 
-	computeBlurredPatch(patch);
+	computeBlurredPatch(patch, cachedData);
 	blurredPatchSq = blurredPatch.value().mul(blurredPatch.value());
 }
 
-void MatchParams::computeVariancePatch(const Mat &patch) {
+void MatchParams::computeVariancePatch(const Mat &patch, const CachedData &cachedData) {
 	if(variancePatch)
 		return;
 
-	computeBlurredPatchSq(patch);
+	computeBlurredPatchSq(patch, cachedData);
 
 	Mat variancePatch_;
-	StructuralSimilarity::supportBlur.process(patch.mul(patch), variancePatch_);
+	StructuralSimilarity::supportBlur.process(patch.mul(patch), variancePatch_, cachedData.forTinySyms);
 	variancePatch_ -= blurredPatchSq.value();
 	variancePatch = variancePatch_;
 }
 
-void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
+void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const CachedData &cachedData) {
 	if(ssim)
 		return;
 
 	Mat covariance, ssimMap;
 
-	computeVariancePatch(patch);
+	computeVariancePatch(patch, cachedData);
 	computePatchApprox(patch, symData);
 	const Mat &approxPatch = patchApprox.value();
 
@@ -122,21 +123,21 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 	// of the grounded version of the original symbol
 	const double diffRatio = contrast.value() / symData.diffMinMax;
 	const Mat blurredPatchApprox = bg.value() + diffRatio *
-										symData.symAndMasks[SymData::BLURRED_GR_SYM_IDX],
+										symData.masks[SymData::BLURRED_GR_SYM_IDX],
 				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
 				variancePatchApprox = diffRatio * diffRatio *
-										symData.symAndMasks[SymData::VARIANCE_GR_SYM_IDX];
+										symData.masks[SymData::VARIANCE_GR_SYM_IDX];
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	double minVal, maxVal;
 	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_);
+	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
 	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
 	assert(abs(maxVal) < EPS);
 
-	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_);
+	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
 	variancePatchApprox_ -= blurredPatchApproxSq;
 	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
 	assert(abs(minVal) < EPS);
@@ -145,7 +146,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData) {
 
 	const Mat productMats = patch.mul(approxPatch),
 		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
-	StructuralSimilarity::supportBlur.process(productMats, covariance);
+	StructuralSimilarity::supportBlur.process(productMats, covariance, cachedData.forTinySyms);
 	covariance -= productBlurredMats;
 
 	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;

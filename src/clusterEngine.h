@@ -55,9 +55,10 @@ protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
 
-	ClusterAlg &clustAlg;		///< algorithm used for clustering
+	ClusterAlg &clustAlg;	///< algorithm used for clustering
 
-	VClusterData clusters;		///< the clustered symbols
+	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
+	VClusterData clusters;
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
 
 public:
@@ -71,11 +72,15 @@ public:
 								 boost::filesystem::path &clusteredSetFile);
 	
 	/**
-	Clusters symsSet into clusters, while clusterOffsets reports where each cluster starts.
+	Clusters symsSet & tinySymsSet into clusters, while clusterOffsets reports where each cluster starts.
+	When using the tiny symbols preselection, the clusters will contain tiny symbols.
+	@param symsSet original symbols to be clustered
+	@param tinySymsSet tiny symbols to be clustered. Unless using the tiny symbols preselection, provide here an empty vector.
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void process(VSymData &symsSet, const std::string &fontType = "");
+	void process(VSymData &symsSet, VSymData &tinySymsSet, const std::string &fontType = "");
 
+	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
 	const VClusterData& getClusters() const { return clusters; }
 	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
 

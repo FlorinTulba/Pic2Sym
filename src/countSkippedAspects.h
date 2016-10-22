@@ -53,7 +53,7 @@ The remaining matching aspects will be skipped.
 Use MONITOR_SKIPPED_MATCHING_ASPECTS to count and report the skipped matching aspects
 by category, together with their relative computational complexity.
 */
-#define MONITOR_SKIPPED_MATCHING_ASPECTS
+//#define MONITOR_SKIPPED_MATCHING_ASPECTS
 
 #endif // UNIT_TESTING
 

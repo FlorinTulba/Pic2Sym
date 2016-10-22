@@ -135,8 +135,7 @@ namespace ut {
 
 // Test suite checking PixMapSym functionality
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComputations)
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0RowsOfData_CenterAnd0");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_0RowsOfData_CenterAnd0);
 		cols = 5U; top = getSz()-1U;
 
 		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
@@ -146,8 +145,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_0ColumnsOfData_CenterAnd0");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_0ColumnsOfData_CenterAnd0);
 		rows = 4U; top = getSz()-1U;
 
 		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, 
@@ -157,8 +155,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_AllDataIs0_CenterAnd0) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_AllDataIs0_CenterAnd0");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_AllDataIs0_CenterAnd0);
 		rows = cols = 5U; top = getSz()-1U;
 		pixels.assign(rows*cols, 0U);
 
@@ -169,8 +166,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2ChosenPixels_ExpectedValues) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_2ChosenPixels_ExpectedValues");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_2ChosenPixels_ExpectedValues);
 		rows = 1U; cols = 7U; left = 2U;
 		pixels.assign(rows*cols, 0U);
 		// 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
@@ -184,8 +180,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == 0., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_UniformPatch_CenterAndAverage) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_UniformPatch_CenterAndAverage");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_UniformPatch_CenterAndAverage);
 		rows = cols = getSz(); top = getSz()-1U;
 		const auto uc = ut::randUnsignedChar(1U);
 		cout<<"Checking patch filled with value "<<(unsigned)uc<<endl;
@@ -199,8 +194,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_SinglePixelNon0_PixelPositionAndPixelValueDiv255) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_SinglePixelNon0_PixelPositionAndPixelValueDiv255");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_SinglePixelNon0_PixelPositionAndPixelValueDivMaxGlyphSum);
 		rows = cols = 1U;
 		left = ut::randUnsignedChar(0U, getSz()-1U);
 		top = ut::randUnsignedChar(0U, getSz()-1U);
@@ -217,8 +211,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == (double)top / (getSz() - 1U), test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDiv255");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDivMaxGlyphSum);
 		rows = cols = 3U;
 		left = ut::randUnsignedChar(0U, getSz()-3U);
 		top = ut::randUnsignedChar(2U, getSz()-1U);
@@ -233,17 +226,23 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		BOOST_TEST(mc.y == (double)(top - 1U) / (getSz() - 1U), test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues) {
-		BOOST_TEST_MESSAGE("Running ComputeMassCenterAndGlyphSum_2RandomChosenPixels_ComputedValues");
+	AutoTestCase(ComputeMassCenterAndAvgPixVal_2RandomChosenPixels_ComputedValues);
 		rows = cols = getSz(); top = getSz() - 1U;
 		pixels.assign(rows*cols, 0U);
 		// random 2 points: p1(x1, y1) and p2(x2, y2)
 		const unsigned char p1 = ut::randUnsignedChar(1U), // random value 1..255
-			p2 = ut::randUnsignedChar(1U), // random value 1..255
+							p2 = ut::randUnsignedChar(1U), // random value 1..255
 			x1 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
-			x2 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
-			y1 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
+			y1 = ut::randUnsignedChar(0U, getSz()-1U); // random value 0..sz-1
+		unsigned char x2 = ut::randUnsignedChar(0U, getSz()-1U), // random value 0..sz-1
+					y2 = ut::randUnsignedChar(0U, getSz()-1U); // random value 0..sz-1
+		
+		assert(getSz() >= 2);
+		while(x1 == x2 && y1 == y2) { // Ensuring the 2 points don't overlap
+			x2 = ut::randUnsignedChar(0U, getSz()-1U); // random value 0..sz-1
 			y2 = ut::randUnsignedChar(0U, getSz()-1U); // random value 0..sz-1
+		}
+
 		pixels[x1+y1*cols] = p1; pixels[x2+y2*cols] = p2;
 		cout<<"Checking mass-center for 2 pixels: "
 			<<(unsigned)p1<<'('<<(unsigned)x1<<','<<(unsigned)y1<<"); "
@@ -251,7 +250,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations, ut::FontEngineFixtComput
 		
 		PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top,
 										 getConsec(), getRevConsec(), mc, apv);
-		BOOST_TEST(apv == ((double)p1+p2) / getMaxGlyphSum(), test_tools::tolerance(1e-4)); // glyphSum = (p1+p2)/255
+		BOOST_TEST(apv == ((double)p1+p2) / getMaxGlyphSum(), test_tools::tolerance(1e-4)); // apv = (p1+p2)/(255*area)
 		// mc is measured based on a DESCENDING vertical axis
 		// ( (x1*p1+x2*p2)/(p1+p2)  ,  sz-1-(y1*p1+y2*p2)/(p1+p2) ) all downscaled by (sz-1)
 		BOOST_TEST(mc.x == ((double)x1*p1+x2*p2) / (((double)p1+p2) * (getSz() - 1U)), test_tools::tolerance(1e-4));
@@ -261,8 +260,7 @@ BOOST_AUTO_TEST_SUITE_END() // FontEngine_Tests_Computations
 
 // Test suite checking FontEngine constraints
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
-	BOOST_AUTO_TEST_CASE(IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations) {
-		BOOST_TEST_MESSAGE("Running IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations");
+	AutoTestCase(IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations);
 		if(nullptr == pfe)
 			return;
 
@@ -282,8 +280,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_REQUIRE(name.empty());
 	}
 
-	BOOST_AUTO_TEST_CASE(FontConfig_IncorrectFontFile_CannotSetFont) {
-		BOOST_TEST_MESSAGE("Running FontConfig_IncorrectFontFile_CannotSetFont");
+	AutoTestCase(FontConfig_IncorrectFontFile_CannotSetFont);
 		if(nullptr == pfe)
 			return;
 
@@ -293,8 +290,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_REQUIRE(!correct);
 	}
 
-	BOOST_AUTO_TEST_CASE(FontConfig_NonScalableFont_CannotSetFont) {
-		BOOST_TEST_MESSAGE("Running FontConfig_NonScalableFont_CannotSetFont");
+	AutoTestCase(FontConfig_NonScalableFont_CannotSetFont);
 		if(nullptr == pfe)
 			return;
 
@@ -303,8 +299,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_REQUIRE(!correct);
 	}
 
-	BOOST_AUTO_TEST_CASE(FontConfig_CorrectFontFile_SettingFontOk) {
-		BOOST_TEST_MESSAGE("Running FontConfig_CorrectFontFile_SettingFontOk");
+	AutoTestCase(FontConfig_CorrectFontFile_SettingFontOk);
 		if(nullptr == pfe)
 			return;
 
@@ -313,8 +308,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_REQUIRE(correct);
 	}
 
-	BOOST_AUTO_TEST_CASE(FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage) {
-		BOOST_TEST_MESSAGE("Running FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage");
+	AutoTestCase(FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage);
 		if(nullptr == pfe)
 			return;
 
@@ -359,8 +353,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
 	}
 
-	BOOST_AUTO_TEST_CASE(FontConfig_CompleteConfig_NoProblemsExpected) {
-		BOOST_TEST_MESSAGE("Running FontConfig_CompleteConfig_NoProblemsExpected");
+	AutoTestCase(FontConfig_CompleteConfig_NoProblemsExpected);
 		if(nullptr == pfe)
 			return;
 

@@ -105,8 +105,10 @@
     <None Include="res\vga855.fon" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="test\fileIterationHelper.h" />
     <ClInclude Include="test\mockDlgs.h" />
     <ClInclude Include="test\mockUi.h" />
+    <ClInclude Include="test\preselectionHelper.h" />
     <ClInclude Include="test\testMain.h" />
   </ItemGroup>
   <ItemGroup>

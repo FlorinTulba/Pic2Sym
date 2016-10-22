@@ -63,8 +63,8 @@ SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
-	for(auto &m : other.masks)
-		m.release();
+		for(auto &m : other.masks)
+			m.release();
 }
 
 SymData& SymData::operator=(const SymData &other) {
@@ -104,7 +104,7 @@ SymData& SymData::operator=(SymData &&other) {
 
 void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
 							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
-							double &minVal, double &diffMinMax, bool forTinySym/* = false*/) {
+							double &minVal, double &diffMinMax, bool forTinySym) {
 	// constants for foreground / background thresholds
 	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
 	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
@@ -115,6 +115,9 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	
 	double maxVal;
 	minMaxIdx(glyph, &minVal, &maxVal);
+	static const double EPSp1 = EPS + 1.;
+	assert(maxVal < EPSp1); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
+
 	diffMinMax = maxVal - minVal;
 	groundedGlyph = (minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0
 

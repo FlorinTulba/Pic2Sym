@@ -263,7 +263,7 @@ static VALIDATOR(lessThan26D,	IsLessThan, double, 26.);
 static VALIDATOR(lessThan20D,	IsLessThan, double, 20.);
 static VALIDATOR(lessThan10D,	IsLessThan, double, 10, true);
 static VALIDATOR(lessThan5D,	IsLessThan, double, 5., true);
-static VALIDATOR(lessThan1D,	IsLessThan, double, 1.);
+static VALIDATOR(lessThan1D,	IsLessThan, double, 1., true);
 static VALIDATOR(lessThan0dot1, IsLessThan, double, 0.1);
 static VALIDATOR(lessThan0dot4, IsLessThan, double, 0.4);
 static VALIDATOR(lessThan0dot04,IsLessThan, double, 0.04);
@@ -380,8 +380,11 @@ extern READ_DOUBLE_PROP(BlurStandardDeviation, atLeast0dot8(), lessThan5D());
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 extern READ_DOUBLE_PROP(SymbolsProcessing_ProgressReportsIncrement, atLeast0dot01(), lessThan1D());
 
+extern READ_BOOL_PROP(PreselectionByTinySyms);
+extern READ_UINT_PROP(ShortListLength, atLeast1U());
+extern READ_DOUBLE_PROP(AdmitOnShortListEvenForInferiorScoreFactor, atLeast0dot8(), lessThan1D());
 extern unsigned TinySymsSz() {
-	static READ_UINT_PROP(TinySymsSize, oddU(), atLeast5U(), atMost9U()); // must be an odd value between 5 and 9
+	static READ_UINT_PROP(TinySymsSize, oddU(), atLeast5U(), atMost9U());
 	return TinySymsSize;
 }
 

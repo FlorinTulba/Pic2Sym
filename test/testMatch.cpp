@@ -35,7 +35,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+/*
+Iterating this file twice, for both values of the boolean setting PreselectionByTinySyms.
+It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approach.
+*/
+#if !BOOST_PP_IS_ITERATING
+#	include <boost/preprocessor/iteration/iterate.hpp>
+
+// Common part until #else (included just once)
 #include "testMain.h"
+#include "preselectionHelper.h"
+#include "fileIterationHelper.h"
 #include "misc.h"
 #include "settings.h"
 #include "matchParams.h"
@@ -61,10 +71,14 @@ using namespace boost;
 
 extern const string StructuralSimilarity_BlurType;
 extern const string ClusterAlgName;
+extern const unsigned ShortListLength;
+extern const double AdmitOnShortListEvenForInferiorScoreFactor;
+extern unsigned TinySymsSz();
+static const unsigned TinySymsSize = TinySymsSz();
 
 namespace ut {
 	/// dummy value
-	const double NOT_RELEVANT_D = numeric_limits<double>::infinity();	
+	const double NOT_RELEVANT_D = 0.;	
 	/// dummy value
 	const unsigned long NOT_RELEVANT_UL = ULONG_MAX;
 	/// dummy value
@@ -151,11 +165,10 @@ namespace ut {
 	Creates 2 shared_ptr to 2 symbol data objects.
 
 	@param sz patch side length
-	@param cd reference to cached data (reusing patch center computation)
 	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 rows mid height define a horizontal edge mask
 	@param sdWithVertEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
 	*/
-	void updateSymDataOfHalfFullGlyphs(unsigned sz, const CachedData &cd,
+	void updateSymDataOfHalfFullGlyphs(unsigned sz,
 									   std::shared_ptr<SymData> &sdWithHorizEdgeMask, 
 									   std::shared_ptr<SymData> &sdWithVertEdgeMask) {
 		// 2 rows mid height
@@ -194,7 +207,8 @@ namespace ut {
 	}
 
 	/// Fixture helping tests computing matching parameters 
-	class MatchParamsFixt : public Fixt {
+	template<bool PreselMode>
+	struct MatchParamsFixt : PreselFixt<PreselMode> {
 		unsigned sz;	///< patch side length (tests should use provided public accessor methods)
 		Mat emptyUc;	///< Empty matrix sz x sz of unsigned chars
 		Mat emptyD;		///< Empty matrix sz x sz of doubles
@@ -245,7 +259,7 @@ namespace ut {
 			randInitPatch();
 
 			updateInvHalfD255(sz, invHalfD255);
-			updateSymDataOfHalfFullGlyphs(sz, cd, sdWithHorizEdgeMask, sdWithVertEdgeMask);
+			updateSymDataOfHalfFullGlyphs(sz, sdWithHorizEdgeMask, sdWithVertEdgeMask);
 		}
 
 		/**
@@ -253,13 +267,14 @@ namespace ut {
 
 		@param sz_ patch side length. Select an even value, as the tests need to set exactly half pixels
 		*/
-		MatchParamsFixt(unsigned sz_ = 50U) : Fixt() {
+		MatchParamsFixt(unsigned sz_ = 50U) : PreselFixt(), cd(PreselectionByTinySyms) {
 			setSz(sz_);
 		}
 	};
 
 	/// Fixture for the matching aspects
-	class MatchAspectsFixt : public Fixt {
+	template<bool PreselMode>
+	struct MatchAspectsFixt : PreselFixt<PreselMode> {
 		unsigned sz;	///< patch side length (tests should use provided public accessor methods)
 		unsigned area;	///< sz^2 (Use getter within tests)
 
@@ -287,12 +302,27 @@ namespace ut {
 
 		@param sz_ patch side length. Select an even value, as the tests need to set exactly half pixels
 		*/
-		MatchAspectsFixt(unsigned sz_ = 50U) : Fixt() {
+		MatchAspectsFixt(unsigned sz_ = 50U) : PreselFixt(), cd(PreselectionByTinySyms) {
 			setSz(sz_);
 		}
 
 		/// help for blur
 		const BlurEngine& blurSupport = BlurEngine::byName(StructuralSimilarity_BlurType);
+	};
+
+	template<bool PreselMode>
+	struct AlteredCmapFixture : PreselFixt<PreselMode> {
+		const string oldClusterAlgName = ClusterAlgName;
+
+		AlteredCmapFixture(const string &clustAlgName) : PreselFixt() {
+			if(0 != ClusterAlgName.compare(clustAlgName))
+				const_cast<string&>(ClusterAlgName) = clustAlgName;
+		}
+		
+		~AlteredCmapFixture() {
+			if(0 != ClusterAlgName.compare(oldClusterAlgName))
+				const_cast<string&>(ClusterAlgName) = oldClusterAlgName;
+		}
 	};
 
 	/// Parameterized test case. Uniform patches get approximated by completely faded glyphs.
@@ -366,8 +396,8 @@ namespace ut {
 		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
 	}
 
-	// msArray, fontFamilies and encodings from below are used to generate the data sets used within
-	// CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors test below
+	// msArray and fonts from below are used to generate the data sets used within
+	// CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors test below
 	
 	/// array of all MatchSetting-s configurations to be tested for all selected font configurations
 	const MatchSettings msArray[] = {
@@ -393,27 +423,59 @@ namespace ut {
 using namespace ut;
 
 BOOST_TEST_DONT_PRINT_LOG_VALUE(StrStrPair)
-BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 
-					// For Cartesian product (all combinations) use below '*'
-					// For zip (only the combinations formed by pairs with same indices) use '^'
-					 boost::unit_test::data::make(msArray) * fonts,
-					 ms, font) {
-	Fixt fixt; // mandatory
-	
+/*
+Iterating this file 2 times, with counter values from 0 to 1.
+0 will be used for PreselectionByTinySyms set on false
+1 will be used for PreselectionByTinySyms set on true
+*/
+#	define BOOST_PP_ITERATION_LIMITS		(0, 1)
+#	define BOOST_PP_FILENAME_1				"testMatch.cpp" /* __FILE__ didn't work! */
+#	include BOOST_PP_ITERATE()
+
+#else // BOOST_PP_IS_ITERATING is 1 (true) -- The rest of the file is iterated twice
+
+#	if BOOST_PP_ITERATION() == 0
+#		define MatchParamsFixt_		MatchParamsFixt<false>
+#		define MatchAspectsFixt_	MatchAspectsFixt<false>
+#		define AlteredCmapFixture_	AlteredCmapFixture<false>
+#		define SuiteSuffix	_noPreselection
+
+#	elif BOOST_PP_ITERATION() == 1
+#		undef MatchParamsFixt_
+#		define MatchParamsFixt_		MatchParamsFixt<true>
+#		undef MatchAspectsFixt_
+#		define MatchAspectsFixt_	MatchAspectsFixt<true>
+#		undef AlteredCmapFixture_
+#		define AlteredCmapFixture_	AlteredCmapFixture<true>
+#		undef SuiteSuffix
+#		define SuiteSuffix	_withPreselection
+
+#	else // BOOST_PP_ITERATION() >= 2
+#		undef MatchParamsFixt_
+#		undef MatchAspectsFixt_
+#		undef AlteredCmapFixture_
+#		undef SuiteSuffix
+#	endif // BOOST_PP_ITERATION()
+
+DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, SuiteSuffix,
+			// For Cartesian product (all combinations) use below '*'
+			// For zip (only the combinations formed by pairs with same indices) use '^'
+			boost::unit_test::data::make(msArray) * fonts,
+			ms, font) {
 	// Disabling clustering for this test,
 	// as the result is highly sensitive to the accuracy of the clustering,
 	// which depends on quite a number of adjustable parameters.
 	// Every time one of these parameters is modified,
 	// this test might cross the accepted mismatches threshold.
-	const string oldClusterAlgName(ClusterAlgName);
-	const_cast<string&>(ClusterAlgName) = "None";
+	AlteredCmapFixture_ fixt("None"); // mandatory
 
 	const string &fontFamily = font.first, &encoding = font.second;
 
 	ostringstream oss;
-	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors for "
-		<<fontFamily<<'('<<encoding<<") with "<<ms;
+	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors for "
+		<<fontFamily<<'('<<encoding<<") with "<<ms<<' '
+		<<(PreselectionByTinySyms ? "with" : "without")<<" Preselection";
 	string nameOfTest = oss.str();
 	for(const char toReplace : string(" \t\n\\/():"))
 		replace(BOUNDS(nameOfTest), toReplace, '_');
@@ -423,39 +485,68 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 	::Controller c(s);
 	::MatchEngine &me = c.getMatchEngine(s);
 
-	const unsigned sz = s.symSettings().getFontSz(); // default font size is 10
-
 	c.newFontFamily(fontFamily);
 	c.newFontEncoding(encoding);
+
+	// default font size is 10 - normally at most 10% errors
+	//c.newFontSize(40U); // apparently larger fonts produce less errors (for 40 rarely any)
 	me.getReady();
 
 	// Recognizing the glyphs from current cmap
 	::MatchEngine::VSymDataCIt it, itEnd;
 	tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
-	const unsigned symsCount = (unsigned)distance(it, itEnd), step = symsCount/100U + 1U;
+	const unsigned symsCount = (unsigned)distance(it, itEnd),
+					SymsBatchSz = 25U;
 	vector<const BestMatch> mismatches;
 	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
-		if(idx % step == 0U) // report progress
-			cout<<fixed<<setprecision(2)<<setw(6)<<idx*100./symsCount<<"%\r";
-
 		const Mat &negGlyph = it->negSym; // byte 0..255
-		Mat patchD255;
-		negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
-		alterFgBg(patchD255, it->minVal, it->diffMinMax);
-		addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
+		Mat patchD255, blurredPatch;
+		std::shared_ptr<Patch> thePatch;
+		int attempts = 10;
+		do {
+			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
+			alterFgBg(patchD255, it->minVal, it->diffMinMax);
+			addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
+			thePatch = std::make_shared<Patch>(patchD255);
+		} while(--attempts >= 0 && !thePatch->needsApproximation);
 
-		Patch thePatch(patchD255);
-		BestMatch best(thePatch);
-		const unsigned SymsBatchSz = 25U;
-		for(unsigned s = 0U; s < symsCount; s += SymsBatchSz)
-			me.findBetterMatch(best, s, min(s+SymsBatchSz, symsCount));
-		const Mat &approximated = best.bestVariant.approx;
+		if(!thePatch->needsApproximation)
+			continue; // couldn't generate a noisy non-uniform glyph
+
+		BestMatch best(*thePatch);
+
+		if(PreselectionByTinySyms) {
+			Mat tinyPatchMat, blurredTinyPatch;
+			resize(thePatch->orig, tinyPatchMat, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
+			resize(thePatch->blurred, blurredTinyPatch, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
+			Patch tinyPatch(tinyPatchMat, blurredTinyPatch, tinyPatchMat.channels()>1);
+			tinyPatch.needsApproximation = true; // forcing the approximation for the tiny patch
+			BestMatch bestTiny(tinyPatch);
+
+			// Below using 3 instead of ShortListLength, to avoid surprises caused by altered configurations
+			TopCandidateMatches tcm(3U);
+
+			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz) {
+				// Value from below is 0.8 instead of AdmitOnShortListEvenForInferiorScoreFactor
+				// to avoid surprises caused by altered configurations
+				tcm.reset(bestTiny.score = best.score * 0.8);
+				if(me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), bestTiny, &tcm)) {
+					tcm.prepareReport();
+					auto &shortList = tcm.getShortList();
+					me.improvesBasedOnBatchShortList(shortList, best);
+				}
+			}
+
+		} else { // PreselectionByTinySyms == false here
+			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz)
+				me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), best);
+		}
 
 		if(best.symIdx != idx) {
 			mismatches.push_back(best);
 			MatchParams mp;
 			double score;
-			me.isBetterMatch(patchD255, *it, mp, best.score * me.invMaxIncreaseFactors, score);
+			me.isBetterMatch(patchD255, *it, me.cachedData, best.score * me.invMaxIncreaseFactors, mp, score);
 			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
 			cerr<<"Approximation achieved score="
 				<<fixed<<setprecision(17)<<best.score
@@ -466,8 +557,13 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 		}
 	}
 
-	// Normally, less than 3% of the altered symbols are not identified correctly.
-	BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
+	if(PreselectionByTinySyms) { // Preselection with tiny symbols - less accurate approximation allowed
+		// Normally, less than 13% of the altered symbols are not identified correctly.
+		BOOST_CHECK((double)mismatches.size() < .13 * symsCount);
+	} else { // No Preselection - much more accurate approximation expected
+		// Normally, less than 3% of the altered symbols are not identified correctly.
+		BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
+	}
 
 	if(!mismatches.empty()) {
 		extern const wstring MatchParams_HEADER;
@@ -476,17 +572,14 @@ BOOST_DATA_TEST_CASE(CheckAlteredCmap_UsingAspects_ExpectLessThan3PercentErrors,
 
 		showMismatches(nameOfTest, mismatches);
 	}
-
-	const_cast<string&>(ClusterAlgName) = oldClusterAlgName;
 }
 
-BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
+FixtureTestSuiteSuffix(MatchParamsFixt_, MeanSdevMassCenterComputation_Tests, SuiteSuffix)
 	// Patches have pixels with double values 0..255.
 	// Glyphs have pixels with double values 0..1.
 	// Masks have pixels with byte values 0..255.
 
-	BOOST_AUTO_TEST_CASE(CheckSdevComputation_PrecededOrNotByMeanComputation_SameSdevExpected) {
-		BOOST_TEST_MESSAGE("Running CheckSdevComputation_PrecededOrNotByMeanComputation_SameSdevExpected");
+	AutoTestCase1(CheckSdevComputation_PrecededOrNotByMeanComputation_SameSdevExpected, SuiteSuffix);
 		optional<double> miu1, sdev1;
 
 		// Check that computeSdev performs the same when preceded or not by computeMean
@@ -499,16 +592,14 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		BOOST_TEST(*sdev == *sdev1, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckMeanAndSdev_RandomPatchWithEmptyMask_ZeroMeanAndSdev) {
-		BOOST_TEST_MESSAGE("Running CheckMeanAndSdev_RandomPatchWithEmptyMask_ZeroMeanAndSdev");
+	AutoTestCase1(CheckMeanAndSdev_RandomPatchWithEmptyMask_ZeroMeanAndSdev, SuiteSuffix);
 		MatchParams::computeSdev(getRandD255(), getEmptyUc(), miu, sdev);
 		BOOST_REQUIRE(miu && sdev);
 		BOOST_TEST(*miu == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(*sdev == 0., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckMeanAndSdev_UniformPatchWithRandomMask_PixelsValueAsMeanAndZeroSdev) {
-		BOOST_TEST_MESSAGE("Running CheckMeanAndSdev_UniformPatchWithRandomMask_PixelsValueAsMeanAndZeroSdev");
+	AutoTestCase1(CheckMeanAndSdev_UniformPatchWithRandomMask_PixelsValueAsMeanAndZeroSdev, SuiteSuffix);
 		const auto valRand = randUnsignedChar();
 
 		MatchParams::computeSdev(Mat(getSz(), getSz(), CV_64FC1, Scalar(valRand)), getRandUc()!=0U, miu, sdev);
@@ -517,8 +608,7 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		BOOST_TEST(*sdev == 0., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckMeanSdevMassCenter_Half0Half255AndNoMask_127dot5MeanAndSdevAndPredictedMassCenter) {
-		BOOST_TEST_MESSAGE("Running CheckMeanSdevMassCenter_Half0Half255AndNoMask_127dot5MeanAndSdevAndPredictedMassCenter");
+	AutoTestCase1(CheckMeanSdevMassCenter_Half0Half255AndNoMask_127dot5MeanAndSdevAndPredictedMassCenter, SuiteSuffix);
 		const auto valRand = randUnsignedChar();
 		Mat halfD255 = getEmptyD().clone(); halfD255.rowRange(0, getSz()/2) = 255.;
 
@@ -534,45 +624,37 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 		BOOST_TEST(mp.mcPatch->y == (getSz()/2.-1.) / (2. * (getSz() - 1)), test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5) {
-		BOOST_TEST_MESSAGE("Running ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5");
+	AutoTestCase1(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5, SuiteSuffix);
 		mp.computeSymDensity(*getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == 0.5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch) {
-		BOOST_TEST_MESSAGE("Running CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch");
+	AutoTestCase1(CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch, SuiteSuffix);
 		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithHorizEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch) {
-		BOOST_TEST_MESSAGE("Running CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch");
+	AutoTestCase1(CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch, SuiteSuffix);
 		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithVertEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch) {
-		BOOST_TEST_MESSAGE("Running CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch");
+	AutoTestCase1(CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch, SuiteSuffix);
 		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithHorizEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch) {
-		BOOST_TEST_MESSAGE("Running CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch");
+	AutoTestCase1(CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch, SuiteSuffix);
 		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithVertEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast) {
-		BOOST_TEST_MESSAGE("Running CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast");
+	AutoTestCase1(CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast, SuiteSuffix);
 		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithHorizEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast) {
-		BOOST_TEST_MESSAGE("Running CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast");
+	AutoTestCase1(CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast, SuiteSuffix);
 		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithVertEdgeMask());
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckParams_RowValuesSameAsRowIndices_PredictedParams) {
-		BOOST_TEST_MESSAGE("Running CheckParams_RowValuesSameAsRowIndices_PredictedParams");
+	AutoTestCase1(CheckParams_RowValuesSameAsRowIndices_PredictedParams, SuiteSuffix);
 		// Testing on a patch with uniform rows of values gradually growing from 0 to sz-1
 		Mat szBandsD255 = getEmptyD().clone();
 		for(unsigned i = 0U; i<getSz(); ++i)
@@ -629,12 +711,10 @@ BOOST_FIXTURE_TEST_SUITE(MeanSdevMassCenterComputation_Tests, MatchParamsFixt)
 	}
 BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
-BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
-	BOOST_AUTO_TEST_CASE(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch) {
-		BOOST_TEST_MESSAGE("Running CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch");
-
+FixtureTestSuiteSuffix(MatchAspectsFixt_, MatchAspects_Tests, SuiteSuffix)
+	AutoTestCase1(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch, SuiteSuffix);
 		cfg.set_kSsim(1.);
-		const StructuralSimilarity strSim(cd, cfg);
+		const StructuralSimilarity strSim(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -646,8 +726,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		blurSupport.process(diagSymD1, blurOfGroundedGlyph, false);
-		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, false);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph, PreselectionByTinySyms);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, PreselectionByTinySyms);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -665,7 +745,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Testing on an uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
-		res = strSim.assessMatch(patchD255, sd, mp);
+		res = strSim.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.ssim &&
 					  mp.patchApprox && mp.blurredPatch && mp.blurredPatchSq && mp.variancePatch);
 		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
@@ -676,11 +756,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckStructuralSimilarity_PatchIsDimmedGlyph_GlyphBecomesPatch) {
-		BOOST_TEST_MESSAGE("Running CheckStructuralSimilarity_PatchIsDimmedGlyph_GlyphBecomesPatch");
-
+	AutoTestCase1(CheckStructuralSimilarity_PatchIsDimmedGlyph_GlyphBecomesPatch, SuiteSuffix);
 		cfg.set_kSsim(1.);
-		const StructuralSimilarity strSim(cd, cfg);
+		const StructuralSimilarity strSim(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -692,8 +770,8 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		allButMainDiagBgMask.diag() = 0U;
 		const unsigned cnz = getArea() - getSz();
 		BOOST_REQUIRE(countNonZero(allButMainDiagBgMask) == cnz);
-		blurSupport.process(diagSymD1, blurOfGroundedGlyph, false);
-		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, false);
+		blurSupport.process(diagSymD1, blurOfGroundedGlyph, PreselectionByTinySyms);
+		blurSupport.process(diagSymD1.mul(diagSymD1), varOfGroundedGlyph, PreselectionByTinySyms);
 		varOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
@@ -713,7 +791,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		const double complVal = (double)((128U + valRand) & 0xFFU);
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.diag() = complVal;
-		res = strSim.assessMatch(patchD255, sd, mp);
+		res = strSim.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.patchApprox);
 		minMaxIdx(mp.patchApprox.value() - patchD255, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
@@ -723,10 +801,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckFgAspect_UniformPatchAndDiagGlyph_CompleteMatchAndFgBecomesPatchValue) {
-		BOOST_TEST_MESSAGE("Running CheckFgAspect_UniformPatchAndDiagGlyph_CompleteMatchAndFgBecomesPatchValue");
+	AutoTestCase1(CheckFgAspect_UniformPatchAndDiagGlyph_CompleteMatchAndFgBecomesPatchValue, SuiteSuffix);
 		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cd, cfg);
+		const FgMatch fm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -741,17 +818,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
-		res = fm.assessMatch(patchD255, sd, mp);
+		res = fm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.sdevFg);
 		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevFg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckFgAspect_DiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerHalf_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckFgAspect_DiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerHalf_ImperfectMatch");
+	AutoTestCase1(CheckFgAspect_DiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerHalf_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cd, cfg);
+		const FgMatch fm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -767,17 +843,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
-		res = fm.assessMatch(patchD255, sd, mp);
+		res = fm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.sdevFg);
 		BOOST_TEST(*mp.fg == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevFg == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch");
+	AutoTestCase1(CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cd, cfg);
+		const FgMatch fm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -798,17 +873,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 			expectedSdev += aux*aux;
 		}
 		expectedSdev = sqrt(expectedSdev/getSz());
-		res = fm.assessMatch(patchD255, sd, mp);
+		res = fm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.sdevFg);
 		BOOST_TEST(*mp.fg == expectedMiu, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevFg == expectedSdev, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdev/127.5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_UniformPatch_PerfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_UniformPatch_PerfectMatch");
+	AutoTestCase1(CheckEdgeAspect_UniformPatch_PerfectMatch, SuiteSuffix);
 		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cd, cfg);
+		const EdgeMatch em(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -850,7 +924,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
-		res = em.assessMatch(patchD255, sd, mp);
+		res = em.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
 		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
@@ -858,10 +932,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_EdgyDiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_EdgyDiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch");
+	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cd, cfg);
+		const EdgeMatch em(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -904,7 +977,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
-		res = em.assessMatch(patchD255, sd, mp);
+		res = em.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
 		BOOST_TEST(*mp.fg == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == valRand/2., test_tools::tolerance(1e-4));
@@ -912,10 +985,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-valRand/510., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch");
+	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cd, cfg);
+		const EdgeMatch em(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -967,7 +1039,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		expectedSdev *= 2.;
 		expectedSdev -= 2 * expectedMiu*expectedMiu;
 		expectedSdev = sqrt(expectedSdev / cnzEdge);
-		res = em.assessMatch(patchD255, sd, mp);
+		res = em.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
 		BOOST_TEST(*mp.fg == expectedMiu, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == expectedMiu, test_tools::tolerance(1e-4));
@@ -975,10 +1047,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-expectedSdev/255, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckEdgeAspect_EdgyDiagGlyphAndUniformLowerTriangularPatch_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckEdgeAspect_EdgyDiagGlyphAndUniformLowerTriangularPatch_ImperfectMatch");
+	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndUniformLowerTriangularPatch_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cd, cfg);
+		const EdgeMatch em(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1025,7 +1096,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		for(int i = 0; i<(int)getSz(); ++i)
 			patchD255.diag(-i) = (double)valRand; // i-th lower diagonal set on valRand
 		BOOST_REQUIRE(countNonZero(patchD255) == (getArea() + getSz())/2);
-		res = em.assessMatch(patchD255, sd, mp);
+		res = em.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
 		BOOST_TEST(*mp.fg == expectedFg, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == expectedBg, test_tools::tolerance(1e-4));
@@ -1033,10 +1104,9 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		BOOST_TEST(res == 1.-expectedSdevEdge/255, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckBgAspect_UniformPatch_PerfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckBgAspect_UniformPatch_PerfectMatch");
+	AutoTestCase1(CheckBgAspect_UniformPatch_PerfectMatch, SuiteSuffix);
 		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cd, cfg);
+		const BgMatch bm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1054,17 +1124,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
-		res = bm.assessMatch(patchD255, sd, mp);
+		res = bm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.bg && mp.sdevBg);
 		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevBg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch");
+	AutoTestCase1(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cd, cfg);
+		const BgMatch bm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1083,17 +1152,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
-		res = bm.assessMatch(patchD255, sd, mp);
+		res = bm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.bg && mp.sdevBg);
 		BOOST_TEST(*mp.bg == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevBg == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch");
+	AutoTestCase1(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
 		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cd, cfg);
+		const BgMatch bm(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1121,17 +1189,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		expectedSdev *= getSz() - 3.;
 		expectedSdev += 2 * expectedMiu*expectedMiu;
 		expectedSdev = sqrt(expectedSdev / cnz);
-		res = bm.assessMatch(patchD255, sd, mp);
+		res = bm.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.bg && mp.sdevBg);
 		BOOST_TEST(*mp.bg == expectedMiu, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.sdevBg == expectedSdev, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdev/127.5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckContrastAspect_UniformPatch_0Contrast) {
-		BOOST_TEST_MESSAGE("Running CheckContrastAspect_UniformPatch_0Contrast");
+	AutoTestCase1(CheckContrastAspect_UniformPatch_0Contrast, SuiteSuffix);
 		cfg.set_kContrast(1.);
-		const BetterContrast bc(cd, cfg);
+		const BetterContrast bc(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1155,17 +1222,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
-		res = bc.assessMatch(patchD255, sd, mp);
+		res = bc.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg);
 		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 0., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithMaxContrast_ContrastFromPatch) {
-		BOOST_TEST_MESSAGE("Running CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithMaxContrast_ContrastFromPatch");
+	AutoTestCase1(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithMaxContrast_ContrastFromPatch, SuiteSuffix);
 		cfg.set_kContrast(1.);
-		const BetterContrast bc(cd, cfg);
+		const BetterContrast bc(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1188,17 +1254,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(255.)));
-		res = bc.assessMatch(patchD255, sd, mp);
+		res = bc.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg);
 		BOOST_TEST(*mp.fg == 255., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithHalfContrast_ContrastFromPatch) {
-		BOOST_TEST_MESSAGE("Running CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithHalfContrast_ContrastFromPatch");
+	AutoTestCase1(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithHalfContrast_ContrastFromPatch, SuiteSuffix);
 		cfg.set_kContrast(1.);
-		const BetterContrast bc(cd, cfg);
+		const BetterContrast bc(cfg);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1221,19 +1286,18 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(127.5)));
-		res = bc.assessMatch(patchD255, sd, mp);
+		res = bc.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg);
 		BOOST_TEST(*mp.fg == 127.5, test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == .5, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckGravitationalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch");
+	AutoTestCase1(CheckGravitationalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch, SuiteSuffix);
 		cfg.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cd, cfg);
+		const GravitationalSmoothness gs(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1255,7 +1319,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Using a patch with a single 255 pixel in top left corner
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, 0) = 255.;
-		res = gs.assessMatch(patchD255, sd, mp);
+		res = gs.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == 255./(getArea()-1), test_tools::tolerance(1e-4));
@@ -1271,12 +1335,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters) {
-		BOOST_TEST_MESSAGE("Running CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters");
+	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters, SuiteSuffix);
 		cfg.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cd, cfg);
+		const GravitationalSmoothness gs(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1300,7 +1363,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		Mat(patchD255, Rect(getSz()/2U-1U, 0, 2, 1)) = Scalar(255.);
 		BOOST_REQUIRE(countNonZero(patchD255) == 2);
-		res = gs.assessMatch(patchD255, sd, mp);
+		res = gs.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == 2*255./(getArea()-1), test_tools::tolerance(1e-4));
@@ -1317,12 +1380,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters) {
-		BOOST_TEST_MESSAGE("Running CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters");
+	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters, SuiteSuffix);
 		cfg.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cd, cfg);
+		const GravitationalSmoothness gs(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1344,7 +1406,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Using a patch with the last pixel on the top row on 255
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, sz_1) = 255.;
-		res = gs.assessMatch(patchD255, sd, mp);
+		res = gs.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(*mp.bg == 255./(getArea()-1), test_tools::tolerance(1e-4));
@@ -1361,12 +1423,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch) {
-		BOOST_TEST_MESSAGE("Running CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch");
+	AutoTestCase1(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch, SuiteSuffix);
 		cfg.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cd, cfg);
+		const DirectionalSmoothness ds(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1388,7 +1449,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Same as 1st scenario from Gravitational Smoothness
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, 0) = 255.;
-		res = ds.assessMatch(patchD255, sd, mp);
+		res = ds.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
@@ -1400,12 +1461,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters) {
-		BOOST_TEST_MESSAGE("Running CheckDirectionalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters");
+	AutoTestCase1(CheckDirectionalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters, SuiteSuffix);
 		cfg.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cd, cfg);
+		const DirectionalSmoothness ds(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1428,7 +1488,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Same as 2nd scenario from Gravitational Smoothness
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		Mat(patchD255, Rect(getSz()/2U-1U, 0, 2, 1)) = Scalar(255.);
-		res = ds.assessMatch(patchD255, sd, mp);
+		res = ds.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
@@ -1440,12 +1500,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckDirectionalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters) {
-		BOOST_TEST_MESSAGE("Running CheckDirectionalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters");
+	AutoTestCase1(CheckDirectionalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters, SuiteSuffix);
 		cfg.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cd, cfg);
+		const DirectionalSmoothness ds(cfg);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1467,7 +1526,7 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 		// Same as 3rd scenario from Gravitational Smoothness
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, sz_1) = 255.;
-		res = ds.assessMatch(patchD255, sd, mp);
+		res = ds.assessMatch(patchD255, sd, cd, mp);
 		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
@@ -1479,11 +1538,10 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckLargerSymAspect_EmptyGlyph_Density0) {
-		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_EmptyGlyph_Density0");
+	AutoTestCase1(CheckLargerSymAspect_EmptyGlyph_Density0, SuiteSuffix);
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cd, cfg);
+		const LargerSym ls(cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
@@ -1493,17 +1551,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   SymData::IdxMatMap {});
 
 		// Testing with an empty symbol (sd.avgPixVal == 0)
-		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
+		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge) {
-		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge");
+	AutoTestCase1(CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge, SuiteSuffix);
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cd, cfg);
+		const LargerSym ls(cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
@@ -1512,17 +1569,16 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {});
 
-		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
+		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckLargerSymAspect_LargestPosibleSymbol_LargestScore) {
-		BOOST_TEST_MESSAGE("Running CheckLargerSymAspect_LargestPosibleSymbol_LargestScore");
+	AutoTestCase1(CheckLargerSymAspect_LargestPosibleSymbol_LargestScore, SuiteSuffix);
 		cfg.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cd, cfg);
+		const LargerSym ls(cfg);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
@@ -1531,9 +1587,11 @@ BOOST_FIXTURE_TEST_SUITE(MatchAspects_Tests, MatchAspectsFixt)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {});
 
-		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, mp);
+		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.symDensity);
 		BOOST_TEST(*mp.symDensity == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 2.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // MatchAspects_Tests
+
+#endif // BOOST_PP_IS_ITERATING

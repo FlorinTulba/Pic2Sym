@@ -65,7 +65,7 @@ struct SymData {
 	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
 							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
 							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &diffMinMax,
-							  bool forTinySym = false);
+							  bool forTinySym);
 
 	unsigned long code = ULONG_MAX;	///< the code of the symbol
 	size_t symIdx = 0U;				///< symbol index within cmap
@@ -76,7 +76,7 @@ struct SymData {
 	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc = cv::Point2d(.5, .5);
 
-	cv::Mat negSym;			///< negative of the symbol (0..255 byte)
+	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; double for tiny)
 
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph

@@ -44,9 +44,8 @@
 
 /// Creates any known MatchAspect by its name
 struct MatchAspectsFactory {
-	/// Creates aspect 'aspectName' passing to it 'cachedData' and 'ms' parameters
+	/// Creates aspect 'aspectName' passing to it a MatchSettings parameter
 	static std::shared_ptr<MatchAspect> create(const std::string &aspectName,
-											   const CachedData &cachedData,
 											   const MatchSettings &ms);
 };
 

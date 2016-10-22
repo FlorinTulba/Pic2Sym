@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the Pic2Sym project.
+ This file belongs to the UnitTesting project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -35,29 +35,27 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "matchAspectsFactory.h"
-#include "matchAspects.h"
-#include "structuralSimilarity.h"
-#include "misc.h"
+#ifndef H_PRESELECTION_HELPER
+#define H_PRESELECTION_HELPER
 
-using namespace std;
+#include "testMain.h"
 
-std::shared_ptr<MatchAspect> MatchAspectsFactory::create(const string &aspectName,
-														 const MatchSettings &ms) {
-#define HANDLE_MATCH_ASPECT(Aspect) \
-	if(aspectName.compare(#Aspect) == 0) \
-		return std::make_shared<Aspect>(ms)
+extern const bool PreselectionByTinySyms;
 
-	HANDLE_MATCH_ASPECT(StructuralSimilarity);
-	HANDLE_MATCH_ASPECT(FgMatch);
-	HANDLE_MATCH_ASPECT(BgMatch);
-	HANDLE_MATCH_ASPECT(EdgeMatch);
-	HANDLE_MATCH_ASPECT(BetterContrast);
-	HANDLE_MATCH_ASPECT(GravitationalSmoothness);
-	HANDLE_MATCH_ASPECT(DirectionalSmoothness);
-	HANDLE_MATCH_ASPECT(LargerSym);
+/// Fixture forcing PreselectionByTinySyms on PreselMode during test and restoring its value at the end
+template<bool PreselMode>
+struct PreselFixt : Fixt {
+	const bool oldPreselectionByTinySyms = PreselectionByTinySyms;
 
-#undef HANDLE_ASPECT
+	PreselFixt() : Fixt() {
+		if(PreselMode != PreselectionByTinySyms)
+			const_cast<bool&>(PreselectionByTinySyms) = PreselMode;
+	}
 
-	THROW_WITH_VAR_MSG(aspectName + " is an invalid aspect name!", invalid_argument);
-}
+	~PreselFixt() {
+		if(oldPreselectionByTinySyms != PreselectionByTinySyms)
+			const_cast<bool&>(PreselectionByTinySyms) = oldPreselectionByTinySyms;
+	}
+};
+
+#endif // H_PRESELECTION_HELPER

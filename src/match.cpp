@@ -44,18 +44,18 @@
 using namespace std;
 using namespace cv;
 
-MatchAspect::MatchAspect(const CachedData &cachedData_, const double &k_) :
-	cachedData(cachedData_), k(k_) {}
+MatchAspect::MatchAspect(const double &k_) : k(k_) {}
 
 double MatchAspect::assessMatch(const Mat &patch,
 								const SymData &symData,
+								const CachedData &cachedData,
 								MatchParams &mp) const {
-	fillRequiredMatchParams(patch, symData, mp);
-	return score(mp);
+	fillRequiredMatchParams(patch, symData, cachedData, mp);
+	return score(mp, cachedData);
 }
 
-double MatchAspect::maxScore() const {
-	return score(MatchParams::perfectMatch());
+double MatchAspect::maxScore(const CachedData &cachedData) const {
+	return score(MatchParams::perfectMatch(), cachedData);
 }
 
 bool MatchAspect::enabled() const {
@@ -83,8 +83,7 @@ REGISTERED_MATCH_ASPECT(GravitationalSmoothness);
 REGISTERED_MATCH_ASPECT(DirectionalSmoothness);
 REGISTERED_MATCH_ASPECT(LargerSym);
 
-FgMatch::FgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kSdevFg()) {}
+FgMatch::FgMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevFg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -95,12 +94,13 @@ For other sdev-s       =>
 	returns sdev for k=1
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
-double FgMatch::score(const MatchParams &mp) const {
+double FgMatch::score(const MatchParams &mp, const CachedData&) const {
 	return pow(1. - mp.sdevFg.value() / CachedData::sdevMaxFgBg(), k);
 }
 
 void FgMatch::fillRequiredMatchParams(const Mat &patch,
 									  const SymData &symData,
+									  const CachedData&,
 									  MatchParams &mp) const {
 	mp.computeSdevFg(patch, symData);
 }
@@ -111,8 +111,7 @@ double FgMatch::relativeComplexity() const {
 	return 3.1;
 }
 
-BgMatch::BgMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kSdevBg()) {}
+BgMatch::BgMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevBg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -123,12 +122,13 @@ For other sdev-s       =>
 	returns sdev for k=1
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
-double BgMatch::score(const MatchParams &mp) const {
-	return pow(1. - mp.sdevBg.value()/CachedData::sdevMaxFgBg(), k);
+double BgMatch::score(const MatchParams &mp, const CachedData&) const {
+	return pow(1. - mp.sdevBg.value() / CachedData::sdevMaxFgBg(), k);
 }
 
 void BgMatch::fillRequiredMatchParams(const Mat &patch,
 									  const SymData &symData,
+									  const CachedData&,
 									  MatchParams &mp) const {
 	mp.computeSdevBg(patch, symData);
 }
@@ -139,8 +139,7 @@ double BgMatch::relativeComplexity() const {
 	return 3.2;
 }
 
-EdgeMatch::EdgeMatch(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kSdevEdge()) {}
+EdgeMatch::EdgeMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevEdge()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -151,12 +150,13 @@ For other sdev-s       =>
 	returns sdev for k=1
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
-double EdgeMatch::score(const MatchParams &mp) const {
-	return pow(1. - mp.sdevEdge.value()/CachedData::sdevMaxEdge(), k);
+double EdgeMatch::score(const MatchParams &mp, const CachedData&) const {
+	return pow(1. - mp.sdevEdge.value() / CachedData::sdevMaxEdge(), k);
 }
 
 void EdgeMatch::fillRequiredMatchParams(const Mat &patch,
 										const SymData &symData,
+										const CachedData&,
 										MatchParams &mp) const {
 	mp.computeSdevEdge(patch, symData);
 }
@@ -166,19 +166,19 @@ double EdgeMatch::relativeComplexity() const {
 	return 4.;
 }
 
-BetterContrast::BetterContrast(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kContrast()) {}
+BetterContrast::BetterContrast(const MatchSettings &cfg) : MatchAspect(cfg.get_kContrast()) {}
 
 /**
 Encourages larger contrasts:
 0 for no contrast; 1 for max contrast (255)
 */
-double BetterContrast::score(const MatchParams &mp) const {
+double BetterContrast::score(const MatchParams &mp, const CachedData&) const {
 	return pow(abs(mp.contrast.value()) / 255., k);
 }
 
 void BetterContrast::fillRequiredMatchParams(const Mat &patch,
 											 const SymData &symData,
+											 const CachedData&,
 											 MatchParams &mp) const {
 	mp.computeContrast(patch, symData);
 }
@@ -189,8 +189,8 @@ double BetterContrast::relativeComplexity() const {
 	return 2.;
 }
 
-GravitationalSmoothness::GravitationalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kMCsOffset()) {}
+GravitationalSmoothness::GravitationalSmoothness(const MatchSettings &cfg) :
+	MatchAspect(cfg.get_kMCsOffset()) {}
 
 /**
 Discourages mcsOffset larger than preferredMaxMcDist:
@@ -201,13 +201,14 @@ Discourages mcsOffset larger than preferredMaxMcDist:
 Larger k induces larger penalty for large mcsOffset and
 also larger reward for small mcsOffset
 */
-double GravitationalSmoothness::score(const MatchParams &mp) const {
+double GravitationalSmoothness::score(const MatchParams &mp, const CachedData&) const {
 	return pow(1. + (CachedData::preferredMaxMcDist() - mp.mcsOffset.value()) *
 			   CachedData::invComplPrefMaxMcDist(), k);
 }
 
 void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
 													  const SymData &symData,
+													  const CachedData &cachedData,
 													  MatchParams &mp) const {
 	mp.computeMcsOffset(patch, symData, cachedData);
 }
@@ -217,8 +218,8 @@ double GravitationalSmoothness::relativeComplexity() const {
 	return 15.;
 }
 
-DirectionalSmoothness::DirectionalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kCosAngleMCs()) {}
+DirectionalSmoothness::DirectionalSmoothness(const MatchSettings &cfg) :
+	MatchAspect(cfg.get_kCosAngleMCs()) {}
 
 /**
 Penalizes large angle between mc-s, but no so much when they are close to each other.
@@ -230,7 +231,7 @@ The mc-s are consider close when the distance between them is < PreferredMaxMcDi
 		- >1 for mcsOffset < PreferredMaxMcDist
 So, large k penalizes large (angles & mc-s offsets) and encourages small ones from both.
 */
-double DirectionalSmoothness::score(const MatchParams &mp) const {
+double DirectionalSmoothness::score(const MatchParams &mp, const CachedData&) const {
 	static const Point2d ORIGIN; // (0, 0)
 	static const double TWOmSQRT2 = 2. - sqrt(2);
 
@@ -264,6 +265,7 @@ double DirectionalSmoothness::score(const MatchParams &mp) const {
 
 void DirectionalSmoothness::fillRequiredMatchParams(const Mat &patch,
 													const SymData &symData,
+													const CachedData &cachedData,
 													MatchParams &mp) const {
 	mp.computeMcsOffset(patch, symData, cachedData);
 }
@@ -274,20 +276,20 @@ double DirectionalSmoothness::relativeComplexity() const {
 	return 15.1;
 }
 
-LargerSym::LargerSym(const CachedData &cachedData_, const MatchSettings &cfg) :
-	MatchAspect(cachedData_, cfg.get_kSymDensity()) {}
+LargerSym::LargerSym(const MatchSettings &cfg) : MatchAspect(cfg.get_kSymDensity()) {}
 
 /**
 Encourages approximations with symbols filling at least x% of their box.
 The threshold x is provided by smallGlyphsCoverage.
 Returns < 1 for glyphs under threshold;   >= 1 otherwise
 */
-double LargerSym::score(const MatchParams &mp) const {
+double LargerSym::score(const MatchParams &mp, const CachedData &cachedData) const {
 	return pow(mp.symDensity.value() + 1. - cachedData.smallGlyphsCoverage, k);
 }
 
 void LargerSym::fillRequiredMatchParams(const Mat&,
 										const SymData &symData,
+										const CachedData&,
 										MatchParams &mp) const {
 	mp.computeSymDensity(symData);
 }

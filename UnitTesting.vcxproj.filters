@@ -53,6 +53,12 @@
     <ClInclude Include="test\mockUi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="test\preselectionHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\fileIterationHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\BPmonoBold.ttf">

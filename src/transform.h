@@ -66,14 +66,16 @@ protected:
 	cv::Mat result;				///< the result of the transformation
 
 	std::string studiedCase;	///< unique id for the studied case
-	cv::Mat resized;			///< resize of the original
+	cv::Mat resized;			///< resized version of the original
+	cv::Mat resizedForTinySyms;	///< resized version of the original used by tiny symbols preselection
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
-	bool isColor = false;		///< is the image to approximate color?
+	cv::Mat resBlForTinySyms;	///< blurred version of the resized used by tiny symbols preselection
 	int w = 0;					///< width of the resized image
 	int h = 0;					///< height of the resized image
 	unsigned sz = 0U;			///< font size used during transformation
 	unsigned symsCount = 0U;	///< symbols count within the used cmap
 	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
+	std::vector<std::vector<BestMatch>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
 	volatile unsigned symsBatchSz;	///< runtime control of how large next symbol batches are
 
 	void updateStudiedCase(int rows, int cols); ///< Updates the unique id for the studied case

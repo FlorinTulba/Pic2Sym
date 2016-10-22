@@ -42,6 +42,12 @@
 #include "matchParams.h"
 
 #include <boost/test/unit_test.hpp>
+#include <boost/preprocessor/cat.hpp>
+
+/// Defines test case named Name and ensures it will show its name when launched
+#define AutoTestCase(Name) \
+	BOOST_AUTO_TEST_CASE(Name) { \
+		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
 
 /// unit testing namespace
 namespace ut {

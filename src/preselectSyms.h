@@ -90,7 +90,7 @@ public:
 	@param origThreshScore min score to enter the short list
 	*/
 	TopCandidateMatches(unsigned shortListLength = 1U,
-						double origThreshScore = std::numeric_limits<double>::lowest());
+						double origThreshScore = 0.);
 
 	void reset(double origThreshScore); ///< clears the short list and establishes a new threshold score
 

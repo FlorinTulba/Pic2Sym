@@ -35,20 +35,20 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "countSkippedAspects.h" // keep this before the include of "transform.h"
-#include "transform.h" // keep this after the include of "countSkippedAspects.h"
-#include "match.h"
-#include "picTransformProgressTracker.h"
-#include "misc.h"
-#include "timing.h"
+#include "transform.h"
 #include "settings.h"
-#include "appStart.h"
 #include "matchParams.h"
 #include "patch.h"
+#include "preselectSyms.h"
+#include "match.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
+#include "picTransformProgressTracker.h"
 #include "transformTrace.h"
 #include "ompTrace.h"
+#include "appStart.h"
+#include "timing.h"
+#include "misc.h"
 
 #include <omp.h>
 
@@ -160,9 +160,10 @@ static void logDataForBestMatches(volatile bool &isCanceled,
 #endif // _DEBUG && !UNIT_TESTING
 
 extern const Size BlurWinSize;
-extern const double BlurStandardDeviation;
-extern const bool UsingOMP, ParallelizeTr_PatchRowLoops;
-extern const unsigned SymsBatch_defaultSz;
+extern const double BlurStandardDeviation, AdmitOnShortListEvenForInferiorScoreFactor;
+extern const bool UsingOMP, ParallelizeTr_PatchRowLoops, PreselectionByTinySyms;
+extern const unsigned SymsBatch_defaultSz, ShortListLength;
+extern unsigned TinySymsSz();
 
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 						 MatchEngine &me_, Img &img_) :
@@ -251,37 +252,61 @@ void Transformer::run() {
 
 void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion,
 								   unsigned patchesPerCol, unsigned patchesPerRow) {
+	static const unsigned TinySymsSize = TinySymsSz();
+
 	// processing new resized image
 	if(newResizedImg || draftMatches.empty()) {
-		resized = resizedVersion; isColor = img.isColor();
-		GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation, 0., BORDER_REPLICATE);
-
+		const bool isColor = img.isColor();
+		resized = resizedVersion;
+		GaussianBlur(resized, resizedBlurred, BlurWinSize,
+					 BlurStandardDeviation, BlurStandardDeviation, BORDER_REPLICATE);
+		
 		draftMatches.clear(); draftMatches.resize(patchesPerCol);
+
+		if(PreselectionByTinySyms) {
+			const Size imgSzForTinySyms(TinySymsSize * patchesPerRow, TinySymsSize * patchesPerCol);
+			resize(resized, resizedForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
+			resize(resizedBlurred, resBlForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
+			draftMatchesForTinySyms.clear(); draftMatchesForTinySyms.resize(patchesPerCol);
+		}
 
 #pragma omp parallel if(UsingOMP)
 #pragma omp for schedule(static, 1) nowait
-			for(int r = 0; r < h; r += (int)sz) {
-				const Range rowRange(r, r+(int)sz);
+		for(int r = 0; r < (int)patchesPerCol; ++r) {
+			const auto initDraftRow = [&] (vector<vector<BestMatch>> &draft,
+										   const Mat &res, const Mat &resBlurred, 
+										   int patchSz) {
+				const int row = r * patchSz;
+				const Range rowRange(row, row + patchSz);
 
-				auto &draftMatchesRow = draftMatches[r/(int)sz]; draftMatchesRow.reserve(patchesPerRow);
-				for(unsigned c = 0U; c < (unsigned)w; c += sz) {
-					const Range colRange(c, c+sz);
-					const Mat patch(resized, rowRange, colRange),
-						blurredPatch(resizedBlurred, rowRange, colRange);
+				auto &draftMatchesRow = draft[r]; draftMatchesRow.reserve(patchesPerRow);
+				for(int c = 0, cLim = (int)patchesPerRow * patchSz; c < cLim; c += patchSz) {
+					const Range colRange(c, c+patchSz);
+					const Mat patch(res, rowRange, colRange),
+							blurredPatch(resBlurred, rowRange, colRange);
 
 					// Building a Patch with the blurred patch computed for its actual borders
 					draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
 				}
+			};
+
+			initDraftRow(draftMatches, resized, resizedBlurred, (int)sz);
+			if(PreselectionByTinySyms)
+				initDraftRow(draftMatchesForTinySyms, resizedForTinySyms, resBlForTinySyms, (int)TinySymsSize);
 		}
 	} else { // processing same ResizedImg
 #pragma omp parallel if(UsingOMP)
 #pragma omp for schedule(static, 1) nowait
 		for(int r = 0; r < (int)patchesPerCol; ++r) {
-			auto &draftMatchesRow = draftMatches[r];
-			for(unsigned c = 0U; c < patchesPerRow; ++c) {
-				auto &draftMatch = draftMatchesRow[c];
-				draftMatch.reset(); // leave nothing but the Patch field
-			}
+			const auto resetDraftRow = [&] (vector<vector<BestMatch>> &draft) {
+				auto &draftMatchesRow = draft[r];
+				for(auto &draftMatch : draftMatchesRow)
+					draftMatch.reset(); // leave nothing but the Patch field
+			};
+
+			resetDraftRow(draftMatches);
+			if(PreselectionByTinySyms)
+				resetDraftRow(draftMatchesForTinySyms);
 		}
 	}
 }
@@ -290,30 +315,83 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	// Cannot set finalizedRows as reduction(+ : finalizedRows) in the for below,
 	// since its value is checked during the loop - the same story as for isCanceled
 	volatile size_t finalizedRows = 0U;
-	const size_t rowsOfPatches = size_t((unsigned)h/sz),
+	const int patchesPerCol = h / (int)sz;
+	const size_t rowsOfPatches = size_t(patchesPerCol),
 				batchSz = size_t(upperIdx - fromIdx),
 				prevSteps = (size_t)fromIdx * rowsOfPatches;
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
-	for(int r = 0; r < h; r += sz) {
+	for(int r = 0; r < patchesPerCol; ++r) {
 		if(isCanceled)
 			continue; // OpenMP doesn't accept break, so just continue with empty iterations
 
-		ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: %d - %d; row = %d", fromIdx, upperIdx-1, r);
-		const Range rowRange(r, r+sz);
-		auto &draftMatchesRow = draftMatches[(unsigned)r/sz];
+		ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: [%d - %d); row = %d", fromIdx, upperIdx, r);
 
-		for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
-			const Range colRange(c, c+(int)sz);
+		const int row = r * (int)sz;
+		const Range rowRange(row, row + (int)sz);
+		auto &draftMatchesRow = draftMatches[r];
 
-			auto &draftMatch = draftMatchesRow[patchColumn];
-			if(me.findBetterMatch(draftMatch, fromIdx, upperIdx)) {
-				const Mat &approximation = draftMatch.bestVariant.approx;
-				Mat destRegion(result, rowRange, colRange);
-				approximation.copyTo(destRegion);
+		/// Update the visualized draft
+		const auto patchImproved = [&] (const BestMatch &draftMatch, int startCol) {
+			const Mat &approximation = draftMatch.bestVariant.approx;
+			Mat destRegion(result, rowRange, Range(startCol, startCol + (int)sz));
+			approximation.copyTo(destRegion);
+		};
+		
+		/// Update PatchApprox for uniform Patch only during the compare with 1st sym (from 1st batch)
+		const auto manageUnifPatch = [&] (BestMatch &draftMatch, int startCol) {
+			if(draftMatch.bestVariant.approx.empty()) {
+				draftMatch.updatePatchApprox(cfg.matchSettings());
+				patchImproved(draftMatch, startCol);
 			}
-		} // columns loop
+		};
+
+		/// Determines if a given patch is worth approximating (Uniform patches don't make sense approximating)
+		const auto checkUnifPatch = [&] (BestMatch &draftMatch) {
+			return !draftMatch.patch.needsApproximation;
+		};
+
+		if(PreselectionByTinySyms) {
+			auto &draftMatchesRowTiny = draftMatchesForTinySyms[r];
+
+			TopCandidateMatches tcm(ShortListLength);
+
+			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
+				// Skip patches who appear rather uniform either in tiny or normal format
+				auto &draftMatch = draftMatchesRow[patchColumn];
+				auto &draftMatchTiny = draftMatchesRowTiny[patchColumn];
+				if(checkUnifPatch(draftMatchTiny) || checkUnifPatch(draftMatch)) {
+					manageUnifPatch(draftMatch, c);
+					continue;
+				}
+
+				// Using the actual score as reference for the original threshold
+				tcm.reset(draftMatchTiny.score = draftMatch.score * AdmitOnShortListEvenForInferiorScoreFactor);
+
+				if(me.improvesBasedOnBatch(fromIdx, upperIdx, draftMatchTiny, &tcm)) {
+					tcm.prepareReport();
+					auto &shortList = tcm.getShortList();
+					
+					// Examine shortList on actual patches and symbols, not tiny ones
+					if(me.improvesBasedOnBatchShortList(shortList, draftMatch))
+						patchImproved(draftMatch, c);
+				}
+			} // columns loop
+		
+		} else { // PreselectionByTinySyms == false here
+			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
+				// Skip patches who appear rather uniform
+				auto &draftMatch = draftMatchesRow[patchColumn];
+				if(checkUnifPatch(draftMatch)) {
+					manageUnifPatch(draftMatch, c);
+					continue;
+				}
+
+				if(me.improvesBasedOnBatch(fromIdx, upperIdx, draftMatch))
+					patchImproved(draftMatch, c);
+			} // columns loop
+		}
 
 #pragma omp atomic
 		++finalizedRows;
@@ -322,15 +400,16 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 		if((omp_get_thread_num() == 0) && (finalizedRows < rowsOfPatches)) {
 			imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * finalizedRows);
 			// Only master thread checks cancellation status
-			if(checkCancellationRequest()) {
+			if(checkCancellationRequest())
 				isCanceled = true;
-				imgTransformTaskMonitor.taskAborted();
-			}
 		}
 	} // rows loop
-
-	if(!isCanceled)
-		imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * rowsOfPatches);
+	
+	if(isCanceled)
+		imgTransformTaskMonitor.taskAborted();
+	else
+		imgTransformTaskMonitor.taskAdvanced(
+						prevSteps + batchSz * rowsOfPatches); // another finished batch
 
 	// At the end of this batch, display draft result, unless this is the last batch.
 	// For the last batch (upperIdx == symsCount), the timer's destructor

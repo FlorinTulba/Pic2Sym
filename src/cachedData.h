@@ -88,9 +88,14 @@ struct CachedData {
 
 	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
 
+	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
+
+	CachedData(bool forTinySyms_ = false);
+
 protected:
 	friend class MatchEngine;
 	void update(unsigned sz_, const FontEngine &fe_);
+	void update(const FontEngine &fe_);
 
 #ifdef UNIT_TESTING // UnitTesting project should have public access to 'useNewSymSize' method
 public:

@@ -95,7 +95,10 @@ const VTinySyms& FontEngine::getTinySyms() {
 			then resized to TinySymsSize, so to get more precise approximations (non-zero fractional parts)
 			and to avoid hinting that increases for small font sizes.
 			*/
-			static const unsigned RefSymsSize = TinySymsSize * (unsigned)TinySym::RatioRefTiny;
+			static const unsigned RefSymsSize = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
+								RefSymsSizeX64 = RefSymsSize << 6;
+			static const double RefSymsSizeD = (double)RefSymsSize,
+								maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
 
 			static Mat consec(1, RefSymsSize, CV_64FC1), revConsec;
 			if(revConsec.empty()) {
@@ -103,32 +106,23 @@ const VTinySyms& FontEngine::getTinySyms() {
 				flip(consec, revConsec, 1);
 				revConsec = revConsec.t();
 			}
-
-			FT_Size_RequestRec  req;
-			req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
-			req.horiResolution = req.vertResolution = 72U;
-			req.height = req.width = (FT_ULong)(RefSymsSize << 6);
-			FT_Error error = FT_Request_Size(face, &req);
-			if(error != FT_Err_Ok)
-				THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize) + 
-									"  Error: " + to_string(error), invalid_argument);
-
-			FT_BBox bbox = face->bbox;
-			const unsigned bboxHeight = unsigned(bbox.yMax - bbox.yMin + 1),
-							bboxWidth = unsigned(bbox.xMax - bbox.xMin + 1);
-			const double RefSymsSizeD = (double)RefSymsSize,
-							vertRatio = RefSymsSizeD / bboxHeight,
-							horizRatio = RefSymsSizeD / bboxWidth;
-			static const double maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
-
-			bbox.xMin = (FT_Pos)round(bbox.xMin*horizRatio); bbox.xMax = (FT_Pos)(bbox.xMin + RefSymsSize - 1);
-			bbox.yMin = (FT_Pos)round(bbox.yMin*vertRatio); bbox.yMax = (FT_Pos)(bbox.yMin + RefSymsSize - 1);
+			
+			FT_BBox bbox;
+			double factorH, factorV;
+			adjustScaling(RefSymsSize, bbox, symsCount, factorH, factorV);
+			tinySyms.reserve(symsCount);
+			const double szHd = factorH * RefSymsSizeX64,
+						szVd = factorV * RefSymsSizeX64;
+			const FT_ULong szH = (FT_ULong)floor(szHd),
+							szV = (FT_ULong)floor(szVd);
 
 			size_t i = 0U;
 			FT_UInt idx;
-			tinySyms.reserve(symsCount);
+			FT_Size_RequestRec  req;
+			req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
+			req.horiResolution = req.vertResolution = 72U;
 			for(FT_ULong c = FT_Get_First_Char(face, &idx); idx != 0; c = FT_Get_Next_Char(face, c, &idx), ++i) {
-				error = FT_Load_Char(face, c, FT_LOAD_RENDER);
+				FT_Error error = FT_Load_Char(face, c, FT_LOAD_RENDER);
 				if(error != FT_Err_Ok)
 					THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + 
 										"  Error: " + to_string(error), invalid_argument);
@@ -142,13 +136,13 @@ const VTinySyms& FontEngine::getTinySyms() {
 
 				if(width > RefSymsSize || height > RefSymsSize) {
 					// Adjust font size to fit the RefSymsSize x RefSymsSize square
-					req.height = (FT_ULong)floor(((FT_ULong)(RefSymsSize)<<6) / max(1., height/RefSymsSizeD));
-					req.width = (FT_ULong)floor(((FT_ULong)(RefSymsSize)<<6) / max(1., width/RefSymsSizeD));
+					req.height = (FT_ULong)floor(szVd / max(1., height/RefSymsSizeD));
+					req.width = (FT_ULong)floor(szHd / max(1., width/RefSymsSizeD));
 					error = FT_Request_Size(face, &req);
 					if(error != FT_Err_Ok)
 						THROW_WITH_VAR_MSG("Couldn't set font size: " + 
-											to_string(RefSymsSize*max(1., height/RefSymsSizeD)) +
-											" x " + to_string(RefSymsSize*max(1., width/RefSymsSizeD)) +
+											to_string(req.height) +
+											" x " + to_string(req.width) +
 											"  Error: " + to_string(error), invalid_argument);
 
 					error = FT_Load_Char(face, c, FT_LOAD_RENDER);
@@ -159,10 +153,13 @@ const VTinySyms& FontEngine::getTinySyms() {
 					b = g->bitmap;
 
 					// Restore font size
-					req.height = req.width = (FT_ULong)(RefSymsSize << 6);
+					req.height = szV;
+					req.width = szH;
 					error = FT_Request_Size(face, &req);
 					if(error != FT_Err_Ok)
-						THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(RefSymsSize) + 
+						THROW_WITH_VAR_MSG("Couldn't set font size: " +
+											to_string(req.height) +
+											" x " + to_string(req.width) +
 											"  Error: " + to_string(error), invalid_argument);
 				}
 				const FT_Int left = g->bitmap_left, top = g->bitmap_top;

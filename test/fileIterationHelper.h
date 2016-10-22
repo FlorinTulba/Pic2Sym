@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the Pic2Sym project.
+ This file belongs to the UnitTesting project.
 
  Copyrights from the libraries used by the program:
  - (c) 2015 Boost (www.boost.org)
@@ -35,29 +35,26 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
-#include "matchAspectsFactory.h"
-#include "matchAspects.h"
-#include "structuralSimilarity.h"
-#include "misc.h"
+#ifndef H_FILE_ITERATION_HELPER
+#define H_FILE_ITERATION_HELPER
 
-using namespace std;
+#include <boost/preprocessor/cat.hpp>
 
-std::shared_ptr<MatchAspect> MatchAspectsFactory::create(const string &aspectName,
-														 const MatchSettings &ms) {
-#define HANDLE_MATCH_ASPECT(Aspect) \
-	if(aspectName.compare(#Aspect) == 0) \
-		return std::make_shared<Aspect>(ms)
+/// Generates [Name][Suffix] while waiting first their evaluation, unlike Name##Suffix
+#define suffixedItem(Name, Suffix) \
+	BOOST_PP_CAT(Name, Suffix)
 
-	HANDLE_MATCH_ASPECT(StructuralSimilarity);
-	HANDLE_MATCH_ASPECT(FgMatch);
-	HANDLE_MATCH_ASPECT(BgMatch);
-	HANDLE_MATCH_ASPECT(EdgeMatch);
-	HANDLE_MATCH_ASPECT(BetterContrast);
-	HANDLE_MATCH_ASPECT(GravitationalSmoothness);
-	HANDLE_MATCH_ASPECT(DirectionalSmoothness);
-	HANDLE_MATCH_ASPECT(LargerSym);
+/// Creates test suite [SuiteName][Suffix] that uses the FixtName fixture class
+#define FixtureTestSuiteSuffix(FixtName, SuiteName, Suffix) \
+	BOOST_FIXTURE_TEST_SUITE(suffixedItem(SuiteName, Suffix), FixtName)
 
-#undef HANDLE_ASPECT
+/// Defines test case named Name and ensures it will show its name plus some information when launched
+#define AutoTestCase1(Name, Info1) \
+	BOOST_AUTO_TEST_CASE(suffixedItem(Name, Info1)) { \
+		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name) BOOST_PP_STRINGIZE(Info1))
 
-	THROW_WITH_VAR_MSG(aspectName + " is an invalid aspect name!", invalid_argument);
-}
+/// Defines data test case named Name and ensures it will show its name plus some information when launched
+#define DataTestCase(Name, Info, ...) \
+	BOOST_DATA_TEST_CASE(suffixedItem(Name, Info), __VA_ARGS__)
+
+#endif // H_FILE_ITERATION_HELPER

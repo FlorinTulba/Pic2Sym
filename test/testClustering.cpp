@@ -35,7 +35,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ****************************************************************************************/
 
+/*
+Iterating this file twice, for both values of the boolean setting PreselectionByTinySyms.
+It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approach.
+*/
+#if !BOOST_PP_IS_ITERATING
+#	include <boost/preprocessor/iteration/iterate.hpp>
+
+// Common part until #else (included just once)
 #include "testMain.h"
+#include "preselectionHelper.h"
+#include "fileIterationHelper.h"
 #include "clusterEngine.h"
 #include "noClustering.h"
 #include "partitionClustering.h"
@@ -50,14 +60,7 @@ using namespace std;
 using namespace cv;
 
 extern const string ClusterAlgName;
-extern const bool FastDistSymToClusterComputation;
-extern const double MaxAvgProjErrForPartitionClustering;
-extern const double MaxRelMcOffsetForPartitionClustering;
-extern const double MaxDiffAvgPixelValForPartitionClustering;
-extern const bool TTSAS_Accept1stClusterThatQualifiesAsParent;
 extern const double TTSAS_Threshold_Member;
-extern const double MaxRelMcOffsetForTTSAS_Clustering;
-extern const double MaxDiffAvgPixelValForTTSAS_Clustering;
 extern unsigned TinySymsSz();
 
 namespace ut {
@@ -75,7 +78,8 @@ namespace ut {
 	};
 
 	/// Provides a way to use specific clustering settings during each test and revert them afterwards
-	class ClusteringSettingsFixt : public Fixt {
+	template<bool PreselMode>
+	class ClusteringSettingsFixt : public PreselFixt<PreselMode> {
 	protected:
 		JobMonitor jm;			///< a job monitor instance
 		TinySymsProvider tsp;	///< a provider of tiny symbols
@@ -84,14 +88,7 @@ namespace ut {
 		Type orig##Setting = Setting, &ref##Setting = const_cast<Type&>(Setting)
 
 		DefineCopyAndRef(ClusterAlgName, string);
-		DefineCopyAndRef(FastDistSymToClusterComputation, bool);
-		DefineCopyAndRef(TTSAS_Accept1stClusterThatQualifiesAsParent, bool);
-		DefineCopyAndRef(MaxAvgProjErrForPartitionClustering, double);
-		DefineCopyAndRef(MaxRelMcOffsetForPartitionClustering, double);
-		DefineCopyAndRef(MaxDiffAvgPixelValForPartitionClustering, double);
 		DefineCopyAndRef(TTSAS_Threshold_Member, double);
-		DefineCopyAndRef(MaxRelMcOffsetForTTSAS_Clustering, double);
-		DefineCopyAndRef(MaxDiffAvgPixelValForTTSAS_Clustering, double);
 
 #undef DefineCopyAndRef
 
@@ -102,15 +99,7 @@ namespace ut {
 				ref##Setting = orig##Setting
 
 			RevertIfChanged(ClusterAlgName);
-			RevertIfChanged(FastDistSymToClusterComputation);
-			RevertIfChanged(TTSAS_Accept1stClusterThatQualifiesAsParent);
-			RevertIfChanged(MaxAvgProjErrForPartitionClustering);
-			RevertIfChanged(MaxRelMcOffsetForPartitionClustering);
-			RevertIfChanged(MaxDiffAvgPixelValForPartitionClustering);
-			RevertIfChanged(MaxDiffAvgPixelValForPartitionClustering);
 			RevertIfChanged(TTSAS_Threshold_Member);
-			RevertIfChanged(MaxRelMcOffsetForTTSAS_Clustering);
-			RevertIfChanged(MaxDiffAvgPixelValForTTSAS_Clustering);
 
 #undef RevertIfChanged
 		}
@@ -143,12 +132,29 @@ namespace ut {
 					{ { SymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_64FC1, Scalar(0.)) } },
 					Mat(TinySymsSize, TinySymsSize, CV_8UC1, Scalar(255U)));
 
+	/**
+	Initializes the diagonal projection of a diagonal matrix of size TinySymsSize
+	All elements 0 except the central one, which is TinySymsSize * 1 = TinySymsSize
+
+	Needed to provide a parameter for constructing MainDiagTinySym object from below.
+	*/
+	const Mat slashProjectionOfMatWithMainDiagSet() {
+		static Mat result(1, TinySymDiagsCount, CV_64FC1, 0.);
+		static bool initialized = false;
+		if(!initialized) {
+			result.at<double>(TinySymsSize - 1U) = (double)TinySymsSize;
+			initialized = true;
+		}
+		return result.clone();
+	}
+
 	const TinySym EmptyTinySym,
 		MainDiagTinySym(Point2d(.5, .5), .2, Mat::eye(TinySymsSize, TinySymsSize, CV_64FC1),
 						Mat::ones(1, TinySymsSize, CV_64FC1), Mat::ones(1, TinySymsSize, CV_64FC1),
-						(Mat_<double>(1, TinySymDiagsCount) << 0., 0., 0., 0., 5., 0., 0., 0., 0.),
+						slashProjectionOfMatWithMainDiagSet(),
 						Mat::ones(1, TinySymDiagsCount, CV_64FC1));
 
+	/// Updates the central pixel of the tiny symbol sym and all the other involved parameters
 	void updateCentralPixel(TinySym &sym, double pixelVal) {
 		const double oldPixelVal = sym.mat.at<double>(TinySymMidSide, TinySymMidSide),
 					oldPixSum = sym.avgPixVal * TinySymArea,
@@ -176,6 +182,13 @@ namespace ut {
 #undef UpdateProjectionAt
 	};
 
+	/// negSym from tiny symbols need to have double type
+	void fixNegSyms(VSymData &tinySymsSet) {
+		for(auto &tsd : tinySymsSet)
+			tsd.negSym.convertTo(tsd.negSym, CV_64FC1);
+	}
+
+	/// symIdx from the symsSet become consecutive values
 	void fixSymIndices(VSymData &symsSet) {
 		size_t idx = 0U;
 		for(auto &sd : symsSet)
@@ -185,30 +198,52 @@ namespace ut {
 
 using namespace ut;
 
-BOOST_FIXTURE_TEST_SUITE(ClusterEngineCreation_Tests, ClusteringSettingsFixt)
-	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_InvalidAlgName_UsingNoClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_InvalidAlgName_UsingNoClustering");
+/*
+Iterating this file 2 times, with counter values from 0 to 1.
+	0 will be used for PreselectionByTinySyms set on false
+	1 will be used for PreselectionByTinySyms set on true
+*/
+#	define BOOST_PP_ITERATION_LIMITS		(0, 1)
+#	define BOOST_PP_FILENAME_1				"testClustering.cpp" /* __FILE__ didn't work! */
+#	include BOOST_PP_ITERATE()
+
+#else // BOOST_PP_IS_ITERATING is 1 (true) -- The rest of the file is iterated twice
+
+#	if BOOST_PP_ITERATION() == 0
+#		define SuiteFixture	ClusteringSettingsFixt<false>
+#		define SuiteSuffix	_noPreselection
+
+#	elif BOOST_PP_ITERATION() == 1
+#		undef SuiteFixture
+#		define SuiteFixture	ClusteringSettingsFixt<true>
+#		undef SuiteSuffix
+#		define SuiteSuffix	_withPreselection
+
+#	else // BOOST_PP_ITERATION() >= 2
+#		undef SuiteFixture
+#		undef SuiteSuffix
+#	endif // BOOST_PP_ITERATION()
+
+FixtureTestSuiteSuffix(SuiteFixture, ClusterEngineCreation_Tests, SuiteSuffix)
+	AutoTestCase1(ClusterEngineCreation_InvalidAlgName_UsingNoClustering, SuiteSuffix);
 		refClusterAlgName = "Invalid_Algorithm_Name!!!!";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<NoClustering>());
 	}
 
-	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_NoClusteringRequest_UsingNoClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_NoClusteringRequest_UsingNoClustering");
+	AutoTestCase1(ClusterEngineCreation_NoClusteringRequest_UsingNoClustering, SuiteSuffix);
 		refClusterAlgName = "None";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<NoClustering>());
 	}
 
-	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering");
+	AutoTestCase1(ClusterEngineCreation_PartitionClusteringRequest_UsingPartitionClustering, SuiteSuffix);
 		refClusterAlgName = "Partition";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<PartitionClustering>());
 	}
 
-	BOOST_AUTO_TEST_CASE(ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering) {
-		BOOST_TEST_MESSAGE("Running ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering");
+	AutoTestCase1(ClusterEngineCreation_TTSASClusteringRequest_UsingTTSASClustering, SuiteSuffix);
 		refClusterAlgName = "TTSAS";
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<TTSAS_Clustering>());
@@ -216,52 +251,52 @@ BOOST_FIXTURE_TEST_SUITE(ClusterEngineCreation_Tests, ClusteringSettingsFixt)
 
 BOOST_AUTO_TEST_SUITE_END() // ClusterEngineCreation
 
-BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
-	BOOST_AUTO_TEST_CASE(UsingNoClustering_6identicalSymbols_0nonTrivialClusters) {
-		BOOST_TEST_MESSAGE("Running UsingNoClustering_6identicalSymbols_0nonTrivialClusters");
+FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
+	AutoTestCase1(UsingNoClustering_6identicalSymbols_0nonTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "None";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
-		ce.process(symsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
+		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
+		ce.process(symsSet, tinySymsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == symsCount);
 	}
 
-	BOOST_AUTO_TEST_CASE(UsingPartitionClustering_6identicalSymbols_noTrivialClusters) {
-		BOOST_TEST_MESSAGE("Running UsingPartitionClustering_6identicalSymbols_noTrivialClusters");
+	AutoTestCase1(UsingPartitionClustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "Partition";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
-		ce.process(symsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
+		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
+		ce.process(symsSet, tinySymsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
 
-	BOOST_AUTO_TEST_CASE(UsingTTSASclustering_6identicalSymbols_noTrivialClusters) {
-		BOOST_TEST_MESSAGE("Running UsingTTSASclustering_6identicalSymbols_noTrivialClusters");
+	AutoTestCase1(UsingTTSASclustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
-		ce.process(symsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
+		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
+		ce.process(symsSet, tinySymsSet);
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
 
-	BOOST_AUTO_TEST_CASE(UsingPartitionClustering_x0x0xSequence_2Clusters) {
-		BOOST_TEST_MESSAGE("Running UsingPartitionClustering_x0x0xSequence_2Clusters");
+	AutoTestCase1(UsingPartitionClustering_x0x0xSequence_2Clusters, SuiteSuffix);
 		refClusterAlgName = "Partition";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym, EmptyTinySym, MainDiagTinySym, EmptyTinySym, MainDiagTinySym };
 		const size_t symsCount = tsp.tinySyms.size();
-		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
-		ce.process(symsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
+		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
+		ce.process(symsSet, tinySymsSet);
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);
@@ -273,15 +308,15 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 		BOOST_REQUIRE(clusterOffsets.find((unsigned)symsCount) != clusterOffsets.end());
 	}
 
-	BOOST_AUTO_TEST_CASE(UsingTTSASclustering_x0x0xSequence_2Clusters) {
-		BOOST_TEST_MESSAGE("Running UsingTTSASclustering_x0x0xSequence_2Clusters");
+	AutoTestCase1(UsingTTSASclustering_x0x0xSequence_2Clusters, SuiteSuffix);
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym, EmptyTinySym, MainDiagTinySym, EmptyTinySym, MainDiagTinySym };
 		const size_t symsCount = tsp.tinySyms.size();
-		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
-		ce.process(symsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
+		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
+		ce.process(symsSet, tinySymsSet);
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);
@@ -295,9 +330,8 @@ BOOST_FIXTURE_TEST_SUITE(BasicClustering_Tests, ClusteringSettingsFixt)
 
 BOOST_AUTO_TEST_SUITE_END() // BasicClustering_Tests
 
-BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
-	BOOST_AUTO_TEST_CASE(CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot) {
-		BOOST_TEST_MESSAGE("Running CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot");
+FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
+	AutoTestCase1(CheckMemberThresholdTTSAS_BelowOrAboveThreshold_MemberOrNot, SuiteSuffix);
 		TTSAS_Clustering tc;
 		tc.useSymsMonitor(jm).setTinySymsProvider(tsp);
 		vector<vector<unsigned>> symsIndicesPerCluster;
@@ -350,8 +384,7 @@ BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
 		}
 	}
 
-	BOOST_AUTO_TEST_CASE(CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster) {
-		BOOST_TEST_MESSAGE("Running CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster");
+	AutoTestCase1(CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster, SuiteSuffix);
 		TTSAS_Clustering tc;
 		tc.useSymsMonitor(jm).setTinySymsProvider(tsp);
 		vector<vector<unsigned>> symsIndicesPerCluster;
@@ -411,3 +444,5 @@ BOOST_FIXTURE_TEST_SUITE(TTSAS_Clustering_Tests, ClusteringSettingsFixt)
 	}
 
 BOOST_AUTO_TEST_SUITE_END() // TTSAS_Clustering_Tests
+
+#endif // BOOST_PP_IS_ITERATING

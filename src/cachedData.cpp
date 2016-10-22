@@ -92,6 +92,8 @@ const double CachedData::b_mcsOffsetFactor() {
 	return result;
 }
 
+CachedData::CachedData(bool forTinySyms_/* = false*/) : forTinySyms(forTinySyms_) {}
+
 void CachedData::useNewSymSize(unsigned sz_) {
 	const double szd = (double)sz_;
 	sz_1 = szd - 1.;
@@ -100,8 +102,11 @@ void CachedData::useNewSymSize(unsigned sz_) {
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
 }
 
+void CachedData::update(const FontEngine &fe_) {
+	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
+}
+
 void CachedData::update(unsigned sz_, const FontEngine &fe_) {
 	useNewSymSize(sz_);
-
-	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
+	update(fe_);
 }

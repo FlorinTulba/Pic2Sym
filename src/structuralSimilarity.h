@@ -48,8 +48,6 @@ Selecting a symbol with best structural similarity.
 See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
 */
 class StructuralSimilarity : public MatchAspect {
-	REGISTER_MATCH_ASPECT(StructuralSimilarity);
-
 public:
 	/// Blurring algorithm used to support this match aspect. The Controller sets it at start.
 	static const BlurEngine &supportBlur;
@@ -59,18 +57,21 @@ public:
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	StructuralSimilarity(const CachedData &cachedData_, const MatchSettings &cfg);
+	StructuralSimilarity(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(StructuralSimilarity);
 };
 
 #endif // H_STRUCTURAL_SIMILARITY

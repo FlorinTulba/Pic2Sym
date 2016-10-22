@@ -53,6 +53,7 @@
 #include "match.cpp"
 #include "patch.cpp"
 #include "transform.cpp"
+#include "preselectSyms.cpp"
 #include "controller.cpp"
 #include "img.cpp"
 #include "matchSettings.cpp"

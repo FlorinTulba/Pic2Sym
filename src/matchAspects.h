@@ -42,170 +42,177 @@
 
 /// Selecting a symbol with the scene underneath it as uniform as possible
 class FgMatch : public MatchAspect {
-	REGISTER_MATCH_ASPECT(FgMatch);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	FgMatch(const CachedData &cachedData_, const MatchSettings &cfg);
+	FgMatch(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(FgMatch);
 };
 
 /// Aspect ensuring more uniform background scene around the selected symbol
 class BgMatch : public MatchAspect {
-	REGISTER_MATCH_ASPECT(BgMatch);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	BgMatch(const CachedData &cachedData_, const MatchSettings &cfg);
+	BgMatch(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(BgMatch);
 };
 
 /// Aspect ensuring the edges of the selected symbol seem to appear also on the patch
 class EdgeMatch : public MatchAspect {
-	REGISTER_MATCH_ASPECT(EdgeMatch);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	EdgeMatch(const CachedData &cachedData_, const MatchSettings &cfg);
+	EdgeMatch(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(EdgeMatch);
 };
 
 /// Discouraging barely visible symbols
 class BetterContrast : public MatchAspect {
-	REGISTER_MATCH_ASPECT(BetterContrast);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	BetterContrast(const CachedData &cachedData_, const MatchSettings &cfg);
+	BetterContrast(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(BetterContrast);
 };
 
 /// Aspect concentrating on where's the center of gravity of the patch & its approximation
 class GravitationalSmoothness : public MatchAspect {
-	REGISTER_MATCH_ASPECT(GravitationalSmoothness);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	GravitationalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg);
+	GravitationalSmoothness(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(GravitationalSmoothness);
 };
 
 /// Aspect encouraging more accuracy while approximating the direction of the patch
 class DirectionalSmoothness : public MatchAspect {
-	REGISTER_MATCH_ASPECT(DirectionalSmoothness);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	DirectionalSmoothness(const CachedData &cachedData_, const MatchSettings &cfg);
+	DirectionalSmoothness(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(DirectionalSmoothness);
 };
 
 /// Match aspect concerning user's preference for larger symbols as approximations
 class LargerSym : public MatchAspect {
-	REGISTER_MATCH_ASPECT(LargerSym);
-
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp) const override;
+	double score(const MatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
 								 const SymData &symData,
+								 const CachedData &cachedData,
 								 MatchParams &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
 #endif
 
-	LargerSym(const CachedData &cachedData_, const MatchSettings &cfg);
+	LargerSym(const MatchSettings &cfg);
+
+	REGISTER_MATCH_ASPECT(LargerSym);
 };
 
 #endif
