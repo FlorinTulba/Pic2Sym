@@ -533,7 +533,7 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 				rawClustersIO.clusterLabels[member] = i;
 		}
 		
-		cout<<"All the "<<countOfTinySymsToGroup<<" symbols of the charmap were clustered in "
+		cout<<endl<<"All the "<<countOfTinySymsToGroup<<" symbols of the charmap were clustered in "
 			<<rawClustersIO.clustersCount<<" groups"<<endl;
 
 		rawClustersIO.saveTo(clusteredSetFile.string());

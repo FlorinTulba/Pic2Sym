@@ -418,7 +418,7 @@ JobMonitor::JobMonitor(...) : AbsJobMonitor("") {}
 
 unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) { return 0U; }
 
-void JobMonitor::setTasksDetails(const vector<double>&) {}
+void JobMonitor::setTasksDetails(const vector<double>&, Timer&) {}
 
 void JobMonitor::taskAdvanced(double, unsigned) {}
 

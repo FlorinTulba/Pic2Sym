@@ -213,7 +213,7 @@ void Transformer::run() {
 	transformMonitor->setTasksDetails({
 		preparationsWeight,		// preparations of the timer, image, symbol sets and result
 		transformationWeight	// transformation of the image's patches
-	});
+	}, timer);
 
 	preparations.taskDone();
 	cout<<"The "<<preparations.monitoredTask()<<" preceding the transformation took "
@@ -232,7 +232,7 @@ void Transformer::run() {
 
 	if(!isCanceled) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-		cout<<"Transformation finished. Reporting skipped aspects from a total of "
+		cout<<endl<<"Transformation finished. Reporting skipped aspects from a total of "
 			<<me.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
 		const auto &enabledAspects = me.getEnabledAspects();
 		for(unsigned i = 0U, lim = (unsigned)me.enabledMatchAspectsCount(); i < lim; ++i) {
@@ -242,6 +242,7 @@ void Transformer::run() {
 				<<" : "<<setw(10)<<right<<me.skippedAspects[i]<<" times"
 				<<" (Complexity : "<<enabledAspects[i]->relativeComplexity()<<")"<<endl;
 		}
+		cout<<endl;
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
 		imgTransformTaskMonitor.taskDone();

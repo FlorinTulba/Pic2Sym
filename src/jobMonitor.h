@@ -76,7 +76,8 @@ protected:
 	*/
 	std::vector<TaskDetails> details;
 
-	double lastUserNotifiedProgress = 0.;	///< last value of job's progress reported to the user
+	double lastUserNotifiedProgress = 0.;		///< last value of job's progress reported to the user
+	double lastUserNotifiedElapsedTime = 0.;	///< last elapsed time reported to the user
 
 public:
 	/**
@@ -98,8 +99,10 @@ public:
 	Before starting a certain job, usually there is enough information to provide
 	some estimates about the weight of each particular task of the job.
 	All these estimates must sum up to 1.
+
+	The parameter timer_ is the associated timer for reporting elapsed and estimated remaining time
 	*/
-	void setTasksDetails(const std::vector<double> &totalContribValues) override;
+	void setTasksDetails(const std::vector<double> &totalContribValues, Timer &timer_) override;
 
 	/**
 	At the start of each task of a given job, the user must create a

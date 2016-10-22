@@ -339,7 +339,7 @@ const set<unsigned>& Controller::getClusterOffsets() const {
 }
 
 void Controller::showUnofficialSymDetails(unsigned symsCount) const {
-	cout<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
+	cout<<endl<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
 
 	// placing a task in the queue for the GUI updating thread
 	updateSymsActionsQueue.push(new UpdateSymsAction([&, symsCount] {
@@ -349,7 +349,7 @@ void Controller::showUnofficialSymDetails(unsigned symsCount) const {
 
 void Controller::reportSymsUpdateDuration(double elapsed) const {
 	const string cmapOverlayText = textForCmapOverlay(elapsed);
-	cout<<cmapOverlayText<<endl<<endl;
+	cout<<endl<<cmapOverlayText<<endl<<endl;
 	pCmi->setOverlay(cmapOverlayText, 3000);
 }
 
@@ -375,7 +375,7 @@ void Controller::symbolsChanged() {
 			.17,	// computing specific symbol-related values
 			.61,	// clustering the small symbols
 			.01		// reorders clusters
-		});
+		}, timer);
 		fe.setFontSz(cfg.ss.getFontSz());
 		me.updateSymbols();
 
@@ -526,7 +526,7 @@ void Controller::presentTransformationResults(double completionDurationS/* = -1.
 	comp.setResult(t.getResult()); // display the result at the end of the transformation
 	if(completionDurationS > 0.) {
 		const string comparatorOverlayText = textForComparatorOverlay(completionDurationS);
-		cout<<comparatorOverlayText <<endl<<endl;
+		cout<<endl<<comparatorOverlayText <<endl<<endl;
 		comp.setOverlay(comparatorOverlayText, 3000);
 	}
 }

@@ -170,7 +170,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 			return true;
 #endif // DEBUG, UNIT_TESTING
 		});
-		cout<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
+		cout<<endl<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
 			<<rawClusters.clustersCount<<" groups"<<endl;
 
 #if defined _DEBUG && !defined UNIT_TESTING

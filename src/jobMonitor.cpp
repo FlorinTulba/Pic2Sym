@@ -40,6 +40,7 @@
 #include "jobMonitor.h"
 #include "taskMonitorBase.h"
 #include "progressNotifier.h"
+#include "timing.h"
 #include "misc.h"
 
 #include <iostream>
@@ -67,7 +68,7 @@ unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) {
 	return seqIdxOfNewActivity;
 }
 
-void JobMonitor::setTasksDetails(const vector<double> &totalContribValues) {
+void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer &timer_) {
 	const size_t totalContribItems = totalContribValues.size();
 	details.resize(totalContribItems);
 
@@ -87,7 +88,8 @@ void JobMonitor::setTasksDetails(const vector<double> &totalContribValues) {
 		THROW_WITH_CONST_MSG("Sum of the values stored in the totalContribValues of " __FUNCTION__ " must equal to 1!", invalid_argument);
 
 	aborted = false;
-	lastUserNotifiedProgress = progress_ = 0.;
+	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = progress_ = 0.;
+	timer = &timer_;
 }
 
 void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {
@@ -95,9 +97,25 @@ void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {
 	progress_ = taskDetails.contribStart + taskProgress * taskDetails.totalContrib;
 
 	// Notify the user only as frequently as demanded
-	if(progress_ - lastUserNotifiedProgress > minProgressForNotifications)
+	if(progress_ - lastUserNotifiedProgress > minProgressForNotifications) {
+#ifndef UNIT_TESTING
+		const double updatedElapsed = timer->elapsed(),
+					timeDiff = updatedElapsed - lastUserNotifiedElapsedTime,
+					progressDiff = progress_ - lastUserNotifiedProgress;
+
+		if(timeDiff > 0. && progressDiff > 0. && progress_ < 1.) {
+			const double remainingProgress = 1. - progress_,
+						estimatedRemainingTime = remainingProgress * timeDiff / progressDiff;
+			cout<<monitoredJob_<<" -> Elapsed time:"<<setw(10)<<right<<fixed<<setprecision(2)<<updatedElapsed<<"s ; "
+				<<"Estimated remaining time:"<<setw(10)<<right<<fixed<<setprecision(2)<<estimatedRemainingTime<<"s\r";
+		}
+
+		lastUserNotifiedElapsedTime = updatedElapsed;
+#endif // UNIT_TESTING not defined
+
 		notifier->notifyUser(monitoredJob_,
-					lastUserNotifiedProgress = progress_);
+							 lastUserNotifiedProgress = progress_);
+	}
 }
 
 void JobMonitor::taskDone(unsigned taskSeqId) {
@@ -105,10 +123,11 @@ void JobMonitor::taskDone(unsigned taskSeqId) {
 }
 
 void JobMonitor::taskAborted(unsigned taskSeqId) {
-	cout<<monitoredJob_<<" was aborted at "
+	cout<<endl<<monitoredJob_<<" was aborted after "
+		<<fixed<<setprecision(2)<<timer->elapsed()<<"s at "
 		<<fixed<<setprecision(2)<<100.*progress_<<"% during "
 		<<tasks.at(taskSeqId)->monitoredTask()<<'!'<<endl;
-	lastUserNotifiedProgress = progress_ = 0.;
+	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = progress_ = 0.;
 }
 
 #endif // UNIT_TESTING not defined

@@ -449,7 +449,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	*/
 //#define VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS
 #if defined(VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS) && !defined(UNIT_TESTING)
-	cout<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
+	cout<<endl<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
 		fixed<<setprecision(2)<<100.*symsCont.getCoverageOfSmallGlyphs()<<"% of the box"<<endl;
@@ -463,7 +463,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	cout<<endl;
 #endif // VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS, UNIT_TESTING
-
+	cout<<endl;
 	if(symsCont.getBlanksCount() != 0U)
 		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
 	if(symsCont.getDuplicatesCount() != 0U)

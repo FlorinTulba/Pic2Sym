@@ -41,13 +41,17 @@
 #include <string>
 #include <vector>
 
-class AbsTaskMonitor; // forward declaration
+// Forward declarations
+class AbsTaskMonitor;
+class Timer;
 
 /// Abstract class for monitoring progress of a given job
 class AbsJobMonitor /*abstract*/ {
 protected:
 	const std::string monitoredJob_;	///< name of the job
 	double progress_ = 0.;				///< actual known job's progress
+	Timer *timer = nullptr;				///< timer for reporting elapsed and estimated remaining time
+
 	bool aborted = false;				///< set if the job was aborted
 
 public:
@@ -62,8 +66,10 @@ public:
 	Before starting a certain job, usually there is enough information to provide
 	some estimates about the weight of each particular task of the job.
 	All these estimates must sum up to 1.
+
+	The parameter timer_ is the associated timer for reporting elapsed and estimated remaining time
 	*/
-	virtual void setTasksDetails(const std::vector<double> &totalContribValues) = 0;
+	virtual void setTasksDetails(const std::vector<double> &totalContribValues, Timer &timer_) = 0;
 
 	/**
 	At the start of each task of a given job, the user must create a
