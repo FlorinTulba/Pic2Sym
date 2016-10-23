@@ -9,7 +9,7 @@
 ; Switch to choose between transforming the original, or its blurred version
 Transform_BlurredPatches_InsteadOf_Originals	false
 
-; Switches & thresholds for OpenMP - parallelizing operations / loops:
+; Switches for OpenMP - parallelizing operations / loops:
 UsingOMP	true
 ParallelizePixMapStatistics	true
 ParallelizeGridCreation	true
