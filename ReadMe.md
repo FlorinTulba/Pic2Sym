@@ -23,7 +23,7 @@ The resulted grid has **square cells** and *the symbols are preprocessed* to fit
 Console output is also ruled out, first because there are only a couple of font sizes available and secondly, because consoles usually provide only 16 colors.
 
 **Version 1.3** allows *more responsive commands* and lets the user **choose dynamically** how often to visualize some **draft results** during a transformation. Such long approximation processes can now be **canceled with _ESC_ key**, while still saving the current generated draft image. Similarly, large charmaps do offer in this version an **early preview of their glyphs**.
-Its image transformation is **faster than in v1.2** when configured for *no / rare drafts generation*.
+Image transformation is **faster than in v1.2** when configured for *no / rare drafts generation*.
 
 - - -
 
@@ -58,3 +58,8 @@ To **leave the application**, please **activate a window** (except the console a
 ----------
 
 Kindly address any observations, suggestions or questions to me using ***<florintulba@yahoo.com>***.<br>&copy; 2016 Florin Tulba (GNU AGPL v3 license)
+
+----------
+
+**Note:**
+*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Trifa Carina](https://www.facebook.com/trifa.carina), [Muntean Flavia](https://www.facebook.com/darkfavy) and [Rosca Adrian](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*

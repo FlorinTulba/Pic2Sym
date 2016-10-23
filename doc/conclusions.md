@@ -3,10 +3,10 @@
 
 By now (v1.3), the application:
 - offers *various match aspects* for deciding which symbol will approximate an image patch
-- provides either *raw image approximations*, or a satisfactory *hybrid result* for more complex content
+- provides either *raw approximations of the image*, or a satisfactory *hybrid result* for more complex content
 - lets the user select *which critical paths to parallelize* on *multi\-core machines*
 - allows *transformations* to be *canceled*, while saving the available draft result
-- presents several *coarser drafts* while *refining the result* and lets the user decide their frequency
+- presents several *coarser drafts* while *refining the result* and lets the user decide their frequency dynamically
 - displays *early previews* of *large font families* while they get loaded
 - tackles well transformations based on font families with *less than 400 symbols*.
 
