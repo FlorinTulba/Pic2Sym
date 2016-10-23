@@ -5,7 +5,7 @@ Below are some results, which can also be found in [doc/examples](examples/) fol
 
 Clicking on the presented cases will open the full\-size results from [doc/examples](examples/).
 
-Version **1.3** should be the version to choose for **multi\-core processors** or when aspects like **cancelable transformation** and **drafts visualization** are desired. It is *version 1.2* with *nested parallelization* removed from the image transformation code. *Parallelization* in **v1.3** can be *enabled selectively* or *disabled completely* from [res/varConfig.txt](../res/varConfig.txt) (*no recompilation necessary when changed*). When parallelization is enabled, each *row of image patches* is processed by the *next available core*. There are many other parallelization switches (see the [Appendix](appendix.md) for details).
+Version **1.3** should be the version to choose for **multi\-core processors** or when aspects like **cancelable transformation** and **drafts visualization** are desired. It is *version 1.2* with *nested parallelization* removed from the image transformation code. *Parallelization* in **v1.3** can be *enabled selectively* or *disabled completely* from [res/varConfig.txt](../res/varConfig.txt) (*no recompilation necessary when changed*). When parallelization is enabled, each *row of image patches* is processed by the *next available core*. There are several other parallelization switches (see the [Appendix](appendix.md) for details).
 
 Some of the cases from below were tested also with version 1.3.
 
@@ -17,7 +17,7 @@ Notice how the **symbols avoid imposing themselves** and are **more visible only
 
 Obtained **durations**:
 - _v1.3 (using **2 threads**)_:
-	- **48 s** (_with **symbol batching disabled**_ : slider **&#39;Batch syms&#39;** set on **0** from the image below)
+	- **48 s** (_with **symbol batching disabled**_ : slider **&#39;Batch syms&#39;** set on **0** from the image above)
 	- **53 s** (_using **batches of 25 symbols**_)
 - _v1.2_:
 	- **57 s** (_using **2 threads**_)
@@ -144,6 +144,11 @@ Version **1.1** performs better than **1.2** and **1.3** for *sequential runs*.
 These initial versions are useful for determining what problems, limitations, as well as opportunities exist and which solutions are best.
 
 Next major versions will focus on more complex optimizations.
+
+----------
+
+**Note:**
+*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Trifa Carina](https://www.facebook.com/trifa.carina), [Muntean Flavia](https://www.facebook.com/darkfavy) and [Rosca Adrian](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
 
 ----------
 [Back to start page](../ReadMe.md)

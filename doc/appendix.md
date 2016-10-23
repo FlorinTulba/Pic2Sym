@@ -7,7 +7,7 @@ Version **1.3** permits visualizing several *draft results* during the image app
 ![](DraftsCmapPartitioning.jpg)<br>
 In this case, **&#39;Batch syms&#39;** was left from the beginning to the end of the transformation on value **5**. The *charmap* contains **125 symbols**, so there were 125 / 5 = **25 drafts** - *one generated every 4%*. Reported progress is **92%**, so the displayed draft is **23rd**. The application was just computing **24th** draft, based on the symbols with indeces *115 - 119* (the ones surrounded with *orange contour* in the image). None of the symbols 115-124 would appear in the 23rd draft, as they were not compared with the patches yet.
 
-Suppose at the captured instant the user moves the slider on value **1**. Then next batches (starting with index *120*) will have size **1**, so there will be **5** additional drafts following the one currently generated.
+Suppose at the captured instant the user moves the slider on value **1**. Then next batches (starting with symbol index *120*) will have size **1**, so there will be **5** additional drafts following the one currently generated.
 
 Slider value **0** wouldn&#39;t make any sense, but since 0 is a *mandatory slider value in highgui library*, it was assigned a special meaning: **infinite batch size** - that is *next batch* should include **all remaining unprocessed glyphs**.
 
