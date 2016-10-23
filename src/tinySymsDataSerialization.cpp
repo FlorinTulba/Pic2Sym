@@ -59,7 +59,12 @@ bool VTinySymsIO::loadFrom(const string &path) {
 		return false;
 	}
 
-	return load<binary_iarchive>(ifs, path, *this);
+	if(false == load<binary_iarchive>(ifs, path, *this)) {
+		tinySyms.clear(); // leaves *this in a consistent state
+		return false;
+	}
+	
+	return true;
 }
 
 bool VTinySymsIO::saveTo(const string &path) const {

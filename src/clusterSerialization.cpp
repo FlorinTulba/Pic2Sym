@@ -49,6 +49,14 @@
 using namespace std;
 using namespace boost::archive;
 
+ClusterIO& ClusterIO::operator=(ClusterIO &&other) {
+	if(this != &other) {
+		clustersCount = other.clustersCount;
+		clusterLabels = std::move(other.clusterLabels);
+	}
+	return *this;
+}
+
 bool ClusterIO::loadFrom(const string &path) {
 	ifstream ifs(path, ios::binary);
 	if(!ifs) {
@@ -56,7 +64,13 @@ bool ClusterIO::loadFrom(const string &path) {
 		return false;
 	}
 
-	return load<binary_iarchive>(ifs, path, *this);
+	ClusterIO draftClusters; // load clusters in a draft object
+	if(false == load<binary_iarchive>(ifs, path, draftClusters))
+		return false;
+
+	*this = std::move(draftClusters);
+
+	return true;
 }
 
 bool ClusterIO::saveTo(const string &path) const {

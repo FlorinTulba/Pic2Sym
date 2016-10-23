@@ -71,6 +71,13 @@ just comment its definition in 'compressOption.h' file
 Overwriting content of obj with data read from src known as srcName.
 When USE_ZLIB_COMPRESSION is defined, it assumes the read data should be decompressed.
 
+NOTE:
+When loading fails, it could happen after parts of the obj have been already overwritten.
+So obj might be in an inconsistent state.
+Therefore, when loading fails, either try rollback-ing the incomplete changes,
+or just perform the load on a draft and only if loading succeeds,
+copy/move draft's content onto the target object.
+
 @return false if any errors are detected; true otherwise
 */
 template<class Archive, class Source, class T>

@@ -64,6 +64,12 @@ struct ClusterIO {
 
 	/// Writes current content to file located at path. Returns false when saving fails.
 	bool saveTo(const std::string &path) const;
+
+	ClusterIO() {}
+	ClusterIO(const ClusterIO&) = delete;
+	ClusterIO(ClusterIO&&) = delete;
+	void operator=(const ClusterIO&) = delete;
+	ClusterIO& operator=(ClusterIO &&other);
 };
 
 BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
