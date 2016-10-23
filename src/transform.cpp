@@ -50,6 +50,7 @@
 #include "timing.h"
 #include "misc.h"
 
+#include <Windows.h>
 #include <omp.h>
 
 #include <sstream>
@@ -64,7 +65,11 @@ static bool checkCancellationRequest();
 #include <opencv2/highgui.hpp>
 
 bool checkCancellationRequest() {
-	return cv::waitKey(1) == 27; // cancel if the user presses ESC
+	// cancel if the user presses ESC and then confirms his abort request
+	return cv::waitKey(1) == 27 &&
+		IDYES == MessageBox(nullptr,
+					L"Do you want to abort the image transformation?", L"Question",
+					MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND);
 }
 #endif // UNIT_TESTING not defined
 
