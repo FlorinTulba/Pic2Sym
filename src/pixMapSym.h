@@ -160,7 +160,11 @@ protected:
 
 	const IPresentCmap &cmapViewUpdater;	///< updates Cmap View as soon as there are enough symbols for 1 page
 
-	/// member that allows setting filters to detect symbols with undesired features
+	/**
+	Member that allows setting filters to detect symbols with undesired features.
+	Passing this field as parameter to a function/method is allowed only in dereferenced form:
+		*symFilter
+	*/
 	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
 	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
 
