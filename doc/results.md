@@ -116,6 +116,11 @@ Cases **to avoid**:
 **Hybrid result mode** introduced in **version 1.1** *preserves image meaningfulness* **no matter the patch and its context**. However, the generated image won&#39;t deliver same impression as non\-hybrid results. Instead, such transformations *appear to be an interesting way of hiding symbols within pictures*.
 
 ----------
+
+**Note:**
+*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Trifa Carina](https://www.facebook.com/trifa.carina), [Muntean Flavia](https://www.facebook.com/darkfavy) and [Rosca Adrian](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
+
+----------
 [Back to start page](../ReadMe.md)
 
 [Structural Similarity]:https://ece.uwaterloo.ca/~z70wang/research/ssim
