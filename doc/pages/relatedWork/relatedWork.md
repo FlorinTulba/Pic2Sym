@@ -1,5 +1,5 @@
 ## Related work ##
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 
 Most applications in this area first average the brightness of every cell to be approximated within the original image. Then they quantize those means, resulting only a few brightness bins, instead of 255. Finally they associate an appropriately large ASCII character to each bin so that the symbol&#39;s size will let it be perceived as the desired luma level.
 
@@ -26,5 +26,5 @@ Among the many image/video\-to\-ASCII applications, only a few tackle:
 
 ----------
 
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 

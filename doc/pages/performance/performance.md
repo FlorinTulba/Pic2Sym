@@ -1,4 +1,4 @@
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 
 #### Notations
 Some of the performance indicators used on this page depend on the following variables:
@@ -129,6 +129,6 @@ The **memory required by the transformation process** is ***O***((n+c)\*s^2) whe
 For the scenario mentioned above, *maximum reported memory* was less than *114 MB*.
 
 -----------
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 
 [structural similarity]:https://ece.uwaterloo.ca/~z70wang/research/ssim

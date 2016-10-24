@@ -1,8 +1,8 @@
-## Testing the provided binary of Pic2Sym v1.3 (*Windows 64bits only*) ##
+## Testing the provided binary of Pic2Sym v1.3 (*64\-bit Windows only*) ##
 
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 
-It&#39;s *recommended* to read first the ***Conclusions*** from the bottom of the ***[examples page](results.md)***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
+It&#39;s *recommended* to read first the ***Conclusions*** from the bottom of the ***[examples page][examples]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
 
 Now the steps:
 
@@ -13,7 +13,7 @@ Now the steps:
 1. Launch ***TestDir*/Pic2Sym.exe**. If it starts, jump to **7**. For errors about *missing dll\-s*, continue below
 1. Non\-development machines might not have several *common dll-s*, so here are some links to **download them in _TestDir_**, if reported missing: [msvcp120.dll][], [msvcr120.dll][], [vcomp120.dll][], [comdlg32.dll][] or [advapi32.dll][]. _Make sure the application starts before continuing to **7**_
 1. *Optionally* install (*double\-clicking the file*) the *free* font ***BpMono bold*** from [here][1] or from  ***TestDir*/res/BpMonoBold.ttf** *to ensure your machine has at least one interesting font to work with*
-1. Activate the main window and press **Ctrl\+P** to display the *Control Panel*.
+1. Activate the main window and press **Ctrl\+P** to display the [*Control Panel*][CtrlPanel].
 1. Now some configurations for a *first* ***rapid*** transformation:
 	- select a **small image** to transform
     - select a *font family* to use. Suggestion not to underestimate: use a **bold style** font family with **less than 400 symbols**
@@ -22,9 +22,11 @@ Now the steps:
 1. Finally hit **Transform**. Started approximation process can be **canceled** at any time by **pressing ESC**. At the end of the transformation you&#39;ll be able to *inspect the result* with the *Transparency slider* and the *Zoom feature* from the main window
 
 --------
-[Back to start page](../ReadMe.md)
+[Back to start page](../../../ReadMe.md)
 
 [1]:http://www.dafont.com/bpmono.font
+[examples]:../results/results.md
+[CtrlPanel]:../CtrlPanel/CtrlPanel.md
 [msvcp120.dll]:http://files.dllworld.org/msvcp120.dll-12.0.21005.1-64bit_3075.zip
 [msvcr120.dll]:http://files.dllworld.org/msvcr120.dll-12.0.21005.1-64bit_3122.zip
 [vcomp120.dll]:http://down-dll.com/index.php?file-download=vcomp120.dll&arch=64bit&version=12.0.21005.1&dsc=Microsoft%AE-C/C++-OpenMP-Runtime#

@@ -94,6 +94,39 @@
     <Filter Include="Source Files\Var\Blurring">
       <UniqueIdentifier>{4b9536e8-1464-4c60-9064-659214ce3fae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="doc\pages">
+      <UniqueIdentifier>{2b38ed63-842d-4746-996a-5836df87f4c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\appendix">
+      <UniqueIdentifier>{dbd10d8b-ad67-4b98-b561-5a7c2365a7bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\appendix\modules">
+      <UniqueIdentifier>{1855f164-2d6c-48ac-bf6c-e018691ca8a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\conclusions">
+      <UniqueIdentifier>{aa5e04fe-8d0f-4352-8b40-14a14aa9ca76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\CtrlPanel">
+      <UniqueIdentifier>{af864bdb-2fde-4c98-918c-625005bc469c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\issues">
+      <UniqueIdentifier>{e3033692-c02a-409d-844c-252c8991abd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\performance">
+      <UniqueIdentifier>{be8ca401-136d-4faa-a496-9c046ccd73e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\relatedWork">
+      <UniqueIdentifier>{7bd306f3-276a-452b-9f25-976b3ce20f1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\results">
+      <UniqueIdentifier>{4e7fe36b-6969-4730-ac07-6033a77942fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\testBinary">
+      <UniqueIdentifier>{211412a5-c813-4473-bd4e-19e69900d5a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="doc\pages\UnitTesting">
+      <UniqueIdentifier>{43ec5d8d-2558-4214-adfa-b1fadbf0113d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\defaultMatchSettings.txt">
@@ -497,32 +530,56 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
-    <None Include="doc\appendix.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\conclusions.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\CtrlPanel.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\performance.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\relatedWork.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\results.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\testBinary.md">
-      <Filter>doc</Filter>
-    </None>
-    <None Include="doc\UnitTesting.md">
-      <Filter>doc</Filter>
-    </None>
     <None Include="doc\licenses\zlib.lic">
       <Filter>doc\licenses</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\controller.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\draftImprover.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\patchesProvider.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\symbolsProvider.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\transformationSettings.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\transformer.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\modules\UI.md">
+      <Filter>doc\pages\appendix\modules</Filter>
+    </None>
+    <None Include="doc\pages\appendix\appendix.md">
+      <Filter>doc\pages\appendix</Filter>
+    </None>
+    <None Include="doc\pages\conclusions\conclusions.md">
+      <Filter>doc\pages\conclusions</Filter>
+    </None>
+    <None Include="doc\pages\CtrlPanel\CtrlPanel.md">
+      <Filter>doc\pages\CtrlPanel</Filter>
+    </None>
+    <None Include="doc\pages\issues\issues.md">
+      <Filter>doc\pages\issues</Filter>
+    </None>
+    <None Include="doc\pages\performance\performance.md">
+      <Filter>doc\pages\performance</Filter>
+    </None>
+    <None Include="doc\pages\relatedWork\relatedWork.md">
+      <Filter>doc\pages\relatedWork</Filter>
+    </None>
+    <None Include="doc\pages\results\results.md">
+      <Filter>doc\pages\results</Filter>
+    </None>
+    <None Include="doc\pages\testBinary\testBinary.md">
+      <Filter>doc\pages\testBinary</Filter>
+    </None>
+    <None Include="doc\pages\UnitTesting\UnitTesting.md">
+      <Filter>doc\pages\UnitTesting</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -574,68 +631,140 @@
     <Image Include="doc\examples\17g_Courier New_Bold Italic_APPLE_ROMAN_10_0_0.25_1_0.75_0.1_0.2_0.2_0.1_0_250_250.jpg">
       <Filter>doc\examples</Filter>
     </Image>
-    <Image Include="doc\ClassDiag.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\ControllerRelated_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\CmapViewer.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\DraftImprover_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\CtrlPanel.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\ModulesOverview.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\CtrlPanelAndInstructions.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\Settings_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\EndOfTransformation.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\SupplyOfPatches_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\Example1.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\SymProvider_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\Example2.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\TransformerRelated_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\Example3.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\modules\UI_classes.jpg">
+      <Filter>doc\pages\appendix\modules</Filter>
     </Image>
-    <Image Include="doc\Example4.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\appendix\DraftsCmapPartitioning.jpg">
+      <Filter>doc\pages\appendix</Filter>
     </Image>
-    <Image Include="doc\Example5.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\CmapViewer.jpg">
+      <Filter>doc\pages</Filter>
     </Image>
-    <Image Include="doc\Example6.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\CtrlPanelAndInstructions.jpg">
+      <Filter>doc\pages</Filter>
     </Image>
-    <Image Include="doc\Example7.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\CtrlPanelWithinToolbar.jpg">
+      <Filter>doc\pages</Filter>
     </Image>
-    <Image Include="doc\Example8.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\DuringTransformation.jpg">
+      <Filter>doc\pages</Filter>
     </Image>
-    <Image Include="doc\Example9.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\MainAfterTransform.jpg">
+      <Filter>doc\pages</Filter>
     </Image>
-    <Image Include="doc\MainAfterTransform.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\CtrlPanel\CtrlPanel.jpg">
+      <Filter>doc\pages\CtrlPanel</Filter>
     </Image>
-    <Image Include="doc\MismatchesUnitTesting.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\performance\ProfileCallerCallee.jpg">
+      <Filter>doc\pages\performance</Filter>
     </Image>
-    <Image Include="doc\ProfileCallerCallee.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\performance\ProfileFunctionDetails.jpg">
+      <Filter>doc\pages\performance</Filter>
     </Image>
-    <Image Include="doc\ProfileFunctionDetails.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\performance\ProfileFunctionDetails1.2_BlurWeight.jpg">
+      <Filter>doc\pages\performance</Filter>
     </Image>
-    <Image Include="doc\ProfileSummary.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\performance\ProfileFunctionDetails1.2_SSimWeight.jpg">
+      <Filter>doc\pages\performance</Filter>
     </Image>
-    <Image Include="doc\ProfileFunctionDetails1.2_BlurWeight.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\performance\ProfileSummary.jpg">
+      <Filter>doc\pages\performance</Filter>
     </Image>
-    <Image Include="doc\ProfileFunctionDetails1.2_SSimWeight.jpg">
-      <Filter>doc</Filter>
+    <Image Include="doc\pages\results\Example1.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example1_v1.3.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example2.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example3.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example4.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example5.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example6.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example7.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example7_v1.1.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example8.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example8_v1.1.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example9.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example9_v1.1.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\bulky_false.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\bulky_true.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\filledRectangles_false.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\filledRectangles_true.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\gridBars_false.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\gridBars_true.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\MismatchesUnitTesting.jpg">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\MismatchesUnitTesting_small.jpg">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\readable_false.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\readable_true.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\sieves_false.png">
+      <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\UnitTesting\sieves_true.png">
+      <Filter>doc\pages\UnitTesting</Filter>
     </Image>
   </ItemGroup>
 </Project>
