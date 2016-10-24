@@ -1,6 +1,16 @@
-## Performance of Pic2Sym &#60;&#61; v1.2 ##
 [Back to start page](../ReadMe.md)
 
+#### Notations
+Some of the performance indicators used on this page depend on the following variables:
+- **s** \- the size of the (square) symbols used during image approximation process
+- **n** \- the total number of these available symbols
+- **c** \- the count of patches to approximate (during image transformation, the image is viewed as a grid of patches)
+- **uc** \- the number of *uniform* patches (they lack contrast, so approximating them is meaningless)
+- **w** \- the size of the blur window (one matching aspect needs also blurred versions of the patches and symbols)
+
+* * *
+
+## Performance of Pic2Sym &#60;&#61; v1.2 ##
 **Version 1.2** uses **OpenMP** for parallelism (*Visual C++ implementation of OpenMP version 2.0 from March 2002*).
 
 The code from *version __1.1__* required some *minor rearranging and adjustments* to accomodate the *pragma clauses providing concurrency support*:
@@ -38,7 +48,7 @@ The changes in **version 1.1** of Pic2Sym impact the performance as follows:
 - **Uniform patches** are *approximated by their blurred form*, instead of the normal transformation process from version 1.0. This extra logic generally **reduces overall processing time**, except for the case when there are very few uniform patches. It also means it&#39;s more difficult to provide accurate time-estimation formulae
 - **Refactorization incurred minor penalty** for *splitting old classes*, *runtime allocations and handling of some (more / larger / polymorphic) objects*
 
-Based on the notations from below, and adding **uc** \- the *number of uniform patches*, **hybrid mode cost** for a *color image* is:<br>
+Based on the introduced notations, **hybrid mode cost** for a *color image* is:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c-uc) \* (9\*s^2 + 12)<br>
 
 Since the changes don&#39;t affect the matching aspects, the analysis for version 1.0 from below should be still mostly valid.
@@ -68,8 +78,6 @@ The transformation time for the non-optimized algorithm would be around 57% long
 
 When disabling [Structural Similarity][], there are fewer differences among the remaining matching aspects. Smoothness and contour match aspects require a bit more time than the rest.
 
-* * *
-
 All matching aspects share the values that normally would be recomputed. First one who needs such a value will evaluate it; the next ones will simply use it.
 The total approximation effort is split in 3:
 
@@ -78,14 +86,14 @@ The total approximation effort is split in 3:
 3.	Actual approximation of each patch
 
 Below I&#39;ll compute first the overall transformation complexity, ignoring (1) and (2) from above. Then I&#39;ll enumerate the distinct contribution of each matching aspect, without the part when they compute/read shared data.
-Let&#39;s consider **s** the symbol size, **n** the symbols count, **c** the count of patches to approximate and **w** the size of the blur window.
 For simplicity I won&#39;t count compare, saturation casts and loop index increment operations and I assume that all arithmetic operations will need the same time.
+The expressions make use of the notations introduced at the top of the page.
 
 Here are the estimations for employed OpenCv functions:
 - ***countNonZero*** : 0.5\*s^2   (on average, half of the mask elements might be 0)
 - ***mean*** : s^2 + 1   (with mask parameter)
 - ***meanStdDev*** :  2.5\*s^2 + 3   (with mask parameter)
-- ***GaussianBlur*** : 2\*w \* s^2   (for a decomposed kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
+- ***GaussianBlur*** : 2\*w \* s^2   (for a separable kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
 
 **Overall transformation complexity** for a *color* image:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c \* { n \* [s^2 \* (2\*w +29.5) + 61 ]   +   s^2 \* (4\*w+30)   +   4\*s   +   8 }.
 
