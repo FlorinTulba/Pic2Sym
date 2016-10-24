@@ -152,6 +152,7 @@
     <None Include="doc\appendix.md" />
     <None Include="doc\conclusions.md" />
     <None Include="doc\CtrlPanel.md" />
+    <None Include="doc\licenses\zlib.lic" />
     <None Include="doc\performance.md" />
     <None Include="doc\relatedWork.md" />
     <None Include="doc\results.md" />

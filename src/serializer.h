@@ -1,22 +1,25 @@
-/****************************************************************************************
+/************************************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
- - (c) 2015 Boost (www.boost.org)
-   License: <http://www.boost.org/LICENSE_1_0.txt>
-            or doc/licenses/Boost.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-   License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2016 Boost (www.boost.org)
+		License: <http://www.boost.org/LICENSE_1_0.txt>
+			or doc/licenses/Boost.lic
  - (c) 2015 OpenCV (www.opencv.org)
-   License: <http://opencv.org/license.html>
+		License: <http://opencv.org/license.html>
             or doc/licenses/OpenCV.lic
+ - (c) 2015 The FreeType Project (www.freetype.org)
+		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
+	        or doc/licenses/FTL.txt
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-   See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
+		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
+ - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
+		License: <http://www.zlib.net/zlib_license.html>
+            or doc/licenses/zlib.lic
  
  (c) 2016 Florin Tulba <florintulba@yahoo.com>
 
@@ -33,23 +36,16 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ****************************************************************************************/
+ ***********************************************************************************************/
 
 /*=======================================================================================
 
-When USE_ZLIB_COMPRESSION is defined, this particular file makes use of the zlib library:
+The optional feature of compressing / decompressing reusable data to save disk space
+was implemented with Boost Iostreams, who needs an additional compressing software library.
+The chosen library was zlib.
 
-		http://www.zlib.net/  - (c) 1995-2013 Jean-loup Gailly and Mark Adler
-
-Boost Iostreams doesn't include zlib and it has to be be added separately.
-
-The compression / decompression is just an OPTIONAL feature for the Pic2Sym project
-and it's used rarely only for saving some disk space.
-
-That's why zlib wasn't included in the generic license header.
-
-So, when the OPTIONAL support for compression / decompression isn't desired,
-just comment its definition in 'compressOption.h' file
+When USE_ZLIB_COMPRESSION is defined, the mentioned feature is activated.
+To disable it, just comment its definition in 'compressOption.h' file
 
 =======================================================================================*/
 

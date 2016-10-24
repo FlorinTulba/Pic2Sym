@@ -521,6 +521,9 @@
     <None Include="doc\UnitTesting.md">
       <Filter>doc</Filter>
     </None>
+    <None Include="doc\licenses\zlib.lic">
+      <Filter>doc\licenses</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\NoImage.jpg">
