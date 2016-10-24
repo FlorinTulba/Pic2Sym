@@ -632,10 +632,10 @@
       <Filter>doc</Filter>
     </Image>
     <Image Include="doc\ProfileFunctionDetails1.2_BlurWeight.jpg">
-      <Filter>Resource Files</Filter>
+      <Filter>doc</Filter>
     </Image>
     <Image Include="doc\ProfileFunctionDetails1.2_SSimWeight.jpg">
-      <Filter>Resource Files</Filter>
+      <Filter>doc</Filter>
     </Image>
   </ItemGroup>
 </Project>
