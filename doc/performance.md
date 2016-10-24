@@ -1,5 +1,15 @@
-## Performance of Pic2Sym v1.0 ##
 [Back to start page](../ReadMe.md)
+
+#### Notations
+Some of the performance indicators used on this page depend on the following variables:
+- **s** \- the size of the (square) symbols used during image approximation process
+- **n** \- the total number of these available symbols
+- **c** \- the count of patches to approximate (during image transformation, the image is viewed as a grid of patches)
+- **w** \- the size of the blur window (one matching aspect needs also blurred versions of the patches and symbols)
+
+* * *
+
+## Performance of Pic2Sym v1.0 ##
 
 Profiling results show that during image approximation under default settings, 80% from the time the processor is busy computing [structural similarity][] (*StructuralSimilarity::assessMatch* \-\> *MatchParams::computeSsim*):<br>
 ![](ProfileSummary.jpg)<br>
@@ -32,14 +42,14 @@ The total approximation effort is split in 3:
 3.	Actual approximation of each patch
 
 Below I&#39;ll compute first the overall transformation complexity, ignoring (1) and (2) from above. Then I&#39;ll enumerate the distinct contribution of each matching aspect, without the part when they compute/read shared data.
-Let&#39;s consider **s** the symbol size, **n** the symbols count, **c** the count of patches to approximate and **w** the size of the blur window.
 For simplicity I won&#39;t count compare, saturation casts and loop index increment operations and I assume that all arithmetic operations will need the same time.
+The expressions make use of the notations introduced at the top of the page.
 
 Here are the estimations for employed OpenCv functions:
 - ***countNonZero*** : 0.5\*s^2   (on average, half of the mask elements might be 0)
 - ***mean*** : s^2 + 1   (with mask parameter)
 - ***meanStdDev*** :  2.5\*s^2 + 3   (with mask parameter)
-- ***GaussianBlur*** : 2\*w \* s^2   (for a decomposed kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
+- ***GaussianBlur*** : 2\*w \* s^2   (for a separable kernel method; otherwise it would be (w\*s)^2 ;   For related details, see [this](http://www.mathworks.com/matlabcentral/fileexchange/28238-kernel-decomposition)\)
 
 **Overall transformation complexity** for a *color* image:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c \* { n \* [s^2 \* (2\*w +29.5) + 61 ]   +   s^2 \* (4\*w+30)   +   4\*s   +   8 }.
 

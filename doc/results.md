@@ -96,6 +96,11 @@ Cases to avoid:
 	* contain *glyphs filling almost solid their square* (such symbols are very likely to approximate ambiguous patches and ***they appear rigid, despite they are correctly selected***)
 
 ----------
+
+**Note:**
+*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Trifa Carina](https://www.facebook.com/trifa.carina), [Muntean Flavia](https://www.facebook.com/darkfavy) and [Rosca Adrian](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
+
+----------
 [Back to start page](../ReadMe.md)
 
 [Structural Similarity]:https://ece.uwaterloo.ca/~z70wang/research/ssim
