@@ -76,6 +76,7 @@ extern const string StructuralSimilarity_BlurType;
 extern const string ClusterAlgName;
 extern const unsigned ShortListLength;
 extern const double AdmitOnShortListEvenForInferiorScoreFactor;
+extern const bool Transform_BlurredPatches_InsteadOf_Originals;
 extern unsigned TinySymsSz();
 static const unsigned TinySymsSize = TinySymsSz();
 
@@ -419,7 +420,7 @@ namespace ut {
 	Bp Mono Bold ("res\\BPmonoBold.ttf") - 210 glyphs for Unicode, 134 for Apple Roman
 	*/
 	map<string, string> fonts { { "res\\BPmonoBold.ttf", "APPLE_ROMAN" } };
-	
+
 	typedef decltype(fonts)::value_type StrStrPair; // used to specify that such pairs shouldn't be displayed
 }
 
@@ -523,7 +524,14 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, Sui
 			resize(thePatch->orig, tinyPatchMat, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
 			resize(thePatch->blurred, blurredTinyPatch, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
 			Patch tinyPatch(tinyPatchMat, blurredTinyPatch, tinyPatchMat.channels()>1);
-			tinyPatch.needsApproximation = true; // forcing the approximation for the tiny patch
+			if(!tinyPatch.needsApproximation) {
+				tinyPatch.needsApproximation = true; // forcing the approximation for the tiny patch
+
+				const Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
+											blurredTinyPatch : tinyPatchMat;
+				tinyPatch.grayD = patch2Process.clone();
+				tinyPatch.grayD.convertTo(tinyPatch.grayD, CV_64FC1);
+			}
 			BestMatch bestTiny(tinyPatch);
 
 			// Below using 3 instead of ShortListLength, to avoid surprises caused by altered configurations

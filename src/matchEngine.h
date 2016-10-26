@@ -52,7 +52,7 @@
 // Forward declarations
 struct MatchParams;
 struct BestMatch;
-class Patch;
+struct Patch;
 class Settings;
 class MatchAspect;
 

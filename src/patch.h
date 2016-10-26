@@ -54,15 +54,14 @@ It decides whether this patch needs approximation or not - uniform patches
 don't produce interesting approximations.
 
 */
-class Patch {
-protected:
-	cv::Mat grayD;	///< gray version of the patch to process (its data type is double)
-
-public:
-	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
-	const bool isColor;		///< is the patch color or grayscale?
+struct Patch {
+	cv::Mat grayD;			///< gray version of the patch to process (its data type is double)
 	const cv::Mat orig;		///< the patch to approximate
 	const cv::Mat blurred;	///< the blurred version of the orig
+
+	const bool isColor;		///< is the patch color or grayscale?
+
+	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
 
 	/**
 	Initializer
