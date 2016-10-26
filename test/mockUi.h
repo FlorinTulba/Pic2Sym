@@ -94,8 +94,8 @@ public:
 	void updateMatchSettings(...) {}
 	void updateImgSettings(...) {}
 	void updateSymSettings(...) {}
-	std::unique_ptr<ActionPermit> actionDemand(const cv::String&) { return std::move(std::make_unique<ActionPermit>()); }
-	void restoreSliderValue(const cv::String&) {}
+	std::unique_ptr<ActionPermit> actionDemand(...) { return std::move(std::make_unique<ActionPermit>()); }
+	void restoreSliderValue(...) {}
 };
 
 #endif
