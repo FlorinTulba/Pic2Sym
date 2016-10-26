@@ -49,9 +49,9 @@ using namespace std;
 using namespace cv;
 
 SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
-				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_) :
+				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), masks(masks_) {}
+	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), removable(removable_), masks(masks_) {}
 
 SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/,
 				 double avgPixVal_/* = 0.*/, const cv::Point2d &mc_/* = Point2d(.5, .5)*/) :
@@ -62,7 +62,7 @@ SymData::SymData(const cv::Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVa
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
 		avgPixVal(other.avgPixVal), mc(other.mc),
-		negSym(other.negSym), masks(other.masks) {}
+		negSym(other.negSym), removable(other.removable), masks(other.masks) {}
 
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
@@ -82,6 +82,7 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(avgPixVal);
 		REPLACE_FIELD(mc);
 		REPLACE_FIELD(negSym);
+		REPLACE_FIELD(removable);
 
 		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
 			REPLACE_FIELD(masks[i]);

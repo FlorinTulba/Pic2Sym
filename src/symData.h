@@ -81,6 +81,19 @@ struct SymData {
 
 	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; double for tiny)
 
+	/**
+	Enabled symbol filters might mark this symbol as removable,
+	but PreserveRemovableSymbolsForExamination from configuration might allow it to remain
+	in the active symbol set used during image transformation.
+	
+	However, when removable == true && PreserveRemovableSymbolsForExamination,
+	the symbol will appear as marked (inversed) in the cmap viewer
+
+	This field doesn't need to be serialized, as filtering options might be different
+	for distinct run sessions.
+	*/
+	bool removable = false;
+
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
 		BG_MASK_IDX,			///< mask isolating the background of the glyph 
@@ -100,7 +113,7 @@ struct SymData {
 
 	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
 	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
-			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_);
+			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_, bool removable_ = false);
 
 	SymData(const SymData &other);
 	SymData(SymData &&other); ///< moves the matrices from other (instead of just copying them)
@@ -108,12 +121,22 @@ struct SymData {
 	SymData& operator=(const SymData &other);
 	SymData& operator=(SymData &&other); ///< moves the matrices from other (instead of just copying them)
 
-	/// Serializes this SymData object to ar
+	/**
+	Serializes this SymData object (apart from 'removable' field) to ar.
+
+	'removable' field doesn't need to be serialized,
+	as filtering options might be different for distinct run sessions.
+	*/
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned int version) {
 		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
 		ar & mc.x & mc.y;
 		ar & negSym;
+
+		// Make sure a loaded symbol is initially not removable
+		if(Archive::is_loading::value && removable)
+			removable = false;
+
 		ar & masks;
 	}
 

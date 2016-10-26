@@ -706,7 +706,11 @@ void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair,
 	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
 				   (NegSymExtractor<MatchEngine::VSymDataCIt>) // conversion
-				   [](const MatchEngine::VSymDataCIt &iter) { return iter->negSym; },
+				   [](const MatchEngine::VSymDataCIt &iter) -> Mat { 
+						if(iter->removable)
+							return 255U - iter->negSym;
+						return iter->negSym;
+					},
 				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
 }
 

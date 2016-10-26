@@ -124,7 +124,7 @@ void MatchEngine::updateSymbols() {
 
 		const auto &pms = rawSyms[i];
 		const Mat glyph = pms.toMatD01(sz),
-				negGlyph = pms.toMat(sz, !pms.removable);
+				negGlyph = pms.toMat(sz, true);
 		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
 		double minVal, diffMinMax; // for very small fonts, minVal might be > 0 and diffMinMax might be < 255
 
@@ -146,7 +146,8 @@ void MatchEngine::updateSymbols() {
 										groundedGlyph,			// GROUNDED_SYM_IDX
 										blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
 										varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
-									} });
+								} },
+								pms.removable);
 
 		// #pragma omp master not allowed in for
 		if(omp_get_thread_num() == 0)
