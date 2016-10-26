@@ -401,7 +401,7 @@ namespace ut {
 	}
 
 	// msArray and fonts from below are used to generate the data sets used within
-	// CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors test below
+	// CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors test below
 	
 	/// array of all MatchSetting-s configurations to be tested for all selected font configurations
 	const MatchSettings msArray[] = {
@@ -415,9 +415,9 @@ namespace ut {
 	The elements are the full combination of font family and the desired encoding.
 
 	Below are some variants:
-	Courier Bold Unicode ("C:\\Windows\\Fonts\\courbd.ttf") > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
-	Envy Code R Unicode ("C:\\Windows\\Fonts\\Envy Code R Bold.ttf") > 600 glyphs
-	Bp Mono Bold ("res\\BPmonoBold.ttf") - 210 glyphs for Unicode, 134 for Apple Roman
+	Courier Bold UNICODE ("C:\\Windows\\Fonts\\courbd.ttf") > 2800 glyphs; There are 2 almost identical COMMA-s and QUOTE-s.
+	Envy Code R UNICODE ("C:\\Windows\\Fonts\\Envy Code R Bold.ttf") > 600 glyphs
+	Bp Mono Bold ("res\\BPmonoBold.ttf") - 210 glyphs for UNICODE, 134 for APPLE_ROMAN
 	*/
 	map<string, string> fonts { { "res\\BPmonoBold.ttf", "APPLE_ROMAN" } };
 
@@ -440,29 +440,43 @@ Iterating this file 2 times, with counter values from 0 to 1.
 #else // BOOST_PP_IS_ITERATING is 1 (true) -- The rest of the file is iterated twice
 
 #	if BOOST_PP_ITERATION() == 0
-#		define MatchParamsFixt_		MatchParamsFixt<false>
-#		define MatchAspectsFixt_	MatchAspectsFixt<false>
-#		define AlteredCmapFixture_	AlteredCmapFixture<false>
+#		define UsePreselection		false
 #		define SuiteSuffix	_noPreselection
 
 #	elif BOOST_PP_ITERATION() == 1
-#		undef MatchParamsFixt_
-#		define MatchParamsFixt_		MatchParamsFixt<true>
-#		undef MatchAspectsFixt_
-#		define MatchAspectsFixt_	MatchAspectsFixt<true>
-#		undef AlteredCmapFixture_
-#		define AlteredCmapFixture_	AlteredCmapFixture<true>
+#		undef UsePreselection
+#		define UsePreselection		true
 #		undef SuiteSuffix
 #		define SuiteSuffix	_withPreselection
 
 #	else // BOOST_PP_ITERATION() >= 2
-#		undef MatchParamsFixt_
-#		undef MatchAspectsFixt_
-#		undef AlteredCmapFixture_
+#		undef UsePreselection
 #		undef SuiteSuffix
 #	endif // BOOST_PP_ITERATION()
 
-DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, SuiteSuffix,
+/**
+Trying to identify all the glyphs from a font family based on certain match settings.
+The symbols within a given font family are altered:
+- changing their foreground and background to random values while ensuring a minimal contrast
+- using additive noise
+
+Applying this test for more combinations of MatchSetting-s (msArray) and font families (fonts),
+with and without the preselection mechanism enabled (UsePreselection).
+
+Normally, when the preselection is disabled, there are less than 3% misidentified symbols.
+For non-altered symbols, there should be no such errors.
+
+Unfortunately, the preselection enforces the identification to be performed MOSTLY based on
+tiny versions of the glyphs, and the percentage of the errors increases with the size of the symbol set.
+This is because an increasing number of such tiny symbols will be hard to distinguish based on masks
+that became really inadequate (for instance - a large circular mask becomes a small square or a dot).
+So, BpMono Bold family with around 200 symbols generates less than 13% errors,
+but Courier Bold Unicode family with &gt; 2000 symbols generates a bit less than 55% misidentifications
+
+GENERALLY, no matter the preselection, Structural Similarity identifies correctly more symbols
+than (Foreground, Background and Edge) aspects.
+*/
+DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, SuiteSuffix,
 			// For Cartesian product (all combinations) use below '*'
 			// For zip (only the combinations formed by pairs with same indices) use '^'
 			boost::unit_test::data::make(msArray) * fonts,
@@ -472,12 +486,12 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, Sui
 	// which depends on quite a number of adjustable parameters.
 	// Every time one of these parameters is modified,
 	// this test might cross the accepted mismatches threshold.
-	AlteredCmapFixture_ fixt("None"); // mandatory
+	AlteredCmapFixture<UsePreselection> fixt("None"); // mandatory
 
 	const string &fontFamily = font.first, &encoding = font.second;
 
 	ostringstream oss;
-	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors for "
+	oss<<"CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors for "
 		<<fontFamily<<'('<<encoding<<") with "<<ms<<' '
 		<<(PreselectionByTinySyms ? "with" : "without")<<" Preselection";
 	string nameOfTest = oss.str();
@@ -569,8 +583,8 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, Sui
 	}
 
 	if(PreselectionByTinySyms) { // Preselection with tiny symbols - less accurate approximation allowed
-		// Normally, less than 13% of the altered symbols are not identified correctly.
-		BOOST_CHECK((double)mismatches.size() < .13 * symsCount);
+		// Normally, less than 55% of the altered symbols are not identified correctly.
+		BOOST_CHECK((double)mismatches.size() < .55 * symsCount);
 	} else { // No Preselection - much more accurate approximation expected
 		// Normally, less than 3% of the altered symbols are not identified correctly.
 		BOOST_CHECK((double)mismatches.size() < .03 * symsCount);
@@ -585,7 +599,7 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or13PercentErrors, Sui
 	}
 }
 
-FixtureTestSuiteSuffix(MatchParamsFixt_, MeanSdevMassCenterComputation_Tests, SuiteSuffix)
+FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterComputation_Tests, SuiteSuffix)
 	// Patches have pixels with double values 0..255.
 	// Glyphs have pixels with double values 0..1.
 	// Masks have pixels with byte values 0..255.
@@ -722,7 +736,7 @@ FixtureTestSuiteSuffix(MatchParamsFixt_, MeanSdevMassCenterComputation_Tests, Su
 	}
 BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
-FixtureTestSuiteSuffix(MatchAspectsFixt_, MatchAspects_Tests, SuiteSuffix)
+FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, SuiteSuffix)
 	AutoTestCase1(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch, SuiteSuffix);
 		cfg.set_kSsim(1.);
 		const StructuralSimilarity strSim(cfg);
