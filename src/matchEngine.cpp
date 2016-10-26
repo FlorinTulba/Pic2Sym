@@ -273,9 +273,10 @@ void MatchEngine::getReady() {
 
 	// Adjust max increase factors for every enabled aspect
 	invMaxIncreaseFactors.resize(enabledAspectsCount);
-	double maxIncreaseFactor = 1.;
-	for(int i = (int)enabledAspectsCount - 1; i >= 0; --i) {
-		maxIncreaseFactor *= enabledAspects[i]->maxScore(cachedData);
+	const int lastIdx = (int)enabledAspectsCount - 1;
+	double maxIncreaseFactor = invMaxIncreaseFactors[lastIdx] = 1.;
+	for(int i = lastIdx - 1, ip1 = lastIdx; i >= 0; ip1 = i--) {
+		maxIncreaseFactor *= enabledAspects[ip1]->maxScore(cachedData);
 		invMaxIncreaseFactors[i] = 1. / maxIncreaseFactor;
 	}
 }
@@ -437,9 +438,9 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, const 
 	assert(enabledAspectsCount > 0U && enabledAspectsCount == enabledAspects.size());
 
 	score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
-	unsigned i = 0U, lim = (unsigned)enabledAspectsCount - 1U;
-	while(++i <= lim) {
-		if(score < scoresToBeat[i]) {
+	const unsigned lim = (unsigned)enabledAspectsCount - 1U;
+	for(unsigned im1 = 0U, i = 1U; i <= lim; im1 = i++) {
+		if(score < scoresToBeat[im1]) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 			for(unsigned j = i; j <= lim; ++j)
 				++skippedAspects[j];
