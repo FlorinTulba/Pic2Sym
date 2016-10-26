@@ -43,6 +43,8 @@
 #include "settings.h"
 #include "misc.h"
 
+#include <thread>
+
 #include <opencv2/highgui.hpp>
 
 using namespace std;
@@ -216,9 +218,7 @@ void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
 	pLuckySliderName = nullptr;
 }
 
-void ControlPanel::restoreSliderValue(const String &trName) {
-	slidersRestoringValue.insert(&trName);
-
+void ControlPanel::restoreSliderValue(const String &trName, const string &errText) {
 	// Determine previous value
 	int prevVal = 0;
 	if(&trName == &ControlPanel_outWTrName) {
@@ -253,9 +253,21 @@ void ControlPanel::restoreSliderValue(const String &trName) {
 		prevVal = cfg.matchSettings().getBlankThreshold();
 	} else THROW_WITH_VAR_MSG("Code for " + trName + " must be added within " __FUNCTION__, domain_error);
 
-	// Set the previous value
-	while(getTrackbarPos(trName, nullptr) != prevVal)
-		setTrackbarPos(trName, nullptr, prevVal);
+	// Deals with the case when the value was already restored / not modified at all
+	if(getTrackbarPos(trName, nullptr) == prevVal)
+		return;
 
-	slidersRestoringValue.erase(&trName);
+	slidersRestoringValue.insert(trName);
+
+	thread([&] (const String sliderName, int previousVal, const string errorText) {
+				errMsg(errorText);
+
+				// Set the previous value
+				while(getTrackbarPos(sliderName, nullptr) != previousVal)
+					setTrackbarPos(sliderName, nullptr, previousVal);
+
+				slidersRestoringValue.erase(sliderName);
+			},
+			trName, prevVal, errText
+	).detach();
 }

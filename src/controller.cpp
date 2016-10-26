@@ -226,9 +226,8 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 	extern const cv::String ControlPanel_fontSzTrName;
 	if(!Settings::isFontSizeOk(fontSz)) {
 		ostringstream oss;
-		oss<<"Invalid font size: "<<fontSz<<". Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
-		errMsg(oss.str());
-		cp.restoreSliderValue(ControlPanel_fontSzTrName);
+		oss<<"Invalid font size. Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
+		cp.restoreSliderValue(ControlPanel_fontSzTrName, oss.str());
 		return false;
 	}
 
@@ -279,9 +278,8 @@ void Controller::newHmaxSyms(int maxSymbols) {
 
 	if(!Settings::isHmaxSymsOk(maxSymbols)) {
 		ostringstream oss;
-		oss<<"Invalid max number of horizontal symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_H_SYMS<<'.';
-		errMsg(oss.str());
-		cp.restoreSliderValue(ControlPanel_outWTrName);
+		oss<<"Invalid max number of horizontal symbols. Please set at least "<<Settings_MIN_H_SYMS<<'.';
+		cp.restoreSliderValue(ControlPanel_outWTrName, oss.str());
 		return;
 	}
 
@@ -299,9 +297,8 @@ void Controller::newVmaxSyms(int maxSymbols) {
 
 	if(!Settings::isVmaxSymsOk(maxSymbols)) {
 		ostringstream oss;
-		oss<<"Invalid max number of vertical symbols: "<<maxSymbols<<". Please set at least "<<Settings_MIN_V_SYMS<<'.';
-		errMsg(oss.str());
-		cp.restoreSliderValue(ControlPanel_outHTrName);
+		oss<<"Invalid max number of vertical symbols. Please set at least "<<Settings_MIN_V_SYMS<<'.';
+		cp.restoreSliderValue(ControlPanel_outHTrName, oss.str());
 		return;
 	}
 

@@ -148,7 +148,7 @@ protected:
 	volatile AppStateType appState = ST(Idle);
 
 	/// pointers to the names of the sliders that are undergoing value restoration
-	std::set<const cv::String*> slidersRestoringValue;
+	std::set<const cv::String> slidersRestoringValue;
 
 	/**
 	When performing Load All Settings or only Load Match Aspects Settings, the corresponding sliders
@@ -164,9 +164,27 @@ public:
 	/**
 	Restores a slider to its previous value when:
 	- the newly set value was invalid
-	- or the update of the tracker happened while the application was not in the appropriate state for it
+	- the update of the tracker happened while the application was not in the appropriate state for it
+
+	Only when entering the explicit new desired value of the slider there will be a single
+	setTrackPos event.
+
+	Otherwise (when dragging the handle of a slider, or when clicking on a new target slider position),
+	there will be several intermediary positions that generate setTrackPos events.
+
+	So, if changing the trackbar is requested at an inappropriate moment,
+	all intermediary setTrackPos events should be discarded.
+	This can be accomplished as follows:
+	- including trName in slidersRestoringValue during the handling of the first setTrackPos event
+	  (ensures trName won't be allowed to change the corresponding value from the settings until
+	  trName is removed from slidersRestoringValue)
+	- starting a thread that:
+		- displays a modal window with the error text, thus blocking any further user maneuvers
+		- after the user closes the mentioned modal window, all the setTrackPos events should have
+		  been consumed and now the restoration of the previous value can finally proceed
+		  at the termination of this thread
 	*/
-	void restoreSliderValue(const cv::String &trName);
+	void restoreSliderValue(const cv::String &trName, const std::string &errText);
 
 	/// Authorizes the action of the control whose name is provided as parameter.
 	/// When the action isn't allowed returns nullptr.

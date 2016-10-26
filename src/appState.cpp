@@ -130,14 +130,14 @@ namespace {
 	/// Shared body for the controls updating the symbols settings
 	unique_ptr<ActionPermit> updateSettingDemand(ControlPanel &cp,
 												 volatile AppStateType &appState,
-												 set<const cv::String*> &slidersRestoringValue,
+												 set<const cv::String> &slidersRestoringValue,
 												 const cv::String * const pLuckySliderName,
 												 const String &controlName,
 												 AppStateType bannedMask,
 												 const string &msgWhenBanned,
 												 AppStateType statesToSet,
 												 bool isSlider = true) {
-		if(isSlider && slidersRestoringValue.end() != slidersRestoringValue.find(&controlName))
+		if(isSlider && slidersRestoringValue.end() != slidersRestoringValue.find(controlName))
 			return nullptr; // ignore call, as it's a value restoration maneuver
 
 		// Authorize update of the sliders while loading settings without the casual checks.
@@ -149,11 +149,12 @@ namespace {
 
 		if(0U != (bannedMask & appState)) {
 			lock.release();
-			
-			errMsg(msgWhenBanned);
+
 			if(isSlider)
-				cp.restoreSliderValue(controlName);
-			
+				cp.restoreSliderValue(controlName, msgWhenBanned);
+			else
+				errMsg(msgWhenBanned);
+
 			return nullptr;
 		}
 		return std::move(make_unique<NormalActionPermit>(appState, statesToSet));
@@ -162,7 +163,7 @@ namespace {
 	/// Shared body for the sliders updating the image settings
 	unique_ptr<ActionPermit> updateImgSettingDemand(ControlPanel &cp,
 													volatile AppStateType &appState,
-													set<const cv::String*> &slidersRestoringValue,
+													set<const cv::String> &slidersRestoringValue,
 													const cv::String * const pLuckySliderName,
 													const String &controlName) {
 		return std::move(
@@ -177,7 +178,7 @@ namespace {
 	/// Shared body for the controls updating the symbols settings
 	unique_ptr<ActionPermit> updateSymSettingDemand(ControlPanel &cp,
 													volatile AppStateType &appState,
-													set<const cv::String*> &slidersRestoringValue,
+													set<const cv::String> &slidersRestoringValue,
 													const cv::String * const pLuckySliderName,
 													const String &controlName,
 													bool isSlider = true) {
@@ -194,7 +195,7 @@ namespace {
 	/// Shared body for the sliders updating the match settings
 	unique_ptr<ActionPermit> updateMatchSettingDemand(ControlPanel &cp,
 													  volatile AppStateType &appState,
-													  set<const cv::String*> &slidersRestoringValue,
+													  set<const cv::String> &slidersRestoringValue,
 													  const cv::String * const pLuckySliderName,
 													  const String &controlName) {
 		return std::move(
