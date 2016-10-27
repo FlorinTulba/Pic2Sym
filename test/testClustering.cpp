@@ -251,7 +251,6 @@ FixtureTestSuiteSuffix(SuiteFixture, ClusterEngineCreation_Tests, SuiteSuffix)
 		TestClusterEngine ce;
 		BOOST_REQUIRE(ce.checkAlgType<TTSAS_Clustering>());
 	}
-
 BOOST_AUTO_TEST_SUITE_END() // ClusterEngineCreation
 
 FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
@@ -330,7 +329,6 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		BOOST_REQUIRE(clusterOffsets.find(3U) != clusterOffsets.end()); // smallest cluster starts at 3 (2 items)
 		BOOST_REQUIRE(clusterOffsets.find((unsigned)symsCount) != clusterOffsets.end());
 	}
-
 BOOST_AUTO_TEST_SUITE_END() // BasicClustering_Tests
 
 FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
@@ -342,7 +340,7 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 
 		for(unsigned n = 1U; n < 30U; ++n) {
 			// Use n identical symbols => a single cluster
-			BOOST_TEST_MESSAGE("Checking member thresholds with a set of " + to_string(n) + " identical symbols");
+			BOOST_TEST_MESSAGE("Checking member thresholds with a set of " << n << " identical symbols");
 
 			tsp.tinySyms.assign(n, EmptyTinySym); symsSet.assign(n, EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_REQUIRE(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
@@ -445,7 +443,6 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 
 		BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 	}
-
 BOOST_AUTO_TEST_SUITE_END() // TTSAS_Clustering_Tests
 
 #endif // BOOST_PP_IS_ITERATING
