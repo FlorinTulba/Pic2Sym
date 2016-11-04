@@ -274,12 +274,15 @@ extern const double Transform_ProgressReportsIncrement;
 extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 Controller::Controller(Settings &s) :
-		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs", std::make_shared<SymsUpdateProgressNotifier>(*this),
-			min(1., max(.01, SymbolsProcessing_ProgressReportsIncrement)))), // report at least once and at most 100 times
-		imgTransformMonitor(std::make_shared<JobMonitor>("Transforming image", std::make_shared<PicTransformProgressNotifier>(*this),
-		min(1., max(.01, Transform_ProgressReportsIncrement)))), // report at least once and at most 100 times
+		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs",
+			std::make_shared<SymsUpdateProgressNotifier>(*this),
+			SymbolsProcessing_ProgressReportsIncrement)),
+		imgTransformMonitor(std::make_shared<JobMonitor>("Transforming image",
+			std::make_shared<PicTransformProgressNotifier>(*this),
+			Transform_ProgressReportsIncrement)),
 		img(getImg()), fe(getFontEngine(s.ss).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
-		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)), t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
+		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
+		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		comp(getComparator()), cp(getControlPanel(s)) {
 	comp.setPos(0, 0);
 	comp.permitResize(false);
@@ -389,7 +392,7 @@ void Controller::symbolsChanged() {
 		// - we have to prevent an available preview to be displayed after the official version
 		while(updating1stCmapPage.test_and_set())
 			this_thread::sleep_for(milliseconds(1));
-		updatingSymbols.clear(); // signal that the work has finished
+		updatingSymbols.clear(); // signal task completion
 	}).detach(); // termination captured by updatingSymbols flag
 
 	IUpdateSymsAction *evt = nullptr;
