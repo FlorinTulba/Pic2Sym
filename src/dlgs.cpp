@@ -103,12 +103,12 @@ SettingsSelector::SettingsSelector(bool toOpen_/* = true*/) :
 		_T("p2s"),
 		toOpen_) {}
 
-/*
+/**
 FontFinder encapsulates the logic to obtain the file path for a given font name.
 It has a single public and static method: pathFor.
 */
 class FontFinder {
-	/*
+	/**
 	RegistryHelper isolates Registry API from the business logic within FontFinder.
 	It provides an iterator-like method: extractNextFont.
 	*/
@@ -187,7 +187,7 @@ class FontFinder {
 		}
 	};
 
-	/*
+	/**
 	The font read from registry needs to contain the required name and also match bold&italic style.
 	Otherwise it will return false.
 	*/
@@ -215,7 +215,7 @@ class FontFinder {
 		return true;
 	}
 
-	// Ensures the obtained font file name represents a valid path
+	/// Ensures the obtained font file name represents a valid path
 	static string refineFontFileName(const wstring &wCurFontFileName) {
 		path curFontFile(string(BOUNDS(wCurFontFileName)));
 		if(!curFontFile.has_parent_path()) {
@@ -235,7 +235,7 @@ class FontFinder {
 		return curFontFile.string();
 	}
 
-	// When ambiguous results, lets the user select the correct one.
+	/// When ambiguous results, lets the user select the correct one.
 	static string extractResult(map<string, string> &choices) {
 		const size_t choicesCount = choices.size();
 		if(0U == choicesCount)
@@ -260,7 +260,7 @@ class FontFinder {
 	}
 
 public:
-	/*
+	/**
 	pathFor static method finds the path for a provided fontName.
 	Unfortunately, the provided fontName isn't decorated with Bold and/or Italic at all,
 	so isBold and isItalic parameters were necessary, too.
