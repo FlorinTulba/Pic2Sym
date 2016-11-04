@@ -159,9 +159,6 @@
     <ClInclude Include="src\picTransformProgressTracker.h">
       <Filter>Header Files\Controller</Filter>
     </ClInclude>
-    <ClInclude Include="src\validateFont.h">
-      <Filter>Header Files\Controller</Filter>
-    </ClInclude>
     <ClInclude Include="src\updateSymsActions.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
@@ -329,6 +326,9 @@
     </ClInclude>
     <ClInclude Include="src\ompTraceSwitch.h">
       <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\updateSymSettings.h">
+      <Filter>Header Files\Controller</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

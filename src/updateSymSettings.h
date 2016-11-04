@@ -38,22 +38,20 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_VALIDATE_FONT
-#define H_VALIDATE_FONT
+#ifndef H_UPDATE_SYM_SETTINGS
+#define H_UPDATE_SYM_SETTINGS
 
 #include "controllerBase.h"
 
-/**
-Interface that confirms that a newly configured font is valid.
-*/
-struct IValidateFont /*abstract*/ : virtual IController {
+/// Interface that allows changing settings for the symbols.
+struct IUpdateSymSettings /*abstract*/ : virtual IController {
 	/// called by FontEngine::newFont after installing a new font to update SymSettings
 	virtual void selectedFontFile(const std::string &fName) const = 0;
 
 	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
 	virtual void selectedEncoding(const std::string &encName) const = 0;
 
-	virtual ~IValidateFont() = 0 {}
+	virtual ~IUpdateSymSettings() = 0 {}
 };
 
-#endif
+#endif // H_UPDATE_SYM_SETTINGS

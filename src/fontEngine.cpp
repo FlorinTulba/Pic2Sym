@@ -42,7 +42,7 @@
 #include "tinySym.h"
 #include "symFilter.h"
 #include "symFilterCache.h"
-#include "validateFont.h"
+#include "updateSymSettings.h"
 #include "glyphsProgressTracker.h"
 #include "presentCmap.h"
 #include "settings.h"
@@ -116,7 +116,7 @@ namespace {
 } // anonymous namespace
 
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
-					   fontValidator(dynamic_cast<const IValidateFont&>(ctrler_)),
+					   symSettingsUpdater(dynamic_cast<const IUpdateSymSettings&>(ctrler_)),
 					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
 					   cmapPresenter(dynamic_cast<const IPresentCmap&>(ctrler_)),
 					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
@@ -182,7 +182,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	symsCont.reset();
 	symsCount = 0U;
 
-	fontValidator.selectedEncoding(encName);
+	symSettingsUpdater.selectedEncoding(encName);
 
 	return true;
 }
@@ -253,7 +253,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 	
 	setFace(face_, fontPath.string());
 	
-	fontValidator.selectedFontFile(fontFile_);
+	symSettingsUpdater.selectedFontFile(fontFile_);
 
 	return true;
 }

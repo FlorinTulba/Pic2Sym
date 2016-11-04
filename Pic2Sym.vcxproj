@@ -89,7 +89,7 @@
     <ClInclude Include="src\ttsasClustering.h" />
     <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
-    <ClInclude Include="src\validateFont.h" />
+    <ClInclude Include="src\updateSymSettings.h" />
     <ClInclude Include="src\views.h" />
   </ItemGroup>
   <ItemGroup>

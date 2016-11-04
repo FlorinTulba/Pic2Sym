@@ -46,7 +46,7 @@
 #include "transform.h"
 #include "controlPanelActions.h"
 #include "presentCmap.h"
-#include "validateFont.h"
+#include "updateSymSettings.h"
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
 #include "updateSymsActions.h"
@@ -61,7 +61,7 @@ class AbsJobMonitor;
 
 /// Manager of the views and data.
 class Controller :
-	public IControlPanelActions, public IPresentCmap, public IValidateFont,
+	public IControlPanelActions, public IPresentCmap, public IUpdateSymSettings,
 	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
 protected:
 	// Control of displayed progress
@@ -84,7 +84,8 @@ protected:
 	ControlPanel &cp;					///< the configuration view
 
 	// Validation flags
-	bool imageOk = false, fontFamilyOk = false; // not set yet, so false
+	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
+	bool fontFamilyOk = false;	///< is there a symbol set available (not set yet, so false)
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;
@@ -99,7 +100,7 @@ protected:
 	mutable std::list<const cv::Mat> symsToInvestigate;
 
 	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
-	/// Cmap visualization can ignore image-related errors by setting 'imageReguired' to false.
+	/// Cmap visualization can ignore image-related errors by setting 'imageRequired' to false.
 	bool validState(bool imageRequired = true) const;
 
 	const std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
@@ -187,7 +188,7 @@ public:
 	const std::set<unsigned>& getClusterOffsets() const override;
 	void showUnofficialSymDetails(unsigned symsCount) const override;
 
-	// Implementation of IValidateFont below
+	// Implementation of IUpdateSymSettings below
 	/// called by FontEngine::newFont after installing a new font to update SymSettings
 	void selectedFontFile(const std::string &fName) const override;
 	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
@@ -207,7 +208,7 @@ public:
 	Timer createTimerForImgTransform() const override; ///< Creates the monitor to time the picture approximation process
 
 	/// Base class for TimerActions_SymSetUpdate and TimerActions_ImgTransform
-	struct TimerActions_Controller : ITimerActions {
+	struct TimerActions_Controller /*abstract*/ : ITimerActions {
 	protected:
 		const Controller &ctrler; ///< actual manager of the events
 
