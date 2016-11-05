@@ -20,3 +20,4 @@ include/
 lib/
 scripts/
 doc/doxy
+doc/pages/watermark.bmp
