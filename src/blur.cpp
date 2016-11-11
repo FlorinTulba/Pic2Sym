@@ -41,8 +41,6 @@
 #include "blur.h"
 #include "misc.h"
 
-#include <opencv2/core/core.hpp>
-
 using namespace std;
 using namespace cv;
 

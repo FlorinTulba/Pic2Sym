@@ -44,18 +44,19 @@
 #include <string>
 #include <map>
 
-// Forward declarations
-namespace cv { class Mat; }
+#include <opencv2/core/core.hpp>
 
 /**
 Base class for various versions of blurring that can be configured within the application.
 
+One possible matching aspect to be used during image approximation is
+Structural Similarity (https://ece.uwaterloo.ca/~z70wang/research/ssim ).
+It relies heavily on Gaussian blurring, whose implementation is already optimized in OpenCV for a sequential run.
+
 This class addresses the issue that GaussianBlur function is the most time-consuming operation
 during image approximation.
 
-One matching aspect during image approximation is Structural Similarity (https://ece.uwaterloo.ca/~z70wang/research/ssim ).
-It relies heavily on Gaussian blurring, whose implementation is already optimized in OpenCV for a sequential run.
-For the typical standard deviation of 1.5, it still remains the fastest
+For the typical standard deviation of 1.5, GaussianBlur from OpenCV still remains the fastest
 when compared to other tested sequential innovative algorithms:
 - Young & van Vliet (implementation from CImg library - http://cimg.eu/)
 - Deriche (implementation from CImg library - http://cimg.eu/)

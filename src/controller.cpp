@@ -53,7 +53,6 @@
 
 #ifndef UNIT_TESTING
 #	include "matchSettingsManip.h"
-#	include <opencv2/core/core.hpp>
 #endif
 
 using namespace std;

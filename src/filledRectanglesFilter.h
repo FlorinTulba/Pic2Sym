@@ -43,8 +43,7 @@
 
 #include "symFilter.h"
 
-// Forward declaration
-namespace cv { class Mat; }
+#include <opencv2/core/core.hpp>
 
 /// Detects filled symbols with a rectangular shape, even degenerate ones - basic lines.
 struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {

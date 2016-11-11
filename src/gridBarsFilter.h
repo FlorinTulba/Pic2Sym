@@ -43,8 +43,7 @@
 
 #include "symFilter.h"
 
-// Forward declaration
-namespace cv { class Mat; }
+#include <opencv2/core/core.hpp>
 
 /** 
 Detects symbols typically used to generate a grid from glyphs.
