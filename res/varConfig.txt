@@ -1,15 +1,15 @@
-;/*###################################################################################
-; This file contains many configurable texts and parameters of the application.      #
-; Grouping them here means they can be modified without recompiling any source file. #
-;#####################################################################################
+;/*###########################################################################################
+; This file contains many configurable settings and texts necessary in the Pic2Sym application.
+; When the application starts, it reads and uses the values from this file found at that time.
+;#############################################################################################
 
 ;========================
 ; Configurable Constants
 ;========================
-; Switch to choose between transforming the original, or its blurred version
+; Switch to choose between transforming the original image, or its blurred version
 Transform_BlurredPatches_InsteadOf_Originals	false
 
-; Switches for OpenMP - parallelizing operations / loops:
+; Switches for OpenMP - parallel operations / loops:
 UsingOMP	true
 ParallelizePixMapStatistics	true
 ParallelizeGridCreation	true
@@ -71,9 +71,9 @@ SymbolsProcessing_ProgressReportsIncrement	0.01
 ; The image approximation by symbols could be accelerated by preselecting just several candidate symbols.
 ; The preselection might be accomplished based on the same matching aspects, but using shrunken
 ; versions of the image patches and symbols.
-; Also clustering the symbols used for approximation is performed faster by grouping the shrunken
+; Also clustering the symbols used for approximation is performed faster by grouping the smaller
 ; versions of the symbols.
-; Setting a unique shrunken size for the symbols has the advantage that it can be used for all
+; Setting a unique tiny size for the symbols has the advantage that it can be used for all
 ; actual symbol sizes, thus it can be computed only once and stored on disk for eventual later reuses.
 PreselectionByTinySyms	true
 
@@ -85,7 +85,7 @@ ShortListLength	2
 ; Range 0.8 .. 1
 AdmitOnShortListEvenForInferiorScoreFactor	0.999
 
-; Size of the fonts used when providing support for faster clustering and image approximation.
+; Size of the fonts used when providing support for faster clustering and for symbols preselection.
 ; Must be an odd value between 5 and 9.
 ; To be used through function 'extern unsigned TinySymsSz()'
 TinySymsSize	5
@@ -96,9 +96,9 @@ TinySymsSize	5
 InvestigateClusterEvenForInferiorScoreFactor	0.999
 
 ; Choose to use or not heuristics for clustering to quicken the computation of the distance between
-; the centroid of a cluster and a given symbol, not clustered yet
-; For large symbol sets, the speed-up coming from heuristics is
-; around 10x for the settings and code from the time of introduction of this switch
+; the centroid of a cluster and a given symbol, not clustered yet.
+; For large symbol sets, the speed-up coming from these heuristics was around 10 times
+; at the time when this switch was introduced
 FastDistSymToClusterComputation	true
 
 ; The name of the clustering algorithm. These options are available:
