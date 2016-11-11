@@ -65,7 +65,7 @@
 static bool checkCancellationRequest();
 
 #ifndef UNIT_TESTING
-#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 bool checkCancellationRequest() {
 	// cancel if the user presses ESC and then confirms his abort request
@@ -248,7 +248,11 @@ void Transformer::run() {
 				continue;
 			cout<<"\t\t"<<setw(25)<<left<<enabledAspects[i]->name()
 				<<" : "<<setw(10)<<right<<me.skippedAspects[i]<<" times"
-				<<" (Complexity : "<<enabledAspects[i]->relativeComplexity()<<")"<<endl;
+				<<" (Complexity : "<<setw(8)<<fixed<<setprecision(3)<<right
+					<<enabledAspects[i]->relativeComplexity()<<")"
+				<<" ["<<setw(5)<<fixed<<setprecision(2)<<right
+					<<(100. * me.skippedAspects[i] / me.totalIsBetterMatchCalls)
+					<<"% of the calls]"<<endl;
 		}
 		cout<<endl;
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
