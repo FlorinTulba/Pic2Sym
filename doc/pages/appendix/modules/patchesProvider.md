@@ -6,6 +6,7 @@
 
 ![](SupplyOfPatches_classes.jpg)<br>
 An original image ***Img*** will be resized to ***ResizedImg***, so that:
+
 - its new size is less or equal to the initial size
 - the resulted sides are multiples of the symbol size (read from ***SymSettings***) and thus can be covered by square patches of the size of the glyphs
 - the obtained count of patches per axis is not larger than the corresponding value imposed in ***ImgSettings***

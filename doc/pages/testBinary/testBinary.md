@@ -2,7 +2,7 @@
 
 [Back to start page](../../../ReadMe.md)
 
-It&#39;s *recommended* to read first the ***Conclusions*** from the bottom of the ***[examples page][examples]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
+It&#39;s *recommended* to read first the ***Conclusions*** the ***[examples page][examples#Conclusions]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
 
 Now the steps:
 

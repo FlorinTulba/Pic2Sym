@@ -2,6 +2,7 @@
 [Back to start page](../../../ReadMe.md)
 
 By now (v2.0), the application:
+
 - presents several *coarser drafts* while *refining the result* and lets the user decide their frequency dynamically
 - displays *progress* information, *elapsed and estimated remaining time* for an image transformation or for the loading of a symbol set
 - allows *transformations* to be *canceled*, while saving the available draft result
@@ -17,14 +18,15 @@ By now (v2.0), the application:
 - reuses *image patches information* (without saving it) between *consecutive transformations of the same image with symbols of the same size*
 - saves (compressed versions of) the cluster and tiny symbols data
 - offers several *image blurring techniques*, as *alternatives* to the *Gaussian blur* (up to this point *the most expensive operation performed during the image transformation* when the *Structural Similarity* matching aspect is enabled)
-- lets the user select *which critical paths to parallelize* on *multi\-core machines*
+- lets the user select *which critical paths to be performed in parallel* on *multi\-core machines*
 - allows multiple *non\-conflicting user commands* running in *parallel*
 - tackles well transformations based on font families with *less than 400 symbols*.
 
 Further speed improvements could be obtained by:
-- involving *other processing devices* from one&#39;s machine, like GPU\-s, especially in areas like the *Gaussian blur*
-- saving *patch statistics about an image* for every *patch-size* requested, to shorten its retransformation under other conditions
-- starting a *machine learning background thread* that learns while application is idle and shares its gathered experience when an actual image transformation is requested
+
+- involving *accelerator devices* from one&#39;s machine, like GPU\-s, especially in areas like the *Gaussian blur*
+- dynamically disabling any features less-suited for a given scenario - like clustering for low values of the average cluster size
+- rearranging data for augmenting the effects of various heuristics. For instance, when the *Larger Symbols* Matching Aspect is enabled, it will be always the first one evaluated when comparing a patch with a symbol; thus, rearranging or just iterating the symbols in reverse order of their *density* (the amount of area they consume from their square) will potentiate the effect of the *Skip Matching Aspects* heuristic, by statistically increasing the chance of finding **earlier** large-enough good matches that force lots of smaller symbols to stop competing right after their *density* evaluation
 
 -----
 [Back to start page](../../../ReadMe.md)
