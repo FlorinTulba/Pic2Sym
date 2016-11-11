@@ -34,12 +34,12 @@ Explanations concerning the values within the table:
 
 -   <b><i>(\*)</i></b> refers to the '*accuracy*' of **v2.0** (does it deliver the best possible matches?), which is 100% when all its features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
     -   low clustering accuracy might let a patch be approximated with an unexpected symbol
-    -   using blur algorithms inferior to Gaussian blur (like Box blur) for the Structural Similarity matching aspect might produce mismatches, too
+    -   using blur algorithms inferior to Gaussian blur (like Box blur) for the [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) matching aspect might produce mismatches, too
     -   using Symbols Preselection reduces match accuracy even more, since the Preselection phase is highly subjective
 
 #### Existing versions compared by their speed:
 
--   Version **2.0** is typically superior to the previous versions. However, it can disable all its features except *Skipping Matching Aspects Heuristic*. In that case it will be slightly inferior to **v1.1 - v1.3** when the *Structural Similarity* Matching Aspect isn't enabled along with a few other aspects.
+-   Version **2.0** is typically superior to the previous versions. However, it can disable all its features except *Skipping Matching Aspects Heuristic*. In that case it will be slightly inferior to **v1.1 - v1.3** when the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* Matching Aspect isn't enabled along with a few other aspects.
 
 -   Version **1.3** allows *visualizing drafts* and preserves the *most efficient multithreading switches* from *v1.2*. It performs better than **v1.2** as long as demanding only a few drafts.
 
@@ -71,15 +71,15 @@ This is the only new feature that gets disabled not by changing the configuratio
 
 Below is a table reporting the count of matching aspects that were skipped while transforming 2 images ([I1](../../examples/6.jpg) and [I2](../../examples/15.jpg)) based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. The scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often:
 
-| Matching Aspect name         |  Complexity|  Skipped for [I1](../../examples/6.jpg)|  Skipped for [I2](../../examples/15.jpg)|
-|------------------------------|-----------:|---------------------------------------:|----------------------------------------:|
-| *Prefer Larger Symbols*      |       0.001|                                   0.00%|                                    0.00%|
-| *Foreground matching*        |       3.100|                                  11.24%|                                    0.41%|
-| *Background matching*        |       3.200|                                  11.72%|                                    0.44%|
-| *Edges matching*             |       4.000|                                  14.31%|                                    0.64%|
-| *Gravitational Smoothness*   |      15.000|                                  15.90%|                                    0.83%|
-| *Directional Smoothness*     |      15.100|                                  16.23%|                                    0.85%|
-| *Structural Similarity (SS)* |    1000.000|                                  44.20%|                                   13.66%|
+| Matching Aspect name                                                            |  Complexity|  Skipped for [I1](../../examples/6.jpg)|  Skipped for [I2](../../examples/15.jpg)|
+|---------------------------------------------------------------------------------|-----------:|---------------------------------------:|----------------------------------------:|
+| *Prefer Larger Symbols*                                                         |       0.001|                                   0.00%|                                    0.00%|
+| *Foreground matching*                                                           |       3.100|                                  11.24%|                                    0.41%|
+| *Background matching*                                                           |       3.200|                                  11.72%|                                    0.44%|
+| *Edges matching*                                                                |       4.000|                                  14.31%|                                    0.64%|
+| *Gravitational Smoothness*                                                      |      15.000|                                  15.90%|                                    0.83%|
+| *Directional Smoothness*                                                        |      15.100|                                  16.23%|                                    0.85%|
+| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.20%|                                   13.66%|
 
 The first image ([I1](../../examples/6.jpg)) contains many coarse-textured regions (faces, shirts, glass walls and a ceiling), which allow quite early approximations by large symbols. Any following smaller symbol will be skipped by all Matching Aspects.
 
@@ -87,7 +87,7 @@ The second image ([I2](../../examples/15.jpg)) is, on the other hand, mostly fin
 
 That was the reason for the significant difference between the percentages from the 2 columns.
 
-Comparing now the durations required to approximate the images either by all Matching Aspects, or just by *Structural Similarity* (SS - the most complex one):
+Comparing now the durations required to approximate the images either by all Matching Aspects, or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one):
 
 |                                  | [I1](../../examples/6.jpg) | [I2](../../examples/15.jpg) |
 |:--------------------------------:|:--------------------------:|:---------------------------:|
@@ -100,11 +100,11 @@ The durations from the table show that using all enabled aspects can be around 1
 The caveat - in certain conditions **v2.0** might perform worse than **v1.3** (as it results from comparing the diagrams below the [*Scenario 4*](../results/results.md#Scenario4) and [*5*](../results/results.md#Scenario5) from the [Results](../results/results.md) page):
 
 -   when most of the features from **v2.0** stay disabled
--   and when all matching aspects are enabled except the *Structural Similarity* (SS)
+-   and when all matching aspects are enabled except the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS)
 
 In such cases, the complexity of the skip mechanism (and also of the entire new infrastructure) overcomes the gain obtained by skipping a modest number of unsophisticated computations.
 
-Luckily, those cases run much (around 4 times) faster already, compared to when Structural Similarity is the only enabled Matching Aspect.
+Luckily, those cases run much (around 4 times) faster already, compared to when [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) is the only enabled Matching Aspect.
 
 So, ***this feature is valuable as long as skipping many evaluations of the Structural Similarity Matching aspect***.
 
@@ -253,7 +253,7 @@ V) ***Alternative Blur Algorithms***
 
 They belong to the [**Draft Improver**](../appendix/modules/draftImprover.md) module.
 
-One possible *Matching Aspect* to be used during image approximation is \[*Structural Similarity*\]\[\]. It relies heavily on *Gaussian blurring*, whose implementation is already optimized in OpenCV for a sequential run. However, `GaussianBlur` function is the most time-consuming operation during image approximation when using the previously mentioned *Matching Aspect*.
+One possible *Matching Aspect* to be used during image approximation is *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)*. It relies heavily on *Gaussian blurring*, whose implementation is already optimized in OpenCV for a sequential run. However, `GaussianBlur` function is the most time-consuming operation during image approximation when using the previously mentioned *Matching Aspect*.
 
 For the typical standard deviation of 1.5, `GaussianBlur` from OpenCV still remains the fastest when compared to other tested sequential innovative algorithms:
 
@@ -273,7 +273,7 @@ The project includes following blur algorithms:
 -   **ExtBoxBlur** - for its accuracy, even for only a few repetitions. The sequential algorithm is *highly parallelizable*
 -   **StackBlur** - for its provided CUDA version that shows terrific time improvement compared to the sequential algorithm
 
-When the *Structural Similarity* is enabled and the application uses **BoxBlur** (which is configured to use a single iteration) the image transformation performs around 1.17 times faster compared to the **GaussBlur**. Better speed could be achieved with algorithms making use of any accelerator devices from the system.
+When the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* is enabled and the application uses **BoxBlur** (which is configured to use a single iteration) the image transformation performs around 1.17 times faster compared to the **GaussBlur**. Better speed could be achieved with algorithms making use of any accelerator devices from the system.
 
 ------------------------------------------------------------------------
 
@@ -342,7 +342,7 @@ Since the changes don't affect the matching aspects, the analysis for version 1.
 
 ### Analysis for Pic2Sym version 1.0
 
-Profiling results show that during image approximation under default settings, 80% from the time the processor is busy computing [structural similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (`StructuralSimilarity::assessMatch` -&gt; `MatchParams::computeSsim`):<br> ![](ProfileSummary.jpg)<br> The 2 dll-s from the image are **imgproc**, which provides an *image blur* function, and **core**, used for *basic matrix operations*, like addition and element-wise multiplication.
+Profiling results show that during image approximation under default settings, 80% from the time the processor is busy computing [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (`StructuralSimilarity::assessMatch` -&gt; `MatchParams::computeSsim`):<br> ![](ProfileSummary.jpg)<br> The 2 dll-s from the image are **imgproc**, which provides an *image blur* function, and **core**, used for *basic matrix operations*, like addition and element-wise multiplication.
 
 The emphasis of next ideas will be on **imgproc**, as the next capture might suggest:<br> ![](ProfileFunctionDetails.jpg)<br> This *Function Details* view presents the operations from `MatchParams::computeSsim` together with the percent of the total time required by each. The lines not relevant here were removed from the *Function Code View*.
 

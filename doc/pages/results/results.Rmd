@@ -407,7 +407,7 @@ The amount of required memory was around 330MB.
 
 ---
 
-Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to 7248<br>
+Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to 7248.<br>
 So, 27540 patches to approximate using 7248 symbols requires in *v2.0* 1299s (around 22 minutes):<br>
 [![](DengXian_v2.0.jpg)](../../examples/6_DengXian_Regular_UNICODE_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br>
 This time, the *Hybrid Result* mode was enabled.
