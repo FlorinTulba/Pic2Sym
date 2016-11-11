@@ -32,7 +32,7 @@
 
 Explanations concerning the values within the table:
 
--   <b><i>(\*)</i></b> refers to the '\*accuracy' of **v2.0** (does it deliver the best possible matches?), which is 100% when all its features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
+-   <b><i>(\*)</i></b> refers to the '*accuracy*' of **v2.0** (does it deliver the best possible matches?), which is 100% when all its features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
     -   low clustering accuracy might let a patch be approximated with an unexpected symbol
     -   using blur algorithms inferior to Gaussian blur (like Box blur) for the Structural Similarity matching aspect might produce mismatches, too
     -   using Symbols Preselection reduces match accuracy even more, since the Preselection phase is highly subjective

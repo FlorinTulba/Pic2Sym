@@ -2,7 +2,7 @@
 
 [Back to start page](../../../ReadMe.md)
 
-It&#39;s *recommended* to read first the ***Conclusions*** the ***[examples page][examples#Conclusions]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
+It&#39;s *recommended* to read first the ***Conclusions*** the ***[examples page][examples]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
 
 Now the steps:
 
@@ -25,7 +25,7 @@ Now the steps:
 [Back to start page](../../../ReadMe.md)
 
 [1]:http://www.dafont.com/bpmono.font
-[examples]:../results/results.md
+[examples]:../results/results.md#Conclusions
 [CtrlPanel]:../CtrlPanel/CtrlPanel.md
 [msvcp120.dll]:http://files.dllworld.org/msvcp120.dll-12.0.21005.1-64bit_3075.zip
 [msvcr120.dll]:http://files.dllworld.org/msvcr120.dll-12.0.21005.1-64bit_3122.zip

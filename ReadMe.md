@@ -20,7 +20,7 @@ It runs on **64\-bit Windows \(at least version 7\)**.
 		</ol>
     </td> 
     <td rowspan="2" align="center" style="padding-top:0; padding-bottom:0; padding-right:0">
-    	<img src="doc/pages/overview.jpg"></img>
+    	<img src="doc/pages/Overview.jpg"></img>
     </td> 
   </tr>
   <tr>

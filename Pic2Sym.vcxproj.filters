@@ -581,6 +581,15 @@
     <None Include="doc\pages\UnitTesting\UnitTesting.md">
       <Filter>doc\pages\UnitTesting</Filter>
     </None>
+    <None Include="doc\pages\performance\notations.md">
+      <Filter>doc\pages\performance</Filter>
+    </None>
+    <None Include="doc\pages\performance\performance.Rmd">
+      <Filter>doc\pages\performance</Filter>
+    </None>
+    <None Include="doc\pages\results\results.Rmd">
+      <Filter>doc\pages\results</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\NoImage.jpg">
@@ -765,6 +774,54 @@
     </Image>
     <Image Include="doc\pages\UnitTesting\sieves_true.png">
       <Filter>doc\pages\UnitTesting</Filter>
+    </Image>
+    <Image Include="doc\pages\Overview.jpg">
+      <Filter>doc\pages</Filter>
+    </Image>
+    <Image Include="doc\pages\performance\6_Consolas_Unicode_Bold_10_SmallSet_1462.jpg">
+      <Filter>doc\pages\performance</Filter>
+    </Image>
+    <Image Include="doc\pages\performance\6_CourierNew_Unicode_Bold_10_SmallSet_2062.jpg">
+      <Filter>doc\pages\performance</Filter>
+    </Image>
+    <Image Include="doc\pages\performance\ClusteringImperfections.jpg">
+      <Filter>doc\pages\performance</Filter>
+    </Image>
+    <Image Include="doc\pages\performance\LinearModelForAnImg-1.png">
+      <Filter>doc\pages\performance</Filter>
+    </Image>
+    <Image Include="doc\pages\performance\PreselectionGainByFontSize-1.png">
+      <Filter>doc\pages\performance</Filter>
+    </Image>
+    <Image Include="doc\pages\results\DengXian_v2.0.jpg">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example1_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example2_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example3_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example4_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example5_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example6_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example7_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Example8_ObtainedTimes-1.png">
+      <Filter>doc\pages\results</Filter>
+    </Image>
+    <Image Include="doc\pages\results\Osaka_v2.0.jpg">
+      <Filter>doc\pages\results</Filter>
     </Image>
   </ItemGroup>
 </Project>
