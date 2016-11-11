@@ -59,7 +59,7 @@ Some behavior aspects of the application can be changed without recompiling the 
 	See &quot;*StructuralSimilarity_BlurType*&quot; from the [configuration file][].<br>
 	Using Box blurring (with a single iteration), by default<br><br>
 1. **Enabling and Adjusting the mechanism of Symbols Preselection during Image Transformations**<br>
-	See &quot;*PreselectionByTinySyms*&quot;, &quot;*ShortListLength*&quot; and &quot;*AdmitOnShortListEvenForInferiorScoreFactor*&quot; from the [configuration file][]<br>
+	See &quot;*PreselectionByTinySyms*&quot;, &quot;*ShortListLength*&quot; and &quot;*AdmitOnShortListEvenForInferiorScoreFactor*&quot; from the [configuration file][].<br>
 	Preselection is enabled initially and the length of its short list is 2<br>
 
 
