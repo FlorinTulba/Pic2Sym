@@ -19,3 +19,5 @@ include/
 lib/
 scripts/
 doc/doxy
+doc/cache
+doc/pages
