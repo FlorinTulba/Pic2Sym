@@ -104,7 +104,8 @@ namespace {
 					clusteredSyms = symsCount - ((unsigned)symsIndicesPerCluster.size() - nonTrivialClusters);
 		cout<<"There are "<<nonTrivialClusters
 			<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
-		cout<<"Largest cluster contains "<<symsIndicesPerCluster[0].size()<<" symbols"<<endl;
+		cout<<"Largest cluster contains "<<symsIndicesPerCluster[0].size()<<" symbols."<<endl;
+		cout<<"Average cluster size is "<<(double)symsCount/clustersCount<<endl;
 
 		VSymData newSymsSet, newTinySymsSet;
 		newSymsSet.reserve(symsCount);
