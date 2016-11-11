@@ -19,5 +19,6 @@ x64/
 include/
 lib/
 scripts/
+doc/cache
 doc/doxy
 doc/pages/watermark.bmp
