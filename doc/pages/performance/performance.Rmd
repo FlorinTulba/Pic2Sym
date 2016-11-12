@@ -41,12 +41,12 @@ cat("<a title = 'Only the Rmd file needs to be edited. Do not change the corresp
 
 #### Considering the quality and accuracy of the produced results:
 
-|   								| v1.0 	| v1.1 		| v1.2 		| v1.3 		| v2.0
----									|:-:	|:-:		|:-:		|:-:		|:-:
-*Can Avoid Undesirable Symbols*     | - 	| - 		| - 		| - 		| **Yes**
-*Smooth Results (Hybrid Mode)* 		| - 	| **Yes** 	| **Yes** 	| **Yes** 	| **Yes**
-*Best Possible Matches*				| 100% 	| 100% 		| 100% 		| 100% 		| <b><i>see (\*)</i></b>
-*Skips Uniform Patches* 			| - 	| **Yes** 	| **Yes** 	| **Yes** 	| **Yes**    	
+|   								| v1.0 	| v1.1 - v1.3   | v2.0
+---									|:-:	|:-:		    |:-:
+*Can Avoid Undesirable Symbols*     | - 	| - 		    | **Yes**
+*Smooth Results (Hybrid Mode)* 		| - 	| **Yes**    	| **Yes**
+*Best Possible Matches*				| 100% 	| 100% 		    | <b><i>see (\*)</i></b>
+*Skips Uniform Patches* 			| - 	| **Yes**   	| **Yes**    	
 
 Explanations concerning the values within the table:
 
@@ -93,6 +93,7 @@ Below is a table reporting the count of matching aspects that were skipped while
 | Matching Aspect name 		| Complexity 	| Skipped for [I1][]| Skipped for [I2][]|
 ---							|-:				|-:				    |-:
 *Prefer Larger Symbols* 	| 0.001 		| 0.00%	    		| 0.00%
+*Prefer Better Contrast* 	| 2.000 		| 0.00%	    		| 0.00%
 *Foreground matching* 		| 3.100 		| 11.24%    		| 0.41%
 *Background matching*		| 3.200 		| 11.72% 	    	| 0.44%
 *Edges matching* 			| 4.000			| 14.31% 	    	| 0.64%
