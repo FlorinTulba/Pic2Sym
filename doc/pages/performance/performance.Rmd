@@ -101,7 +101,9 @@ Below is a table reporting the count of matching aspects that were skipped while
 *Directional Smoothness*	| 15.100		| 16.23% 	    	| 0.85%
 *[Structural Similarity][] (SS)*| 1000.000 	| 44.20% 	    	| 13.66%
 
-The first image ([I1][]) contains many coarse-textured regions (faces, shirts, glass walls and a ceiling), which allow quite early approximations by large symbols. Any following smaller symbol will be skipped by all Matching Aspects.
+In the presented cases, the 2 least complex matching aspects (*Prefer Larger Symbols* and *Prefer Better Contrast*) had to be evaluated for all compare operations. Only after cumulating the scores from both of them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
+
+The first image ([I1][]) contains many coarse-textured regions (faces, shirts, glass walls and a ceiling), which allow quite early approximations by large symbols. Trying to find a better match among the remaining smaller symbols will normally generate more skipped matching aspects. This is because those smaller glyphs typically obtain an inferior cumulative score from the first 2 matching aspects.
 
 The second image ([I2][]) is, on the other hand, mostly finely-grained (grass, fur, stones with irregular surface). This prevents any early matches with large symbols.
 
