@@ -430,6 +430,16 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, const 
 								const valarray<double> &scoresToBeat,
 								MatchParams &mp, double &score) const {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+#pragma omp atomic
+	/*
+	We're within a `parallel for` here!!
+	
+	However this region is suppressed in the final release, so the speed isn't that relevant.
+	It matters only to get correct values for the count of skipped aspects.
+
+	That's why the `parallel for` doesn't need:
+		reduction(+ : totalIsBetterMatchCalls)
+	*/
 	++totalIsBetterMatchCalls;
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
@@ -442,8 +452,10 @@ bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, const 
 	for(unsigned im1 = 0U, i = 1U; i <= lim; im1 = i++) {
 		if(score < scoresToBeat[im1]) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-			for(unsigned j = i; j <= lim; ++j)
+			for(unsigned j = i; j <= lim; ++j) {
+#pragma omp atomic // See comment from previous MONITOR_SKIPPED_MATCHING_ASPECTS region
 				++skippedAspects[j];
+			}
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 			return false; // skip further aspects checking when score can't beat best match score
 		}

@@ -69,7 +69,52 @@ It belongs to the [**Draft Improver**](../appendix/modules/draftImprover.md) mod
 
 This is the only new feature that gets disabled not by changing the configuration file, but by using a single Matching Aspect for transforming an image. In that case, when no other feature is enabled, **v2.0** is slower than **v1.3** because of the introduced infrastructure ready to support all those new features.
 
-Below is a table reporting the count of matching aspects that were skipped while transforming 2 images ([I1](../../examples/6.jpg) and [I2](../../examples/15.jpg)) based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. The scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often:
+Next 2 images, both with the same size (27540 patches), are used during the following explanations:
+
+<table style="width:26%;">
+<colgroup>
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Image</th>
+<th align="center">Uniform Patches</th>
+<th align="center">Patches to Process</th>
+<th align="center">Texture</th>
+<th align="left">Content</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><a href="../../examples/6.jpg">I1</a></td>
+<td align="center">30.41%</td>
+<td align="center">19165 (69.59%)</td>
+<td align="center"><strong>mostly coarse</strong></td>
+<td align="left">faces, shirts, glass walls, a ceiling</td>
+</tr>
+<tr class="even">
+<td align="center"><a href="../../examples/15.jpg">I2</a></td>
+<td align="center">0.05%</td>
+<td align="center">27527 (99.95%)</td>
+<td align="center"><strong>finely grained</strong></td>
+<td align="left">grass, fur, stones with irregular surface</td>
+</tr>
+</tbody>
+</table>
+
+> Uniform patches are just blurred and copied to the result image. Only the remaining patches must be matched against the entire symbols set.
+>
+> Typically, for coarse patches there are only a few viable match candidates among the symbols. A much serious competition appears when searching the match for patches with finely-grained texture - the race gets decided late, probably only after the last challenge.
+
+Now let's observe the count of matching aspects that were skipped while transforming the 2 images based on:
+
+-   the configuration from [this example](../results/Example1_v1.3.jpg) (using 125 glyphs)
+-   *Parallelism* (2 threads)
+-   no other features and without *generating drafts*
 
 | Matching Aspect name                                                            |  Complexity|  Skipped for [I1](../../examples/6.jpg)|  Skipped for [I2](../../examples/15.jpg)|
 |---------------------------------------------------------------------------------|-----------:|---------------------------------------:|----------------------------------------:|
@@ -77,39 +122,36 @@ Below is a table reporting the count of matching aspects that were skipped while
 | *Prefer Better Contrast*                                                        |       2.000|                                   0.00%|                                    0.00%|
 | *Foreground matching*                                                           |       3.100|                                  11.24%|                                    0.41%|
 | *Background matching*                                                           |       3.200|                                  11.72%|                                    0.44%|
-| *Edges matching*                                                                |       4.000|                                  14.31%|                                    0.64%|
+| *Edges matching*                                                                |       4.000|                                  14.30%|                                    0.64%|
 | *Gravitational Smoothness*                                                      |      15.000|                                  15.90%|                                    0.83%|
 | *Directional Smoothness*                                                        |      15.100|                                  16.23%|                                    0.85%|
-| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.20%|                                   13.66%|
+| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.19%|                                   13.66%|
+
+> The 2 scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
 
 In the presented cases, the 2 least complex matching aspects (*Prefer Larger Symbols* and *Prefer Better Contrast*) had to be evaluated for all compare operations. Only after cumulating the scores from both of them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
 
-The first image ([I1](../../examples/6.jpg)) contains many coarse-textured regions (faces, shirts, glass walls and a ceiling), which allow quite early approximations by large symbols. Trying to find a better match among the remaining smaller symbols will normally generate more skipped matching aspects. This is because those smaller glyphs typically obtain an inferior cumulative score from the first 2 matching aspects.
+Apart from the substantial number of uniform patches, image [I1](../../examples/6.jpg) presents also many coarse-textured regions, which generally reduce the number of potential matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
 
-The second image ([I2](../../examples/15.jpg)) is, on the other hand, mostly finely-grained (grass, fur, stones with irregular surface). This prevents any early matches with large symbols.
-
-That was the reason for the significant difference between the percentages from the 2 columns.
-
-Comparing now the durations required to approximate the images either by all Matching Aspects, or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one):
+Comparing now the durations required to approximate the images either by all matching aspects, or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one):
 
 |                                  | [I1](../../examples/6.jpg) | [I2](../../examples/15.jpg) |
 |:--------------------------------:|:--------------------------:|:---------------------------:|
-| *Required Time - all aspects ON* |           32.429s          |           74.060s           |
-| *Required Time - only SS set ON* |           42.558s          |           61.689s           |
-|    *Total Compare operations*    |           2394770          |           3440100           |
+| *Required Time - all aspects ON* |           37.253s          |           73.408s           |
+| *Required Time - only SS set ON* |           42.901s          |           60.681s           |
+|    *Total Compare operations*    |           2395625          |           3440875           |
 
-The durations from the table show that using all enabled aspects can be around 1.3 times faster than transforming those images based only on SS.
+The durations from the table for image I1 show that using all enabled aspects can be around 1.15 times faster than transforming those images based only on SS.
 
-The caveat - in certain conditions **v2.0** might perform worse than **v1.3** (as it results from comparing the diagrams below the [*Scenario 4*](../results/results.md#Scenario4) and [*5*](../results/results.md#Scenario5) from the [Results](../results/results.md) page):
+For image I2, its finely-grained patches meant that the ranking among the competitor symbols (when all aspects were enabled) was established late, or only after computing also the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)*. Because of that, there were extremely few skipped aspects. The difference is 12.727s between the transformation only with SS and the one with all aspects enabled.
 
--   when most of the features from **v2.0** stay disabled
--   and when all matching aspects are enabled except the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS)
+Current percentage of skipped SS aspects for transforming image I2 with all aspects enabled is 13.66% and the approximation time is 73.408s. What percentage value would reduce the transformation time to 60.681s (same as when using only the SS aspect)?
 
-In such cases, the complexity of the skip mechanism (and also of the entire new infrastructure) overcomes the gain obtained by skipping a modest number of unsophisticated computations.
+-   average computation of SS with 2 threads and ignoring 'binding' code is: <i>tSS = 60.681s / 3440875 = 17.635 microseconds</i> (see column I2 from last table)
+-   required count of additionally skipped SS aspects is: <i>(73.408s - 60.681s) / tSS = 721675.9</i>, to be rounded to 721676
+-   the result is: <i>13.66% + (100 \* 721676 / 3440875)% = 34.63362%</i>. This means that the paradox of evaluating more aspects in less time happens only when there are at least 35%-40% skipped SS aspects
 
-Luckily, those cases run much (around 4 times) faster already, compared to when [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) is the only enabled Matching Aspect.
-
-So, ***this feature is valuable as long as skipping many evaluations of the Structural Similarity Matching aspect***.
+So, ***this feature is most valuable when skipping many evaluations of the Structural Similarity matching aspect***, thus on images with more frequent coarse patches.
 
 ------------------------------------------------------------------------
 
