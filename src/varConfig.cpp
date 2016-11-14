@@ -281,6 +281,7 @@ static VALIDATOR(atLeast5U,		IsGreaterThan, unsigned, 5U, true);
 static VALIDATOR(atLeast3U,		IsGreaterThan, unsigned, 3U, true);
 static VALIDATOR(atLeast14D,	IsGreaterThan, double, 14.);
 static VALIDATOR(atLeast1dot6,	IsGreaterThan, double, 1.6);
+static VALIDATOR(atLeast1D,		IsGreaterThan, double, 1., true);
 static VALIDATOR(atLeast0dot8,	IsGreaterThan, double, 0.8, true);
 static VALIDATOR(atLeast0dot15,	IsGreaterThan, double, 0.15, true);
 static VALIDATOR(atLeast0dot01, IsGreaterThan, double, 0.01, true);
@@ -339,6 +340,7 @@ extern READ_UINT_PROP(Settings_MAX_V_SYMS, atMost768U(), moreThanMinVSyms());
 static VALIDATOR(lessThanMaxFontSize,	IsLessThan, unsigned, maxFontSize(), true);
 extern READ_UINT_PROP(Settings_DEF_FONT_SIZE, moreThanMinFontSize(), lessThanMaxFontSize());
 
+extern READ_DOUBLE_PROP(MinAverageClusterSize, atLeast1D());
 extern READ_STR_PROP(ClusterAlgName, availableClusterAlgs());
 extern READ_BOOL_PROP(FastDistSymToClusterComputation);
 extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor, lessThan1D(), atLeast0dot8());

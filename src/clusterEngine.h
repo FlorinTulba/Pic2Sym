@@ -62,6 +62,7 @@ protected:
 
 	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
 	VClusterData clusters;
+	unsigned clustersCount = 0U;		///< number of clusters
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
 
 public:
@@ -85,6 +86,7 @@ public:
 
 	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
 	const VClusterData& getClusters() const { return clusters; }
+	unsigned getClustersCount() const { return clustersCount; }
 	const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
 
 	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor

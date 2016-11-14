@@ -80,7 +80,7 @@ namespace {
 			double score;
 			if(me.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, idx, symData, mp);
-				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
+				scoresToBeatBySyms = score * invMaxIncreaseFactors;
 				betterMatchFound = true;
 			}
 		}
@@ -173,6 +173,9 @@ void MatchEngine::updateSymbols() {
 		// Clustering on symsSet (Both sets get reordered)
 		ce.process(symsSet, tinySymsSet, fe.getFontType());
 	}
+
+	extern const double MinAverageClusterSize;
+	matchByClusters = (symsCount > MinAverageClusterSize * ce.getClustersCount());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }
@@ -298,87 +301,103 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 		inspectedSet = &tinySymsSet;
 	}
 
-	unsigned fromCluster, firstSymIdxWithinFromCluster, lastCluster, lastSymIdxWithinLastCluster;
-	locateIdx(ce.getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
-	locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
-
-	const bool previouslyQualified =
-					draftMatch.lastSelectedCandidateCluster.is_initialized() &&
-					*draftMatch.lastSelectedCandidateCluster == fromCluster;
 	const Mat &toApprox = draftMatch.patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
-	const auto &clusters = ce.getClusters();
+	valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors);
 
+	double score;
 	bool betterMatchFound = false;
+	if(matchByClusters) { // Matching is performed first with clusters and only afterwards with individual symbols
+		unsigned fromCluster, firstSymIdxWithinFromCluster, lastCluster, lastSymIdxWithinLastCluster;
+		locateIdx(ce.getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
+		locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
 
-	// Multi-element clusters still qualify with slightly inferior scores,
-	// as individual symbols within the cluster might deliver a superior score.
-	extern const double InvestigateClusterEvenForInferiorScoreFactor;
-	valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors),
-		scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
+		const auto &clusters = ce.getClusters();
+		const bool previouslyQualified = (clusters[fromCluster].sz > 1U) &&
+						draftMatch.lastPromisingNontrivialCluster.is_initialized() &&
+						(*draftMatch.lastPromisingNontrivialCluster == fromCluster);
 
-	// 1st cluster might have already been qualified for thorough examination
-	if(previouslyQualified) { // cluster already qualified
-		const unsigned upperLimit = (fromCluster < lastCluster) ?
-										clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
-		if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-								*this, toApprox, *inspectedSet, *cd,
-								invMaxIncreaseFactors, scoresToBeatBySyms,
-								draftMatch, mp)) {
-			scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
-			if(tinySymsMode)
-				tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
+		// Multi-element clusters still qualify with slightly inferior scores,
+		// as individual symbols within the cluster might deliver a superior score.
+		extern const double InvestigateClusterEvenForInferiorScoreFactor;
+		valarray<double> scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
 
-			betterMatchFound = true;
-		}
-
-		++fromCluster; // nothing else to investigate from this cluster
-
-	} else if(firstSymIdxWithinFromCluster > 0U) {
-		// If cluster fromCluster was already analyzed, but wasn't considered worthy enough
-		// to investigate symbol by symbol, increment fromCluster
-		++fromCluster;
-	}
-
-	// Examine all remaining unchecked clusters (if any) within current batch
-	for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster; ++clusterIdx) {
-		const auto &cluster = clusters[clusterIdx];
-
-		// Current cluster attempts qualification - it computes its own score
-		mp.reset(); // preserves patch-invariant fields
-
-		double score;
-		const bool trivialCluster = (cluster.sz == 1U);
-		if(isBetterMatch(toApprox, cluster, *cd,
-					trivialCluster ? scoresToBeatBySyms : scoresToBeatByClusters, mp, score)) {
-			// Single element clusters have same score as their content.
-			// So, making sure the score won't be computed twice:
-			if(trivialCluster) {
-				draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
-				const unsigned idx = cluster.idxOfFirstSym;
-				const auto &symData = (*inspectedSet)[idx];
-				draftMatch.update(score, symData.code, idx, symData, mp);
-				scoresToBeatBySyms = draftMatch.score * invMaxIncreaseFactors;
-				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
-				if(tinySymsMode)
-					tcm->checkCandidate(idx, score);
-
-				betterMatchFound = true;
-				continue;
-			}
-
-			// Nontrivial cluster
-			draftMatch.lastSelectedCandidateCluster = clusterIdx; // cluster is a selected candidate
-
-			const unsigned upperLimit = (clusterIdx < lastCluster) ?
-											cluster.sz : lastSymIdxWithinLastCluster;
-			if(checkRangeWithinCluster(0U, upperLimit,
-										*this, toApprox, *inspectedSet, *cd,
-										invMaxIncreaseFactors, scoresToBeatBySyms,
-										draftMatch, mp)) {
+		// 1st cluster might have already been qualified for thorough examination
+		if(previouslyQualified) { // cluster already qualified
+			const unsigned upperLimit = (fromCluster < lastCluster) ?
+											clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
+			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
+									*this, toApprox, *inspectedSet, *cd,
+									invMaxIncreaseFactors, scoresToBeatBySyms,
+									draftMatch, mp)) {
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				if(tinySymsMode)
 					tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
+
+				betterMatchFound = true;
+			}
+
+			++fromCluster; // nothing else to investigate from this cluster
+
+		} else if(firstSymIdxWithinFromCluster > 0U) {
+			// If cluster fromCluster was already analyzed, but wasn't considered worthy enough
+			// to investigate symbol by symbol, increment fromCluster
+			++fromCluster;
+		}
+
+		// Examine all remaining unchecked clusters (if any) within current batch
+		for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster; ++clusterIdx) {
+			const auto &cluster = clusters[clusterIdx];
+
+			// Current cluster attempts qualification - it computes its own score
+			mp.reset(); // preserves patch-invariant fields
+
+			if(cluster.sz == 1U) { // Trivial cluster
+				// Single element clusters have same score as their content.
+				const unsigned symIdx = cluster.idxOfFirstSym;
+				const auto &symData = (*inspectedSet)[symIdx];
+				if(isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+					draftMatch.update(score, symData.code, symIdx, symData, mp);
+					scoresToBeatBySyms = score * invMaxIncreaseFactors;
+					scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+					if(tinySymsMode)
+						tcm->checkCandidate(symIdx, score);
+
+					betterMatchFound = true;
+				}
+			
+			} else { // Nontrivial cluster
+				if(isBetterMatch(toApprox, cluster, *cd, scoresToBeatByClusters, mp, score)) {
+					draftMatch.lastPromisingNontrivialCluster = clusterIdx; // cluster is a selected candidate
+
+					const unsigned upperLimit = (clusterIdx < lastCluster) ?
+						cluster.sz : lastSymIdxWithinLastCluster;
+					if(checkRangeWithinCluster(0U, upperLimit, 
+												*this, toApprox, *inspectedSet, *cd,
+												invMaxIncreaseFactors, scoresToBeatBySyms,
+												draftMatch, mp)) {
+						scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+						if(tinySymsMode)
+							tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
+
+						betterMatchFound = true;
+					}
+				}
+			}
+		}
+
+	} else { // Matching is performed directly with individual symbols, not with clusters
+		// Examine all remaining symbols within current batch
+		for(unsigned symIdx = fromSymIdx; symIdx < upperSymIdx; ++symIdx) {
+			const auto &symData = (*inspectedSet)[symIdx];
+
+			mp.reset(); // preserves patch-invariant fields
+
+			if(isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+				draftMatch.update(score, symData.code, symIdx, symData, mp);
+				scoresToBeatBySyms = score * invMaxIncreaseFactors;
+				if(tinySymsMode)
+					tcm->checkCandidate(symIdx, score);
 
 				betterMatchFound = true;
 			}
@@ -396,7 +415,6 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &shortList,
 	bool betterMatchFound = false;
 	
 	double score;
-	unsigned clusterIdx, symIdxWithinCluster;
 
 	MatchParams &mp = draftMatch.bestVariant.params;
 	valarray<double> scoresToBeat(draftMatch.score * invMaxIncreaseFactors);
@@ -408,8 +426,6 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &shortList,
 
 		if(isBetterMatch(draftMatch.patch.matrixToApprox(), symsSet[candidateIdx], cachedData,
 						scoresToBeat, mp, score)) {
-			locateIdx(ce.getClusterOffsets(), candidateIdx, clusterIdx, symIdxWithinCluster);
-			draftMatch.lastSelectedCandidateCluster = clusterIdx;
 			const auto &symData = symsSet[candidateIdx];
 			draftMatch.update(score, symData.code, candidateIdx, symData, mp);
 			scoresToBeat = score * invMaxIncreaseFactors;

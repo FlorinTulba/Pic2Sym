@@ -239,7 +239,7 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 BestMatch& BestMatch::reset() {
 	score = 0.;
 	symCode = none;
-	symIdx = lastSelectedCandidateCluster = none;
+	symIdx = lastPromisingNontrivialCluster = none;
 	pSymData = nullptr;
 	bestVariant = ApproxVariant();
 	return *this;

@@ -74,6 +74,9 @@ protected:
 	VSymData symsSet;			///< set of most information on each symbol
 	VSymData tinySymsSet;		///< set of most information on each tiny symbol
 	ClusterEngine ce;			///< clusters manager
+	
+	/// Should the symbols be compared against the patches individually, or first by clusters?
+	bool matchByClusters = false;
 
 	CachedData cachedDataForTinySyms;	///< data precomputed for tiny symbols preselection
 

@@ -194,7 +194,7 @@ void ClusterEngine::process(VSymData &symsSet, VSymData &tinySymsSet, const stri
 		return;
 
 	vector<vector<unsigned>> symsIndicesPerCluster;
-	const unsigned clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
+	clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
 
 	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
 	clusters.clear(); clusterOffsets.clear();

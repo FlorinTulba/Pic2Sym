@@ -147,7 +147,7 @@ struct BestMatch {
 	boost::optional<unsigned> symIdx;
 
 	/// Index of last cluster that was worth investigating thoroughly
-	boost::optional<unsigned> lastSelectedCandidateCluster;
+	boost::optional<unsigned> lastPromisingNontrivialCluster;
 
 	/// pointer to vector<SymData>[symIdx] or null when patch approximation is blur-based only.
 	const SymData *pSymData = nullptr;

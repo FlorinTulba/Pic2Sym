@@ -126,6 +126,11 @@ TTSAS_Accept1stClusterThatQualifiesAsParent	false
 ; Threshold for including any symbol into a cluster in the TTSAS algorithm
 TTSAS_Threshold_Member	0.044
 
+; Threshold for the average cluster size below which the image transformation process is slowed down
+; by grouping the symbols together when comparing them against the patches
+; Needs to be >= 1
+MinAverageClusterSize	1.12
+
 ; What percent (0..1) of the glyphs from a charmap set are considered small
 ; 0.1 means that smallest 10% of all glyphs are considered small
 PmsCont_SMALL_GLYPHS_PERCENT	0.1
