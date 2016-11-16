@@ -68,6 +68,14 @@ Transform_ProgressReportsIncrement	0.01
 ; 0.05 means reporting every 5%
 SymbolsProcessing_ProgressReportsIncrement	0.01
 
+; When finding the best symbol approximating for a patch, some of the symbols are
+; unlikely to have a chance against a previously found good match.
+; This fact can be obvious after evaluating only a few matching aspects,
+; without scoring all enabled matching aspects.
+; However, this heuristic appears inefficient when the image has finely-grained texture,
+; when there are many competing potential matches for most of the patches from the image.
+UseSkipMatchAspectsHeuristic	true
+
 ; The image approximation by symbols could be accelerated by preselecting just several candidate symbols.
 ; The preselection might be accomplished based on the same matching aspects, but using shrunken
 ; versions of the image patches and symbols.

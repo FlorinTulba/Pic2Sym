@@ -340,6 +340,8 @@ extern READ_UINT_PROP(Settings_MAX_V_SYMS, atMost768U(), moreThanMinVSyms());
 static VALIDATOR(lessThanMaxFontSize,	IsLessThan, unsigned, maxFontSize(), true);
 extern READ_UINT_PROP(Settings_DEF_FONT_SIZE, moreThanMinFontSize(), lessThanMaxFontSize());
 
+extern READ_BOOL_PROP(UseSkipMatchAspectsHeuristic);
+
 extern READ_DOUBLE_PROP(MinAverageClusterSize, atLeast1D());
 extern READ_STR_PROP(ClusterAlgName, availableClusterAlgs());
 extern READ_BOOL_PROP(FastDistSymToClusterComputation);

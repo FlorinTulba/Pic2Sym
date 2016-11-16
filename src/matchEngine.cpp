@@ -55,6 +55,7 @@ using namespace std;
 using namespace cv;
 
 extern unsigned TinySymsSz();
+extern const bool UseSkipMatchAspectsHeuristic;
 
 namespace {
 	/// Determines the cluster and the symbol within it corresponding to symIdx
@@ -269,18 +270,24 @@ void MatchEngine::getReady() {
 		return maxScoreA >= maxScoreB;
 	});
 
+	if(UseSkipMatchAspectsHeuristic) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-	totalIsBetterMatchCalls = 0U;
-	skippedAspects.assign(enabledAspectsCount, 0U);
+		totalIsBetterMatchCalls = 0U;
+		skippedAspects.assign(enabledAspectsCount, 0U);
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
-	// Adjust max increase factors for every enabled aspect
-	invMaxIncreaseFactors.resize(enabledAspectsCount);
-	const int lastIdx = (int)enabledAspectsCount - 1;
-	double maxIncreaseFactor = invMaxIncreaseFactors[lastIdx] = 1.;
-	for(int i = lastIdx - 1, ip1 = lastIdx; i >= 0; ip1 = i--) {
-		maxIncreaseFactor *= enabledAspects[ip1]->maxScore(cachedData);
-		invMaxIncreaseFactors[i] = 1. / maxIncreaseFactor;
+		// Adjust max increase factors for every enabled aspect
+		invMaxIncreaseFactors.resize(enabledAspectsCount);
+		const int lastIdx = (int)enabledAspectsCount - 1;
+		double maxIncreaseFactor = invMaxIncreaseFactors[lastIdx] = 1.;
+		for(int i = lastIdx - 1, ip1 = lastIdx; i >= 0; ip1 = i--) {
+			maxIncreaseFactor *= enabledAspects[ip1]->maxScore(cachedData);
+			invMaxIncreaseFactors[i] = 1. / maxIncreaseFactor;
+		}
+	} else { // UseSkipMatchAspectsHeuristic == false
+		if(invMaxIncreaseFactors.size() == 0U) {
+			invMaxIncreaseFactors.resize(1, 1.);
+		}
 	}
 }
 
@@ -445,40 +452,48 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &shortList,
 bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, const CachedData &cd,
 								const valarray<double> &scoresToBeat,
 								MatchParams &mp, double &score) const {
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-#pragma omp atomic
-	/*
-	We're within a `parallel for` here!!
-	
-	However this region is suppressed in the final release, so the speed isn't that relevant.
-	It matters only to get correct values for the count of skipped aspects.
-
-	That's why the `parallel for` doesn't need:
-		reduction(+ : totalIsBetterMatchCalls)
-	*/
-	++totalIsBetterMatchCalls;
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-
 	// There is at least one enabled match aspect,
 	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
 	assert(enabledAspectsCount > 0U && enabledAspectsCount == enabledAspects.size());
 
-	score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
-	const unsigned lim = (unsigned)enabledAspectsCount - 1U;
-	for(unsigned im1 = 0U, i = 1U; i <= lim; im1 = i++) {
-		if(score < scoresToBeat[im1]) {
+	if(UseSkipMatchAspectsHeuristic) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-			for(unsigned j = i; j <= lim; ++j) {
-#pragma omp atomic // See comment from previous MONITOR_SKIPPED_MATCHING_ASPECTS region
-				++skippedAspects[j];
-			}
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-			return false; // skip further aspects checking when score can't beat best match score
-		}
-		score *= enabledAspects[i]->assessMatch(patch, symData, cd, mp);
-	}
+#pragma omp atomic
+		/*
+		We're within a `parallel for` here!!
 
-	return score > scoresToBeat[lim];
+		However this region is suppressed in the final release, so the speed isn't that relevant.
+		It matters only to get correct values for the count of skipped aspects.
+
+		That's why the `parallel for` doesn't need:
+		reduction(+ : totalIsBetterMatchCalls)
+		*/
+		++totalIsBetterMatchCalls;
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
+
+		score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
+		const unsigned lim = (unsigned)enabledAspectsCount - 1U;
+		for(unsigned im1 = 0U, i = 1U; i <= lim; im1 = i++) {
+			if(score < scoresToBeat[im1]) {
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+				for(unsigned j = i; j <= lim; ++j) {
+#pragma omp atomic // See comment from previous MONITOR_SKIPPED_MATCHING_ASPECTS region
+					++skippedAspects[j];
+				}
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
+				return false; // skip further aspects checking when score can't beat best match score
+			}
+			score *= enabledAspects[i]->assessMatch(patch, symData, cd, mp);
+		}
+
+		return score > scoresToBeat[lim];
+	
+	} else { // UseSkipMatchAspectsHeuristic == false
+		score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
+		for(unsigned i = 1U; i < enabledAspectsCount; ++i)
+			score *= enabledAspects[i]->assessMatch(patch, symData, cd, mp);
+		return score > scoresToBeat[0];
+	}
 }
 
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
