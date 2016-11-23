@@ -4,6 +4,9 @@
   <PropertyGroup Label="UserMacros">
     <Pic2SymVersion>2.0</Pic2SymVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)include</AdditionalIncludeDirectories>

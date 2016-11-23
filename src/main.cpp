@@ -44,6 +44,8 @@
 #include "study.h"
 #include "ompTraceSwitch.h"
 
+#include <Windows.h>
+
 #include <omp.h>
 
 #include <boost/filesystem/operations.hpp>
@@ -84,8 +86,8 @@ namespace {
 		cout<<hBar<<endl<<endl;
 	}
 
-	/// Normal mode launch. appFile is a path ending in 'Pic2Sym.exe'
-	void normalLaunch(const string &appFile) {
+	/// Normal mode launch
+	void normalLaunch() {
 		// Ensure control over the number of threads during the application
 		if(omp_get_dynamic())
 			omp_set_dynamic(0);
@@ -103,7 +105,6 @@ namespace {
 
 		copyrightNotice();
 
-		AppStart::determinedBy(appFile);
 		Settings s;
 		Controller c(s);
 		Controller::handleRequests();
@@ -169,9 +170,68 @@ namespace {
 
 		viewMisfiltered(testTitle, misfiltered.value());
 	}
+
+	/**
+	The system might contain more versions of the dll-s required by this application.
+	Some of such versions might not be appropriate for Pic2Sym.
+	Therefore it is mandatory to provide the correct dll-s, especially when deploying
+	the program on other machines.
+
+	Some of the dll-s need to be selected while still loading the application (before it starts running).
+	Placing these dll-s in a folder "Pic2Sym.exe.local" (near Pic2Sym.exe) is enough (This is a basic 
+	DLL-s redirection technique).
+	
+	The dll-s loaded after the start of the application were conveniently copied into the same directory.
+	However, "Pic2Sym.exe.local" is ignored for these dll-s when the application is installed
+	in the default Program Files location, unless forcefully pointed with 'SetDllDirectory'.
+
+	The plugins from Qt are a special dll category and can be located by:
+	- either calling QCoreApplication::addLibraryPath("Pic2Sym.exe.local");
+	
+	- or creating 'qt.conf' file near Pic2Sym.exe containing:
+		[Paths]
+		Plugins=Pic2Sym.exe.local
+	
+	- or by setting QT_QPA_PLATFORM_PLUGIN_PATH in the local environment to:
+		Pic2Sym.exe.local\platforms
+
+	Last solution was the one adopted.
+	*/
+	void providePrivateDLLsPaths(const string &appPath) {
+		const auto dllsPath = absolute(appPath).concat(".local");
+		SetDllDirectory(dllsPath.wstring().c_str());
+		_putenv_s("QT_QPA_PLATFORM_PLUGIN_PATH", 
+				  path(dllsPath).append("platforms").string().c_str());
+	}
 } // anonymous namespace
 
+/**
+Starts the application in:
+- study mode, when studying() is configured to return true from 'study.cpp'
+- normal mode when there are no parameters
+- unit test mode for 2 provided parameters
+
+Next to 'Pic2Sym.exe' there should be:
+- res/ folder with the resources required by the application
+- Pic2Sym.exe.local/ folder with the used non-system dll-s (basic Dll redirection mechanism)
+
+When serving the UnitTesting project, Pic2Sym.exe is called from the post-build process of unit testing.
+There were 2 approaches for using Pic2Sym.exe as helper for UnitTesting project:
+
+I. The current method for presenting the issues found by unit testing is to register them in a file
+and visualize its entries when unit testing finishes.
+
+II. Previous approach was to invoke 'Pic2Sym.exe' through a detached process (using CreateProcess).
+However, after introducing the Dll redirection mechanism:
+- calling separately 'Pic2Sym.exe' with the parameters for unit testing worked as expected
+- calling 'Pic2Sym.exe' from unit testing as a detached process couldn't localize 'qwindows.dll' from Qt.
+	See discussion from providePrivateDLLsPaths about that
+*/
 void main(int argc, char* argv[]) {
+	// argv[0] is a path ending in 'Pic2Sym.exe'
+	AppStart::determinedBy(argv[0]);
+	providePrivateDLLsPaths(argv[0]);
+
 	// Some matters need separate studying, so don't start the actual application when studying them
 	if(studying()) {
 		study(argc, argv);
@@ -179,7 +239,7 @@ void main(int argc, char* argv[]) {
 	}
 		
 	if(1 == argc) { // no parameters
-		normalLaunch(argv[0]);
+		normalLaunch();
 
 	} else if(3 == argc) { // 2 parameters
 		const string firstParam(argv[1]),

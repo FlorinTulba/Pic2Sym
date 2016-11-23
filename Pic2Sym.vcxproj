@@ -282,7 +282,6 @@
     <Import Project="Release.props" />
     <Import Project="Common.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\</IntDir>
@@ -307,11 +306,13 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <DelayLoadDLLs>opencv_highgui$(OpenCvLibConfigSuffix).dll;opencv_videoio$(OpenCvLibConfigSuffix).dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -334,14 +335,16 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalManifestDependencies>
+      </AdditionalManifestDependencies>
+      <DelayLoadDLLs>opencv_highgui$(OpenCvLibConfigSuffix).dll;opencv_videoio$(OpenCvLibConfigSuffix).dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
 </Project>

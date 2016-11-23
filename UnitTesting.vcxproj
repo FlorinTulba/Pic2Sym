@@ -41,7 +41,6 @@
     <Import Project="Release.props" />
     <Import Project="Common.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
@@ -66,8 +65,11 @@
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; "$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -89,8 +91,11 @@
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; "$(TargetDir)$(TargetName).exe" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="test\testClustering.cpp" />
@@ -127,6 +132,4 @@
     <Text Include="res\TestSymFilters\unreadablePositives.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
 </Project>

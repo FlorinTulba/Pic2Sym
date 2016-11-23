@@ -6,6 +6,10 @@
     <OpenCvLibConfigSuffix />
     <FreeTypeLibConfigSuffix />
     <BoostLibConfigSuffix />
+    <TbbConfigSuffix />
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <ItemDefinitionGroup />
   <ItemGroup>
@@ -20,6 +24,9 @@
     </BuildMacro>
     <BuildMacro Include="BoostLibConfigSuffix">
       <Value>$(BoostLibConfigSuffix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="TbbConfigSuffix">
+      <Value>$(TbbConfigSuffix)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
