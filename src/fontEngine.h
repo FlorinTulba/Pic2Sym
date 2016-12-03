@@ -97,11 +97,10 @@ protected:
 
 	@param sz desired size of these symbols
 	@param bb [out] estimated future bounding box
-	@param symsCount [out] count of glyphs within selected charmap
 	@param factorH [out] horizontal scaling factor
 	@param factorV [out] vertical scaling factor
 	*/
-	void adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, double &factorH, double &factorV);
+	void adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double &factorV);
 
 public:
 	/**

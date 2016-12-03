@@ -258,7 +258,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 	return true;
 }
 
-void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, double &factorH, double &factorV) {
+void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double &factorV) {
 	vector<double> vTop, vBottom, vLeft, vRight, vHeight, vWidth;
 	FT_Size_RequestRec  req;
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX, ...
@@ -269,11 +269,10 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, do
 	if(error != FT_Err_Ok)
 		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
 
-	symsCount = 0U;
 	FT_UInt idx;
 	for(FT_ULong c = FT_Get_First_Char(face, &idx);
 		idx != 0;
-		c = FT_Get_Next_Char(face, c, &idx), ++symsCount) {
+		c = FT_Get_Next_Char(face, c, &idx)) {
 		error = FT_Load_Char(face, c, FT_LOAD_RENDER);
 		if(error != FT_Err_Ok)
 			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
@@ -288,6 +287,7 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, unsigned &symsCount, do
 		vLeft.push_back(left); vRight.push_back(right);
 		vTop.push_back(top); vBottom.push_back(bottom);
 	}
+	symsCount = (unsigned)vTop.size();
 
 	// Compute some means and standard deviations
 	Vec<double, 1> avgTop, sdTop, avgBottom, sdBottom, avgLeft, sdLeft, avgRight, sdRight;
@@ -389,7 +389,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.horiResolution = req.vertResolution = 72U;
 
 	static TaskMonitor determineOptimalSquareFittingSymbols("determine optimal square-fitting for the symbols", *symsMonitor);
-	adjustScaling(fontSz_, bb, symsCount, factorH, factorV);
+	adjustScaling(fontSz_, bb, factorH, factorV);
 	determineOptimalSquareFittingSymbols.taskDone(); // mark it as already finished
 
 	static TaskMonitor loadFitSymbols("load & filter symbols that fit the square", *symsMonitor);

@@ -112,7 +112,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 			
 			FT_BBox bbox;
 			double factorH, factorV;
-			adjustScaling(RefSymsSize, bbox, symsCount, factorH, factorV);
+			adjustScaling(RefSymsSize, bbox, factorH, factorV);
 			tinySyms.reserve(symsCount);
 			const double szHd = factorH * RefSymsSizeX64,
 						szVd = factorV * RefSymsSizeX64;
