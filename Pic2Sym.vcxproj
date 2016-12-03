@@ -34,6 +34,7 @@
     <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
+    <ClInclude Include="src\fontErrorsHelper.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
@@ -136,6 +137,7 @@
     <ClCompile Include="src\symSettings.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\taskMonitor.cpp" />
+    <ClCompile Include="src\fontErrorsHelper.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\tinySym.cpp" />
     <ClCompile Include="src\tinySymsDataSerialization.cpp" />

@@ -47,6 +47,7 @@
 #include "misc.cpp"
 #include "timing.cpp"
 #include "fontEngine.cpp"
+#include "fontErrorsHelper.cpp"
 #include "matchEngine.cpp"
 #include "clusterEngine.cpp"
 #include "tinySym.cpp"

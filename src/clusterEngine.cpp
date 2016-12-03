@@ -152,7 +152,10 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	if(forTinySyms) { // tiny symbols have negSym of type double already
 		for(const auto clusterSymIdx : clusterSymIndices) {
 			const SymData &symData = symsSet[clusterSymIdx];
-			negSynthesizedSym += symData.negSym;
+			if(!symData.negSym.empty()) // A non-blank normal-size symbol can become a blank when shrunken
+				negSynthesizedSym += symData.negSym;
+
+			// avgPixVal and mc are taken from the normal-size symbol (guaranteed to be non-blank)
 			avgPixVal_ += symData.avgPixVal;
 			mc_ += symData.mc;
 		}
@@ -160,6 +163,7 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	} else { // normal symbols need to convert their negSym from byte to double when averaging
 		for(const auto clusterSymIdx : clusterSymIndices) {
 			const SymData &symData = symsSet[clusterSymIdx];
+			assert(!symData.negSym.empty()); // normal-size symbol are guaranteed to be non-blank
 			Mat negSymD;
 			symData.negSym.convertTo(negSymD, CV_64FC1);
 			negSynthesizedSym += negSymD;

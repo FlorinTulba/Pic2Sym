@@ -39,6 +39,7 @@
  ***********************************************************************************************/
 
 #include "fontEngine.h"
+#include "fontErrorsHelper.h"
 #include "tinySym.h"
 #include "symFilter.h"
 #include "symFilterCache.h"
@@ -121,8 +122,8 @@ FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctr
 					   cmapPresenter(dynamic_cast<const IPresentCmap&>(ctrler_)),
 					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
-	if(error != FT_Err_Ok)
-		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + to_string(error), runtime_error);
+	if(error != FT_Err_Ok) 
+		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + FtErrors[error], runtime_error);
 }
 
 FontEngine::~FontEngine() {
@@ -137,7 +138,7 @@ bool FontEngine::checkFontFile(const path &fontPath, FT_Face &face_) const {
 	}
 	const FT_Error error = FT_New_Face(library, fontPath.string().c_str(), 0, &face_);
 	if(error != FT_Err_Ok) {
-		cerr<<"Invalid font file: "<<fontPath<<"  Error: "<<error<<endl;
+		cerr<<"Invalid font file: "<<fontPath<<"  Error: "<<FtErrors[error]<<endl;
 		return false;
 	}
 /*
@@ -170,7 +171,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	const FT_Error error =
 		FT_Set_Charmap(face, face->charmaps[next(uniqueEncs.right.begin(), idx)->first]);
 	if(error != FT_Err_Ok) {
-		cerr<<"Couldn't set new cmap! Error: "<<error<<endl;
+		cerr<<"Couldn't set new cmap! Error: "<<FtErrors[error]<<endl;
 		return false;
 	}
 
@@ -181,6 +182,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	tinySyms.clear();
 	symsCont.reset();
 	symsCount = 0U;
+	symsUnableToLoad.clear();
 
 	symSettingsUpdater.selectedEncoding(encName);
 
@@ -227,6 +229,7 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 	tinySyms.clear();
 	symsCont.reset();
 	symsCount = 0U;
+	symsUnableToLoad.clear();
 	uniqueEncs.clear();
 	face = face_;
 
@@ -266,16 +269,18 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 	req.width = req.height; // initial check for square drawing board
 	req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
 	FT_Error error = FT_Request_Size(face, &req);
-	if(error != FT_Err_Ok)
-		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
-
+	if(error != FT_Err_Ok) 
+		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + 
+						   FtErrors[error], invalid_argument);
+	symsUnableToLoad.clear();
 	FT_UInt idx;
-	for(FT_ULong c = FT_Get_First_Char(face, &idx);
-		idx != 0;
-		c = FT_Get_Next_Char(face, c, &idx)) {
+	for(FT_ULong c = FT_Get_First_Char(face, &idx); idx != 0; c = FT_Get_Next_Char(face, c, &idx)) {
 		error = FT_Load_Char(face, c, FT_LOAD_RENDER);
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
+		if(error != FT_Err_Ok) {
+			cerr<<"Couldn't load glyph "<<c<<" before resizing. Error: "<<FtErrors[error]<<endl;
+			symsUnableToLoad.insert(c);
+			continue;
+		}
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
 
@@ -340,7 +345,8 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 
 	error = FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
 	if(error != FT_Err_Ok)
-		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + to_string(error), invalid_argument);
+		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + 
+						   FtErrors[error], invalid_argument);
 
 	// Positioning the Bounding box to best cover the estimated future position & size of the symbols
 	double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
@@ -402,11 +408,19 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	sfc.setFontSz(fontSz_);
 	// Store the pixmaps of the symbols that fit the bounding box already or by shifting.
 	// Preserve the symbols that don't fit, in order to resize them first, then add them too to pixmaps.
-	size_t i = 0U;
-	for(FT_ULong c = FT_Get_First_Char(face, &idx);  idx != 0;  c=FT_Get_Next_Char(face, c, &idx)) {
+	size_t i = 0ULL, countOfSymsUnableToLoad = 0ULL;
+	for(FT_ULong c = FT_Get_First_Char(face, &idx); idx != 0; c = FT_Get_Next_Char(face, c, &idx),
+				loadFitSymbols.taskAdvanced(++i)) {
 		const FT_Error error = FT_Load_Char(face, c, FT_LOAD_RENDER);
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) + "  Error: " + to_string(error), invalid_argument);
+		if(error != FT_Err_Ok) {
+			if(symsUnableToLoad.find(c) != symsUnableToLoad.end()) { // known glyph
+				++countOfSymsUnableToLoad;
+				continue;
+			} else // unexpected glyph
+				THROW_WITH_VAR_MSG("Couldn't load an unexpected glyph (" + to_string(c) +
+									") during initial resizing. Error: " +
+									FtErrors[error], runtime_error);
+		}
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
 		const unsigned height = b.rows, width = b.width;
@@ -414,9 +428,15 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			toResize.emplace_back(c, i, max(1., height/sz), max(1., width/sz));
 		else
 			symsCont.appendSym(c, i, g, bb, sfc);
-
-		loadFitSymbols.taskAdvanced(++i);
 	}
+
+	if(countOfSymsUnableToLoad < symsUnableToLoad.size())
+		THROW_WITH_VAR_MSG("Initial resizing of the glyphs found only " +
+							to_string(countOfSymsUnableToLoad) +
+							" symbols that couldn't be loaded when expecting " +
+							to_string(symsUnableToLoad.size()), runtime_error);
+
+	loadFitSymbols.taskDone();
 
 	// Resize symbols which didn't fit initially
 	static TaskMonitor loadExtraSqueezedSymbols("load & filter extra-squeezed symbols", *symsMonitor);
@@ -427,12 +447,15 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / item.hRatio);
 		FT_Error error = FT_Request_Size(face, &req);
 		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(factorV * fontSz_ / item.vRatio) +
+			THROW_WITH_VAR_MSG("Couldn't set font size: " +
+								to_string(factorV * fontSz_ / item.vRatio) +
 								" x " + to_string(factorH * fontSz_ / item.hRatio) +
-								"  Error: " + to_string(error), invalid_argument);
+								"  Error: " + FtErrors[error], invalid_argument);
 		error = FT_Load_Char(face, item.symCode, FT_LOAD_RENDER);
-		if(error != FT_Err_Ok)
-			THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(item.symCode) + "  Error: " + to_string(error), invalid_argument);
+		if(error != FT_Err_Ok) 
+			THROW_WITH_VAR_MSG("Couldn't load glyph " + to_string(item.symCode) +
+								" which needed resizing twice. Error: " +
+								FtErrors[error], runtime_error);
 		symsCont.appendSym(item.symCode, item.symIdx, face->glyph, bb, sfc);
 
 		loadExtraSqueezedSymbols.taskAdvanced(++i);

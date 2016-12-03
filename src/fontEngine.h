@@ -45,6 +45,7 @@
 #include "tinySymsProvider.h"
 
 #include <string>
+#include <set>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/bimap/bimap.hpp>
@@ -81,6 +82,7 @@ protected:
 
 	PmsCont symsCont;				///< Container with the PixMapSym-s of current charmap
 	unsigned symsCount = 0U;		///< Count of glyphs within current charmap (blanks & duplicates included)
+	std::set<FT_ULong> symsUnableToLoad;	///< indices of the symbols that couldn't be loaded
 
 	/**
 	Validates a new font file.

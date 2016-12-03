@@ -363,6 +363,9 @@
     <ClInclude Include="src\updateSymSettings.h">
       <Filter>Header Files\Controller</Filter>
     </ClInclude>
+    <ClInclude Include="src\fontErrorsHelper.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -526,6 +529,9 @@
     </ClCompile>
     <ClCompile Include="src\preselectSyms.cpp">
       <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fontErrorsHelper.cpp">
+      <Filter>Source Files\Charmap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
