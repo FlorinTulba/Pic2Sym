@@ -124,7 +124,7 @@ namespace ut {
 		}
 	};
 
-	static const unsigned TinySymsSize = TinySymsSz();
+	const unsigned TinySymsSize = TinySymsSz();
 	const double TinySymArea = double(TinySymsSize*TinySymsSize);
 	const unsigned TinySymMidSide = TinySymsSize>>1, // TinySymsSize is odd, so it's ok to keep center as unsigned value
 				TinySymDiagsCount = (TinySymsSize<<1) - 1U;
