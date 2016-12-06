@@ -50,8 +50,9 @@
 using namespace std;
 using namespace cv;
 
+extern const double INV_255();
+
 static const Point defAnchor(-1, -1);
-static const double INV_255 = 1./255;
 
 /**
 Determines if the vertical / horizontal profile of the glyph contains only several patterns, since
@@ -312,7 +313,7 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 
 	// Analyze the horizontal and vertical sum projections of closedGlyphBin
 	Mat projSum;
-	closedGlyphBin.convertTo(closedGlyphBin, CV_64FC1, INV_255);
+	closedGlyphBin.convertTo(closedGlyphBin, CV_64FC1, INV_255());
 	reduce(closedGlyphBin, projSum, 0, REDUCE_SUM);
 	if(!checkProjectionForGridSymbols(projSum))
 		return false;

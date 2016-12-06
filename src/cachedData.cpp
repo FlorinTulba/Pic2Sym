@@ -47,6 +47,36 @@
 using namespace std;
 using namespace cv;
 
+extern const double DirSmooth_DesiredBaseForCenterAndCornerMcs;
+
+namespace {
+	const double SQRT2 = sqrt(2.);
+
+	/**
+	Visual Studio 2013 doesn't provide thread-safe initialization of function local static variables:
+	see 'Magic statics' from https://msdn.microsoft.com/en-us/library/hh567368.aspx .
+
+	The local class from below ensures that the static methods from CachedData are thread-safe by
+	creating a file static instance of it which calls all those vulnerable methods from CachedData
+	before any other threads do.
+
+	This approach was preferred, since Visual Studio 2015 addressed already the issues and
+	Double-Checked Locks or std::call_once seemed like overkill solutions.
+	*/
+	struct StaticInitializer {
+		StaticInitializer() {
+			CachedData::unitSquareCenter();
+			CachedData::invComplPrefMaxMcDist();
+			CachedData::a_mcsOffsetFactor();
+			CachedData::b_mcsOffsetFactor();
+		}
+	};
+
+	/// Computes the constants before the threads start using them
+	const StaticInitializer staticInitializer;
+
+} // anonymous namespace
+
 /*
 DirectionalSmoothness should depend MOSTLY on the angleFactor, and LESS on mcsOffsetFactor.
 See these variables defined and explained in DirectionalSmoothness::score() method.
@@ -81,17 +111,26 @@ a = (DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1) / (maxMcDi
 b = 1 - a * PreferredMaxMcDist
 */
 const double CachedData::a_mcsOffsetFactor() {
-	extern const double DirSmooth_DesiredBaseForCenterAndCornerMcs;
-	static const double SQRT2 = sqrt(2.),
-				maxMcDist = SQRT2,
+	static const double maxMcDist = SQRT2,
 				MaxAngleFactor = 2. * (2. - SQRT2),
 				NumeratorA_mcsOffsetFactor = DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1.,
-				DenominatorA_mcsOffsetFactor = maxMcDist/2. - preferredMaxMcDist(),
+				DenominatorA_mcsOffsetFactor = .5 * maxMcDist - preferredMaxMcDist(),
 				result = NumeratorA_mcsOffsetFactor / DenominatorA_mcsOffsetFactor;
 	return result;
 }
 const double CachedData::b_mcsOffsetFactor() {
 	static const double result = 1. - a_mcsOffsetFactor() * preferredMaxMcDist();
+	return result;
+}
+
+const Point2d& CachedData::unitSquareCenter() {
+	static const Point2d center(.5, .5);
+	return center;
+}
+
+/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
+const double CachedData::invComplPrefMaxMcDist() {
+	static const double result = 1. / (SQRT2 - preferredMaxMcDist());
 	return result;
 }
 

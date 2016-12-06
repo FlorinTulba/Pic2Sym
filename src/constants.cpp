@@ -38,46 +38,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "taskMonitor.h"
-#include "jobMonitorBase.h"
 #include "misc.h"
 
-using namespace std;
-
-extern const double EPSp1();
-
-TaskMonitor::TaskMonitor(const string &monitoredActivity, AbsJobMonitor &parent_) :
-		AbsTaskMonitor(monitoredActivity), parent(parent_),
-
-		// register itself to the parent job monitor and get the order of this task within job's tasks
-		seqId(parent_.monitorNewTask(*this)) {}
-
-void TaskMonitor::setTotalSteps(size_t totalSteps_) {
-	// Kept as double to reduce the conversions required to obtain progress value (steps/totalSteps)
-	totalSteps = (double)totalSteps_;
+namespace {
+	const double _EPSp1 = 1. + EPS;
+	const double _INV_255 = 1./255;
 }
 
-void TaskMonitor::taskAdvanced(size_t steps/* = 1U*/) {
-	if(0U == steps)
-		return;
-
-	if(totalSteps == 0.)
-		THROW_WITH_CONST_MSG("Please call " __FUNCTION__ " only after TaskMonitor::setTotalSteps()!", logic_error);
-
-	double taskProgress = steps / totalSteps;
-	if(taskProgress > EPSp1()) {
-		cerr<<"Current task stage ("<<steps<<") is more than task's span ("<<(size_t)totalSteps<<")"<<endl;
-		taskProgress = 1.;
-	}
-
-	parent.taskAdvanced(taskProgress, seqId);
+const double EPSp1() {
+	return _EPSp1;
 }
 
-void TaskMonitor::taskDone() {
-	parent.taskAdvanced(1., seqId);
+const double INV_255() {
+	return _INV_255;
 }
-
-void TaskMonitor::taskAborted() {
-	parent.taskAborted(seqId);
-}
-

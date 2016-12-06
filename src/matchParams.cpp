@@ -50,27 +50,39 @@ using namespace std;
 using namespace boost;
 using namespace cv;
 
-const MatchParams& MatchParams::perfectMatch() {
-	static MatchParams idealMatch;
-	static bool initialized = false;
-	if(!initialized) {
+extern const double EPSp1();
+
+namespace {
+	const double EPSp255 = 255. + EPS;
+	const double EPSpSdevMaxFgBg = CachedData::sdevMaxFgBg() + EPS;
+	const double EPSpSdevMaxEdge = CachedData::sdevMaxEdge() + EPS;
+	const double EPSpSqrt2 = sqrt(2.) + EPS;
+
+	const MatchParams& createPerfectMatch() {
+		static MatchParams idealMatch;
+
 		// Same mass centers
-		static const Point2d ORIGIN;
-		idealMatch.mcPatch = idealMatch.mcPatchApprox = ORIGIN;
+		idealMatch.mcPatch = idealMatch.mcPatchApprox = Point2d();
 		idealMatch.mcsOffset = 0.;
 
 		// All standard deviations 0
 		idealMatch.sdevFg = idealMatch.sdevBg = idealMatch.sdevEdge = 0.;
-		
+
 		idealMatch.ssim = 1.;		// Perfect structural similarity
 
 		idealMatch.symDensity = 1.;	// Largest density possible
 
 		idealMatch.contrast = 255.;	// Largest contrast possible
 
-		initialized = true;
+		return idealMatch;
 	}
-	return idealMatch;
+
+	const MatchParams &thePerfectMatch = createPerfectMatch();
+
+} // anonymous namespace
+
+const MatchParams& MatchParams::perfectMatch() {
+	return thePerfectMatch;
 }
 
 void MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
@@ -89,7 +101,6 @@ void MatchParams::computeMean(const Mat &patch, const Mat &mask, optional<double
 		return;
 
 	miu = *mean(patch, mask).val;
-	static const double EPSp255 = 255. + EPS;
 	assert(*miu > -EPS && *miu < EPSp255);
 }
 
@@ -125,7 +136,6 @@ void MatchParams::computeSdev(const Mat &patch, const Mat &mask,
 		miu = *miu_.val;
 		sdev = *sdev_.val;
 	}
-	static const double EPSpSdevMaxFgBg = CachedData::sdevMaxFgBg() + EPS;
 	assert(*sdev < EPSpSdevMaxFgBg);
 }
 
@@ -166,7 +176,6 @@ void MatchParams::computeSdevEdge(const Mat &patch, const SymData &symData) {
 	computePatchApprox(patch, symData);
 
 	sdevEdge = norm(patch, patchApprox.value(), NORM_L2, edgeMask) / sqrt(cnz);
-	static const double EPSpSdevMaxEdge = CachedData::sdevMaxEdge() + EPS;
 	assert(*sdevEdge < EPSpSdevMaxEdge);
 }
 
@@ -177,8 +186,7 @@ void MatchParams::computeSymDensity(const SymData &symData) {
 	// The method 'MatchAspect::score(const MatchParams &mp, const CachedData &cachedData)'
 	// needs symData.avgPixVal stored within MatchParams mp. That's why the mere value copy from below:
 	symDensity = symData.avgPixVal;
-	static const double EPSp1 = 1. + EPS;
-	assert(*symDensity < EPSp1);
+	assert(*symDensity < EPSp1());
 }
 
 void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData) {
@@ -197,9 +205,8 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	mcY = temp.t().dot(cachedData.consec);
 
 	mcPatch = Point2d(mcX, mcY) / (patchSum * cachedData.sz_1);
-	static const double EPSp1 = 1. + EPS;
-	assert(mcPatch->x > -EPS && mcPatch->x < EPSp1);
-	assert(mcPatch->y > -EPS && mcPatch->y < EPSp1);
+	assert(mcPatch->x > -EPS && mcPatch->x < EPSp1());
+	assert(mcPatch->y > -EPS && mcPatch->y < EPSp1());
 }
 
 void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
@@ -218,9 +225,8 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const SymData &symData,
 		mcPatchApprox = CachedData::unitSquareCenter();
 	else
 		mcPatchApprox = (k * symData.mc + Point2d(delta, delta)) / denominator;
-	static const double EPSp1 = 1. + EPS;
-	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < EPSp1);
-	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < EPSp1);
+	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < EPSp1());
+	assert(mcPatchApprox->y > -EPS && mcPatchApprox->y < EPSp1());
 }
 
 void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
@@ -232,7 +238,6 @@ void MatchParams::computeMcsOffset(const Mat &patch, const SymData &symData,
 	computeMcPatchApprox(patch, symData, cachedData);
 
 	mcsOffset = norm(mcPatch.value() - mcPatchApprox.value());
-	static const double EPSpSqrt2 = sqrt(2.) + EPS;
 	assert(mcsOffset < EPSpSqrt2);
 }
 

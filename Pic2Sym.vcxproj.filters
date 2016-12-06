@@ -533,6 +533,9 @@
     <ClCompile Include="src\fontErrorsHelper.cpp">
       <Filter>Source Files\Charmap</Filter>
     </ClCompile>
+    <ClCompile Include="src\constants.cpp">
+      <Filter>Source Files\Var</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />

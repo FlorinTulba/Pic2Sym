@@ -47,13 +47,8 @@
 class MatchEngine;
 class FontEngine;
 
-/// cached data for computing match parameters and evaluating match aspects
+/// Cached data for computing match parameters and evaluating match aspects
 struct CachedData {
-	static inline const cv::Point2d& unitSquareCenter() {
-		static const cv::Point2d center(.5, .5);
-		return center;
-	}
-
 	/**
 	Max possible std dev = 127.5  for foreground / background.
 	Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
@@ -75,12 +70,12 @@ struct CachedData {
 
 	/// acceptable distance between mass centers (1/8)
 	static inline const double preferredMaxMcDist() { return .125; }
-	
+		
+	/// The center of a square with unit-length sides
+	static const cv::Point2d& unitSquareCenter();
+
 	/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-	static const double invComplPrefMaxMcDist() {
-		static const double result = 1. / (sqrt(2) - preferredMaxMcDist());
-		return result;
-	}
+	static const double invComplPrefMaxMcDist();
 
 	// See comment from above the definitions of these static methods in cachedData.cpp, but also from DirectionalSmoothness::score
 	static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b

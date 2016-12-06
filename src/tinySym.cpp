@@ -55,13 +55,13 @@ namespace {
 	It appears that the following definitions leave all the values on 0 when invoking TinySym's methods from UnitTesting project.
 	Therefore using #define clauses for UnitTesting project (see the #else branch).
 	*/
-	static const unsigned TinySymsSize = TinySymsSz(),
-						RefSymSz = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
-						DiagsCountTinySym = 2U * TinySymsSize - 1U;
-	static const double invTinySymSz = 1. / TinySymsSize,
-						invTinySymArea = invTinySymSz * invTinySymSz,
-						invDiagsCountTinySym = 1. / DiagsCountTinySym;
-	static const Size SizeTinySyms(TinySymsSize, TinySymsSize);
+	const unsigned TinySymsSize = TinySymsSz(),
+				RefSymSz = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
+				DiagsCountTinySym = 2U * TinySymsSize - 1U;
+	const double invTinySymSz = 1. / TinySymsSize,
+				invTinySymArea = invTinySymSz * invTinySymSz,
+				invDiagsCountTinySym = 1. / DiagsCountTinySym;
+	const Size SizeTinySyms(TinySymsSize, TinySymsSize);
 
 #else // UNIT_TESTING is defined
 

@@ -75,6 +75,41 @@ extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 
 namespace {
+	const set<const String*> independentActions {
+		&ControlPanel_aboutLabel,
+		&ControlPanel_instructionsLabel,
+		&ControlPanel_symsBatchSzTrName
+	};
+	const auto itEndIndepActions = independentActions.cend();
+
+	const set<const String*> imgSettingsSliders {
+		&ControlPanel_outWTrName,
+		&ControlPanel_outHTrName
+	};
+	const auto itEndImgSettSliders = imgSettingsSliders.cend();
+
+	const set<const String*> matchAspectsSliders {
+		&ControlPanel_hybridResultTrName,
+		&ControlPanel_structuralSimTrName,
+		&ControlPanel_underGlyphCorrectnessTrName,
+		&ControlPanel_glyphEdgeCorrectnessTrName,
+		&ControlPanel_asideGlyphCorrectnessTrName,
+		&ControlPanel_moreContrastTrName,
+		&ControlPanel_gravityTrName,
+		&ControlPanel_directionTrName,
+		&ControlPanel_largerSymTrName,
+		&ControlPanel_thresh4BlanksTrName
+	};
+	const auto itEndMatchAspSliders = matchAspectsSliders.cend();
+
+	// Pairs like: pointer to control's name plus a boolean stating whether the control is a slider or not
+	const map<const String*, bool> symSettingsControls {
+		{ &ControlPanel_selectFontLabel, false },
+		{ &ControlPanel_encodingTrName, true },
+		{ &ControlPanel_fontSzTrName, true }
+	};
+	const auto itEndSymSettCtrls = symSettingsControls.cend();
+			
 	atomic_flag stateAccess = ATOMIC_FLAG_INIT;
 
 	/// Waits until nobody uses appState, then locks it and releases it after inspecting/changing
@@ -209,40 +244,6 @@ namespace {
 } // anonymous namespace
 
 unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
-	static const set<const String*>
-		independentActions {
-			&ControlPanel_aboutLabel,
-			&ControlPanel_instructionsLabel,
-			&ControlPanel_symsBatchSzTrName
-		},
-		imgSettingsSliders {
-			&ControlPanel_outWTrName,
-			&ControlPanel_outHTrName
-		},
-		matchAspectsSliders {
-			&ControlPanel_hybridResultTrName,
-			&ControlPanel_structuralSimTrName,
-			&ControlPanel_underGlyphCorrectnessTrName,
-			&ControlPanel_glyphEdgeCorrectnessTrName,
-			&ControlPanel_asideGlyphCorrectnessTrName,
-			&ControlPanel_moreContrastTrName,
-			&ControlPanel_gravityTrName,
-			&ControlPanel_directionTrName,
-			&ControlPanel_largerSymTrName,
-			&ControlPanel_thresh4BlanksTrName
-		};
-	static const auto itEndIndepActions = independentActions.cend(),
-					itEndImgSettSliders = imgSettingsSliders.cend(),
-					itEndMatchAspSliders = matchAspectsSliders.cend();
-
-	// Pairs like: pointer to control's name plus a boolean stating whether the control is a slider or not
-	static const map<const String*, bool> symSettingsControls {
-		{&ControlPanel_selectFontLabel, false},
-		{&ControlPanel_encodingTrName, true},
-		{&ControlPanel_fontSzTrName, true}
-	};
-	static const auto itEndSymSettCtrls = symSettingsControls.cend();
-
 	if(independentActions.find(&controlName) != itEndIndepActions)
 		return std::move(
 			make_unique<NoTraceActionPermit>());

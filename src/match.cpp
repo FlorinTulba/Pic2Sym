@@ -47,6 +47,12 @@
 using namespace std;
 using namespace cv;
 
+namespace {
+	const Point2d ORIGIN; // (0, 0)
+	const double TWOmSQRT2 = 2. - sqrt(2);
+
+} // anonymous namespace
+
 MatchAspect::MatchAspect(const double &k_) : k(k_) {}
 
 double MatchAspect::assessMatch(const Mat &patch,
@@ -235,9 +241,6 @@ The mc-s are consider close when the distance between them is < PreferredMaxMcDi
 So, large k penalizes large (angles & mc-s offsets) and encourages small ones from both.
 */
 double DirectionalSmoothness::score(const MatchParams &mp, const CachedData&) const {
-	static const Point2d ORIGIN; // (0, 0)
-	static const double TWOmSQRT2 = 2. - sqrt(2);
-
 	const Point2d relMcPatch = mp.mcPatch.value() - CachedData::unitSquareCenter();
 	const Point2d relMcGlyph = mp.mcPatchApprox.value() - CachedData::unitSquareCenter();
 

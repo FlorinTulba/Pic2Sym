@@ -48,6 +48,19 @@
 using namespace std;
 using namespace cv;
 
+/*
+SymData_computeFields_STILL_BG and STILL_FG from below are constants for foreground / background thresholds.
+
+1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
+STILL_BG was set to 0, as there are font families with extremely similar glyphs.
+When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
+But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
+*/
+extern const double SymData_computeFields_STILL_BG;					// darkest shades
+static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
+
+extern const double EPSp1();
+
 SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
 				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
@@ -109,18 +122,9 @@ SymData& SymData::operator=(SymData &&other) {
 void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
 							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
 							double &minVal, double &diffMinMax, bool forTinySym) {
-	// constants for foreground / background thresholds
-	// 1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
-	// STILL_BG was set to 0, as there are font families with extremely similar glyphs.
-	// When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
-	// But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
-	extern const double SymData_computeFields_STILL_BG;					// darkest shades
-	static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
-	
 	double maxVal;
 	minMaxIdx(glyph, &minVal, &maxVal);
-	static const double EPSp1 = EPS + 1.;
-	assert(maxVal < EPSp1); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
+	assert(maxVal < EPSp1()); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
 
 	diffMinMax = maxVal - minVal;
 	groundedGlyph = (minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0

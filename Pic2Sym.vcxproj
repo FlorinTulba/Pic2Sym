@@ -103,6 +103,7 @@
     <ClCompile Include="src\clusterAlg.cpp" />
     <ClCompile Include="src\clusterEngine.cpp" />
     <ClCompile Include="src\clusterSerialization.cpp" />
+    <ClCompile Include="src\constants.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\dlgs.cpp" />

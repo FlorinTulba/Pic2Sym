@@ -49,6 +49,8 @@
 using namespace std;
 using namespace cv;
 
+extern const double EPSp1();
+
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
 StructuralSimilarity::StructuralSimilarity(const MatchSettings &cfg) :
@@ -160,5 +162,5 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 
 	divide(numerator, denominator, ssimMap);
 	ssim = *mean(ssimMap).val;
-	assert(abs(*ssim) < 1.+EPS);
+	assert(abs(*ssim) < EPSp1());
 }

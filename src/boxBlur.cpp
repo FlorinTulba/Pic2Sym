@@ -50,6 +50,8 @@ using namespace cv;
 class BoxBlur::Impl {
 	friend class BoxBlur;
 
+	static const Point midPoint; ///< Default anchor point for a given kernel (its center)
+
 	unsigned wl = 0U;	///< first odd width of the box mask less than the ideal width
 	unsigned wu = 0U;	///< first odd width of the box mask greater than the ideal width
 	unsigned countWl = 0U;	///< the number of times to iterate the filter of width wl
@@ -110,8 +112,6 @@ class BoxBlur::Impl {
 			return;
 		}
 
-		static const Point midPoint(-1, -1);
-		
 		bool applied = false;
 
 		// The smaller mask (wl) can be a single-point mask (wl == 1), which can be skipped,
@@ -141,6 +141,8 @@ class BoxBlur::Impl {
 		}
 	}
 };
+
+const Point BoxBlur::Impl::midPoint(-1, -1);
 
 BoxBlur::Impl& BoxBlur::nonTinySyms() {
 	static BoxBlur::Impl implem;

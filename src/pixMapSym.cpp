@@ -55,47 +55,55 @@
 using namespace std;
 using namespace cv;
 
-/// Minimal glyph shifting and cropping or none to fit the bounding box
-static void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
-					int leftBound, int topBound, int sz,
-					int& rows_, int& cols_, int& left_, int& top_,
-					int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
-	rows_ = (int)bm.rows; cols_ = (int)bm.width;
-	left_ = leftBound; top_ = topBound;
+extern const double INV_255();
 
-	diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
-	if(diffLeft < 0) { // cropping left_ side?
-		if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffLeft);
-		left_ = bb.xMin;
+namespace {
+	const Point2d center(.5, .5);
+	const double OneMinEPS = 1. - EPS;
+
+	/// Minimal glyph shifting and cropping or none to fit the bounding box
+	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
+					   int leftBound, int topBound, int sz,
+					   int& rows_, int& cols_, int& left_, int& top_,
+					   int& diffLeft, int& diffRight, int& diffTop, int& diffBottom) {
+		rows_ = (int)bm.rows; cols_ = (int)bm.width;
+		left_ = leftBound; top_ = topBound;
+
+		diffLeft = left_ - bb.xMin; diffRight = bb.xMax - (left_ + cols_ - 1);
+		if(diffLeft < 0) { // cropping left_ side?
+			if(cols_+diffLeft > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffLeft);
+			left_ = bb.xMin;
+		}
+		diffLeft = 0;
+
+		if(diffRight < 0) { // cropping right side?
+			if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
+				cols_ -= min(cols_-sz, -diffRight);
+			left_ = bb.xMax - cols_ + 1;
+		}
+
+		diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
+		if(diffTop < 0) { // cropping top_ side?
+			if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffTop);
+			top_ = bb.yMax;
+		}
+		diffTop = 0;
+
+		if(diffBottom < 0) { // cropping bottom side?
+			if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
+				rows_ -= min(rows_-sz, -diffBottom);
+			top_ = bb.yMin + rows_ - 1;
+		}
+
+		assert(top_>=bb.yMin && top_<=bb.yMax);
+		assert(left_>=bb.xMin && left_<=bb.xMax);
+		assert(rows_>=0 && rows_<=sz);
+		assert(cols_>=0 && cols_<=sz);
 	}
-	diffLeft = 0;
 
-	if(diffRight < 0) { // cropping right side?
-		if(cols_+diffRight > 0 && cols_ > sz) // not shiftable => crop
-			cols_ -= min(cols_-sz, -diffRight);
-		left_ = bb.xMax - cols_ + 1;
-	}
-
-	diffTop = bb.yMax - top_; diffBottom = (top_ - rows_ + 1) - bb.yMin;
-	if(diffTop < 0) { // cropping top_ side?
-		if(rows_+diffTop > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffTop);
-		top_ = bb.yMax;
-	}
-	diffTop = 0;
-
-	if(diffBottom < 0) { // cropping bottom side?
-		if(rows_+diffBottom > 0 && rows_ > sz) // not shiftable => crop
-			rows_ -= min(rows_-sz, -diffBottom);
-		top_ = bb.yMin + rows_ - 1;
-	}
-
-	assert(top_>=bb.yMin && top_<=bb.yMax);
-	assert(left_>=bb.xMin && left_<=bb.xMax);
-	assert(rows_>=0 && rows_<=sz);
-	assert(cols_>=0 && cols_<=sz);
-}
+} // anonymous namespace
 
 PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 size_t symIdx_,				// symbol index within cmap
@@ -210,8 +218,7 @@ Mat PixMapSym::toMatD01(unsigned fontSz) const {
 			   Range((int)left, (int)(left+cols)));
 
 	Mat pmsData = asNarrowMat();
-	static const double INV_255 = 1./255;
-	pmsData.convertTo(pmsData, CV_64FC1, INV_255); // convert to double
+	pmsData.convertTo(pmsData, CV_64FC1, INV_255()); // convert to double
 	pmsData.copyTo(region);
 
 	return result;
@@ -223,7 +230,6 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 									  const Mat &consec, const Mat &revConsec,
 									  Point2d &mc, double &avgPixVal,
 									  Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
-	static const Point2d center(.5, .5);
 	const double szM1 = sz - 1.;
 
 	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
@@ -242,7 +248,6 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 	avgPixVal = glyphSum / maxGlyphSum;
 	
 	// Checking if the glyph with non-empty bounding box contains only zeros, or only ones (a Blank)
-	static const double OneMinEPS = 1. - EPS;
 	if(avgPixVal < EPS || avgPixVal > OneMinEPS) {
 		mc = center;
 		return;
@@ -353,7 +358,6 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	const PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
 						(int)fontSz, maxGlyphSum, consec, revConsec, bb);
-	static const double OneMinEPS = 1. - EPS;
 	if(pms.avgPixVal < EPS || pms.avgPixVal > OneMinEPS) { // discard disguised Space characters
 		++blanks;
 		return;

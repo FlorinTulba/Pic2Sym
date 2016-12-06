@@ -81,8 +81,8 @@ class StackBlur::Impl {
 
 		// Empirical relation, based on which radius minimizes the L2 error
 		// compared to a Gaussian with a given standard deviation
-		static const double RatioR_Sigma = 2.125;
-		r = unsigned(round(RatioR_Sigma * desiredSigma));
+		// Empirical value of the ratio r / sigma is 2.125
+		r = unsigned(round(2.125 * desiredSigma));
 
 		r = max(1U, min(254U, r));
 
