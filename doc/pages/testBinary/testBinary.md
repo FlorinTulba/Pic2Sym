@@ -1,4 +1,4 @@
-## Testing the provided binary of Pic2Sym v1.3 (*64\-bit Windows only*) ##
+## Testing the provided binary of Pic2Sym v2.0 (*64\-bit Windows only*) ##
 
 [Back to start page](../../../ReadMe.md)
 
