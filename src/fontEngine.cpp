@@ -439,7 +439,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		const FT_Bitmap b = g->bitmap;
 		const unsigned height = b.rows, width = b.width;
 		if(width > fontSz_ || height > fontSz_)
-			toResize.emplace_back(c, i, max(1., height/sz), max(1., width/sz));
+			toResize.emplace_back(c, i, max(1., width/sz), max(1., height/sz));
 		else
 			symsCont.appendSym(c, i, g, bb, sfc);
 	}
