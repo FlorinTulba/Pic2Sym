@@ -33,6 +33,8 @@ just comment USE_ZLIB_COMPRESSION in the 'compressOption.h' file
 // than using it (possibly importing code).
 #define BOOST_IOSTREAMS_SOURCE 
 
+#pragma warning ( push, 0 )
+
 #include <boost/throw_exception.hpp>
 #include <boost/iostreams/detail/config/dyn_link.hpp>
 #include <boost/iostreams/filter/zlib.hpp> 
@@ -40,6 +42,8 @@ just comment USE_ZLIB_COMPRESSION in the 'compressOption.h' file
 // To configure Boost to work with zlib, see the 
 // installation instructions here:
 // http://boost.org/libs/iostreams/doc/index.html?path=7
+
+#pragma warning ( pop )
 
 namespace boost {
 	namespace iostreams {
@@ -138,8 +142,8 @@ namespace boost {
 					if(length > 0)
 						crc_ = crc_imp_ = crc32(crc_imp_, buf, length);
 				}
-				total_in_ = s->total_in;
-				total_out_ = s->total_out;
+				total_in_ = (int)s->total_in;
+				total_out_ = (int)s->total_out;
 				src_begin = const_cast<const char*>(next_in);
 				dest_begin = next_out;
 			}

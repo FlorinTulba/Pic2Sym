@@ -42,7 +42,11 @@
 #include "presentCmap.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/highgui/highgui.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -153,7 +157,7 @@ void CmapInspect::showPage(unsigned pageIdx) {
 		return;
 
 	if((unsigned)page != pageIdx)
-		setTrackbarPos(CmapInspect_pageTrackName, winName, pageIdx); // => page = pageIdx
+		setTrackbarPos(CmapInspect_pageTrackName, winName, (int)pageIdx); // => page = pageIdx
 
 	const unsigned idxOfFirstSymFromPage = symsPerPage*pageIdx;
 	populateGrid(cmapPresenter.getFontFaces(idxOfFirstSymFromPage, symsPerPage),
@@ -163,5 +167,5 @@ void CmapInspect::showPage(unsigned pageIdx) {
 
 void CmapInspect::updatePageIdx(int newPage, void *userdata) {
 	CmapInspect *pCmi = reinterpret_cast<CmapInspect*>(userdata);
-	pCmi->showPage(newPage);
+	pCmi->showPage((unsigned)newPage);
 }

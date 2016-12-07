@@ -41,7 +41,11 @@
 #ifndef H_FILE_ITERATION_HELPER
 #define H_FILE_ITERATION_HELPER
 
+#pragma warning ( push, 0 )
+
 #include <boost/preprocessor/cat.hpp>
+
+#pragma warning ( pop )
 
 /// Generates [Name][Suffix] while waiting first their evaluation, unlike Name##Suffix
 #define suffixedItem(Name, Suffix) \

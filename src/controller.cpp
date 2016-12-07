@@ -46,10 +46,14 @@
 #include "controlPanel.h"
 #include "match.h"
 
+#pragma warning ( push, 0 )
+
 #include <Windows.h>
 #include <sstream>
 
 #include <boost/filesystem/operations.hpp>
+
+#pragma warning ( pop )
 
 #ifndef UNIT_TESTING
 #	include "matchSettingsManip.h"
@@ -200,7 +204,7 @@ void Controller::newFontEncoding(int encodingIdx) {
 	if(currEncIdx == (unsigned)encodingIdx)
 		return;
 
-	fe.setNthUniqueEncoding(encodingIdx);
+	fe.setNthUniqueEncoding((unsigned)encodingIdx);
 
 	symbolsChanged();
 }
@@ -223,7 +227,7 @@ void Controller::selectedEncoding(const string &encName) const {
 
 bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 	extern const cv::String ControlPanel_fontSzTrName;
-	if(!Settings::isFontSizeOk(fontSz)) {
+	if(!Settings::isFontSizeOk((unsigned)fontSz)) {
 		ostringstream oss;
 		oss<<"Invalid font size. Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
 		cp.restoreSliderValue(ControlPanel_fontSzTrName, oss.str());
@@ -235,11 +239,11 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 
 	if(!fontFamilyOk) {
 		if((unsigned)fontSz != cfg.ss.getFontSz())
-			cfg.ss.setFontSz(fontSz);
+			cfg.ss.setFontSz((unsigned)fontSz);
 		return false;
 	}
 		
-	cfg.ss.setFontSz(fontSz);
+	cfg.ss.setFontSz((unsigned)fontSz);
 	pCmi->updateGrid();
 
 	return true;
@@ -275,14 +279,14 @@ void Controller::newHmaxSyms(int maxSymbols) {
 	if((unsigned)maxSymbols == cfg.is.getMaxHSyms()) // it's possible if the previous value was invalid
 		return;
 
-	if(!Settings::isHmaxSymsOk(maxSymbols)) {
+	if(!Settings::isHmaxSymsOk((unsigned)maxSymbols)) {
 		ostringstream oss;
 		oss<<"Invalid max number of horizontal symbols. Please set at least "<<Settings_MIN_H_SYMS<<'.';
 		cp.restoreSliderValue(ControlPanel_outWTrName, oss.str());
 		return;
 	}
 
-	cfg.is.setMaxHSyms(maxSymbols);
+	cfg.is.setMaxHSyms((unsigned)maxSymbols);
 }
 
 void Controller::newVmaxSyms(int maxSymbols) {
@@ -294,14 +298,14 @@ void Controller::newVmaxSyms(int maxSymbols) {
 	if((unsigned)maxSymbols == cfg.is.getMaxVSyms()) // it's possible if the previous value was invalid
 		return;
 
-	if(!Settings::isVmaxSymsOk(maxSymbols)) {
+	if(!Settings::isVmaxSymsOk((unsigned)maxSymbols)) {
 		ostringstream oss;
 		oss<<"Invalid max number of vertical symbols. Please set at least "<<Settings_MIN_V_SYMS<<'.';
 		cp.restoreSliderValue(ControlPanel_outHTrName, oss.str());
 		return;
 	}
 
-	cfg.is.setMaxVSyms(maxSymbols);
+	cfg.is.setMaxVSyms((unsigned)maxSymbols);
 }
 
 void Controller::setResultMode(bool hybrid) {
@@ -471,12 +475,17 @@ void Controller::loadSettings() {
 	if(nullptr == permit)
 		return;
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static SettingsSelector ss; // loader
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	if(!ss.promptForUserChoice())
 		return;
 	
 	const SymSettings prevSymSettings(cfg.ss); // keep a copy of old SymSettings
 	cout<<"Loading settings from '"<<ss.selection()<<'\''<<endl;
+
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 		ifstream ifs(ss.selection(), ios::binary);
 		binary_iarchive ia(ifs);
@@ -485,6 +494,7 @@ void Controller::loadSettings() {
 		cerr<<"Couldn't load these settings"<<endl;
 		return;
 	}
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 
 	cp.updateMatchSettings(cfg.ms);
 	me.updateEnabledMatchAspectsCount();
@@ -509,7 +519,7 @@ void Controller::loadSettings() {
 		if(fontFileChanged || encodingChanged) {
 			pCmi->updateGrid();
 		} else {
-			_newFontSize(cfg.ss.getFontSz(), true);
+			_newFontSize((int)cfg.ss.getFontSz(), true);
 		}
 	}
 
@@ -531,11 +541,16 @@ void Controller::saveSettings() const {
 		return;
 	}
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static SettingsSelector ss(false); // saver
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	if(!ss.promptForUserChoice())
 		return;
 
 	cout<<"Saving settings to '"<<ss.selection()<<'\''<<endl;
+	
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 		ofstream ofs(ss.selection(), ios::binary);
 		binary_oarchive oa(ofs);
@@ -544,17 +559,22 @@ void Controller::saveSettings() const {
 		cerr<<"Couldn't save current settings"<<endl;
 		return;
 	}
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 }
 
 // Methods from below have different definitions for UnitTesting project
 #ifndef UNIT_TESTING
 
 #define GET_FIELD_NO_ARGS(FieldType) \
+	__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 	static FieldType field; \
+	__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 	return field
 
 #define GET_FIELD(FieldType, ...) \
+	__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 	static FieldType field(__VA_ARGS__); \
+	__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 	return field
 
 Img& Controller::getImg() {

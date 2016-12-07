@@ -43,7 +43,11 @@ Iterating this file twice, for both values of the boolean setting PreselectionBy
 It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approach.
 */
 #if !BOOST_PP_IS_ITERATING
+#pragma warning ( push, 0 )
+
 #	include <boost/preprocessor/iteration/iterate.hpp>
+
+#pragma warning ( pop )
 
 // Common part until #else (included just once)
 #include "testMain.h"

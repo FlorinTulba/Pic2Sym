@@ -41,9 +41,13 @@
 #ifndef H_PRESELECT_SYMS
 #define H_PRESELECT_SYMS
 
+#pragma warning ( push, 0 )
+
 #include <vector>
 #include <queue>
 #include <stack>
+
+#pragma warning ( pop )
 
 /// Id of the 'candidate' symbol (index in vector&lt;SymData&gt;)
 typedef unsigned CandidateId;
@@ -70,7 +74,10 @@ protected:
 		};
 	};
 
-	unsigned n;	///< length of the short list of candidates
+	/// Unordered version of the short list, but allowing any time to remove the worst candidate from it
+	std::priority_queue<Candidate, std::vector<Candidate>, Candidate::Greater> scrapbook;
+
+	CandidatesShortList shortList;	///< ordered short list (best first)
 
 	/**
 	Min score to enter the list.
@@ -80,10 +87,8 @@ protected:
 	*/
 	double thresholdScore;
 
-	/// Unordered version of the short list, but allowing any time to remove the worst candidate from it
-	std::priority_queue<Candidate, std::vector<Candidate>, Candidate::Greater> scrapbook;
+	unsigned n;	///< length of the short list of candidates
 
-	CandidatesShortList shortList;	///< ordered short list (best first)
 	bool shortListReady = false;	///< set to true by prepareReport()
 
 public:

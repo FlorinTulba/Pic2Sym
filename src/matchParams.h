@@ -43,10 +43,14 @@
 
 #include "patch.h"
 
+#pragma warning ( push, 0 )
+
 #include <boost/optional/optional.hpp>
 #include <opencv2/core/core.hpp>
 
-// forward declarations
+#pragma warning ( pop )
+
+// Forward declarations
 struct SymData;
 struct CachedData;
 class MatchSettings;

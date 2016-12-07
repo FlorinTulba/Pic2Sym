@@ -43,8 +43,12 @@
 
 #if defined _DEBUG && !defined UNIT_TESTING
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <fstream>
+
+#pragma warning ( pop )
 
 struct BestMatch; // forward declaration
 
@@ -54,15 +58,20 @@ Facilitates the tracing process during the transformation of an image.
 class TransformTrace {
 protected:
 	const std::string &studiedCase;	///< used to establish the name of the generated trace file
-	const unsigned sz;		///< symbol size
-	const bool isUnicode;	///< Unicode symbols are logged in symbol format, while other encodings log just their code
 
 	std::wofstream ofs;				///< trace file stream
+
+	const unsigned sz;		///< symbol size
+
 	unsigned transformingRow = 0U;	///< the index of the current row being transformed
+
+	const bool isUnicode;	///< Unicode symbols are logged in symbol format, while other encodings log just their code
 
 public:
 	/// Opens a trace file stream and initializes required fields
 	TransformTrace(const std::string &studiedCase_, unsigned sz_, bool isUnicode_);
+	TransformTrace(const TransformTrace&) = delete;
+	void operator=(const TransformTrace&) = delete;
 	~TransformTrace(); ///< closes the trace stream
 
 	/// adds a new line to the trace file containing row, column and details about the best match for a new patch

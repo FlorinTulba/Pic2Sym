@@ -39,27 +39,33 @@
  ***********************************************************************************************/
 
 #include "fontErrorsHelper.h"
+#include "warnings.h"
 
 /// Pair describing a FreeType error - the code and the string message
 struct FtError {
-	int code;			///< error code
 	const char* msg;	///< error message
+	int code;			///< error code
 };
+
+#pragma warning ( push, 0 )
 
 #include <ft2build.h>
 #include FT_TYPES_H
 #include FT_ERRORS_H
 
+#pragma warning ( pop )
+
 #undef __FTERRORS_H__
-#define FT_ERRORDEF( e, v, s )  { e, s },
+#define FT_ERRORDEF( e, v, s )  { s, e },
 #define FT_ERROR_START_LIST     {
 #define FT_ERROR_END_LIST       { 0, NULL } };
 
 static std::vector<const std::string>&& initFtErrors() {
 	const FtError ft_errors[] =
+#pragma warning ( push, 0 )
 #include FT_ERRORS_H
+#pragma warning ( pop )
 
-	size_t registeredErrors = sizeof(ft_errors) / sizeof(FtError);
 	int maxErrCode = INT_MIN;
 	for(const auto &err : ft_errors) {
 		if(err.code > maxErrCode)
@@ -68,16 +74,18 @@ static std::vector<const std::string>&& initFtErrors() {
 
 	using namespace std;
 
-	static vector<const string> _FtErrors(maxErrCode + 1);
-	
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static vector<const string> _FtErrors(size_t(maxErrCode + 1));
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	for(const auto &err : ft_errors) {
 		if(err.msg != nullptr)
-			_FtErrors[err.code] = err.msg;
+			_FtErrors[(size_t)err.code] = err.msg;
 	}
 
 	for(int i = 0; i <= maxErrCode; ++i) {
-		if(_FtErrors[i].empty())
-			_FtErrors[i] = to_string(i);
+		if(_FtErrors[(size_t)i].empty())
+			_FtErrors[(size_t)i] = to_string(i);
 	}
 
 	return std::move(_FtErrors);

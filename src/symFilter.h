@@ -43,9 +43,13 @@
 
 #include "symFilterBase.h"
 
+#pragma warning ( push, 0 )
+
 #include <map>
 #include <memory>
 #include <string>
+
+#pragma warning ( pop )
 
 /// Base class of the template class TSymFilter from below, to keep the template as thin as possible
 struct SymFilter /*abstract*/ : ISymFilter {
@@ -72,6 +76,9 @@ private: // SymFilter cannot be directly derived, except by the friend TSymFilte
 	*/
 	SymFilter(unsigned filterId_, const std::string &filterName,
 			  std::unique_ptr<ISymFilter> nextFilter_);
+	SymFilter(const SymFilter&) = delete;
+	void operator=(const SymFilter&) = delete;
+
 	~SymFilter() {}
 };
 
@@ -99,6 +106,9 @@ struct TSymFilter /*abstract*/ : SymFilter {
 	TSymFilter(unsigned filterId_, const std::string &filterName,
 			   std::unique_ptr<ISymFilter> nextFilter_) :
 		SymFilter(filterId_, filterName, std::move(nextFilter_)) {}
+
+	TSymFilter(const TSymFilter&) = delete;
+	void operator=(const TSymFilter&) = delete;
 
 	/**
 	Returns the id of the filter which detected that the symbol exhibits some undesired features.

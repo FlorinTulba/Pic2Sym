@@ -92,6 +92,7 @@
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\updateSymSettings.h" />
     <ClInclude Include="src\views.h" />
+    <ClInclude Include="src\warnings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\appStart.cpp" />
@@ -304,6 +305,7 @@
       <ShowIncludes>false</ShowIncludes>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -331,6 +333,7 @@
       <ShowIncludes>false</ShowIncludes>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

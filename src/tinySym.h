@@ -43,7 +43,11 @@
 
 #include "symData.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 struct PixMapSym; // Forward declaration
 

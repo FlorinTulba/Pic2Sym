@@ -41,10 +41,14 @@
 #ifndef H_IMG_SETTINGS
 #define H_IMG_SETTINGS
 
+#pragma warning ( push, 0 )
+
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
+#pragma warning ( pop )
 
 /**
 Contains max count of horizontal & vertical patches to process.
@@ -63,7 +67,7 @@ protected:
 	@param version the version of the loaded ImgSettings
 	*/
 	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
+	void load(Archive &ar, const unsigned /*version*/) {
 		// It is useful to see which settings changed when loading
 		ImgSettings defSettings(*this); // create as copy of previous values
 

@@ -46,7 +46,13 @@
 #ifndef H_MAT_SERIALIZATION
 #define H_MAT_SERIALIZATION
 
+#include "warnings.h"
+
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 namespace boost {
 	namespace serialization {
@@ -58,7 +64,9 @@ namespace boost {
 
 			const bool continuous = mat.isContinuous();
 
+#pragma warning( disable : WARN_CONST_COND_EXPR )
 			if(Archive::is_loading::value)
+#pragma warning( default : WARN_CONST_COND_EXPR )
 				mat.create(mat.rows, mat.cols, mat.type());
 
 			if(continuous) {

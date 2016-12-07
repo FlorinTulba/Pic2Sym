@@ -42,7 +42,11 @@
 #include "fontEngine.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <numeric>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -111,26 +115,38 @@ a = (DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1) / (maxMcDi
 b = 1 - a * PreferredMaxMcDist
 */
 const double CachedData::a_mcsOffsetFactor() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double maxMcDist = SQRT2,
 				MaxAngleFactor = 2. * (2. - SQRT2),
 				NumeratorA_mcsOffsetFactor = DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1.,
 				DenominatorA_mcsOffsetFactor = .5 * maxMcDist - preferredMaxMcDist(),
 				result = NumeratorA_mcsOffsetFactor / DenominatorA_mcsOffsetFactor;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return result;
 }
 const double CachedData::b_mcsOffsetFactor() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double result = 1. - a_mcsOffsetFactor() * preferredMaxMcDist();
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return result;
 }
 
 const Point2d& CachedData::unitSquareCenter() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Point2d center(.5, .5);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return center;
 }
 
 /// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
 const double CachedData::invComplPrefMaxMcDist() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double result = 1. / (SQRT2 - preferredMaxMcDist());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return result;
 }
 
@@ -140,7 +156,7 @@ void CachedData::useNewSymSize(unsigned sz_) {
 	const double szd = (double)sz_;
 	sz_1 = szd - 1.;
 
-	consec = Mat(1, sz_, CV_64FC1);
+	consec = Mat(1, (int)sz_, CV_64FC1);
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
 }
 

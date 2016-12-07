@@ -49,6 +49,8 @@
 #include "symsSerialization.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <vector>
 #include <numeric>
@@ -59,6 +61,8 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost::filesystem;

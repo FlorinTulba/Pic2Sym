@@ -41,9 +41,13 @@
 #ifndef H_PATCH
 #define H_PATCH
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
 
-// forward declarations
+#pragma warning ( pop )
+
+// Forward declarations
 class MatchEngine;
 class MatchSettings;
 
@@ -71,6 +75,7 @@ struct Patch {
 	@param isColor_ type of image - color => true; grayscale => false
 	*/
 	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
+	void operator=(const Patch&) = delete;
 
 	/// specifies which matrix to use during the approximation process
 	const cv::Mat& matrixToApprox() const;

@@ -366,6 +366,9 @@
     <ClInclude Include="src\fontErrorsHelper.h">
       <Filter>Header Files\Charmap</Filter>
     </ClInclude>
+    <ClInclude Include="src\warnings.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

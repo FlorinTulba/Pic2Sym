@@ -41,7 +41,11 @@
 #ifndef H_TASK_MONITOR_BASE
 #define H_TASK_MONITOR_BASE
 
+#pragma warning ( push, 0 )
+
 #include <string>
+
+#pragma warning ( pop )
 
 /// Abstract class for monitoring progress of a specific activity within a given job
 class AbsTaskMonitor /*abstract*/ {
@@ -50,6 +54,7 @@ protected:
 
 public:
 	AbsTaskMonitor(const std::string &monitoredTask) : monitoredTask_(monitoredTask) {}
+	void operator=(const AbsTaskMonitor&) = delete;
 	virtual ~AbsTaskMonitor() = 0 {}
 
 	const std::string& monitoredTask() const { return monitoredTask_; } ///< name of the activity

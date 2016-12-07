@@ -41,12 +41,16 @@
 #ifndef H_IMG
 #define H_IMG
 
+#pragma warning ( push, 0 )
+
 #include <string>
 
 #include <boost/filesystem/path.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-// forward declaration
+#pragma warning ( pop )
+
+// Forward declarations
 class ImgSettings;
 class ResizedImg;
 
@@ -79,18 +83,22 @@ public:
 /// ResizedImg is the version of the original image which is ready to be transformed
 class ResizedImg {
 protected:
-	unsigned patchSz;		///< patch / font size
 	cv::Mat res;			///< the resized image
 
 public:
-	const Img &original; ///< reference to initial image
+	const Img &original;	///< reference to initial image
 
+protected:
+	unsigned patchSz;		///< patch / font size
+
+public:
 	/**
 	If possible, it adapts the original image to the parameters of the transformation:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
 	ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_);
+	void operator=(const ResizedImg&) = delete;
 
 	const cv::Mat& get() const { return res; }
 

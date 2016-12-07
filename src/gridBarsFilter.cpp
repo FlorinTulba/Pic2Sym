@@ -43,9 +43,13 @@
 #include "symFilterCache.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -62,7 +66,6 @@ The number of this pattern changes needs to be extremely small on all the margin
 cross overlapped on the glyph. Central part could accept more patterns.
 */
 static bool acceptableProfile(const Mat &narrowGlyph,	///< bounding box (BB) region of the glyph
-							  const PixMapSym &pms,		///< whole PixMapSym object
 							  const SymFilterCache &sfc,///< precomputed values
 							  unsigned crossClearance,	///< size of the margins of the imaginary cross
 							  unsigned firstRowColBB,	///< row/col where BB starts
@@ -74,18 +77,22 @@ static bool acceptableProfile(const Mat &narrowGlyph,	///< bounding box (BB) reg
 		firstNonEmptyRowColBB, lastNonEmptyRowColBB, // first/last relevant line / col relative to BB
 		rowColProj; // row / column within horizontal / vertical projections of the glyph
 	for(lastNonEmptyRowColBB = lastRowColBB, rowColProj = lastNonEmptyRowColBB + firstRowColBB;
-		0. == projSums.at<double>(rowColProj); --rowColProj, --lastNonEmptyRowColBB) {}
+		0. == projSums.at<double>((int)rowColProj); --rowColProj, --lastNonEmptyRowColBB) {}
 	for(firstNonEmptyRowColBB = 0U, rowColProj = firstRowColBB;
-		0. == projSums.at<double>(rowColProj); ++rowColProj, ++firstNonEmptyRowColBB) {}
+		0. == projSums.at<double>((int)rowColProj); ++rowColProj, ++firstNonEmptyRowColBB) {}
+
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double FactorTolUnder = .9, FactorTolAbove = 1. / FactorTolUnder;
-	Mat prevData = (narrowGlyph.*fMatRowCol)(firstNonEmptyRowColBB),
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+	Mat prevData = (narrowGlyph.*fMatRowCol)((int)firstNonEmptyRowColBB),
 		prevDataInfLim = prevData * FactorTolUnder,
 		prevDataSupLim = prevData * FactorTolAbove;
 	int cnzPrevData = countNonZero(prevData);
 
 	for(unsigned rc = firstNonEmptyRowColBB + 1U; rc <= lastNonEmptyRowColBB; ++rc) {
 		++rowColProj;
-		const Mat thisRowCol = (narrowGlyph.*fMatRowCol)(rc);
+		const Mat thisRowCol = (narrowGlyph.*fMatRowCol)((int)rc);
 		const int cnzThisRowCol = countNonZero(thisRowCol);
 		if(cnzPrevData == cnzThisRowCol) {
 			auto itThisRowCol = thisRowCol.begin<unsigned char>(),
@@ -246,7 +253,7 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 	const unsigned crossClearance = (unsigned)max(1, int(sfc.szU/3U - 1U)),
 			crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
 	const int minPixelsCenter = int(crossWidth - 1U) | 1, // crossWidth when odd, or crossWidth-1 when even
-			minPixelsBranch = (crossClearance << 1) / 3, // 2/3*crossClearance
+			minPixelsBranch = int((crossClearance << 1) / 3), // 2/3*crossClearance
 			minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
 
 	// Don't consider fonts with less pixels than necessary to obtain a grid bar
@@ -255,8 +262,8 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 
 	// Exclude glyphs that touch pixels outside the main cross
 	const Mat glyph = pms.toMat(sfc.szU);
-	const Range topOrLeft(0, crossClearance), rightOrBottom(sfc.szU-crossClearance, sfc.szU),
-				center(crossClearance, crossClearance + crossWidth);
+	const Range topOrLeft(0, (int)crossClearance), rightOrBottom(int(sfc.szU-crossClearance), (int)sfc.szU),
+				center((int)crossClearance, int(crossClearance + crossWidth));
 	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) 
 		return false;
 	if(countNonZero(Mat(glyph, topOrLeft, rightOrBottom)) > 0)
@@ -293,15 +300,18 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 		return false;
 
 	// Making sure glyphBin is entitled to represent narrowGlyph
-	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance,
+	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
 				sfc.szU - 1U - pms.top, pms.rows - 1U, pms.rowSums, &Mat::row))
 		return false;
-	if(!acceptableProfile(narrowGlyph, pms, sfc, crossClearance,
+	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
 				pms.left, pms.cols - 1U, pms.colSums, &Mat::col))
 		return false;
 
 	// Closing the space between any parallel lines of the grid symbol
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Scalar BlackFrame(0U);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	const int maskSz = max(3, (((int)sfc.szU>>2) | 1)), frameSz = maskSz>>1;
 	const Mat mask(maskSz, maskSz, CV_8UC1, Scalar(1U));
 	Mat glyphBinAux(pms.rows + 2*frameSz, pms.cols + 2*frameSz, CV_8UC1, Scalar(0U)),

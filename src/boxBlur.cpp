@@ -41,7 +41,11 @@
 #include "boxBlur.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -50,6 +54,7 @@ using namespace cv;
 class BoxBlur::Impl {
 	friend class BoxBlur;
 
+	static BoxBlur::Impl _tinySyms, _nonTinySyms;
 	static const Point midPoint; ///< Default anchor point for a given kernel (its center)
 
 	unsigned wl = 0U;	///< first odd width of the box mask less than the ideal width
@@ -75,7 +80,8 @@ class BoxBlur::Impl {
 		wl = (((unsigned((idealBoxWidth-1.)/2.))<<1) | 1U);
 		wu = wl + 2U; // next odd value
 
-		countWl = int(round((common - iterations_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U))));
+		countWl = (unsigned)max(0, 
+								int(round((common - iterations_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U)))));
 		countWu = iterations_ - countWl;
 
 		return *this;
@@ -117,7 +123,7 @@ class BoxBlur::Impl {
 		// The smaller mask (wl) can be a single-point mask (wl == 1), which can be skipped,
 		// as it doesn't affect the result at all
 		if(wl > 1U && countWl > 0U) {
-			const Size boxL(wl, wl);
+			const Size boxL((int)wl, (int)wl);
 			blur(toBlur, blurred, boxL, midPoint, BORDER_REPLICATE); // 1st time with mask wl
 
 			// rest of the times with mask wu
@@ -127,7 +133,7 @@ class BoxBlur::Impl {
 		}
 
 		if(countWu > 0U) {
-			const Size boxU(wu, wu);
+			const Size boxU((int)wu, (int)wu);
 
 			// 1st time with mask wu
 			if(!applied)
@@ -142,16 +148,17 @@ class BoxBlur::Impl {
 	}
 };
 
+BoxBlur::Impl BoxBlur::Impl::_nonTinySyms;
+BoxBlur::Impl BoxBlur::Impl::_tinySyms;
+
 const Point BoxBlur::Impl::midPoint(-1, -1);
 
 BoxBlur::Impl& BoxBlur::nonTinySyms() {
-	static BoxBlur::Impl implem;
-	return implem;
+	return BoxBlur::Impl::_nonTinySyms;
 }
 
 BoxBlur::Impl& BoxBlur::tinySyms() {
-	static BoxBlur::Impl implem;
-	return implem;
+	return BoxBlur::Impl::_tinySyms;
 }
 
 BoxBlur::BoxBlur(unsigned boxWidth_/* = 1U*/, unsigned iterations_/* = 1U*/) {
@@ -192,8 +199,11 @@ void BoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym
 
 const BoxBlur& BoxBlur::configuredInstance() {
 	extern const double StructuralSimilarity_SIGMA;
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static BoxBlur result;
 	static bool initialized = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	if(!initialized) {
 		// Box blur with single iteration and desired standard deviation
 		result.setSigma(StructuralSimilarity_SIGMA);

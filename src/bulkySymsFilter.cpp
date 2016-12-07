@@ -43,7 +43,11 @@
 #include "symFilterCache.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -55,14 +59,16 @@ bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &s
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const auto compErMaskSide = [] (unsigned fontSz) {
 		return max(3, (((int)fontSz/2) | 1));
 	};
+	static map<int, Mat> circleMasks;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	if(min(pms.rows, pms.cols) < (unsigned)compErMaskSide(sfc.szU))
 		return false;
 
-	static map<int, Mat> circleMasks;
 	if(circleMasks.empty()) {
 		extern const unsigned Settings_MAX_FONT_SIZE;
 		for(int maskSide = 3, maxMaskSide = compErMaskSide(Settings_MAX_FONT_SIZE);

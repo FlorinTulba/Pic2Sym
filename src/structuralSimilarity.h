@@ -73,6 +73,7 @@ public:
 #endif
 
 	StructuralSimilarity(const MatchSettings &cfg);
+	void operator=(const StructuralSimilarity&) = delete;
 
 	REGISTER_MATCH_ASPECT(StructuralSimilarity);
 };

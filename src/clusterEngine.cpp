@@ -47,12 +47,16 @@
 #include "appStart.h"
 #endif // UNIT_TESTING
 
+#pragma warning ( push, 0 )
+
 #include <set>
 #include <iostream>
 #include <numeric>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/filesystem/operations.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -200,7 +204,10 @@ void ClusterEngine::process(VSymData &symsSet, VSymData &tinySymsSet, const stri
 	vector<vector<unsigned>> symsIndicesPerCluster;
 	clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	clusters.clear(); clusterOffsets.clear();
 	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet, tinySymsSet, clusters, clusterOffsets);
 	reorderClusters.taskDone(); // mark it as already finished

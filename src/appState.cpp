@@ -41,10 +41,14 @@
 #include "controlPanel.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
 #include <map>
 #include <sstream>
 #include <atomic>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -151,12 +155,17 @@ namespace {
 			// No need to guard appState change from below, as the permit generation occurs
 			// already in a guarded region where:
 			// appState is first consulted, the permit is issued and then the lock is released
-			appState = appState | statesToToggle;
+			appState = (AppStateType)(appState | statesToToggle);
 		}
+
+		NormalActionPermit(const NormalActionPermit&) = delete;
+		NormalActionPermit(NormalActionPermit&&) = delete;
+		void operator=(const NormalActionPermit&) = delete;
+		void operator=(NormalActionPermit&&) = delete;
 
 		~NormalActionPermit() {
 			LockAppState lock; // Mandatory, as the finalization of the action is not guarded
-			appState = appState & ~statesToToggle;
+			appState = (AppStateType)(appState & ~statesToToggle);
 		}
 	};
 

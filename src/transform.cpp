@@ -53,6 +53,8 @@
 #include "timing.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <Windows.h>
 #include <omp.h>
 
@@ -61,11 +63,17 @@
 
 #include <boost/filesystem/operations.hpp>
 
+#pragma warning ( pop )
+
 /// Checks if the user wants to cancel the image transformation by pressing ESC
 static bool checkCancellationRequest();
 
 #ifndef UNIT_TESTING
+#pragma warning ( push, 0 )
+
 #include <opencv2/highgui/highgui.hpp>
+
+#pragma warning ( pop )
 
 bool checkCancellationRequest() {
 	// cancel if the user presses ESC and then confirms his abort request
@@ -122,6 +130,8 @@ struct ResultFileManager {
 			alreadyProcessedCase = true;
 		}
 	}
+
+	void operator=(const ResultFileManager&) = delete;
 
 	~ResultFileManager() {
 		if(alreadyProcessedCase)
@@ -180,7 +190,9 @@ Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Sett
 void Transformer::run() {
 	isCanceled = false;
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	Timer timer = ctrler.createTimerForImgTransform();
 
@@ -229,7 +241,10 @@ void Transformer::run() {
 
 	// Transformation task can be aborted only after processing several rows of patches with a new symbols batch.
 	// Therefore the total steps required to complete the task is the symbols count multiplied by the number of rows of patches.
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor imgTransformTaskMonitor("transformation of the image's patches", *transformMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	imgTransformTaskMonitor.setTotalSteps((size_t)symsCount * (size_t)patchesPerCol);
 
 	// symsBatchSz is volatile => every batch might have a different size
@@ -265,7 +280,9 @@ void Transformer::run() {
 
 void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion,
 								   unsigned patchesPerCol, unsigned patchesPerRow) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const unsigned TinySymsSize = TinySymsSz();
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	// processing new resized image
 	if(newResizedImg || draftMatches.empty()) {
@@ -277,7 +294,7 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 		draftMatches.clear(); draftMatches.resize(patchesPerCol);
 
 		if(PreselectionByTinySyms) {
-			const Size imgSzForTinySyms(TinySymsSize * patchesPerRow, TinySymsSize * patchesPerCol);
+			const Size imgSzForTinySyms(int(TinySymsSize * patchesPerRow), int(TinySymsSize * patchesPerCol));
 			resize(resized, resizedForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
 			resize(resizedBlurred, resBlForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
 			draftMatchesForTinySyms.clear(); draftMatchesForTinySyms.resize(patchesPerCol);
@@ -292,7 +309,7 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 				const int row = r * patchSz;
 				const Range rowRange(row, row + patchSz);
 
-				auto &draftMatchesRow = draft[r]; draftMatchesRow.reserve(patchesPerRow);
+				auto &draftMatchesRow = draft[(size_t)r]; draftMatchesRow.reserve(patchesPerRow);
 				for(int c = 0, cLim = (int)patchesPerRow * patchSz; c < cLim; c += patchSz) {
 					const Range colRange(c, c+patchSz);
 					const Mat patch(res, rowRange, colRange),
@@ -312,7 +329,7 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 #pragma omp for schedule(static, 1) nowait
 		for(int r = 0; r < (int)patchesPerCol; ++r) {
 			const auto resetDraftRow = [&] (vector<vector<BestMatch>> &draft) {
-				auto &draftMatchesRow = draft[r];
+				auto &draftMatchesRow = draft[(size_t)r];
 				for(auto &draftMatch : draftMatchesRow)
 					draftMatch.reset(); // leave nothing but the Patch field
 			};
@@ -343,7 +360,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 
 		const int row = r * (int)sz;
 		const Range rowRange(row, row + (int)sz);
-		auto &draftMatchesRow = draftMatches[r];
+		auto &draftMatchesRow = draftMatches[(size_t)r];
 
 		/// Update the visualized draft
 		const auto patchImproved = [&] (const BestMatch &draftMatch, int startCol) {
@@ -366,14 +383,14 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 		};
 
 		if(PreselectionByTinySyms) {
-			auto &draftMatchesRowTiny = draftMatchesForTinySyms[r];
+			auto &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
 
 			TopCandidateMatches tcm(ShortListLength);
 
 			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
 				// Skip patches who appear rather uniform either in tiny or normal format
-				auto &draftMatch = draftMatchesRow[patchColumn];
-				auto &draftMatchTiny = draftMatchesRowTiny[patchColumn];
+				auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
+				auto &draftMatchTiny = draftMatchesRowTiny[(size_t)patchColumn];
 				if(checkUnifPatch(draftMatchTiny) || checkUnifPatch(draftMatch)) {
 					manageUnifPatch(draftMatch, c);
 					continue;
@@ -384,10 +401,10 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 
 				if(me.improvesBasedOnBatch(fromIdx, upperIdx, draftMatchTiny, &tcm)) {
 					tcm.prepareReport();
-					auto &shortList = tcm.getShortList();
+					auto &&shortList = tcm.getShortList();
 					
 					// Examine shortList on actual patches and symbols, not tiny ones
-					if(me.improvesBasedOnBatchShortList(shortList, draftMatch))
+					if(me.improvesBasedOnBatchShortList(std::move(shortList), draftMatch))
 						patchImproved(draftMatch, c);
 				}
 			} // columns loop
@@ -395,7 +412,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 		} else { // PreselectionByTinySyms == false here
 			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
 				// Skip patches who appear rather uniform
-				auto &draftMatch = draftMatchesRow[patchColumn];
+				auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
 				if(checkUnifPatch(draftMatch)) {
 					manageUnifPatch(draftMatch, c);
 					continue;

@@ -76,7 +76,10 @@ const vector<const string>& MatchAspect::aspectNames() {
 }
 
 vector<const string>& MatchAspect::registeredAspects() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static vector<const string> names;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return names;
 }
 

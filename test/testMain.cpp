@@ -89,10 +89,14 @@
 #include "stackBlur.cpp"
 #include "gaussBlur.cpp"
 
+#pragma warning ( push, 0 )
+
 #include <ctime>
 #include <random>
 
 #include <boost/optional/optional.hpp>
+
+#pragma warning ( pop )
 
 const unsigned SymsBatch_defaultSz = 25U;
 
@@ -268,7 +272,9 @@ namespace ut {
 		string commandLine(oss.str());
 
 		// Construct the image to display, which should contain all miscategorized symbols from one group
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static const Scalar GridColor(255U, 200U, 200U), BgColor(200U, 200U, 255U);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 		const int borderRows = 2, vertSplitsCount = 1 + (int)misfiltered.size();
 		int rowsMislabeledSyms = 0,
 			colsMislabeledSyms = 1,
@@ -310,9 +316,11 @@ namespace ut {
 	}
 
 	unsigned randUnifUint() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static random_device rd;
 		static mt19937 gen(rd());
 		static uniform_int_distribution<unsigned> uid;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 		return uid(gen);
 	}
 
@@ -324,7 +332,9 @@ namespace ut {
 MatchSettings::MatchSettings() {}
 
 #define GET_FIELD(FieldType, ...) \
+	__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 	static std::shared_ptr<FieldType> pField; \
+	__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 	if(ut::Controller::init##FieldType || !pField) { \
 		pField = std::make_shared<FieldType>(__VA_ARGS__); \
 		ut::Controller::init##FieldType = false; \

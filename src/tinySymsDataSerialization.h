@@ -43,7 +43,11 @@
 
 #include "tinySym.h"
 
+#pragma warning ( push, 0 )
+
 #include <boost/serialization/vector.hpp>
+
+#pragma warning ( pop )
 
 /// Clusters data that needs to be serialized
 struct VTinySymsIO {
@@ -54,10 +58,11 @@ struct VTinySymsIO {
 	VTinySyms &tinySyms;
 
 	VTinySymsIO(VTinySyms &tinySyms_);
+	void operator=(const VTinySymsIO&) = delete;
 
 	/// Serializes this VTinySymsIO object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version) {
+	void serialize(Archive &ar, const unsigned int /*version*/) {
 		ar & tinySyms;
 	}
 

@@ -41,7 +41,11 @@
 #include "appStart.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <boost/filesystem/operations.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost::filesystem;

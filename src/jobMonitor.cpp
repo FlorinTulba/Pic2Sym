@@ -46,8 +46,12 @@
 #include "timing.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <iostream>
 #include <iomanip>
+
+#pragma warning ( pop )
 
 using namespace std;
 

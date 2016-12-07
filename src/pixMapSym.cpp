@@ -47,10 +47,14 @@
 #include "presentCmap.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <map>
 #include <numeric>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -123,11 +127,11 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	cols = (unsigned char)cols_;
 
 	if(rows_ > 0 && cols_ > 0) {
-		pixels.resize(rows_ * cols_);
+		pixels.resize(size_t(rows_ * cols_));
 		for(int r = 0U; r<rows_; ++r) // copy a row at a time
-			memcpy_s(&pixels[r*cols_], (rows_-r)*cols_,
-					&bm.buffer[(r-diffTop)*bm.pitch - diffLeft],
-					cols_);
+			memcpy_s(&pixels[size_t(r*cols_)], size_t((rows_-r)*cols_),
+					&bm.buffer[size_t((r-diffTop)*bm.pitch - diffLeft)],
+					(size_t)cols_);
 	}
 
 	// Considering a bounding box sz x sz with coordinates 0,0 -> (sz-1),(sz-1)
@@ -232,8 +236,8 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 									  Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
 	const double szM1 = sz - 1.;
 
-	if(colSums) *colSums = Mat::zeros(1, sz, CV_64FC1);
-	if(rowSums) *rowSums = Mat::zeros(1, sz, CV_64FC1);
+	if(colSums) *colSums = Mat::zeros(1, (int)sz, CV_64FC1);
+	if(rowSums) *rowSums = Mat::zeros(1, (int)sz, CV_64FC1);
 
 	if(rows_ == 0U || cols_ == 0U) {
 		mc = center; avgPixVal = 0.;
@@ -335,7 +339,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	if(symsCount != 0U)
 		syms.reserve(symsCount);
 
-	consec = Mat(1, fontSz_, CV_64FC1);
+	consec = Mat(1, (int)fontSz_, CV_64FC1);
 	revConsec.release();
 
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);

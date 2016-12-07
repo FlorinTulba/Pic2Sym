@@ -52,11 +52,15 @@
 #include "dlgs.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <functional>
 #include <thread>
 
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace std::chrono;
@@ -171,6 +175,7 @@ namespace {
 		IGlyphsProgressTracker &performer;
 
 		SymsUpdateProgressNotifier(IGlyphsProgressTracker &performer_) : performer(performer_) {}
+		void operator=(const SymsUpdateProgressNotifier&) = delete;
 
 		void notifyUser(const std::string&, double progress) override {
 			performer.reportGlyphProgress(progress);
@@ -182,6 +187,7 @@ namespace {
 		IPicTransformProgressTracker &performer;
 
 		PicTransformProgressNotifier(IPicTransformProgressTracker &performer_) : performer(performer_) {}
+		void operator=(const PicTransformProgressNotifier&) = delete;
 
 		void notifyUser(const std::string&, double progress) override {
 			performer.reportTransformationProgress(progress);
@@ -209,25 +215,26 @@ namespace {
 		for(const auto &pms : theSyms)
 			symSums.push_back(pms.avgPixVal);
 
-		static const unsigned MaxBinHeight = 256U;
-		const unsigned binsCount = min(256U, (unsigned)symSums.size());
+		static const size_t MaxBinHeight = 256ULL;
+		const size_t binsCount = min(256ULL, symSums.size());
 		const double smallestSum = symSums.front(), largestSum = symSums.back(),
 			sumsSpan = largestSum - smallestSum;
-		vector<unsigned> hist(binsCount, 0U);
+		vector<size_t> hist(binsCount, 0U);
 		const auto itBegin = symSums.cbegin();
-		for(unsigned bin = 0U, prevCount = 0U; bin < binsCount; ++bin) {
+		ptrdiff_t prevCount = 0LL;
+		for(size_t bin = 0ULL; bin < binsCount; ++bin) {
 			const auto it = upper_bound(CBOUNDS(symSums), smallestSum + sumsSpan*(bin+1.)/binsCount);
-			const unsigned curCount = (unsigned)distance(itBegin, it);
-			hist[bin] = curCount - prevCount;
+			const auto curCount = distance(itBegin, it);
+			hist[bin] = size_t(curCount - prevCount);
 			prevCount = curCount;
 		}
 		const double maxBinValue = (double)*max_element(CBOUNDS(hist));
-		for(unsigned &binValue : hist)
-			binValue = (unsigned)round(binValue * MaxBinHeight / maxBinValue);
-		Mat histImg(MaxBinHeight, binsCount, CV_8UC1, Scalar(255U));
-		for(unsigned bin = 0U; bin < binsCount; ++bin)
+		for(size_t &binValue : hist)
+			binValue = (size_t)round(binValue * MaxBinHeight / maxBinValue);
+		Mat histImg((int)MaxBinHeight, (int)binsCount, CV_8UC1, Scalar(255U));
+		for(size_t bin = 0U; bin < binsCount; ++bin)
 			if(hist[bin] > 0U)
-				histImg.rowRange(MaxBinHeight-hist[bin], MaxBinHeight).col(bin) = 0U;
+				histImg.rowRange(int(MaxBinHeight-hist[bin]), (int)MaxBinHeight).col((int)bin) = 0U;
 		imshow("histogram", histImg);
 		waitKey(1);
 #endif // UNIT_TESTING not defined
@@ -273,6 +280,7 @@ extern const String ControlPanel_instructionsLabel;
 extern const double Transform_ProgressReportsIncrement;
 extern const double SymbolsProcessing_ProgressReportsIncrement;
 
+#pragma warning( disable : WARN_BASE_INIT_USING_THIS )
 Controller::Controller(Settings &s) :
 		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs",
 			std::make_shared<SymsUpdateProgressNotifier>(*this),
@@ -291,6 +299,7 @@ Controller::Controller(Settings &s) :
 	extern const string Comparator_statusBar;
 	comp.setStatus(Comparator_statusBar);
 }
+#pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
 void Controller::showAboutDlg(const string &title, const wstring &content) {
 	const auto permit = cp.actionDemand(ControlPanel_aboutLabel);
@@ -490,7 +499,10 @@ void Controller::handleRequests() {
 }
 
 void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const String waitWin = "Please Wait!";
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	if(progress == 0.) {
 		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
 		moveWindow(waitWin, 0, 400);
@@ -593,11 +605,13 @@ Comparator::Comparator() : CvWin("Pic2Sym") {
 
 void Comparator::resize() const {
 	// Comparator window is to be placed within 1024x768 top-left part of the screen
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double
 		HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS = 70,
 		WIDTH_LATERAL_BORDERS = 4,
 		H_NUMERATOR = 768-HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS, // desired max height - HEIGHT_TITLE_TOOLBAR_SLIDER_STATUS
 		W_NUMERATOR = 1024-WIDTH_LATERAL_BORDERS; // desired max width - WIDTH_LATERAL_BORDERS
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	// Resize window to preserve the aspect ratio of the loaded image,
 	// while not enlarging it, nor exceeding 1024 x 768
@@ -637,10 +651,10 @@ namespace {
 					  unsigned idxOfFirstSymFromPage = UINT_MAX) {
 		content = grid.clone();
 		const unsigned symsToShow = (unsigned)distance(it, itEnd);
-		const int fontSz = cmapPresenter.getFontSize(),
-			cellSide = 1 + fontSz,
-			height = CmapInspect_pageSz.height,
-			width = CmapInspect_pageSz.width;
+		const int fontSz = (int)cmapPresenter.getFontSize(),
+				cellSide = 1 + fontSz,
+				height = CmapInspect_pageSz.height,
+				width = CmapInspect_pageSz.width;
 
 		// Place each 'negative' glyph within the grid
 		for(int r = cellSide; it!=itEnd && r < height; r += cellSide) {
@@ -658,15 +672,18 @@ namespace {
 
 		// Display cluster limits if last 2 parameters provide this information
 		auto showMark = [&] (unsigned offsetNewCluster, bool endMark) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 			static const Scalar ClusterMarkColor(0U, 0U, 255U),
 							ClustersEndMarkColor(128U, 0U, 64U);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 			const unsigned symsInArow = (unsigned)((width - 1) / cellSide);
 			const div_t pos = div((int)offsetNewCluster, (int)symsInArow);
 			const unsigned r = (unsigned)pos.quot * cellSide + 1,
 				c = (unsigned)pos.rem * cellSide;
 			const Mat clusterMark(fontSz, 1, CV_8UC3,
 								  endMark ? ClustersEndMarkColor : ClusterMarkColor);
-			clusterMark.copyTo(content.col(c).rowRange(r, r + fontSz));
+			clusterMark.copyTo((const Mat&)content.col((int)c).rowRange((int)r, (int)r + fontSz));
 		};
 
 		const auto itBegin = clusterOffsets.cbegin();
@@ -776,7 +793,10 @@ CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
 }
 
 Mat CmapInspect::createGrid() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Scalar GridColor(255U, 200U, 200U);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	Mat emptyGrid(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
 
 	cellSide = 1U + cmapPresenter.getFontSize();
@@ -797,8 +817,8 @@ extern const unsigned SymsBatch_defaultSz;
 
 ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg_) :
 		performer(performer_), cfg(cfg_),
-		maxHSyms(cfg_.imgSettings().getMaxHSyms()), maxVSyms(cfg_.imgSettings().getMaxVSyms()),
-		encoding(0U), fontSz(cfg_.symSettings().getFontSz()),
+		maxHSyms((int)cfg_.imgSettings().getMaxHSyms()), maxVSyms((int)cfg_.imgSettings().getMaxVSyms()),
+		encoding(0), fontSz((int)cfg_.symSettings().getFontSz()),
 		symsBatchSz((int)SymsBatch_defaultSz),
 		hybridResult(cfg_.matchSettings().isHybridResult() ? 1 : 0),
 		structuralSim(Converter::StructuralSim::toSlider(cfg_.matchSettings().get_kSsim())),
@@ -809,7 +829,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 		gravity(Converter::Gravity::toSlider(cfg_.matchSettings().get_kMCsOffset())),
 		direction(Converter::Direction::toSlider(cfg_.matchSettings().get_kCosAngleMCs())),
 		largerSym(Converter::LargerSym::toSlider(cfg_.matchSettings().get_kSymDensity())),
-		thresh4Blanks(cfg_.matchSettings().getBlankThreshold()) {
+		thresh4Blanks((int)cfg_.matchSettings().getBlankThreshold()) {
 	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
 	extern const unsigned Settings_MAX_H_SYMS;
 	extern const unsigned Settings_MAX_V_SYMS;
@@ -848,7 +868,10 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 	createButton(ControlPanel_selectImgLabel,
 				 [] (int, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static ImgSelector is;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 		if(is.promptForUserChoice())
 			pActions->newImage(is.selection());
 	}, reinterpret_cast<void*>(&performer));
@@ -872,7 +895,11 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 	createButton(ControlPanel_selectFontLabel,
 				 [] (int, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static SelectFont sf;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 		if(sf.promptForUserChoice())
 			pActions->newFontFamily(sf.selection());
 	}, reinterpret_cast<void*>(&performer));
@@ -956,7 +983,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 	createTrackbar(ControlPanel_thresh4BlanksTrName, nullptr, &thresh4Blanks, (int)Settings_MAX_THRESHOLD_FOR_BLANKS,
 				   [] (int val, void *userdata) {
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newThreshold4BlanksFactor(val);
+		pActions->newThreshold4BlanksFactor((unsigned)val);
 	}, reinterpret_cast<void*>(&performer));
 
 	createButton(ControlPanel_aboutLabel, [] (int, void *userdata) {

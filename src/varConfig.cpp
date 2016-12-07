@@ -46,10 +46,14 @@
 #include "structuralSimilarity.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -68,7 +72,9 @@ namespace {
 
 	/// parser for reading various texts and constants customizing the runtime look and behavior
 	PropsReader& varConfigRef() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static PropsReader varConfig("res/varConfig.txt");
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 		return varConfig;
 	}
 
@@ -77,6 +83,7 @@ namespace {
 	struct ConfigItemValidator {
 		/// Should throw an appropriate exception when itemVal is wrong for itemName
 		virtual void examine(const string &itemName, const Type &itemVal) const = 0;
+		virtual ~ConfigItemValidator() = 0 {}
 	};
 
 	/// Base class for IsOdd and IsEven from below
@@ -99,18 +106,21 @@ namespace {
 		const bool isOdd;	///< true for IsOdd, false for IsEven
 
 		IsOddOrEven(bool isOdd_) : isOdd(isOdd_) {}
+		void operator=(const IsOddOrEven&) = delete;
 	};
 
 	/// Throws for non-odd configuration items
 	template<class Type>
 	struct IsOdd : IsOddOrEven<Type> {
 		IsOdd() : IsOddOrEven(true) {}
+		void operator=(const IsOdd&) = delete;
 	};
 
 	/// Throws for non-even configuration items
 	template<class Type>
 	struct IsEven : IsOddOrEven<Type> {
 		IsEven() : IsOddOrEven(false) {}
+		void operator=(const IsEven&) = delete;
 	};
 
 	/// Base class for IsLessThan and IsGreaterThan from below
@@ -136,24 +146,27 @@ namespace {
 		}
 
 	protected:
-		const bool isLess;	///< true for IsLessThan, false for IsGreaterThan
 		const Type refVal;	///< the value to compare against
+		const bool isLess;	///< true for IsLessThan, false for IsGreaterThan
 		const bool orEqual;	///< compare strictly or not
 
 		IsLessOrGreaterThan(bool isLess_, const Type &refVal_, bool orEqual_ = false) :
 			isLess(isLess_), refVal(refVal_), orEqual(orEqual_) {}
+		void operator=(const IsLessOrGreaterThan&) = delete;
 	};
 
 	/// Throws for values > or >= than refVal_
 	template<class Type>
 	struct IsLessThan : IsLessOrGreaterThan<Type> {
 		IsLessThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(true, refVal_, orEqual_) {}
+		void operator=(const IsLessThan&) = delete;
 	};
 
 	/// Throws for values < or <= than refVal_
 	template<class Type>
 	struct IsGreaterThan : IsLessOrGreaterThan<Type> {
 		IsGreaterThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(false, refVal_, orEqual_) {}
+		void operator=(const IsGreaterThan&) = delete;
 	};
 
 	/// Checks that the provided value for a configuration item is within a given set of accepted values.
@@ -163,6 +176,7 @@ namespace {
 			if(allowedSet_.empty())
 				THROW_WITH_CONST_MSG(__FUNCTION__ " should get a non-empty set of allowed values!", invalid_argument);
 		}
+		void operator=(const IsOneOf&) = delete;
 
 		void examine(const string &itemName, const Type &itemVal) const override {
 			if(allowedSet.cend() == allowedSet.find(itemVal))
@@ -196,7 +210,10 @@ namespace {
 			// but every one also calling 'examine' for a different validator
 			(validators.examine(itemName, itemVal), 0)...
 		};
-		(void)dummyArray; // Avoids warning about unused variable
+		// Avoids warning about unused parameters / variable
+		(void)itemName;
+		(void)dummyArray;
+
 		return itemVal;
 	}
 } // anonymous namespace
@@ -238,13 +255,17 @@ namespace {
 // Limits for read data
 #define VALIDATOR_NO_ARGS(Name, Kind, Type) \
 	const Kind<Type>& Name() { \
+		__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 		static const Kind<Type> validator; \
+		__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 		return validator; \
 	} 
 
 #define VALIDATOR(Name, Kind, Type, ...) \
 	const Kind<Type>& Name() { \
+		__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 		static const Kind<Type> validator(__VA_ARGS__); \
+		__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 		return validator; \
 	} 
 
@@ -307,19 +328,28 @@ extern READ_BOOL_PROP_COND(ParallelizeTr_PatchRowLoops, UsingOMP);
 extern READ_UINT_PROP(Settings_MAX_THRESHOLD_FOR_BLANKS, atMost50U());
 
 static const unsigned minFontSize() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static READ_UINT_PROP(Settings_MIN_FONT_SIZE, atLeast5U());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return Settings_MIN_FONT_SIZE;
 }
 extern const unsigned Settings_MIN_FONT_SIZE = minFontSize();
 
 static const unsigned minHSyms() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static READ_UINT_PROP(Settings_MIN_H_SYMS, atLeast3U());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return Settings_MIN_H_SYMS;
 }
 extern const unsigned Settings_MIN_H_SYMS = minHSyms();
 
 static const unsigned minVSyms() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static READ_UINT_PROP(Settings_MIN_V_SYMS, atLeast3U());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return Settings_MIN_V_SYMS;
 }
 extern const unsigned Settings_MIN_V_SYMS = minVSyms();
@@ -329,7 +359,10 @@ static VALIDATOR(moreThanMinHSyms,		IsGreaterThan, unsigned, minHSyms(), true);
 static VALIDATOR(moreThanMinVSyms,		IsGreaterThan, unsigned, minVSyms(), true);
 
 static const unsigned maxFontSize() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static READ_UINT_PROP(Settings_MAX_FONT_SIZE, atMost50U(), moreThanMinFontSize());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return Settings_MAX_FONT_SIZE;
 }
 extern const unsigned Settings_MAX_FONT_SIZE = maxFontSize();
@@ -398,7 +431,10 @@ extern READ_BOOL_PROP(PreselectionByTinySyms);
 extern READ_UINT_PROP(ShortListLength, atLeast1U());
 extern READ_DOUBLE_PROP(AdmitOnShortListEvenForInferiorScoreFactor, atLeast0dot8(), lessThan1D());
 extern unsigned TinySymsSz() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static READ_UINT_PROP(TinySymsSize, oddU(), atLeast5U(), atMost9U());
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return TinySymsSize;
 }
 

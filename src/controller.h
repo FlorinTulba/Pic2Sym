@@ -53,7 +53,11 @@
 #include "misc.h"
 #include "timing.h"
 
+#pragma warning ( push, 0 )
+
 #include <atomic>
+
+#pragma warning ( pop )
 
 // Forward declarations
 class ControlPanel;
@@ -83,10 +87,6 @@ protected:
 	std::shared_ptr<CmapInspect> pCmi;	///< view for inspecting the used cmap
 	ControlPanel &cp;					///< the configuration view
 
-	// Validation flags
-	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
-	bool fontFamilyOk = false;	///< is there a symbol set available (not set yet, so false)
-
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;
 	std::atomic_flag updatingSymbols;	///< stays true while updating the symbols
@@ -98,6 +98,10 @@ protected:
 	/// A list of selected symbols to investigate separately.
 	/// Useful while exploring ways to filter-out various symbols from charmaps.
 	mutable std::list<const cv::Mat> symsToInvestigate;
+
+	// Validation flags
+	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
+	bool fontFamilyOk = false;	///< is there a symbol set available (not set yet, so false)
 
 	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
 	/// Cmap visualization can ignore image-related errors by setting 'imageRequired' to false.
@@ -136,6 +140,8 @@ public: // Providing get<field> as public for Unit Testing
 
 public:
 	Controller(Settings &s);	///< Initializes controller with Settings object s
+	Controller(const Controller&) = delete;
+	void operator=(const Controller&) = delete;
 	~Controller();				///< destroys the windows
 
 	/// Waits for the user to press ESC and confirm he wants to leave
@@ -213,11 +219,13 @@ public:
 		const Controller &ctrler; ///< actual manager of the events
 
 		TimerActions_Controller(const Controller &ctrler_);
+		void operator=(const TimerActions_Controller&) = delete;
 	};
 
 	/// Actions for start & stop chronometer while timing glyphs loading & preprocessing
 	struct TimerActions_SymSetUpdate : TimerActions_Controller {
 		TimerActions_SymSetUpdate(const Controller &ctrler_);
+		void operator=(const TimerActions_SymSetUpdate&) = delete;
 
 		void onStart() override;	///< action to be performed when the timer is started
 
@@ -229,6 +237,7 @@ public:
 	/// Actions for start & stop chronometer while timing the approximation of the picture
 	struct TimerActions_ImgTransform : TimerActions_Controller {
 		TimerActions_ImgTransform(const Controller &ctrler_);
+		void operator=(const TimerActions_ImgTransform&) = delete;
 
 		void onStart() override;	///< action to be performed when the timer is started
 

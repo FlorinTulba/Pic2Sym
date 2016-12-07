@@ -43,6 +43,8 @@
 
 #include "symFilterBase.h"
 
+#pragma warning ( push, 0 )
+
 #include <vector>
 #include <map>
 #include <memory>
@@ -50,6 +52,8 @@
 #include <opencv2/core.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+#pragma warning ( pop )
 
 /**
 PixMapSym holds the representation('pixels') of symbol 'symCode'.
@@ -63,21 +67,22 @@ The bitmap pitch is transformed into width, so 'pixels' is continuous.
 Fields 'left' and 'top' indicate the position of the top-left corner within the drawing square.
 */
 struct PixMapSym {
-	unsigned long symCode = 0UL;	///< symbol code
-	size_t symIdx = 0U;				///< symbol index within cmap
-	double avgPixVal = 0.;			///< average of the pixel values divided by 255
-	
 	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc;
-
-	unsigned char rows = 0U, cols = 0U;	// dimensions of 'pixels' rectangle from below 
-	unsigned char left = 0U, top = 0U;	// position within the drawing square
 
 	/// 256-shades of gray rectangle describing the character (top-down, left-right traversal)
 	std::vector<unsigned char> pixels;
 
 	cv::Mat colSums; ///< row with the sums of the pixels of each column of the symbol (each pixel in 0..1)
 	cv::Mat rowSums; ///< row with the sums of the pixels of each row of the symbol (each pixel in 0..1)
+
+	size_t symIdx = 0U;				///< symbol index within cmap
+	double avgPixVal = 0.;			///< average of the pixel values divided by 255
+
+	unsigned long symCode = 0UL;	///< symbol code
+
+	unsigned char rows = 0U, cols = 0U;	// dimensions of 'pixels' rectangle from below 
+	unsigned char left = 0U, top = 0U;	// position within the drawing square
 
 	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
 
@@ -148,14 +153,7 @@ struct IPresentCmap; // forward declaration
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont {
 protected:
-	bool ready = false;				///< is container ready to provide useful data?
-	unsigned fontSz = 0U;			///< bounding box size
 	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
-	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
-	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
-	
-	double maxGlyphSum;				///< max sum of a glyph's pixels
-	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
 
 	// Precomputed entities during reset
 	cv::Mat consec;					///< vector of consecutive values 0..fontSz-1
@@ -171,8 +169,20 @@ protected:
 	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
 	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
 
+	double maxGlyphSum;				///< max sum of a glyph's pixels
+	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
+
+	unsigned fontSz = 0U;			///< bounding box size
+
+	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
+	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
+
+	bool ready = false;				///< is container ready to provide useful data?
+
 public:
 	PmsCont(const IPresentCmap &cmapViewUpdater_);
+	PmsCont(const PmsCont&) = delete;
+	void operator=(const PmsCont&) = delete;
 
 	bool isReady() const { return ready; }
 	unsigned getFontSz() const;

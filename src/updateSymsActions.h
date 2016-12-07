@@ -41,7 +41,11 @@
 #ifndef H_UPDATE_SYMS_ACTIONS
 #define H_UPDATE_SYMS_ACTIONS
 
+#pragma warning ( push, 0 )
+
 #include <boost/lockfree/queue.hpp>
+
+#pragma warning ( pop )
 
 /// Allows separating the GUI actions related to updating the symbols
 struct IUpdateSymsAction /*abstract*/ {

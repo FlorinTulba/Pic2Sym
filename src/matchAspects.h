@@ -64,6 +64,7 @@ public:
 #endif
 
 	FgMatch(const MatchSettings &cfg);
+	void operator=(const FgMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(FgMatch);
 };
@@ -89,6 +90,7 @@ public:
 #endif
 
 	BgMatch(const MatchSettings &cfg);
+	void operator=(const BgMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(BgMatch);
 };
@@ -114,6 +116,7 @@ public:
 #endif
 
 	EdgeMatch(const MatchSettings &cfg);
+	void operator=(const EdgeMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(EdgeMatch);
 };
@@ -139,6 +142,7 @@ public:
 #endif
 
 	BetterContrast(const MatchSettings &cfg);
+	void operator=(const BetterContrast&) = delete;
 
 	REGISTER_MATCH_ASPECT(BetterContrast);
 };
@@ -164,6 +168,7 @@ public:
 #endif
 
 	GravitationalSmoothness(const MatchSettings &cfg);
+	void operator=(const GravitationalSmoothness&) = delete;
 
 	REGISTER_MATCH_ASPECT(GravitationalSmoothness);
 };
@@ -189,6 +194,7 @@ public:
 #endif
 
 	DirectionalSmoothness(const MatchSettings &cfg);
+	void operator=(const DirectionalSmoothness&) = delete;
 
 	REGISTER_MATCH_ASPECT(DirectionalSmoothness);
 };
@@ -214,6 +220,7 @@ public:
 #endif
 
 	LargerSym(const MatchSettings &cfg);
+	void operator=(const LargerSym&) = delete;
 
 	REGISTER_MATCH_ASPECT(LargerSym);
 };

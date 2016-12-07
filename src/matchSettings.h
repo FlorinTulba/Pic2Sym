@@ -41,10 +41,14 @@
 #ifndef H_MATCH_SETTINGS
 #define H_MATCH_SETTINGS
 
+#pragma warning ( push, 0 )
+
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
+#pragma warning ( pop )
 
 #ifndef UNIT_TESTING
 class MatchSettingsManip; // forward declaration

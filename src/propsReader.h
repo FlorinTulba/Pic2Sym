@@ -41,9 +41,13 @@
 #ifndef H_PROPS_READER
 #define H_PROPS_READER
 
+#pragma warning ( push, 0 )
+
 #include <boost/filesystem/path.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
+
+#pragma warning ( pop )
 
 /**
 Parser for reading mandatory properties from a configuration file.

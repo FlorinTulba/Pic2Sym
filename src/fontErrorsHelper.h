@@ -41,8 +41,12 @@
 #ifndef H_FONT_ERRORS_HELPER
 #define H_FONT_ERRORS_HELPER
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <vector>
+
+#pragma warning ( pop )
 
 extern const std::vector<const std::string> FtErrors;
 

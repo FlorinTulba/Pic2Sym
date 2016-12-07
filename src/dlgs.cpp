@@ -41,10 +41,14 @@
 #include "dlgs.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <map>
 #include <regex>
 
 #include <boost/filesystem.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost::filesystem;
@@ -114,9 +118,9 @@ class FontFinder {
 	*/
 	class RegistryHelper {
 		HKEY fontsKey = nullptr;
-		DWORD longestNameLen = 0, longestDataLen = 0;
 		vector<TCHAR> fontNameBuf;
 		vector<BYTE> fontFileBuf;
+		DWORD longestNameLen = 0, longestDataLen = 0;
 		DWORD idx = 0;
 
 	public:
@@ -198,10 +202,12 @@ class FontFinder {
 			return false; // current font doesn't contain the desired prefix
 
 		// Bold and Italic fonts typically append such terms to their key name.
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static const wregex rexBold(L"Bold|Heavy|Black", regex_constants::icase);
 		static const wregex rexItalic(L"Italic|Oblique", regex_constants::icase);
 
 		static match_results<wstring::const_iterator> match;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 		const wstring wSuffixCurFontName =
 			wCurFontName.substr(at+wFontName.length()); // extract the suffix
@@ -220,10 +226,11 @@ class FontFinder {
 		path curFontFile(string(BOUNDS(wCurFontFileName)));
 		if(!curFontFile.has_parent_path()) {
 			// The fonts are typically installed within c:\Windows\Fonts
-#pragma warning(disable:4996) // getenv is safe (unless SystemRoot is really long)
+#pragma warning ( disable : WARN_DEPRECATED WARN_THREAD_UNSAFE )
 			static const path typicalFontsDir =
 				path(string(getenv("SystemRoot"))).append("Fonts");
-#pragma warning(default:4996)
+#pragma warning ( default : WARN_DEPRECATED WARN_THREAD_UNSAFE )
+
 			path temp(typicalFontsDir);
 			temp /= curFontFile;
 			// If the curFontFile isn't a path already, prefix it with typicalFontsDir
@@ -256,7 +263,7 @@ class FontFinder {
 			cin>>idx;
 		}
 
-		return next(choices.begin(), idx)->second;
+		return next(choices.begin(), (ptrdiff_t)idx)->second;
 	}
 
 public:

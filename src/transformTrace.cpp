@@ -42,8 +42,12 @@
 
 #include "matchParams.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <boost/optional/optional_io.hpp>
+
+#pragma warning ( pop )
 
 static const std::wstring COMMA(L",\t");
 

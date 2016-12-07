@@ -43,9 +43,13 @@
 #include "symFilterCache.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <iostream>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -66,10 +70,10 @@ namespace {
 
 		// Ignore central lines when sz is odd
 		if(lastSzBit != 0U) {
-			sumBrightGlyph -= *sum(brightGlyph.row(halfSz)).val + *sum(brightGlyph.col(halfSz)).val;
+			sumBrightGlyph -= *sum(brightGlyph.row((int)halfSz)).val + *sum(brightGlyph.col((int)halfSz)).val;
 
 			// add back the central pixel, as it was subtracted twice
-			sumBrightGlyph += brightGlyph.at<double>(halfSz, halfSz);
+			sumBrightGlyph += brightGlyph.at<double>((int)halfSz, (int)halfSz);
 		}
 
 		const double sumQuarterBrightGlyph = sumBrightGlyph / 4., // central average value
@@ -79,8 +83,8 @@ namespace {
 			maxSumQuarterBrightGlyph = sumQuarterBrightGlyph * SumQuarterThreshold;
 
 		// The 4 quadrants and their sums (ignoring mid rows & columns for odd sz)
-		const Range firstHalf(0, halfSz),
-					secondHalf(halfSz + lastSzBit, sz);
+		const Range firstHalf(0, (int)halfSz),
+					secondHalf(int(halfSz + lastSzBit), (int)sz);
 		const Mat q1(brightGlyph, firstHalf, firstHalf),
 				q2(brightGlyph, firstHalf, secondHalf),
 				q3(brightGlyph, secondHalf, secondHalf),
@@ -134,7 +138,7 @@ namespace {
 	/// Computes the magnitude of the DFT spectrum in raw quadrants order 3412.
 	Mat magnitudeSpectrum(const Mat &brightGlyph, unsigned sz) {
 		// Creating the complex input for DFT - adding zeros for the imaginary parts
-		const Mat cplxGlyphPlanes[] = { brightGlyph, Mat::zeros(sz, sz, CV_64FC1) };
+		const Mat cplxGlyphPlanes[] = { brightGlyph, Mat::zeros((int)sz, (int)sz, CV_64FC1) };
 		Mat cplxGlyph, dftGlyph, result, dftGlyphPlanes[2];
 		merge(cplxGlyphPlanes, 2U, cplxGlyph);
 
@@ -175,27 +179,27 @@ namespace {
 #if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
 		// Useful while Debugging, to visualize the spectrum quadrants in natural 1234 order
 		Mat shiftedMagnSpectrum = fftShift(rawMagnSpectrum, sz, halfSz, lastSzBit);
-		shiftedMagnSpectrum.at<double>(halfSz, halfSz) = 0; // DC value = 0 to maximize the contrast for rest 
+		shiftedMagnSpectrum.at<double>((int)halfSz, (int)halfSz) = 0; // DC value = 0 to maximize the contrast for rest 
 #endif // _DEBUG, INSPECT_FFT_MAGNITUDE_SPECTRUM
 
 		/* Building q13 and q24 as representatives for quadrants 1&3 and 2&4 */
 
 		// Used ranges
-		const unsigned mid = halfSz + lastSzBit;
-		const Range range1(0U, mid), range2(mid, sz),
-					range3(1U, mid), range4(0U, mid-1U);
+		const int mid = int(halfSz + lastSzBit);
+		const Range range1(0, mid), range2(mid, (int)sz),
+					range3(1, mid), range4(0, mid-1);
 
 		const Mat q13(rawMagnSpectrum, range2, range2), // quadrant 3 as representative for 1&3
 				q4raw(rawMagnSpectrum, range2, range3); // quadrant 4 without DC column from its left
 
-		Mat q24(halfSz, halfSz, CV_64FC1, 0.), // representative for quadrants 2&4
+		Mat q24((int)halfSz, (int)halfSz, CV_64FC1, 0.), // representative for quadrants 2&4
 			q4Dest(q24, Range::all(), range4); // where to copy quadrant 4 within q24
 		q4raw.copyTo(q4Dest);
 		
 		// For even sz, there is additional information for quadrant 2&4
 		// to be extracted from 1st column of quadrant 2
 		if(lastSzBit == 0U) {
-			const Range range5(mid, mid+1U), range6(halfSz-1, halfSz);
+			const Range range5(mid, mid+1), range6((int)halfSz-1, (int)halfSz);
 			Mat q2rawRest(rawMagnSpectrum, range3, range5);
 			const Mat q2restDest(q24, range3, range6);
 			flip(q2rawRest, q2restDest, 0); // copy flipped horizontally
@@ -205,7 +209,7 @@ namespace {
 
 		// Sieves require FT modes magnitudes above MagnitudePercentThreshold of their range
 		static const double MagnitudePercentThreshold = .16;
-		Mat maskDC(sz, sz, CV_8UC1, 255U); maskDC.at<unsigned char>(0, 0) = 0U; // mask to ignore DC
+		Mat maskDC((int)sz, (int)sz, CV_8UC1, 255U); maskDC.at<unsigned char>(0, 0) = 0U; // mask to ignore DC
 		double minV, maxV; // limits 
 		minMaxIdx(rawMagnSpectrum, &minV, &maxV, nullptr, nullptr, maskDC); // min & max ignoring DC
 		// Consider only FT modes whose magnitude is larger than the threshold below

@@ -45,8 +45,12 @@
 
 #ifdef GENERATE_OPEN_MP_TRACE
 
+#pragma warning ( push, 0 )
+
 #include <cstdio>
 #include <omp.h>
+
+#pragma warning ( pop )
 
 extern omp_lock_t ompTraceLock;
 

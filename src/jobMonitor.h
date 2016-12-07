@@ -43,8 +43,12 @@
 
 #include "jobMonitorBase.h"
 
+#pragma warning ( push, 0 )
+
 #include <limits>
 #include <memory>
+
+#pragma warning ( pop )
 
 struct IProgressNotifier; // forward declaration
 
@@ -95,6 +99,8 @@ public:
 	JobMonitor(...); ///< Convenience constructor during Unit testing
 
 #endif // UNIT_TESTING
+	
+	void operator=(const JobMonitor&) = delete;
 
 public:
 

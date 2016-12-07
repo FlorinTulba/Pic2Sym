@@ -43,9 +43,13 @@
 #include "settings.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <thread>
 
 #include <opencv2/highgui/highgui.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -177,7 +181,7 @@ void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
 	while(largerSym != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_largerSymTrName), nullptr, newVal);
 
-	newVal = ms.getBlankThreshold();
+	newVal = (int)ms.getBlankThreshold();
 	while(thresh4Blanks != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_thresh4BlanksTrName), nullptr, newVal);
 
@@ -185,11 +189,11 @@ void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
 }
 
 void ControlPanel::updateImgSettings(const ImgSettings &is) {
-	int newVal = is.getMaxHSyms();
+	int newVal = (int)is.getMaxHSyms();
 	while(maxHSyms != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outWTrName), nullptr, newVal);
 
-	newVal = is.getMaxVSyms();
+	newVal = (int)is.getMaxVSyms();
 	while(maxVSyms != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outHTrName), nullptr, newVal);
 
@@ -197,11 +201,11 @@ void ControlPanel::updateImgSettings(const ImgSettings &is) {
 }
 
 void ControlPanel::updateSymSettings(unsigned encIdx, unsigned fontSz_) {
-	while(encoding != encIdx)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, encIdx);
+	while(encoding != (int)encIdx)
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, (int)encIdx);
 
-	while(fontSz != fontSz_)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_fontSzTrName), nullptr, fontSz_);
+	while(fontSz != (int)fontSz_)
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_fontSzTrName), nullptr, (int)fontSz_);
 
 	pLuckySliderName = nullptr;
 }
@@ -222,13 +226,13 @@ void ControlPanel::restoreSliderValue(const String &trName, const string &errTex
 	// Determine previous value
 	int prevVal = 0;
 	if(&trName == &ControlPanel_outWTrName) {
-		prevVal = cfg.imgSettings().getMaxHSyms();
+		prevVal = (int)cfg.imgSettings().getMaxHSyms();
 	} else if(&trName == &ControlPanel_outHTrName) {
-		prevVal = cfg.imgSettings().getMaxVSyms();
+		prevVal = (int)cfg.imgSettings().getMaxVSyms();
 	} else if(&trName == &ControlPanel_encodingTrName) {
-		prevVal = performer.getFontEncodingIdx();
+		prevVal = (int)performer.getFontEncodingIdx();
 	} else if(&trName == &ControlPanel_fontSzTrName) {
-		prevVal = cfg.symSettings().getFontSz();
+		prevVal = (int)cfg.symSettings().getFontSz();
 	} else if(&trName == &ControlPanel_symsBatchSzTrName) {
 		prevVal = symsBatchSz; // no change needed for Symbols Batch Size!
 	} else if(&trName == &ControlPanel_hybridResultTrName) {
@@ -250,7 +254,7 @@ void ControlPanel::restoreSliderValue(const String &trName, const string &errTex
 	} else if(&trName == &ControlPanel_largerSymTrName) {
 		prevVal = Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity());
 	} else if(&trName == &ControlPanel_thresh4BlanksTrName) {
-		prevVal = cfg.matchSettings().getBlankThreshold();
+		prevVal = (int)cfg.matchSettings().getBlankThreshold();
 	} else THROW_WITH_VAR_MSG("Code for " + trName + " must be added within " __FUNCTION__, domain_error);
 
 	// Deals with the case when the value was already restored / not modified at all

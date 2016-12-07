@@ -56,9 +56,13 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 #include "stackBlur.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <algorithm>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -67,6 +71,7 @@ using namespace cv;
 class StackBlur::Impl {
 	friend class StackBlur;
 
+	static StackBlur::Impl _nonTinySyms, _tinySyms;
 	static const int stack_blur8_mul[];	///< array with some multipliers
 	static const int stack_blur8_shr[];	///< array with some shift factors
 
@@ -184,7 +189,9 @@ class StackBlur::Impl {
 		} while(++y < h); // Process image rows, this outer while-loop will be parallel computed by CUDA instead
 
 		// In-place update of the result for processing the columns
+#pragma warning ( disable : WARN_LVALUE_CAST )
 		const_cast<const double*>(pToProcess) = pResult;
+#pragma warning ( default : WARN_LVALUE_CAST )
 		x = 0U;
 		do { // Process image columns, this outer while-loop will be parallel computed by CUDA instead
 			double pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + x);
@@ -237,6 +244,9 @@ class StackBlur::Impl {
 	}
 };
 
+StackBlur::Impl StackBlur::Impl::_nonTinySyms;
+StackBlur::Impl StackBlur::Impl::_tinySyms;
+
 const int StackBlur::Impl::stack_blur8_mul[] = {
 	512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
 	454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512,
@@ -276,13 +286,11 @@ const int StackBlur::Impl::stack_blur8_shr[] = {
 };
 
 StackBlur::Impl& StackBlur::nonTinySyms() {
-	static Impl implem;
-	return implem;
+	return StackBlur::Impl::_nonTinySyms;
 }
 
 StackBlur::Impl& StackBlur::tinySyms() {
-	static Impl implem;
-	return implem;
+	return StackBlur::Impl::_tinySyms;
 }
 
 void StackBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
@@ -315,8 +323,11 @@ StackBlur& StackBlur::setRadius(unsigned radius) {
 }
 
 const StackBlur& StackBlur::configuredInstance() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static StackBlur result(1U);
 	static bool initialized = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	if(!initialized) {
 		// Stack blur with desired standard deviation
 		extern const double StructuralSimilarity_SIGMA;

@@ -46,11 +46,13 @@ using namespace std;
 
 extern const double EPSp1();
 
+#pragma warning( disable : WARN_BASE_INIT_USING_THIS )
 TaskMonitor::TaskMonitor(const string &monitoredActivity, AbsJobMonitor &parent_) :
 		AbsTaskMonitor(monitoredActivity), parent(parent_),
 
 		// register itself to the parent job monitor and get the order of this task within job's tasks
 		seqId(parent_.monitorNewTask(*this)) {}
+#pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
 void TaskMonitor::setTotalSteps(size_t totalSteps_) {
 	// Kept as double to reduce the conversions required to obtain progress value (steps/totalSteps)

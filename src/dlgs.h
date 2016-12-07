@@ -46,15 +46,20 @@
 #ifndef H_DLGS
 #define H_DLGS
 
+#pragma warning ( push, 0 )
+
 #include <Windows.h>
 #include <tchar.h>
 #include <string>
+
+#pragma warning ( pop )
 
 /// Dlg is the base class for the standard Windows dialogs from below
 class Dlg /*abstract*/ {
 protected:
 	std::string result = ""; ///< the result to be returned
 	Dlg() {}
+	void operator=(const Dlg&) = delete;
 
 public:
 	virtual ~Dlg() = 0 {}
@@ -78,6 +83,7 @@ protected:
 			 const TCHAR * const defExtension = nullptr,	///< default extension
 			 bool toOpen_ = true			///< open or save dialog
 			 );
+	void operator=(const OpenSave&) = delete;
 
 public:
 	bool promptForUserChoice() override;
@@ -87,12 +93,14 @@ public:
 class ImgSelector : public OpenSave {
 public:
 	ImgSelector();
+	void operator=(const ImgSelector&) = delete;
 };
 
 /// Selecting a settings file to load / be saved
 class SettingsSelector : public OpenSave {
 public:
 	SettingsSelector(bool toOpen_ = true);
+	void operator=(const SettingsSelector&) = delete;
 };
 
 /// SelectFont class controls a ChooseFont Dialog.
@@ -105,6 +113,7 @@ protected:
 
 public:
 	SelectFont(); ///< Prepares the dialog
+	void operator=(const SelectFont&) = delete;
 
 	bool promptForUserChoice() override;
 

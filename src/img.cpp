@@ -42,10 +42,14 @@
 #include "imgSettings.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <iostream>
 
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/imgcodecs.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost::filesystem;
@@ -118,10 +122,10 @@ ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_)
 		h -= h%patchSz;
 	}
 
-	if(w==initW && h==initH)
+	if(w==(unsigned)initW && h==(unsigned)initH)
 		res = source;
 	else {
-		resize(source, res, Size(w, h), 0, 0, CV_INTER_AREA);
+		resize(source, res, Size((int)w, (int)h), 0, 0, CV_INTER_AREA);
 		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl;
 	}
 

@@ -41,9 +41,13 @@
 #ifndef H_CACHED_DATA
 #define H_CACHED_DATA
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
 
-// forward declarations
+#pragma warning ( pop )
+
+// Forward declarations
 class MatchEngine;
 class FontEngine;
 
@@ -81,14 +85,15 @@ struct CachedData {
 	static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
 	static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
 
+	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
+
 	double sz_1;				///< double version of sz - 1
 	double smallGlyphsCoverage;	///< max density for symbols considered small
-
-	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
 
 	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
 
 	CachedData(bool forTinySyms_ = false);
+	void operator=(const CachedData&) = delete;
 
 protected:
 	friend class MatchEngine;

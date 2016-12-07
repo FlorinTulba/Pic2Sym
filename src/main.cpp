@@ -44,6 +44,8 @@
 #include "study.h"
 #include "ompTraceSwitch.h"
 
+#pragma warning ( push, 0 )
+
 #include <Windows.h>
 
 #include <omp.h>
@@ -52,6 +54,8 @@
 #include <boost/optional/optional.hpp>
 
 #include <opencv2/imgcodecs/imgcodecs.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;

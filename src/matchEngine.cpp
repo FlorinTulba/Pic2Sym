@@ -49,7 +49,11 @@
 #include "ompTrace.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <omp.h>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -105,14 +109,16 @@ void MatchEngine::updateSymbols() {
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor fieldsComputations("computing specific symbol-related values", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	extern const bool PrepareMoreGlyphsAtOnce;
 
 	symsSet.clear();
 	const auto &rawSyms = fe.symsSet();
 	const int symsCount = (int)rawSyms.size();
-	symsSet.reserve(symsCount);
+	symsSet.reserve((size_t)symsCount);
 
 	fieldsComputations.setTotalSteps((size_t)symsCount);
 
@@ -123,7 +129,7 @@ void MatchEngine::updateSymbols() {
 	for(int i = 0; i<symsCount; ++i) {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
-		const auto &pms = rawSyms[i];
+		const auto &pms = rawSyms[(size_t)i];
 		const Mat glyph = pms.toMatD01(sz),
 				negGlyph = pms.toMat(sz, true);
 		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
@@ -279,14 +285,14 @@ void MatchEngine::getReady() {
 		// Adjust max increase factors for every enabled aspect
 		invMaxIncreaseFactors.resize(enabledAspectsCount);
 		const int lastIdx = (int)enabledAspectsCount - 1;
-		double maxIncreaseFactor = invMaxIncreaseFactors[lastIdx] = 1.;
+		double maxIncreaseFactor = invMaxIncreaseFactors[(size_t)lastIdx] = 1.;
 		for(int i = lastIdx - 1, ip1 = lastIdx; i >= 0; ip1 = i--) {
-			maxIncreaseFactor *= enabledAspects[ip1]->maxScore(cachedData);
-			invMaxIncreaseFactors[i] = 1. / maxIncreaseFactor;
+			maxIncreaseFactor *= enabledAspects[(size_t)ip1]->maxScore(cachedData);
+			invMaxIncreaseFactors[(size_t)i] = 1. / maxIncreaseFactor;
 		}
 	} else { // UseSkipMatchAspectsHeuristic == false
 		if(invMaxIncreaseFactors.size() == 0U) {
-			invMaxIncreaseFactors.resize(1, 1.);
+			invMaxIncreaseFactors.resize(1ULL, 1.);
 		}
 	}
 }
@@ -417,7 +423,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	return betterMatchFound;
 }
 
-bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &shortList,
+bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
 												BestMatch &draftMatch) const {
 	bool betterMatchFound = false;
 	

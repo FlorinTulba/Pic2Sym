@@ -42,7 +42,11 @@
 #include "matchEngine.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;

@@ -41,7 +41,11 @@
 #include "gaussBlur.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -71,11 +75,11 @@ GaussBlur& GaussBlur::configure(double desiredSigma, unsigned kernelWidth_/* = 0
 void GaussBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
 	if(forTinySym)
 		GaussianBlur(toBlur, blurred,
-					Size(tinySymsParams.kernelWidth, tinySymsParams.kernelWidth),
+					Size((int)tinySymsParams.kernelWidth, (int)tinySymsParams.kernelWidth),
 					tinySymsParams.sigma, tinySymsParams.sigma, BORDER_REPLICATE);
 	else
 		GaussianBlur(toBlur, blurred,
-					Size(nonTinySymsParams.kernelWidth, nonTinySymsParams.kernelWidth),
+					Size((int)nonTinySymsParams.kernelWidth, (int)nonTinySymsParams.kernelWidth),
 					nonTinySymsParams.sigma, nonTinySymsParams.sigma, BORDER_REPLICATE);
 }
 
@@ -83,6 +87,10 @@ const GaussBlur& GaussBlur::configuredInstance() {
 	// Gaussian blur with desired standard deviation and window width
 	extern const int StructuralSimilarity_RecommendedWindowSide;
 	extern const double StructuralSimilarity_SIGMA;
-	static GaussBlur result(StructuralSimilarity_SIGMA, StructuralSimilarity_RecommendedWindowSide);
+
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static GaussBlur result(StructuralSimilarity_SIGMA, (unsigned)StructuralSimilarity_RecommendedWindowSide);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return result;
 }

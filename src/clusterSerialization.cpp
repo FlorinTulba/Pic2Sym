@@ -43,11 +43,15 @@
 #include "clusterSerialization.h"
 #include "serializer.h"
 
+#pragma warning ( push, 0 )
+
 #include <fstream>
 #include <iostream>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost::archive;

@@ -44,10 +44,14 @@
 #include "tinySymsDataSerialization.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <numeric>
 
 #include <boost/filesystem/operations.hpp>
 #include FT_TRUETYPE_IDS_H
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -58,7 +62,12 @@ extern unsigned TinySymsSz();
 
 #include "appStart.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
+
 using namespace boost::filesystem;
 
 bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
@@ -92,6 +101,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 		path tinySymsDataFile;
 		if(!FontEngine::isTinySymsDataSavedOnDisk(getFontType(), tinySymsDataFile)
 				|| !tinySymsDataSerializer.loadFrom(tinySymsDataFile.string())) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 			static const unsigned TinySymsSize = TinySymsSz();
 
 			/*
@@ -104,7 +114,9 @@ const VTinySyms& FontEngine::getTinySyms() {
 			static const double RefSymsSizeD = (double)RefSymsSize,
 								maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
 
-			static Mat consec(1, RefSymsSize, CV_64FC1), revConsec;
+			static Mat consec(1, (int)RefSymsSize, CV_64FC1), revConsec;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 			if(revConsec.empty()) {
 				iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
 				flip(consec, revConsec, 1);
@@ -117,8 +129,8 @@ const VTinySyms& FontEngine::getTinySyms() {
 			tinySyms.reserve(symsCount);
 			const double szHd = factorH * RefSymsSizeX64,
 						szVd = factorV * RefSymsSizeX64;
-			const FT_ULong szH = (FT_ULong)floor(szHd),
-							szV = (FT_ULong)floor(szVd);
+			const FT_Long szH = (FT_Long)floor(szHd),
+						szV = (FT_Long)floor(szVd);
 
 			size_t i = 0ULL, countOfSymsUnableToLoad = 0ULL;
 			FT_UInt idx;
@@ -135,7 +147,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 					} else // unexpected glyph
 						THROW_WITH_VAR_MSG("Couldn't load an unexpected glyph (" + to_string(c) +
 											") during initial resizing. Error: " +
-											FtErrors[error], runtime_error);
+											FtErrors[(size_t)error], runtime_error);
 				}
 				FT_GlyphSlot g = face->glyph;
 				FT_Bitmap b = g->bitmap;
@@ -147,20 +159,20 @@ const VTinySyms& FontEngine::getTinySyms() {
 
 				if(width > RefSymsSize || height > RefSymsSize) {
 					// Adjust font size to fit the RefSymsSize x RefSymsSize square
-					req.height = (FT_ULong)floor(szVd / max(1., height/RefSymsSizeD));
-					req.width = (FT_ULong)floor(szHd / max(1., width/RefSymsSizeD));
+					req.height = (FT_Long)floor(szVd / max(1., height/RefSymsSizeD));
+					req.width = (FT_Long)floor(szHd / max(1., width/RefSymsSizeD));
 					error = FT_Request_Size(face, &req);
 					if(error != FT_Err_Ok)
 						THROW_WITH_VAR_MSG("Couldn't set font size: " +
 										   to_string(req.height) +
 										   " x " + to_string(req.width) +
-										   "  Error: " + FtErrors[error], invalid_argument);
+										   "  Error: " + FtErrors[(size_t)error], invalid_argument);
 
 					error = FT_Load_Char(face, c, FT_LOAD_RENDER);
 					if(error != FT_Err_Ok) 
 						THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) +
 											" for its second resizing. Error: " + 
-											FtErrors[error], runtime_error);
+											FtErrors[(size_t)error], runtime_error);
 					g = face->glyph;
 					b = g->bitmap;
 
@@ -172,7 +184,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 						THROW_WITH_VAR_MSG("Couldn't set font size: " +
 										   to_string(req.height) +
 										   " x " + to_string(req.width) +
-										   "  Error: " + FtErrors[error], invalid_argument);
+										   "  Error: " + FtErrors[(size_t)error], invalid_argument);
 				}
 				const FT_Int left = g->bitmap_left, top = g->bitmap_top;
 				const PixMapSym refSym((unsigned long)c, i, b, (int)left, (int)top, 

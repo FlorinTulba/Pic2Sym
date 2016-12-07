@@ -43,7 +43,11 @@
 
 #include "match.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
+
+#pragma warning ( pop )
 
 /// Creates any known MatchAspect by its name
 struct MatchAspectsFactory {

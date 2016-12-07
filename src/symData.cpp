@@ -43,7 +43,11 @@
 #include "blur.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -98,7 +102,7 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(removable);
 
 		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
-			REPLACE_FIELD(masks[i]);
+			REPLACE_FIELD(masks[(size_t)i]);
 
 #undef REPLACE_FIELD
 	}

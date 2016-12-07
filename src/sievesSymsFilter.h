@@ -50,6 +50,8 @@ struct SievesSymsFilter : public TSymFilter<SievesSymsFilter> {
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	SievesSymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	SievesSymsFilter(const SievesSymsFilter&) = delete;
+	void operator=(const SievesSymsFilter&) = delete;
 };
 
 #endif

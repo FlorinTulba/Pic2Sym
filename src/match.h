@@ -45,8 +45,12 @@
 #include "symData.h"
 #include "cachedData.h"
 
+#pragma warning ( push, 0 )
+
 #include <vector>
 #include <string>
+
+#pragma warning ( pop )
 
 struct MatchParams; // forward declaration
 
@@ -94,6 +98,7 @@ protected:
 
 	/// Base class constructor
 	MatchAspect(const double &k_);
+	void operator=(const MatchAspect&) = delete;
 
 public:
 	virtual ~MatchAspect() = 0 {}

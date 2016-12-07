@@ -43,7 +43,11 @@
 #include "pixMapSym.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
+
+#pragma warning ( pop )
 
 using namespace std;
 
@@ -62,7 +66,9 @@ SymFilter::SymFilter(unsigned filterId_, const string &filterName,
 					 unique_ptr<ISymFilter> nextFilter_) : ISymFilter(),
 				nextFilter(nextFilter_ ? std::move(nextFilter_) : make_unique<DefSymFilter>()),
 				filterId(filterId_) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static set<const string> filterNames;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 #ifndef UNIT_TESTING
 	if(filterTypes.find(filterId_) != filterTypes.end())

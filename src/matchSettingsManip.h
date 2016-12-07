@@ -44,9 +44,13 @@
 #include "matchSettings.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 
 #include <boost/filesystem/path.hpp>
+
+#pragma warning ( pop )
 
 /// Singleton isolating the logic for the update of MatchSettings from disk in various scenarios
 class MatchSettingsManip {
@@ -67,7 +71,7 @@ protected:
 	@throw invalid_argument when loading an obsolete 'initMatchSettings.cfg'
 	*/
 	template<class Archive>
-	void load(MatchSettings &ms, Archive &ar, const unsigned version) {
+	void load(MatchSettings &ms, Archive &/*ar*/, const unsigned version) {
 		if(version < MatchSettings::VERSION) {
 			/*
 			MatchSettings is considered correctly initialized if its data is read from

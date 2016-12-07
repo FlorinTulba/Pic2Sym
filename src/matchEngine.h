@@ -47,7 +47,11 @@
 #include "preselectSyms.h"
 #include "countSkippedAspects.h"
 
+#pragma warning ( push, 0 )
+
 #include <valarray>
+
+#pragma warning ( pop )
 
 // Forward declarations
 struct MatchParams;
@@ -75,15 +79,11 @@ protected:
 	VSymData tinySymsSet;		///< set of most information on each tiny symbol
 	ClusterEngine ce;			///< clusters manager
 	
-	/// Should the symbols be compared against the patches individually, or first by clusters?
-	bool matchByClusters = false;
-
 	CachedData cachedDataForTinySyms;	///< data precomputed for tiny symbols preselection
 
 	// matching aspects
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
 	std::vector<const MatchAspect*> enabledAspects;			///< the enabled aspects only
-	size_t enabledAspectsCount = 0U;						///< count of the enabled aspects
 
 #ifdef UNIT_TESTING // UnitTesting project needs access to cachedData and invMaxIncreaseFactors
 public:
@@ -92,8 +92,15 @@ public:
 
 	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
+protected:
+	size_t enabledAspectsCount = 0U;	///< count of the enabled aspects
+
+	/// Should the symbols be compared against the patches individually, or first by clusters?
+	bool matchByClusters = false;
+
 public:
 	MatchEngine(const Settings &cfg_, FontEngine &fe_);
+	void operator=(const MatchEngine&) = delete;
 
 	std::string getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
 
@@ -113,7 +120,7 @@ public:
 							  ) const;
 
 	/// @return true if a new better match is found within this short list
-	bool improvesBasedOnBatchShortList(CandidatesShortList &shortList,	///< most promising candidates from current batch of symbols
+	bool improvesBasedOnBatchShortList(CandidatesShortList &&shortList,	///< most promising candidates from current batch of symbols
 									   BestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
 									   ) const;
 

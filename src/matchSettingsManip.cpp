@@ -46,27 +46,36 @@
 #include "propsReader.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <fstream>
 #include <iostream>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/scope_exit.hpp>
 
+#pragma warning ( pop )
+
 using namespace std;
 using namespace boost::filesystem;
 using namespace boost::archive;
 
 MatchSettingsManip& MatchSettingsManip::instance() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static MatchSettingsManip inst;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return inst;
 }
 
 void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
 	// Ensure ms.initialized is true when leaving the method
+#pragma warning ( disable : WARN_CANNOT_GENERATE_ASSIGN_OP )
 	BOOST_SCOPE_EXIT(&ms) {
 		if(!ms.initialized)
 			ms.initialized = true;
 	} BOOST_SCOPE_EXIT_END;
+#pragma warning ( default : WARN_CANNOT_GENERATE_ASSIGN_OP )
 
 	if(exists(cfgPath.append("initMatchSettings.cfg"))) {
 		if(last_write_time(cfgPath) > last_write_time(defCfgPath)) { // newer
@@ -114,7 +123,9 @@ void MatchSettingsManip::saveUserDefaults(const MatchSettings &ms) const {
 }
 
 bool MatchSettingsManip::parseCfg(MatchSettings &ms, const boost::filesystem::path &cfgFile) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static PropsReader parser(cfgFile);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	bool correct = false;
 	const bool newResultMode = parser.read<bool>("HYBRID_RESULT");

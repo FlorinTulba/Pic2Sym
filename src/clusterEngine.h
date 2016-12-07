@@ -44,9 +44,13 @@
 #include "clusterData.h"
 #include "clusterAlg.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
 
 #include <boost/filesystem/path.hpp>
+
+#pragma warning ( pop )
 
 // Forward declarations
 class AbsJobMonitor;
@@ -62,11 +66,12 @@ protected:
 
 	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
 	VClusterData clusters;
-	unsigned clustersCount = 0U;		///< number of clusters
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
+	unsigned clustersCount = 0U;		///< number of clusters
 
 public:
 	ClusterEngine(ITinySymsProvider &tsp_); ///< Creates the cluster algorithm prescribed in varConfig.txt
+	void operator=(const ClusterEngine&) = delete;
 
 	/**
 	Determines if fontType was already clustered using algName clustering algorithm.

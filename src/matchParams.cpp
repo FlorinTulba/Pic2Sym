@@ -59,7 +59,9 @@ namespace {
 	const double EPSpSqrt2 = sqrt(2.) + EPS;
 
 	const MatchParams& createPerfectMatch() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static MatchParams idealMatch;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 		// Same mass centers
 		idealMatch.mcPatch = idealMatch.mcPatchApprox = Point2d();

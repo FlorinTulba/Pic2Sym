@@ -53,13 +53,18 @@ To disable it, just comment its definition in 'compressOption.h' file
 #define H_SERIALIZER
 
 #include "compressOption.h"
+#include "warnings.h"
 
 #ifdef USE_ZLIB_COMPRESSION
+
+#pragma warning ( push, 0 )
 
 #include <string>
 
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+
+#pragma warning ( pop )
 
 #endif // USE_ZLIB_COMPRESSION
 
@@ -78,6 +83,7 @@ copy/move draft's content onto the target object.
 */
 template<class Archive, class Source, class T>
 bool load(Source &src, const std::string &srcName, T &obj) {
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 #ifdef USE_ZLIB_COMPRESSION
 		// The object to be read is compressed (disk-saving considerations), so it needs decompression:
@@ -100,6 +106,7 @@ bool load(Source &src, const std::string &srcName, T &obj) {
 		cerr<<"Couldn't load data from: " <<srcName<<endl;
 		return false;
 	}
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 }
 
 /**
@@ -110,6 +117,7 @@ When USE_ZLIB_COMPRESSION is defined, it assumes obj should be compressed before
 */
 template<class Archive, class Sink, class T>
 bool save(Sink &sink, const std::string &sinkName, const T &obj) {
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 #ifdef USE_ZLIB_COMPRESSION
 		/*
@@ -145,6 +153,7 @@ bool save(Sink &sink, const std::string &sinkName, const T &obj) {
 		cerr<<"Couldn't save data to: " <<sinkName<<endl;
 		return false;
 	}
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 }
 
 #endif // H_SERIALIZER

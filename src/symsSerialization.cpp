@@ -40,8 +40,12 @@
 
 #include "symsSerialization.h"
 
+#pragma warning ( push, 0 )
+
 #include <fstream>
 #include <iomanip>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;

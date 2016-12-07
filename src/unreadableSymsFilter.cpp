@@ -43,7 +43,11 @@
 #include "symFilterCache.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -70,7 +74,10 @@ bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCac
 	Mat glyph = pms.toMatD01(sfc.szU), thresh, glyphBinAux;
 
 	// adaptiveThreshold has some issues on uniform areas, so here's a customized implementation
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Point defAnchor(-1, -1);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	boxFilter(glyph, thresh, -1, winSE, defAnchor, true, BORDER_CONSTANT);
 	extern const double StillForegroundThreshold, ForegroundThresholdDelta;
 	double toSubtract = StillForegroundThreshold;
@@ -89,7 +96,7 @@ bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCac
 	const int frameSz = (int)sfc.szU + 2;
 	const Range innerFrame(1, (int)sfc.szU + 1);
 	Mat glyphBin = Mat(frameSz, frameSz, CV_8UC1, Scalar(0U)), depth;
-	glyphBinAux.copyTo(Mat(glyphBin, innerFrame, innerFrame));
+	glyphBinAux.copyTo((const Mat&)Mat(glyphBin, innerFrame, innerFrame));
 	distanceTransform(glyphBin, depth, DIST_L2, DIST_MASK_PRECISE);
 
 	double maxValAllowed = 1.9; // just below 2 (2 means there are sections at least 3 pixels thick)

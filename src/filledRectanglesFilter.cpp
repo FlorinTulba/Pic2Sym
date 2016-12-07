@@ -43,7 +43,11 @@
 #include "pixMapSym.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -60,7 +64,9 @@ adjacent indices holding the maximum value.
 @return true if the projection denotes a valid uncut rectangular block
 */
 bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums, unsigned sideLen, int &countOfMaxSums) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Mat structuringElem(1, 3, CV_8U, Scalar(1U));
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	double maxVSums;
 	minMaxIdx(sums, nullptr, &maxVSums);
@@ -75,7 +81,7 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 	if(countOfMaxSums == 2) {
 		// pad sumsOnMax and then dilate it
 		Mat paddedSumsOnMax(1, sumsOnMax.cols+2, CV_8U, Scalar(0U));
-		sumsOnMax.copyTo(Mat(paddedSumsOnMax, Range::all(), Range(1, sumsOnMax.cols+1)));
+		sumsOnMax.copyTo((const Mat&)Mat(paddedSumsOnMax, Range::all(), Range(1, sumsOnMax.cols+1)));
 		dilate(paddedSumsOnMax, paddedSumsOnMax, structuringElem);
 		if(countNonZero(paddedSumsOnMax) - countOfMaxSums > 2)
 			return false; // there was at least one gap, so dilation filled more than 2 pixels

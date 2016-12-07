@@ -44,11 +44,15 @@
 #include "pixMapSym.h"
 #include "tinySymsProvider.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <set>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/bimap/bimap.hpp>
+
+#pragma warning ( pop )
 
 // Forward declarations
 struct IController;
@@ -75,14 +79,16 @@ protected:
 	VTinySyms tinySyms;	///< small version of all the symbols from current cmap
 
 	const SymSettings &ss;			///< settings of this font engine
-	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
 
 	/// indices for each unique Encoding within cmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
 	PmsCont symsCont;				///< Container with the PixMapSym-s of current charmap
-	unsigned symsCount = 0U;		///< Count of glyphs within current charmap (blanks & duplicates included)
 	std::set<FT_ULong> symsUnableToLoad;	///< indices of the symbols that couldn't be loaded
+
+	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
+
+	unsigned symsCount = 0U;		///< Count of glyphs within current charmap (blanks & duplicates included)
 
 	/**
 	Validates a new font file.
@@ -112,6 +118,8 @@ public:
 	@param ss_ font data
 	*/
 	FontEngine(const IController &ctrler_, const SymSettings &ss_);
+	FontEngine(const FontEngine&) = delete;
+	void operator=(const FontEngine&) = delete;
 	~FontEngine();
 
 	bool newFont(const std::string &fontFile_);		///< Tries to use the font from 'fontFile_'

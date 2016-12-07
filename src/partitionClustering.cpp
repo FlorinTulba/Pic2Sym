@@ -46,9 +46,13 @@
 #include "tinySymsProvider.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <iostream>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -63,7 +67,9 @@ const string PartitionClustering::Name("Partition");
 unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 										 vector<vector<unsigned>> &symsIndicesPerCluster,
 										 const string &fontType/* = ""*/) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor partitionClustering("partition clustering", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	boost::filesystem::path clusteredSetFile;
 	ClusterIO rawClusters;
@@ -73,8 +79,10 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 			THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after calling setTinySymsProvider()!", logic_error);
 
 		const auto &tinySyms = tsp->getTinySyms();
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static const double SqMaxRelMcOffsetForClustering =
 						MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 #if defined _DEBUG && !defined UNIT_TESTING
 		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countDiff = 0U,
@@ -192,10 +200,10 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 	// Adapt clusters for filtered cmap
 	symsIndicesPerCluster.assign(rawClusters.clustersCount, vector<unsigned>());
 	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
-		symsIndicesPerCluster[rawClusters.clusterLabels[symsToGroup[i].symIdx]].push_back(i);
+		symsIndicesPerCluster[(size_t)rawClusters.clusterLabels[symsToGroup[(size_t)i].symIdx]].push_back(i);
 	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
 							   [] (const vector<unsigned> &elem) { return elem.empty(); });
-	symsIndicesPerCluster.resize(distance(symsIndicesPerCluster.begin(), newEndIt));
+	symsIndicesPerCluster.resize((size_t)distance(symsIndicesPerCluster.begin(), newEndIt));
 
 	partitionClustering.taskDone();
 

@@ -41,10 +41,14 @@
 #ifndef H_BLUR
 #define H_BLUR
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <map>
 
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 /**
 Base class for various versions of blurring that can be configured within the application.

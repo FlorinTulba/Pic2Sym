@@ -43,7 +43,11 @@ Iterating this file twice, for both values of the boolean setting PreselectionBy
 It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approach.
 */
 #if !BOOST_PP_IS_ITERATING
+#pragma warning ( push, 0 )
+
 #	include <boost/preprocessor/iteration/iterate.hpp>
+
+#pragma warning ( pop )
 
 // Common part until #else (included just once)
 #include "testMain.h"
@@ -58,6 +62,8 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "structuralSimilarity.h"
 #include "blur.h"
 
+#pragma warning ( push, 0 )
+
 #include <random>
 #include <algorithm>
 #include <numeric>
@@ -67,6 +73,8 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include <boost/optional/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/test/data/test_case.hpp>
+
+#pragma warning ( pop )
 
 using namespace cv;
 using namespace std;
@@ -557,8 +565,8 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 				tcm.reset(bestTiny.score = best.score * 0.8);
 				if(me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), bestTiny, &tcm)) {
 					tcm.prepareReport();
-					auto &shortList = tcm.getShortList();
-					me.improvesBasedOnBatchShortList(shortList, best);
+					auto &&shortList = tcm.getShortList();
+					me.improvesBasedOnBatchShortList(std::move(shortList), best);
 				}
 			}
 

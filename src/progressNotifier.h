@@ -43,10 +43,16 @@
 
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
+
+#pragma warning ( pop )
 
 /// Interface for reporting progress of a given job to the user
 struct IProgressNotifier /*abstract*/ {
+	IProgressNotifier() {}
+	void operator=(const IProgressNotifier&) = delete;
 	virtual ~IProgressNotifier() = 0 {}
 
 	/// Informs the user that the job named monitoredJob reached (100*progress)%

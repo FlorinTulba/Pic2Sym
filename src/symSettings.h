@@ -41,12 +41,16 @@
 #ifndef H_SYM_SETTINGS
 #define H_SYM_SETTINGS
 
+#pragma warning ( push, 0 )
+
 #include <string>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
+#pragma warning ( pop )
 
 /// Parameters concerning the symbols set used for approximating patches.
 class SymSettings {
@@ -62,7 +66,7 @@ protected:
 	@param version the version of the loaded object
 	*/
 	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
+	void load(Archive &ar, const unsigned /*version*/) {
 		// It is useful to see which settings changed when loading
 		SymSettings defSettings(*this); // create as copy of previous values
 

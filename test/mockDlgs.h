@@ -45,8 +45,12 @@
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif
 
+#pragma warning ( push, 0 )
+
 #include <tchar.h>
 #include <string>
+
+#pragma warning ( pop )
 
 // Dlg is the base class for the standard Windows dialogs from below
 class Dlg /*abstract*/ {

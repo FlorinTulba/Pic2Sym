@@ -43,7 +43,11 @@
 
 #include "symFilter.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 /// Detects filled symbols with a rectangular shape, even degenerate ones - basic lines.
 struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {
@@ -52,6 +56,8 @@ struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache&); // static polymorphism
 
 	FilledRectanglesFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	FilledRectanglesFilter(const FilledRectanglesFilter&) = delete;
+	void operator=(const FilledRectanglesFilter&) = delete;
 
 protected:
 	static bool checkProjectionForFilledRectangles(const cv::Mat &sums,

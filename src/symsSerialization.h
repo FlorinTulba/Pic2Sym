@@ -41,11 +41,15 @@
 #ifndef H_SYMS_SERIALIZATION
 #define H_SYMS_SERIALIZATION
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <list>
 #include <vector>
 
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 // Define the functions within <ut> namespace specific to UnitTesting
 namespace ut {

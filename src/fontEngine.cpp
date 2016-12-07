@@ -51,12 +51,16 @@
 #include "misc.h"
 #include "ompTrace.h"
 
+#pragma warning ( push, 0 )
+
 #include <sstream>
 #include <set>
 #include <algorithm>
 
 #include <boost/filesystem/operations.hpp>
 #include FT_TRUETYPE_IDS_H
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -81,6 +85,7 @@ namespace {
 		// Defines pairs like { FT_ENCODING_ADOBE_STANDARD, "ADOBE_STANDARD" }
 		#define enc(encValue) { encValue, string(#encValue).substr(12) }
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static const bimap<FT_Encoding, string> encMap(
 			make_bimap<FT_Encoding, string>({ // known encodings
 				enc(FT_ENCODING_NONE),
@@ -98,6 +103,7 @@ namespace {
 				enc(FT_ENCODING_ADOBE_CUSTOM),
 				enc(FT_ENCODING_APPLE_ROMAN)
 			}));
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 		#undef enc
 
@@ -116,6 +122,7 @@ namespace {
 	};
 } // anonymous namespace
 
+#pragma warning ( disable : WARN_DYNAMIC_CAST_MIGHT_FAIL )
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
 					   symSettingsUpdater(dynamic_cast<const IUpdateSymSettings&>(ctrler_)),
 					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
@@ -123,8 +130,9 @@ FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctr
 					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) 
-		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + FtErrors[error], runtime_error);
+		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + FtErrors[(size_t)error], runtime_error);
 }
+#pragma warning ( default : WARN_DYNAMIC_CAST_MIGHT_FAIL )
 
 FontEngine::~FontEngine() {
 	FT_Done_Face(face);
@@ -138,7 +146,7 @@ bool FontEngine::checkFontFile(const path &fontPath, FT_Face &face_) const {
 	}
 	const FT_Error error = FT_New_Face(library, fontPath.string().c_str(), 0, &face_);
 	if(error != FT_Err_Ok) {
-		cerr<<"Invalid font file: "<<fontPath<<"  Error: "<<FtErrors[error]<<endl;
+		cerr<<"Invalid font file: "<<fontPath<<"  Error: "<<FtErrors[(size_t)error]<<endl;
 		return false;
 	}
 /*
@@ -171,7 +179,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	const FT_Error error =
 		FT_Set_Charmap(face, face->charmaps[next(uniqueEncs.right.begin(), idx)->first]);
 	if(error != FT_Err_Ok) {
-		cerr<<"Couldn't set new cmap! Error: "<<FtErrors[error]<<endl;
+		cerr<<"Couldn't set new cmap! Error: "<<FtErrors[(size_t)error]<<endl;
 		return false;
 	}
 
@@ -214,7 +222,7 @@ bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/
 	return setNthUniqueEncoding(itEnc->second);
 }
 
-void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
+void FontEngine::setFace(FT_Face face_, const string &/*fontFile_ = ""*/) {
 	if(face_ == nullptr)
 		THROW_WITH_CONST_MSG("Can't provide a NULL face as parameter in " __FUNCTION__ "!", invalid_argument);
 
@@ -237,7 +245,7 @@ void FontEngine::setFace(FT_Face face_, const string &fontFile_/* = ""*/) {
 
 	for(int i = 0, charmapsCount = face->num_charmaps; i<charmapsCount; ++i)
 		uniqueEncs.insert(
-			bimap<FT_Encoding, unsigned>::value_type(face->charmaps[i]->encoding, i));
+			bimap<FT_Encoding, unsigned>::value_type(face->charmaps[i]->encoding, (unsigned)i));
 
 	cout<<"The available encodings are:";
 	for(const auto &enc : uniqueEncs.right)
@@ -265,19 +273,19 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 	vector<double> vTop, vBottom, vLeft, vRight, vHeight, vWidth;
 	FT_Size_RequestRec  req;
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM; // FT_SIZE_REQUEST_TYPE_BBOX, ...
-	req.height = sz<<6; // 26.6 format
+	req.height = FT_Long(sz<<6); // 26.6 format
 	req.width = req.height; // initial check for square drawing board
 	req.horiResolution = req.vertResolution = 72U; // 72dpi is set by default by higher-level methods
 	FT_Error error = FT_Request_Size(face, &req);
 	if(error != FT_Err_Ok) 
 		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + 
-						   FtErrors[error], invalid_argument);
+						   FtErrors[(size_t)error], invalid_argument);
 	symsUnableToLoad.clear();
 	FT_UInt idx;
 	for(FT_ULong c = FT_Get_First_Char(face, &idx); idx != 0; c = FT_Get_Next_Char(face, c, &idx)) {
 		error = FT_Load_Char(face, c, FT_LOAD_RENDER);
 		if(error != FT_Err_Ok) {
-			cerr<<"Couldn't load glyph "<<c<<" before resizing. Error: "<<FtErrors[error]<<endl;
+			cerr<<"Couldn't load glyph "<<c<<" before resizing. Error: "<<FtErrors[(size_t)error]<<endl;
 			symsUnableToLoad.insert(c);
 			continue;
 		}
@@ -287,8 +295,8 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 		const unsigned height = b.rows, width = b.width;
 		vHeight.push_back(height); vWidth.push_back(width);
 
-		const int left = g->bitmap_left, right = left+width - 1,
-			top = g->bitmap_top, bottom = top - (int)height + 1;
+		const int left = g->bitmap_left, right = left + (int)width - 1,
+				top = g->bitmap_top, bottom = top - (int)height + 1;
 		vLeft.push_back(left); vRight.push_back(right);
 		vTop.push_back(top); vBottom.push_back(bottom);
 	}
@@ -303,32 +311,32 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "height");
-				avgHeight = mean(Mat(1, symsCount, CV_64FC1, vHeight.data()));
+				avgHeight = mean(Mat(1, (int)symsCount, CV_64FC1, vHeight.data()));
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "width");
-				avgWidth = mean(Mat(1, symsCount, CV_64FC1, vWidth.data()));
+				avgWidth = mean(Mat(1, (int)symsCount, CV_64FC1, vWidth.data()));
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "top");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
+				meanStdDev(Mat(1, (int)symsCount, CV_64FC1, vTop.data()), avgTop, sdTop);
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "bottom");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
+				meanStdDev(Mat(1, (int)symsCount, CV_64FC1, vBottom.data()), avgBottom, sdBottom);
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "left");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
+				meanStdDev(Mat(1, (int)symsCount, CV_64FC1, vLeft.data()), avgLeft, sdLeft);
 			}
 #pragma omp section
 			{
 				ompPrintf(ParallelizePixMapStatistics, "right");
-				meanStdDev(Mat(1, symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
+				meanStdDev(Mat(1, (int)symsCount, CV_64FC1, vRight.data()), avgRight, sdRight);
 			}
 	}
 
@@ -340,13 +348,13 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 	factorV = sz / (*avgHeight.val + kv*(*sdTop.val + *sdBottom.val));
 
 	// Computing new height & width
-	req.height = (FT_ULong)floor(factorV * req.height);
-	req.width = (FT_ULong)floor(factorH * req.width);
+	req.height = (FT_Long)floor(factorV * req.height);
+	req.width = (FT_Long)floor(factorH * req.width);
 
 	error = FT_Request_Size(face, &req); // reshaping the fonts to better fill the drawing square
 	if(error != FT_Err_Ok)
 		THROW_WITH_VAR_MSG("Couldn't set font size: " + to_string(sz) + "  Error: " + 
-						   FtErrors[error], invalid_argument);
+						   FtErrors[(size_t)error], invalid_argument);
 
 	// Positioning the Bounding box to best cover the estimated future position & size of the symbols
 	double yMin = factorV * (*avgBottom.val - *sdBottom.val), // current bottom scaled by factorV
@@ -394,11 +402,17 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
 	req.horiResolution = req.vertResolution = 72U;
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor determineOptimalSquareFittingSymbols("determine optimal square-fitting for the symbols", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	adjustScaling(fontSz_, bb, factorH, factorV);
 	determineOptimalSquareFittingSymbols.taskDone(); // mark it as already finished
 
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor loadFitSymbols("load & filter symbols that fit the square", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	loadFitSymbols.setTotalSteps((size_t)symsCount);
 	symsCont.reset(fontSz_, symsCount);
 
@@ -419,7 +433,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			} else // unexpected glyph
 				THROW_WITH_VAR_MSG("Couldn't load an unexpected glyph (" + to_string(c) +
 									") during initial resizing. Error: " +
-									FtErrors[error], runtime_error);
+									FtErrors[(size_t)error], runtime_error);
 		}
 		const FT_GlyphSlot g = face->glyph;
 		const FT_Bitmap b = g->bitmap;
@@ -439,30 +453,40 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	loadFitSymbols.taskDone();
 
 	// Resize symbols which didn't fit initially
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor loadExtraSqueezedSymbols("load & filter extra-squeezed symbols", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	loadExtraSqueezedSymbols.setTotalSteps(toResize.size());
+
+	const FT_Long fontSzMul64 = (FT_Long)(fontSz_)<<6;
+	const double numeratorV = factorV * fontSzMul64,
+				numeratorH = factorH * fontSzMul64;
 	i = 0U;
 	for(const auto &item : toResize) {
-		req.height = (FT_ULong)floor(factorV * ((FT_ULong)(fontSz_)<<6) / item.vRatio);
-		req.width = (FT_ULong)floor(factorH * ((FT_ULong)(fontSz_)<<6) / item.hRatio);
+		req.height = (FT_Long)floor(numeratorV / item.vRatio);
+		req.width = (FT_Long)floor(numeratorH / item.hRatio);
 		FT_Error error = FT_Request_Size(face, &req);
 		if(error != FT_Err_Ok)
 			THROW_WITH_VAR_MSG("Couldn't set font size: " +
 								to_string(factorV * fontSz_ / item.vRatio) +
 								" x " + to_string(factorH * fontSz_ / item.hRatio) +
-								"  Error: " + FtErrors[error], invalid_argument);
+								"  Error: " + FtErrors[(size_t)error], invalid_argument);
 		error = FT_Load_Char(face, item.symCode, FT_LOAD_RENDER);
 		if(error != FT_Err_Ok) 
 			THROW_WITH_VAR_MSG("Couldn't load glyph " + to_string(item.symCode) +
 								" which needed resizing twice. Error: " +
-								FtErrors[error], runtime_error);
+								FtErrors[(size_t)error], runtime_error);
 		symsCont.appendSym(item.symCode, item.symIdx, face->glyph, bb, sfc);
 
 		loadExtraSqueezedSymbols.taskAdvanced(++i);
 	}
 
 	// Determine coverageOfSmallGlyphs
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor determineCoverageOfSmallGlyphs("determine coverageOfSmallGlyphs", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	symsCont.setAsReady();
 	determineCoverageOfSmallGlyphs.taskDone(); // mark it as already finished
 

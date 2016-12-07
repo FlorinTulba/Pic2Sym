@@ -38,42 +38,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_UNREADABLE_SYMS_FILTER
-#define H_UNREADABLE_SYMS_FILTER
+#ifndef H_WARNINGS
+#define H_WARNINGS
 
-#include "symFilter.h"
+// Several warnings that need explicit suppression
+#define WARN_CONST_COND_EXPR			4127
+#define WARN_LVALUE_CAST				4213
+#define WARN_BASE_INIT_USING_THIS		4355
+#define WARN_DYNAMIC_CAST_MIGHT_FAIL	4437
+#define WARN_CANNOT_GENERATE_ASSIGN_OP	4512
+#define WARN_SEH_NOT_CAUGHT				4571
+#define WARN_THREAD_UNSAFE				4640
+#define WARN_DEPRECATED					4996
 
-/**
-Determines if a symbol appears as unreadable.
-
-Best approach would take size 50 of the glyph and compare its features with the ones found in the
-current font size version of the symbol. However, this would still produce some mislabeled cases
-and besides, humans do normally recognize many symbols even when some of their features are missing.
-
-Supervised machine learning would be the ideal solution here, since:
-- humans can label corner-cases
-- font sizes are 7..50
-- there are lots of mono-spaced font families, each with several encodings,
-each with several styles (Regular, Italic, Bold) and each with 100..30000 symbols
-
-A basic criteria for selecting unreadable symbols is avoiding the ones with compact
-rectangular / elliptical areas, larger than 20 - 25% of the side of the enclosing square.
-
-Apart from the ugly, various sizes rectangular monolithic glyphs, there are some interesting
-solid symbols which could be preserved: filled triangles, circles, playing cards suits, smilies,
-dices, arrows a.o.
-
-The current implementation is a compromise surprising the fact that smaller fonts are
-progressively less readable.
-*/
-struct UnreadableSymsFilter : public TSymFilter<UnreadableSymsFilter> {
-	CHECK_ENABLED_SYM_FILTER(UnreadableSymsFilter);
-
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
-
-	UnreadableSymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
-	UnreadableSymsFilter(const UnreadableSymsFilter&) = delete;
-	void operator=(const UnreadableSymsFilter&) = delete;
-};
-
-#endif
+#endif // H_WARNINGS

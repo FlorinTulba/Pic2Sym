@@ -41,9 +41,13 @@
 #ifndef H_APP_START
 #define H_APP_START
 
+#pragma warning ( push, 0 )
+
 #include <string>
 
 #include <boost/filesystem/path.hpp>
+
+#pragma warning ( pop )
 
 /**
 Utility to provide the location of the executed application and also of the:

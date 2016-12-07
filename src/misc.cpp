@@ -49,9 +49,9 @@ namespace {
 	/// Multiton supporting info/warn/errorMsg functions
 	class MsgCateg final {
 		const string categName;
-		const long categVal;
+		const UINT categVal;
 
-		MsgCateg(const string &categName_, long categVal_) :
+		MsgCateg(const string &categName_, UINT categVal_) :
 			categName(categName_), categVal(categVal_) {}
 		MsgCateg(const MsgCateg&) = delete;
 		void operator=(const MsgCateg&) = delete;
@@ -60,7 +60,7 @@ namespace {
 		static const MsgCateg INFO_CATEG, WARN_CATEG, ERR_CATEG;
 
 		const string& name() const { return categName; }
-		const long val() const { return categVal; }
+		const UINT val() const { return categVal; }
 	};
 
 	const MsgCateg MsgCateg::INFO_CATEG("Information", MB_ICONINFORMATION);

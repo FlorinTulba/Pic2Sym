@@ -41,7 +41,11 @@
 #include "tinySym.h"
 #include "pixMapSym.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -61,7 +65,7 @@ namespace {
 	const double invTinySymSz = 1. / TinySymsSize,
 				invTinySymArea = invTinySymSz * invTinySymSz,
 				invDiagsCountTinySym = 1. / DiagsCountTinySym;
-	const Size SizeTinySyms(TinySymsSize, TinySymsSize);
+	const Size SizeTinySyms((int)TinySymsSize, (int)TinySymsSize);
 
 #else // UNIT_TESTING is defined
 
@@ -77,13 +81,13 @@ namespace {
 } // anonymous namespace
 
 TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/) : SymData(code_, symIdx_),
-		mat(TinySymsSize, TinySymsSize, CV_64FC1, 0.),
-		hAvgProj(1, TinySymsSize, CV_64FC1, 0.), vAvgProj(TinySymsSize, 1, CV_64FC1, 0.),
-		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1, 0.) {}
+		mat((int)TinySymsSize, (int)TinySymsSize, CV_64FC1, 0.),
+		hAvgProj(1, (int)TinySymsSize, CV_64FC1, 0.), vAvgProj((int)TinySymsSize, 1, CV_64FC1, 0.),
+		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.) {}
 
 TinySym::TinySym(const PixMapSym &refSym) : 
 		SymData(refSym.symCode, refSym.symIdx, refSym.avgPixVal, refSym.mc),
-		backslashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, DiagsCountTinySym, CV_64FC1) {
+		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1) {
 
 	const Mat refSymMat = refSym.toMatD01(RefSymSz);
 

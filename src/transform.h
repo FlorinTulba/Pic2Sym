@@ -44,10 +44,14 @@
 #include "matchEngine.h"
 #include "img.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <vector>
 
 #include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
 
 // Forward declarations
 class Settings;		// global settings
@@ -65,7 +69,6 @@ protected:
 	MatchEngine &me;			///< approximating patches
 	Img &img;					///< current image to process
 
-	volatile bool isCanceled = false;	///< has the process been canceled?
 	cv::Mat result;				///< the result of the transformation
 
 	std::string studiedCase;	///< unique id for the studied case
@@ -73,13 +76,18 @@ protected:
 	cv::Mat resizedForTinySyms;	///< resized version of the original used by tiny symbols preselection
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
 	cv::Mat resBlForTinySyms;	///< blurred version of the resized used by tiny symbols preselection
+
+	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
+	std::vector<std::vector<BestMatch>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
+
 	int w = 0;					///< width of the resized image
 	int h = 0;					///< height of the resized image
 	unsigned sz = 0U;			///< font size used during transformation
 	unsigned symsCount = 0U;	///< symbols count within the used cmap
-	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
-	std::vector<std::vector<BestMatch>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
+
 	volatile unsigned symsBatchSz;	///< runtime control of how large next symbol batches are
+
+	volatile bool isCanceled = false;	///< has the process been canceled?
 
 	void updateStudiedCase(int rows, int cols); ///< Updates the unique id for the studied case
 
@@ -93,6 +101,7 @@ protected:
 public:
 	Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 				MatchEngine &me_, Img &img_);
+	void operator=(const Transformer&) = delete;
 
 	void run();	///< applies the configured transformation onto current/new image
 

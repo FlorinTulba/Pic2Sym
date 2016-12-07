@@ -44,9 +44,13 @@
 #include "controller.h"
 #include "jobMonitor.h"
 
+#pragma warning ( push, 0 )
+
 #include <iostream>
 #include <numeric>
 #include <random>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost;

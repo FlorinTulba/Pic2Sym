@@ -41,7 +41,7 @@
 #ifndef H_APP_STATE
 #define H_APP_STATE
 
-typedef unsigned short AppStateType;
+typedef size_t AppStateType;
 
 /**
 Application distinct states
@@ -49,8 +49,8 @@ Application distinct states
 The actual state of the application might be a combination of them.
 */
 enum struct AppState : AppStateType {
-	Idle				= 0U,				///< Application is Idle
-	UpdateImg			= 1U,				///< Updating the image to be transformed
+	Idle				= 0ULL,				///< Application is Idle
+	UpdateImg			= 1ULL,				///< Updating the image to be transformed
 	UpdateSymSettings	= UpdateImg<<1,		///< Updating settings related to the symbols to be used
 	UpdateImgSettings	= UpdateImg<<2,		///< Updating settings related to the image to be transformed
 	UpdateMatchSettings = UpdateImg<<3,		///< Updating settings related to the match aspects

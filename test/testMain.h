@@ -44,8 +44,12 @@
 #include "match.h"
 #include "matchParams.h"
 
+#pragma warning ( push, 0 )
+
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/cat.hpp>
+
+#pragma warning ( pop )
 
 /// Defines test case named Name and ensures it will show its name when launched
 #define AutoTestCase(Name) \

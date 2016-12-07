@@ -51,13 +51,14 @@ class TaskMonitor : public AbsTaskMonitor {
 #ifndef UNIT_TESTING
 protected:
 	AbsJobMonitor &parent;	///< reference of the parent job
-	unsigned seqId;			///< order of the supervised task among job's tasks
 
 	/**
 	Total count of the required steps to complete the task.
 	Kept as double to reduce the conversions required to obtain progress value (steps/totalSteps).
 	*/
 	double totalSteps = 0.;
+
+	unsigned seqId;			///< order of the supervised task among job's tasks
 
 #endif // UNIT_TESTING not defined
 
@@ -68,6 +69,7 @@ public:
 	to let the parent job know about this new task.
 	*/
 	TaskMonitor(const std::string &monitoredActivity, AbsJobMonitor &parent_);
+	void operator=(const TaskMonitor&) = delete;
 
 	void setTotalSteps(size_t totalSteps_) override;	///< total steps required to finish the activity
 

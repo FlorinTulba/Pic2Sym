@@ -43,10 +43,14 @@
 
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <chrono>
 #include <vector>
 #include <memory>
 #include <string>
+
+#pragma warning ( pop )
 
 // Timing jobs:
 /// Interface for any observer of a timer (see below the Timer class)

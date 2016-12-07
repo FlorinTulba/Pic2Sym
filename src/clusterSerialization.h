@@ -41,24 +41,28 @@
 #ifndef H_CLUSTER_SERIALIZATION
 #define H_CLUSTER_SERIALIZATION
 
+#pragma warning ( push, 0 )
+
 #include <vector>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
+
+#pragma warning ( pop )
 
 /// Clusters data that needs to be serialized
 struct ClusterIO {
 	// BUILD CLEAN WHEN THIS CHANGES!
 	static const unsigned VERSION = 0U; ///< version of ClusterIO class
 
-	unsigned clustersCount = 0U;		///< total number of clusters
-
 	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
 	std::vector<int> clusterLabels;	
 
+	unsigned clustersCount = 0U;		///< total number of clusters
+
 	/// Serializes this ClusterIO object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version) {
+	void serialize(Archive &ar, const unsigned int /*version*/) {
 		ar & clustersCount & clusterLabels;
 	}
 

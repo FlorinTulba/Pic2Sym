@@ -45,7 +45,10 @@ using namespace std;
 using namespace cv;
 
 BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static ConfiguredInstances configuredInstances_;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return configuredInstances_;
 }
 

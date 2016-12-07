@@ -41,9 +41,13 @@
 #include "study.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <chrono>
 #include <string>
 #include <iostream>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace std::chrono;
@@ -57,6 +61,7 @@ namespace {
 
 	public:
 		Timer(const string &taskName_ = "") : taskName(taskName_), startedAt(high_resolution_clock::now()) {}
+		void operator=(const Timer&) = delete;
 		~Timer() {
 			const double elapsedS = elapsed();
 			cout<<"Task "<<taskName<<" required: "<<elapsedS<<"s!"<<endl;

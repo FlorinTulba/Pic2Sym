@@ -41,9 +41,13 @@
 #include "extBoxBlur.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <numeric>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -52,6 +56,7 @@ using namespace cv;
 class ExtBoxBlur::Impl {
 	friend class ExtBoxBlur;
 
+	static ExtBoxBlur::Impl _nonTinySyms, _tinySyms;
 	double sigma;			///< desired standard deviation
 	unsigned times;			///< iterations count
 
@@ -77,7 +82,7 @@ class ExtBoxBlur::Impl {
 		const double alpha = L * (l*lp1 - 3.*sigmaSqOverD) / (6. * (sigmaSqOverD - lp1*lp1)),
 			lambda = L + alpha + alpha;
 
-		kernelWidth = L + 2;
+		kernelWidth = unsigned(L + 2);
 		boxHeight = 1./lambda;
 		w = alpha / lambda;
 		w1 = boxHeight - w;
@@ -110,11 +115,9 @@ class ExtBoxBlur::Impl {
 	/// See http://www.mia.uni-saarland.de/Publications/gwosdek-ssvm11.pdf for details
 	void apply(const cv::Mat &toBlur, cv::Mat &blurred) {
 		const int origWidth = toBlur.cols,
-			origHeight = toBlur.rows,
-			kernelWidthM1 = (int)kernelWidth - 1,
-			kernelRadius = (int)kernelWidth>>1,
-			kernelRadiusM1 = kernelRadius - 1,
-			kernelRadiusP1 = kernelRadius + 1;
+				origHeight = toBlur.rows,
+				kernelRadius = (int)kernelWidth>>1,
+				kernelRadiusP1 = kernelRadius + 1;
 
 		// Apply the number of times requested on the transposed original
 		// Temp needs to be processed; blurred holds the outcome
@@ -187,14 +190,15 @@ class ExtBoxBlur::Impl {
 	}
 };
 
+ExtBoxBlur::Impl ExtBoxBlur::Impl::_nonTinySyms;
+ExtBoxBlur::Impl ExtBoxBlur::Impl::_tinySyms;
+
 ExtBoxBlur::Impl& ExtBoxBlur::nonTinySyms() {
-	static ExtBoxBlur::Impl implem;
-	return implem;
+	return ExtBoxBlur::Impl::_nonTinySyms;
 }
 
 ExtBoxBlur::Impl& ExtBoxBlur::tinySyms() {
-	static ExtBoxBlur::Impl implem;
-	return implem;
+	return ExtBoxBlur::Impl::_tinySyms;
 }
 
 ExtBoxBlur::ExtBoxBlur(double desiredSigma, unsigned iterations_/* = 1U*/) {
@@ -227,6 +231,9 @@ void ExtBoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTiny
 const ExtBoxBlur& ExtBoxBlur::configuredInstance() {
 	// Extended Box blur with no iterations and desired standard deviation
 	extern const double StructuralSimilarity_SIGMA;
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static ExtBoxBlur result(StructuralSimilarity_SIGMA);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
 	return result;
 }

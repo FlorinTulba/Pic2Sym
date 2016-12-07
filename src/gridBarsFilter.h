@@ -43,9 +43,13 @@
 
 #include "symFilter.h"
 
+#pragma warning ( push, 0 )
+
 #include <opencv2/core/core.hpp>
 
-/** 
+#pragma warning ( pop )
+
+/**
 Detects symbols typically used to generate a grid from glyphs.
 
 Such characters are less desirable, since the image to be processed is already split as a grid,
@@ -69,6 +73,8 @@ struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
 	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	GridBarsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	GridBarsFilter(const GridBarsFilter&) = delete;
+	void operator=(const GridBarsFilter&) = delete;
 
 protected:
 	static bool checkProjectionForGridSymbols(const cv::Mat &sums);

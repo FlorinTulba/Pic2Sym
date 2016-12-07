@@ -50,9 +50,13 @@
 #include "img.h"
 #include "updateSymsActions.h"
 
+#pragma warning ( push, 0 )
+
 #include <atomic>
 
 #include <opencv2/core.hpp>
+
+#pragma warning ( pop )
 
 /**
 CvWin - base class for Comparator & CmapInspect from below.
@@ -64,6 +68,7 @@ protected:
 	cv::Mat content;			///< what to display 
 
 	CvWin(const cv::String &winName_);
+	void operator=(const CvWin&) = delete;
 
 public:
 	virtual ~CvWin() = 0 {}
@@ -97,6 +102,7 @@ protected:
 
 public:	
 	Comparator(); ///< Creating a Comparator window.
+	void operator=(const Comparator&) = delete;
 
 	static void updateTransparency(int newTransp, void *userdata); ///< slider's callback
 
@@ -147,6 +153,7 @@ protected:
 
 public:
 	CmapInspect(const IPresentCmap &cmapPresenter_);
+	void operator=(const CmapInspect&) = delete;
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
 

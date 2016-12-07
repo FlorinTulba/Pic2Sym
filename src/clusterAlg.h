@@ -43,8 +43,12 @@
 
 #include "symData.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <vector>
+
+#pragma warning ( pop )
 
 // Forward declarations
 class AbsJobMonitor;

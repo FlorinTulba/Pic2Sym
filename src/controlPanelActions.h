@@ -43,7 +43,11 @@
 
 #include "controllerBase.h"
 
+#pragma warning ( push, 0 )
+
 #include <string>
+
+#pragma warning ( pop )
 
 /**
 Interface defining the actions triggered by the controls from Control Panel

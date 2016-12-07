@@ -46,6 +46,8 @@
 #include "tinySymsProvider.h"
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
 #include <set>
 #include <map>
 #include <algorithm>
@@ -56,6 +58,8 @@
 #include <boost/optional/optional.hpp>
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+#pragma warning ( pop )
 
 using namespace std;
 using namespace boost;
@@ -83,8 +87,10 @@ namespace {
 	Every new value is the previous minus 1/i^2
 	*/
 	double threshOutsider(size_t clustSz) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static vector<double> vals { M_PI*M_PI/6. };
 		static size_t lastSz = 1U;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 		if(lastSz <= clustSz) {
 			enum {IncrementSz = 50};
@@ -206,8 +212,10 @@ namespace {
 			const double mcDeltaX = abs(mcDelta.x) / thresholdOutsider;
 			if(mcDeltaX > MaxRelMcOffsetForTTSAS_Clustering) // horizontal mass-centers offset
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 			static const double SqMaxRelMcOffsetForClustering =
 				MaxRelMcOffsetForTTSAS_Clustering * MaxRelMcOffsetForTTSAS_Clustering;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
 
@@ -248,6 +256,7 @@ namespace {
 	public:
 		ParentClusterFinder(const TinySym &sym_, const vector<Cluster> &clusters_) :
 			sym(sym_), clusters(clusters_) {}
+		void operator=(const ParentClusterFinder&) = delete;
 
 		bool found() const { return idxOfParentCluster.is_initialized(); }
 
@@ -341,7 +350,9 @@ const string TTSAS_Clustering::Name("TTSAS");
 unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 									  vector<vector<unsigned>> &symsIndicesPerCluster,
 									  const string &fontType/* = ""*/) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor ttsasClustering("TTSAS clustering", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	boost::filesystem::path clusteredSetFile;
 	ClusterIO rawClustersIO;
@@ -495,10 +506,12 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 #ifdef _DEBUG
 					// Check that centroid's parameters stay within 0.645*Original_Threshold from each member.
 					// (see Doxy comment for ParentClusterFinder for details)
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 					static const double BaselSum_1 = M_PI * M_PI / 6. - 1., // ~0.645
 									maxDiffAvgPixelVal = BaselSum_1 * MaxDiffAvgPixelValForTTSAS_Clustering,
 									maxRelMcOffset = BaselSum_1 * MaxRelMcOffsetForTTSAS_Clustering,
 									threshold_Member = BaselSum_1 * TTSAS_Threshold_Member;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 					const double threshold_Outsider = threshOutsider(updatedCluster.membersCount());
 					const auto &centroid = updatedCluster.centroid;
 					for(const auto &memberIdx : updatedCluster.memberIndices) {
@@ -531,7 +544,7 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 		// Fill in rawClustersIO fields
 		rawClustersIO.clustersCount = (unsigned)rawClusters.size();
 		for(int i = 0, lim = (int)rawClustersIO.clustersCount; i < lim; ++i) {
-			const auto &clustMembers = rawClusters[i].memberIndices;
+			const auto &clustMembers = rawClusters[(size_t)i].memberIndices;
 			for(const auto member : clustMembers)
 				rawClustersIO.clusterLabels[member] = i;
 		}
@@ -545,10 +558,10 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 	// Adapt rawClusters for filtered cmap
 	symsIndicesPerCluster.assign(rawClustersIO.clustersCount, vector<unsigned>());
 	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
-		symsIndicesPerCluster[rawClustersIO.clusterLabels[symsToGroup[i].symIdx]].push_back(i);
+		symsIndicesPerCluster[(size_t)rawClustersIO.clusterLabels[symsToGroup[(size_t)i].symIdx]].push_back(i);
 	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
 									[] (const vector<unsigned> &elem) { return elem.empty(); });
-	symsIndicesPerCluster.resize(distance(symsIndicesPerCluster.begin(), newEndIt));
+	symsIndicesPerCluster.resize((size_t)distance(symsIndicesPerCluster.begin(), newEndIt));
 
 	ttsasClustering.taskDone();
 

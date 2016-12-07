@@ -41,8 +41,12 @@
 #ifndef H_JOB_MONITOR_BASE
 #define H_JOB_MONITOR_BASE
 
+#pragma warning ( push, 0 )
+
 #include <string>
 #include <vector>
+
+#pragma warning ( pop )
 
 // Forward declarations
 class AbsTaskMonitor;
@@ -52,13 +56,15 @@ class Timer;
 class AbsJobMonitor /*abstract*/ {
 protected:
 	const std::string monitoredJob_;	///< name of the job
-	double progress_ = 0.;				///< actual known job's progress
 	Timer *timer = nullptr;				///< timer for reporting elapsed and estimated remaining time
+
+	double progress_ = 0.;				///< actual known job's progress
 
 	bool aborted = false;				///< set if the job was aborted
 
 public:
 	AbsJobMonitor(const std::string &monitoredJob) : monitoredJob_(monitoredJob) {}
+	void operator=(const AbsJobMonitor&) = delete;
 	virtual ~AbsJobMonitor() = 0 {};
 
 	const std::string& monitoredJob() const { return monitoredJob_; } ///< name of the job

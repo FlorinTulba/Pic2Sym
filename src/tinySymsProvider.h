@@ -45,6 +45,9 @@
 
 /// Allows providing tiny symbols both from FontEngine and from UnitTesting
 struct ITinySymsProvider {
+	ITinySymsProvider() {}
+	ITinySymsProvider(const ITinySymsProvider&) = delete;
+	void operator=(const ITinySymsProvider&) = delete;
 	virtual ~ITinySymsProvider() = 0 {}
 
 	/// Return a list of tiny symbols from current cmap

@@ -50,18 +50,20 @@ const string NoClustering::Name("None");
 unsigned NoClustering::formGroups(const VSymData &symsToGroup,
 								  vector<vector<unsigned>> &symsIndicesPerCluster,
 								  const string &/*fontType = ""*/) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor trivialClustering("trivial clustering", *symsMonitor);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	// One cluster per symbol - each symbol forms its own cluster
 	const int clustersCount = (int)symsToGroup.size();
 
-	symsIndicesPerCluster.assign(clustersCount, vector<unsigned>(1));
+	symsIndicesPerCluster.assign((size_t)clustersCount, vector<unsigned>(1));
 
 	// Accessing different vector elements => ok to parallelize
 #pragma omp parallel if(UsingOMP)
 #pragma omp for schedule(static, 8) nowait
 	for(int i = 0; i < clustersCount; ++i)
-		symsIndicesPerCluster[i][0] = (unsigned)i;
+		symsIndicesPerCluster[(size_t)i][0ULL] = (unsigned)i;
 
 	trivialClustering.taskDone();
 

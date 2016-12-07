@@ -41,9 +41,15 @@
 #ifndef H_MISC
 #define H_MISC
 
+#include "warnings.h"
+
+#pragma warning ( push, 0 )
+
 #include <iostream>
 #include <iomanip>
 #include <string>
+
+#pragma warning ( pop )
 
 // Error margin
 const double EPS = 1e-6;
@@ -81,7 +87,9 @@ Otherwise, the program just leaves, letting no chance for reusing the method-sta
 */
 #define THROW_WITH_CONST_MSG(excMsg, excType) \
 	{ \
+		__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 		static const std::string constErrMsgForConsoleAndThrow(excMsg); \
+		__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 		std::cerr<<constErrMsgForConsoleAndThrow<<std::endl; \
 		throw excType(constErrMsgForConsoleAndThrow); \
 	}
