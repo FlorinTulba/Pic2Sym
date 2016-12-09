@@ -248,9 +248,10 @@ void Transformer::run() {
 	imgTransformTaskMonitor.setTotalSteps((size_t)symsCount * (size_t)patchesPerCol);
 
 	// symsBatchSz is volatile => every batch might have a different size
-	for(unsigned fromIdx = 0U, upperIdx = min(const_cast<unsigned&>(symsBatchSz), symsCount);
+	for(unsigned fromIdx = 0U, batchSz = const_cast<unsigned&>(symsBatchSz), upperIdx = min(batchSz, symsCount);
 			!isCanceled && fromIdx < symsCount;
-			fromIdx = upperIdx, upperIdx = min(upperIdx + symsBatchSz, symsCount))
+			fromIdx = upperIdx, batchSz = const_cast<unsigned&>(symsBatchSz),
+			upperIdx = ((batchSz == UINT_MAX) ? symsCount : min(upperIdx + batchSz, symsCount)))
 		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
 
 	if(!isCanceled) {
