@@ -88,6 +88,13 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
+/**
+Handy flag during development:
+- without it, same scenario couldn't be tested again unless deleting the result file from the Output folder
+- just set it to true within the unit you're updating, do the tests, then remove the assignment
+*/
+extern bool AllowReprocessingCases = false;
+
 #ifndef UNIT_TESTING
 
 /// Tackles the problems related to saved results
@@ -123,7 +130,7 @@ struct ResultFileManager {
 		resultFile = AppStart::dir();
 		resultFile.append("Output").append(studiedCase).concat(".jpg");
 	
-		if(exists(resultFile)) {
+		if(!AllowReprocessingCases && exists(resultFile)) {
 			result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
 			timer.cancel("This image has already been transformed under these settings.\n"
 						 "Displaying the available result!");
