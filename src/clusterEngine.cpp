@@ -64,10 +64,9 @@ using namespace boost::filesystem;
 
 extern const string ClusterAlgName;
 extern unsigned TinySymsSz();
+extern const double INV_255();
 
 namespace {
-	const double INV255 = 1./255.;
-
 	/**
 	Reorders the clusters by their size - largest ones first and collects the offsets of each cluster.
 	
@@ -182,7 +181,7 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 	else // cluster representatives for normal symbols have negSym of type byte
 		negSynthesizedSym.convertTo(negSym, CV_8UC1);
 
-	synthesizedSym = 1. - negSynthesizedSym * INV255; // providing a symbol in 0..1 range
+	synthesizedSym = 1. - negSynthesizedSym * INV_255(); // providing a symbol in 0..1 range
 	computeFields(synthesizedSym, masks[FG_MASK_IDX], masks[BG_MASK_IDX], masks[EDGE_MASK_IDX],
 				  masks[GROUNDED_SYM_IDX], masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
 				  minVal, diffMinMax, forTinySyms);
