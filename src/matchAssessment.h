@@ -119,6 +119,8 @@ protected:
 	void operator=(const MatchAssessor&) = delete;
 
 public:
+	virtual ~MatchAssessor() = 0 {}
+
 	MatchAssessor& availableAspects(const std::vector<std::shared_ptr<MatchAspect>> &availAspects_);
 
 	/// Returns a configured instance of MatchAssessorNoSkip or MatchAssessorSkip, depending on UseSkipMatchAspectsHeuristic
@@ -159,6 +161,9 @@ public:
 
 	/// While reporting, the particular aspects that were used during the transformation are required
 	inline const std::vector<const MatchAspect*>& getEnabledAspects() const { return enabledAspects; }
+
+	/// MatchAssessorSkip will report all skipped matching aspects
+	virtual void reportSkippedAspects() const {}
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 };
 
@@ -241,6 +246,13 @@ public:
 					   MatchParams &mp,			///< matching parameters resulted from the comparison
 					   double &score			///< achieved score of the new assessment
 					   ) const override;
+
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+
+	/// Reports all skipped matching aspects
+	void reportSkippedAspects() const override;
+
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 };
 
 #endif // H_MATCH_ASSESSMENT

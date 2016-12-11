@@ -267,24 +267,7 @@ void Transformer::run() {
 
 	if(!isCanceled) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-		if(UseSkipMatchAspectsHeuristic) {
-			const MatchAssessor &ma = me.assessor();
-			cout<<endl<<"Transformation finished. Reporting skipped aspects from a total of "
-				<<ma.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
-			const auto &enabledAspects = ma.getEnabledAspects();
-			for(unsigned i = 0U, lim = (unsigned)ma.enabledMatchAspectsCount(); i < lim; ++i) {
-				if(ma.skippedAspects[i] == 0U)
-					continue;
-				cout<<"\t\t"<<setw(25)<<left<<enabledAspects[i]->name()
-					<<" : "<<setw(10)<<right<<ma.skippedAspects[i]<<" times"
-					<<" (Complexity : "<<setw(8)<<fixed<<setprecision(3)<<right
-					<<enabledAspects[i]->relativeComplexity()<<")"
-					<<" ["<<setw(5)<<fixed<<setprecision(2)<<right
-					<<(100. * ma.skippedAspects[i] / ma.totalIsBetterMatchCalls)
-					<<"% of the calls]"<<endl;
-			}
-			cout<<endl;
-		}
+		me.assessor().reportSkippedAspects();
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
 		imgTransformTaskMonitor.taskDone();

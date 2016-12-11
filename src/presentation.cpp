@@ -43,6 +43,7 @@
 #include "jobMonitor.h"
 #include "progressNotifier.h"
 #include "matchParams.h"
+#include "matchAssessment.h"
 #include "structuralSimilarity.h"
 #include "appStart.h"
 #include "controlPanel.h"
@@ -274,6 +275,28 @@ void Transformer::updateStudiedCase(int rows, int cols) {
 	studiedCase = oss.str(); // this text is included in the result & trace file names
 }
 
+
+#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+
+void MatchAssessorSkip::reportSkippedAspects() const {
+	cout<<endl<<"Transformation finished. Reporting skipped aspects from a total of "
+		<<totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
+	for(size_t i = 0ULL; i < enabledAspectsCount; ++i) {
+		if(skippedAspects[i] == 0ULL)
+			continue;
+		cout<<"\t\t"<<setw(25)<<left<<enabledAspects[i]->name()
+			<<" : "<<setw(10)<<right<<skippedAspects[i]<<" times"
+			<<" (Complexity : "<<setw(8)<<fixed<<setprecision(3)<<right
+			<<enabledAspects[i]->relativeComplexity()<<")"
+			<<" ["<<setw(5)<<fixed<<setprecision(2)<<right
+			<<(100. * skippedAspects[i] / totalIsBetterMatchCalls)
+			<<"% of the calls]"<<endl;
+	}
+	cout<<endl;
+}
+
+#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
+
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
@@ -484,6 +507,7 @@ void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""
 }
 
 #ifndef UNIT_TESTING
+
 Controller::~Controller() {
 	destroyAllWindows();
 }
@@ -1003,4 +1027,5 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 		pActions->saveSettings();
 	}, reinterpret_cast<void*>(&performer));
 }
+
 #endif // UNIT_TESTING not defined
