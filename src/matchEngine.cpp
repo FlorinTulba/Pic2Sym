@@ -74,7 +74,7 @@ namespace {
 								 const MatchEngine &me, const Mat &toApprox,
 								 const VSymData &symsSet,
 								 const CachedData &cd,
-								 valarray<double> &scoresToBeatBySyms,
+								 ScoreThresholds &scoresToBeatBySyms,
 								 BestMatch &draftMatch, MatchParams &mp) {
 		bool betterMatchFound = false;
 		const auto &assessor = me.assessor();
@@ -84,7 +84,7 @@ namespace {
 			double score;
 			if(assessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, idx, symData, mp);
-				scoresToBeatBySyms = std::move(assessor.scoresToBeat(score));
+				assessor.scoresToBeat(score, scoresToBeatBySyms);
 				betterMatchFound = true;
 			}
 		}
@@ -244,7 +244,8 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 	const Mat &toApprox = draftMatch.patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
-	valarray<double> scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(draftMatch.score));
+	ScoreThresholds scoresToBeatBySyms;
+	matchAssessor.scoresToBeat(draftMatch.score, scoresToBeatBySyms);
 
 	double score;
 	bool betterMatchFound = false;
@@ -261,7 +262,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 		// Multi-element clusters still qualify with slightly inferior scores,
 		// as individual symbols within the cluster might deliver a superior score.
 		extern const double InvestigateClusterEvenForInferiorScoreFactor;
-		valarray<double> scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms);
+		ScoreThresholds scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
 
 		// 1st cluster might have already been qualified for thorough examination
 		if(previouslyQualified) { // cluster already qualified
@@ -271,7 +272,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 									*this, toApprox, *inspectedSet, *cd,
 									scoresToBeatBySyms,
 									draftMatch, mp)) {
-				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+				scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
 				if(tinySymsMode)
 					tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
 
@@ -299,8 +300,8 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 				const auto &symData = (*inspectedSet)[symIdx];
 				if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
 					draftMatch.update(score, symData.code, symIdx, symData, mp);
-					scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(score));
-					scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+					matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
+					scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
 					if(tinySymsMode)
 						tcm->checkCandidate(symIdx, score);
 
@@ -317,7 +318,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 												*this, toApprox, *inspectedSet, *cd,
 												scoresToBeatBySyms,
 												draftMatch, mp)) {
-						scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
+						scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
 						if(tinySymsMode)
 							tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
 
@@ -336,7 +337,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 			if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, symIdx, symData, mp);
-				scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(score));
+				matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
 				if(tinySymsMode)
 					tcm->checkCandidate(symIdx, score);
 
@@ -358,7 +359,8 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
 	double score;
 
 	MatchParams &mp = draftMatch.bestVariant.params;
-	valarray<double> scoresToBeat = std::move(matchAssessor.scoresToBeat(draftMatch.score));
+	ScoreThresholds scoresToBeat; 
+	matchAssessor.scoresToBeat(draftMatch.score, scoresToBeat);
 
 	while(!shortList.empty()) {
 		auto candidateIdx = shortList.top();
@@ -370,7 +372,7 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
 										scoresToBeat, mp, score)) {
 			const auto &symData = symsSet[candidateIdx];
 			draftMatch.update(score, symData.code, candidateIdx, symData, mp);
-			scoresToBeat = std::move(matchAssessor.scoresToBeat(score));
+			matchAssessor.scoresToBeat(score, scoresToBeat);
 
 			betterMatchFound = true;
 		}

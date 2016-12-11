@@ -581,8 +581,9 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 			mismatches.push_back(best);
 			MatchParams mp;
 			double score;
-			assessor.isBetterMatch(patchD255, *it, me.cachedData,
-								   assessor.scoresToBeat(best.score), mp, score);
+			ScoreThresholds scoresToBeat;
+			assessor.scoresToBeat(best.score, scoresToBeat);
+			assessor.isBetterMatch(patchD255, *it, me.cachedData, scoresToBeat, mp, score);
 			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
 			cerr<<"Approximation achieved score="
 				<<fixed<<setprecision(17)<<best.score

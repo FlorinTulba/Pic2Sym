@@ -47,7 +47,6 @@
 
 #include <memory>
 #include <vector>
-#include <valarray>
 
 #include <opencv2/core/core.hpp>
 
@@ -58,6 +57,46 @@ struct CachedData;
 struct SymData;
 struct MatchParams;
 class MatchAspect;
+
+/**
+Stores and updates the threshold values for intermediary scores. These values might help sparing
+the computation of some matching aspects.
+
+Substitute class of valarray<double>, customized for optimal performance of the use cases from Pic2Sym.
+When UseSkipMatchAspectsHeuristic is false, this class behaves almost like a simple `double` value.
+*/
+class ScoreThresholds {
+protected:
+	std::vector<double> intermediaries;	///< the intermediary threshold scores
+	double total = 0.;					///< the final threshold score
+
+public:
+	ScoreThresholds();
+
+	/**
+	Used to set thresholds for clusters, which are the thresholds for the symbols (references)
+	multiplied by multiplier.
+	*/
+	ScoreThresholds(double multiplier, const ScoreThresholds &references);
+
+	ScoreThresholds(const ScoreThresholds&) = delete;
+	ScoreThresholds(ScoreThresholds&&) = delete;
+	void operator=(const ScoreThresholds&) = delete;
+	void operator=(ScoreThresholds&&) = delete;
+
+	double overall() const;					///< provides final threshold score (field total)
+	double operator[](size_t idx) const;	///< provides intermediaries[idx]
+
+	void update(double totalScore);			///< sets total to totalScore
+
+	/// Updates the thresholds for clusters (thresholds for the symbols (references) multiplied by multiplier.)
+	void update(double multiplier, const ScoreThresholds &references);
+
+	// Methods used only when UseSkipMatchAspectsHeuristic is true
+	void inferiorMatch(); ///< Makes sure that intermediary results won't be used as long as finding only bad matches
+	bool representsInferiorMatch() const; ///< true for empty intermediaries [triggered by inferiorMatch()]
+	void update(double totalScore, const std::vector<double> &multipliers); ///< updates total and intermediaries = totalScore*multipliers
+};
 
 /**
 Match manager based on the enabled matching aspects:
@@ -101,7 +140,7 @@ public:
 	virtual bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
 							   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
 							   const CachedData &cd,	///< precomputed values
-							   const std::valarray<double> &scoresToBeat,///< scores after each aspect that beat the current best match
+							   const ScoreThresholds &scoresToBeat,///< scores after each aspect that beat the current best match
 							   MatchParams &mp,			///< matching parameters resulted from the comparison
 							   double &score			///< achieved score of the new assessment
 							   ) const;
@@ -110,10 +149,9 @@ public:
 	Sets the threshold scores which might spare a symbol from evaluating further matching aspects.
 
 	@param draftScore a new reference score
-	
-	@return the mentioned threshold scores
+	@param scoresToBeat the mentioned threshold scores
 	*/
-	virtual const std::valarray<double> scoresToBeat(double draftScore) const = 0;
+	virtual void scoresToBeat(double draftScore, ScoreThresholds &scoresToBeat) const = 0;
 
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 	mutable size_t totalIsBetterMatchCalls = 0ULL; ///< used for reporting skipped aspects
@@ -136,10 +174,9 @@ protected:
 public:
 	/**
 	@param draftScore a new reference score
-
-	@return just a trivial valarray with a single element equal to draftScore
+	@param scoresToBeat the mentioned threshold scores
 	*/
-	const std::valarray<double> scoresToBeat(double draftScore) const override;
+	void scoresToBeat(double draftScore, ScoreThresholds &scoresToBeat) const override;
 };
 
 /// MatchAssessor version when UseSkipMatchAspectsHeuristic is true
@@ -147,7 +184,7 @@ class MatchAssessorSkip : public MatchAssessor {
 	friend class MatchAssessor;
 
 protected:
-	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
+	std::vector<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
 	/**
 	The Aspects Skipping heuristic comes with a slight cost which becomes noticeable when:
@@ -192,16 +229,15 @@ public:
 	Sets the threshold scores which might spare a symbol from evaluating further matching aspects.
 
 	@param draftScore a new reference score
-
-	@return the mentioned threshold scores
+	@param scoresToBeat the mentioned threshold scores
 	*/
-	const std::valarray<double> scoresToBeat(double draftScore) const override;
+	void scoresToBeat(double draftScore, ScoreThresholds &scoresToBeat) const override;
 
 	/// Determines if symData is a better match for patch than previous matching symbol
 	bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
 					   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
 					   const CachedData &cd,	///< precomputed values
-					   const std::valarray<double> &scoresToBeat,///< scores after each aspect that beat the current best match
+					   const ScoreThresholds &scoresToBeat,///< scores after each aspect that beat the current best match
 					   MatchParams &mp,			///< matching parameters resulted from the comparison
 					   double &score			///< achieved score of the new assessment
 					   ) const override;
