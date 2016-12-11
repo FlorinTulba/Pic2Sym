@@ -374,6 +374,7 @@ static VALIDATOR(lessThanMaxFontSize,	IsLessThan, unsigned, maxFontSize(), true)
 extern READ_UINT_PROP(Settings_DEF_FONT_SIZE, moreThanMinFontSize(), lessThanMaxFontSize());
 
 extern READ_BOOL_PROP(UseSkipMatchAspectsHeuristic);
+extern READ_DOUBLE_PROP(EnableSkipAboveMatchRatio, nonNegativeD(), lessThan1D());
 
 extern READ_DOUBLE_PROP(MinAverageClusterSize, atLeast1D());
 extern READ_STR_PROP(ClusterAlgName, availableClusterAlgs());

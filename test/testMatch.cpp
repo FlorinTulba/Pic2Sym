@@ -59,6 +59,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "patch.h"
 #include "controller.h"
 #include "matchAspects.h"
+#include "matchAssessment.h"
 #include "structuralSimilarity.h"
 #include "blur.h"
 
@@ -524,6 +525,7 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 	const unsigned symsCount = (unsigned)distance(it, itEnd),
 					SymsBatchSz = 25U;
 	vector<const BestMatch> mismatches;
+	const auto &assessor = me.assessor();
 	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
 		const Mat &negGlyph = it->negSym; // byte 0..255
 		Mat patchD255, blurredPatch;
@@ -579,7 +581,8 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 			mismatches.push_back(best);
 			MatchParams mp;
 			double score;
-			me.isBetterMatch(patchD255, *it, me.cachedData, best.score * me.invMaxIncreaseFactors, mp, score);
+			assessor.isBetterMatch(patchD255, *it, me.cachedData,
+								   assessor.scoresToBeat(best.score), mp, score);
 			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
 			cerr<<"Approximation achieved score="
 				<<fixed<<setprecision(17)<<best.score

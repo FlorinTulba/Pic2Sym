@@ -39,6 +39,7 @@
  ***********************************************************************************************/
 
 #include "transform.h"
+#include "matchAssessment.h"
 #include "settings.h"
 #include "matchParams.h"
 #include "patch.h"
@@ -69,6 +70,7 @@
 static bool checkCancellationRequest();
 
 #ifndef UNIT_TESTING
+
 #pragma warning ( push, 0 )
 
 #include <opencv2/highgui/highgui.hpp>
@@ -82,6 +84,7 @@ bool checkCancellationRequest() {
 					L"Do you want to abort the image transformation?", L"Question",
 					MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL | MB_SETFOREGROUND);
 }
+
 #endif // UNIT_TESTING not defined
 
 using namespace std;
@@ -189,6 +192,7 @@ extern const double BlurStandardDeviation, AdmitOnShortListEvenForInferiorScoreF
 extern const bool UsingOMP, ParallelizeTr_PatchRowLoops, PreselectionByTinySyms;
 extern const unsigned SymsBatch_defaultSz, ShortListLength;
 extern unsigned TinySymsSz();
+extern const bool UseSkipMatchAspectsHeuristic;
 
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 						 MatchEngine &me_, Img &img_) :
@@ -261,20 +265,21 @@ void Transformer::run() {
 			upperIdx = ((batchSz == UINT_MAX) ? symsCount : min(upperIdx + batchSz, symsCount)))
 		considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
 
-	if(!isCanceled) {
+	if(!isCanceled && UseSkipMatchAspectsHeuristic) {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+		const MatchAssessor &ma = me.assessor();
 		cout<<endl<<"Transformation finished. Reporting skipped aspects from a total of "
-			<<me.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
-		const auto &enabledAspects = me.getEnabledAspects();
-		for(unsigned i = 0U, lim = (unsigned)me.enabledMatchAspectsCount(); i < lim; ++i) {
-			if(me.skippedAspects[i] == 0U)
+			<<ma.totalIsBetterMatchCalls<<" isBetterMatch calls:"<<endl;
+		const auto &enabledAspects = ma.getEnabledAspects();
+		for(unsigned i = 0U, lim = (unsigned)ma.enabledMatchAspectsCount(); i < lim; ++i) {
+			if(ma.skippedAspects[i] == 0U)
 				continue;
 			cout<<"\t\t"<<setw(25)<<left<<enabledAspects[i]->name()
-				<<" : "<<setw(10)<<right<<me.skippedAspects[i]<<" times"
+				<<" : "<<setw(10)<<right<<ma.skippedAspects[i]<<" times"
 				<<" (Complexity : "<<setw(8)<<fixed<<setprecision(3)<<right
 					<<enabledAspects[i]->relativeComplexity()<<")"
 				<<" ["<<setw(5)<<fixed<<setprecision(2)<<right
-					<<(100. * me.skippedAspects[i] / me.totalIsBetterMatchCalls)
+					<<(100. * ma.skippedAspects[i] / ma.totalIsBetterMatchCalls)
 					<<"% of the calls]"<<endl;
 		}
 		cout<<endl;

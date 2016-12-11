@@ -35,6 +35,7 @@
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
+    <ClInclude Include="src\matchAssessment.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="src\gaussBlur.cpp" />
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
+    <ClCompile Include="src\matchAssessment.cpp" />
     <ClCompile Include="src\noClustering.cpp" />
     <ClCompile Include="src\partitionClustering.cpp" />
     <ClCompile Include="src\patch.cpp" />

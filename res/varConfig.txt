@@ -76,6 +76,18 @@ SymbolsProcessing_ProgressReportsIncrement	0.01
 ; when there are many competing potential matches for most of the patches from the image.
 UseSkipMatchAspectsHeuristic	true
 
+; The Aspects Skipping heuristic comes with a slight cost which becomes noticeable when:
+; - there are barely any skipped matching aspects
+; - these very few skipped aspects are not complex
+; In such cases the heuristic probably won't shorten the transformation time.
+; The heuristic starts getting more efficient only after finding a really good draft match for the patch.
+; This justifies introducing a threshold for the score of a draft. As long as the draft matches
+; for a given patch score under this threshold, the heuristic isn't used. The first draft match
+; above the threshold enables the heuristic.
+; The threshold is provided as a percentage (0..1 range) from the maximum score (for an ideal match)
+EnableSkipAboveMatchRatio	0.125
+
+
 ; The image approximation by symbols could be accelerated by preselecting just several candidate symbols.
 ; The preselection might be accomplished based on the same matching aspects, but using shrunken
 ; versions of the image patches and symbols.

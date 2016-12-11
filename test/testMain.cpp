@@ -50,6 +50,7 @@
 #include "fontEngine.cpp"
 #include "fontErrorsHelper.cpp"
 #include "matchEngine.cpp"
+#include "matchAssessment.cpp"
 #include "clusterEngine.cpp"
 #include "tinySym.cpp"
 #include "tinySymsProvider.cpp"

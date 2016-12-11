@@ -39,6 +39,7 @@
  ***********************************************************************************************/
 
 #include "controller.h"
+#include "matchAssessment.h"
 #include "matchParams.h"
 #include "misc.h"
 #include "dlgs.h"
@@ -95,7 +96,7 @@ Settings::Settings() :
 	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
 
 bool Controller::validState(bool imageRequired/* = true*/) const {
-	const bool noEnabledMatchAspects = (me.enabledMatchAspectsCount() == 0U);
+	const bool noEnabledMatchAspects = (me.assessor().enabledMatchAspectsCount() == 0ULL);
 	if((imageOk || !imageRequired) && fontFamilyOk && !noEnabledMatchAspects)
 		return true;
 
@@ -337,9 +338,9 @@ void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if(NewValue != PrevVal) { \
 		cfg.ms.set_k##AspectName(NewValue); \
 		if(PrevVal == 0.) { /* just enabled this aspect */ \
-			me.newlyEnabledMatchAspect(); \
+			me.matchAssessor.newlyEnabledMatchAspect(); \
 		} else if(NewValue == 0.) { /* just disabled this aspect */ \
-			me.newlyDisabledMatchAspect(); \
+			me.matchAssessor.newlyDisabledMatchAspect(); \
 		} \
 	}
 
@@ -455,7 +456,7 @@ void Controller::restoreUserDefaultMatchSettings() {
 	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
 #endif
 	cp.updateMatchSettings(cfg.ms);
-	me.updateEnabledMatchAspectsCount();
+	me.matchAssessor.updateEnabledMatchAspectsCount();
 }
 
 void Controller::setUserDefaultMatchSettings() const {
@@ -497,7 +498,7 @@ void Controller::loadSettings() {
 #pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 
 	cp.updateMatchSettings(cfg.ms);
-	me.updateEnabledMatchAspectsCount();
+	me.matchAssessor.updateEnabledMatchAspectsCount();
 	cp.updateImgSettings(cfg.is);
 
 	if(prevSymSettings==cfg.ss)

@@ -369,6 +369,9 @@
     <ClInclude Include="src\warnings.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
+    <ClInclude Include="src\matchAssessment.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -538,6 +541,9 @@
     </ClCompile>
     <ClCompile Include="src\constants.cpp">
       <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchAssessment.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

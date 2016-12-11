@@ -39,6 +39,7 @@
  ***********************************************************************************************/
 
 #include "matchEngine.h"
+#include "matchAssessment.h"
 #include "clusterEngine.h"
 #include "matchAspectsFactory.h"
 #include "matchParams.h"
@@ -47,7 +48,6 @@
 #include "settings.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
-#include "misc.h"
 
 #pragma warning ( push, 0 )
 
@@ -59,7 +59,6 @@ using namespace std;
 using namespace cv;
 
 extern unsigned TinySymsSz();
-extern const bool UseSkipMatchAspectsHeuristic;
 
 namespace {
 	/// Determines the cluster and the symbol within it corresponding to symIdx
@@ -75,17 +74,17 @@ namespace {
 								 const MatchEngine &me, const Mat &toApprox,
 								 const VSymData &symsSet,
 								 const CachedData &cd,
-								 const valarray<double> &invMaxIncreaseFactors,
 								 valarray<double> &scoresToBeatBySyms,
 								 BestMatch &draftMatch, MatchParams &mp) {
 		bool betterMatchFound = false;
+		const auto &assessor = me.assessor();
 		for(unsigned idx = fromIdx; idx <= lastIdx; ++idx) {
 			mp.reset(); // preserves patch-invariant fields
 			const auto &symData = symsSet[idx];
 			double score;
-			if(me.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
+			if(assessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, idx, symData, mp);
-				scoresToBeatBySyms = score * invMaxIncreaseFactors;
+				scoresToBeatBySyms = std::move(assessor.scoresToBeat(score));
 				betterMatchFound = true;
 			}
 		}
@@ -94,12 +93,13 @@ namespace {
 } // anonymous namespace
 
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce(fe_),
-			cachedDataForTinySyms(true) {
+			cachedDataForTinySyms(true),
+			matchAssessor(MatchAssessor::specializedInstance(availAspects)) {
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.matchSettings()));
 
-	updateEnabledMatchAspectsCount();
+	matchAssessor.updateEnabledMatchAspectsCount();
 
 	cachedDataForTinySyms.useNewSymSize(TinySymsSz());
 }
@@ -212,23 +212,8 @@ const vector<std::shared_ptr<MatchAspect>>& MatchEngine::availMatchAspects() con
 	return availAspects;
 }
 
-void MatchEngine::newlyEnabledMatchAspect() {
-	++enabledAspectsCount;
-}
-
-void MatchEngine::newlyDisabledMatchAspect() {
-	--enabledAspectsCount; 
-}
-
-void MatchEngine::updateEnabledMatchAspectsCount() {
-	enabledAspectsCount = 0U;
-	for(auto pAspect : availAspects)
-		if(pAspect->enabled())
-			++enabledAspectsCount;
-}
-
-size_t MatchEngine::enabledMatchAspectsCount() const {
-	return enabledAspectsCount;
+const MatchAssessor& MatchEngine::assessor() const { 
+	return matchAssessor;
 }
 
 void MatchEngine::getReady() {
@@ -237,70 +222,13 @@ void MatchEngine::getReady() {
 	cachedData.update(cfg.symSettings().getFontSz(), fe);
 	cachedDataForTinySyms.update(fe);
 
-	enabledAspects.clear();
-	for(auto pAspect : availAspects)
-		if(pAspect->enabled())
-			enabledAspects.push_back(&*pAspect);
-
-	assert(enabledAspectsCount == enabledAspects.size());
-
-	/*
-	Reorder the aspects based on their complexity and their max score.
-	The goal is to skip as many complex aspects as possible while checking if a new symbol
-	is a better match for a given patch than a previous symbol with a given score.
-	As soon as it's obvious that the remaining aspects can't raise the score above current best score,
-	the assessment is aborted.
-	The strategy is most beneficial if the skipped aspects are more complex than those evaluated already.
-	Thus, reorder the enabled aspects as follows:
-	- rearrange aspects in increasing order of their complexity
-	- for equally complex aspects, consider first those with a higher max score,
-	  to reduce the chance that other aspects are needed
-	*/
-	sort(BOUNDS(enabledAspects), [&] (const MatchAspect *a,
-									const MatchAspect *b) -> bool {
-		const double relComplexityA = a->relativeComplexity(),
-					relComplexityB = b->relativeComplexity();
-		// Ascending by complexity
-		if(relComplexityA < relComplexityB)
-			return true;
-
-		if(relComplexityA > relComplexityB)
-			return false;
-
-		// Equal complexity here already
-
-		const double maxScoreA = a->maxScore(cachedData),
-					maxScoreB = b->maxScore(cachedData);
-
-		// Descending by max score
-		return maxScoreA >= maxScoreB;
-	});
-
-	if(UseSkipMatchAspectsHeuristic) {
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-		totalIsBetterMatchCalls = 0U;
-		skippedAspects.assign(enabledAspectsCount, 0U);
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-
-		// Adjust max increase factors for every enabled aspect
-		invMaxIncreaseFactors.resize(enabledAspectsCount);
-		const int lastIdx = (int)enabledAspectsCount - 1;
-		double maxIncreaseFactor = invMaxIncreaseFactors[(size_t)lastIdx] = 1.;
-		for(int i = lastIdx - 1, ip1 = lastIdx; i >= 0; ip1 = i--) {
-			maxIncreaseFactor *= enabledAspects[(size_t)ip1]->maxScore(cachedData);
-			invMaxIncreaseFactors[(size_t)i] = 1. / maxIncreaseFactor;
-		}
-	} else { // UseSkipMatchAspectsHeuristic == false
-		if(invMaxIncreaseFactors.size() == 0U) {
-			invMaxIncreaseFactors.resize(1ULL, 1.);
-		}
-	}
+	matchAssessor.getReady(cachedData);
 }
 
 bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx,
 									   BestMatch &draftMatch,
 									   TopCandidateMatches *tcm/* = nullptr*/) const {
-	assert(!enabledAspects.empty());
+	assert(matchAssessor.enabledMatchAspectsCount() > 0ULL);
 	assert(draftMatch.patch.needsApproximation);
 	assert(upperSymIdx <= getSymsCount());
 
@@ -316,7 +244,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 	const Mat &toApprox = draftMatch.patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
-	valarray<double> scoresToBeatBySyms(draftMatch.score * invMaxIncreaseFactors);
+	valarray<double> scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(draftMatch.score));
 
 	double score;
 	bool betterMatchFound = false;
@@ -341,7 +269,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 											clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
 									*this, toApprox, *inspectedSet, *cd,
-									invMaxIncreaseFactors, scoresToBeatBySyms,
+									scoresToBeatBySyms,
 									draftMatch, mp)) {
 				scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 				if(tinySymsMode)
@@ -369,9 +297,9 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 				// Single element clusters have same score as their content.
 				const unsigned symIdx = cluster.idxOfFirstSym;
 				const auto &symData = (*inspectedSet)[symIdx];
-				if(isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+				if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
 					draftMatch.update(score, symData.code, symIdx, symData, mp);
-					scoresToBeatBySyms = score * invMaxIncreaseFactors;
+					scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(score));
 					scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 					if(tinySymsMode)
 						tcm->checkCandidate(symIdx, score);
@@ -380,14 +308,14 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 				}
 			
 			} else { // Nontrivial cluster
-				if(isBetterMatch(toApprox, cluster, *cd, scoresToBeatByClusters, mp, score)) {
+				if(matchAssessor.isBetterMatch(toApprox, cluster, *cd, scoresToBeatByClusters, mp, score)) {
 					draftMatch.lastPromisingNontrivialCluster = clusterIdx; // cluster is a selected candidate
 
 					const unsigned upperLimit = (clusterIdx < lastCluster) ?
 						cluster.sz : lastSymIdxWithinLastCluster;
 					if(checkRangeWithinCluster(0U, upperLimit, 
 												*this, toApprox, *inspectedSet, *cd,
-												invMaxIncreaseFactors, scoresToBeatBySyms,
+												scoresToBeatBySyms,
 												draftMatch, mp)) {
 						scoresToBeatByClusters = InvestigateClusterEvenForInferiorScoreFactor * scoresToBeatBySyms;
 						if(tinySymsMode)
@@ -406,9 +334,9 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 			mp.reset(); // preserves patch-invariant fields
 
-			if(isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+			if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, symIdx, symData, mp);
-				scoresToBeatBySyms = score * invMaxIncreaseFactors;
+				scoresToBeatBySyms = std::move(matchAssessor.scoresToBeat(score));
 				if(tinySymsMode)
 					tcm->checkCandidate(symIdx, score);
 
@@ -430,18 +358,19 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
 	double score;
 
 	MatchParams &mp = draftMatch.bestVariant.params;
-	valarray<double> scoresToBeat(draftMatch.score * invMaxIncreaseFactors);
+	valarray<double> scoresToBeat = std::move(matchAssessor.scoresToBeat(draftMatch.score));
 
 	while(!shortList.empty()) {
 		auto candidateIdx = shortList.top();
 
 		mp.reset(); // preserves patch-invariant fields
 
-		if(isBetterMatch(draftMatch.patch.matrixToApprox(), symsSet[candidateIdx], cachedData,
-						scoresToBeat, mp, score)) {
+		if(matchAssessor.isBetterMatch(draftMatch.patch.matrixToApprox(),
+										symsSet[candidateIdx], cachedData,
+										scoresToBeat, mp, score)) {
 			const auto &symData = symsSet[candidateIdx];
 			draftMatch.update(score, symData.code, candidateIdx, symData, mp);
-			scoresToBeat = score * invMaxIncreaseFactors;
+			scoresToBeat = std::move(matchAssessor.scoresToBeat(score));
 
 			betterMatchFound = true;
 		}
@@ -453,53 +382,6 @@ bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
 		draftMatch.updatePatchApprox(cfg.matchSettings());
 
 	return betterMatchFound;
-}
-
-bool MatchEngine::isBetterMatch(const Mat &patch, const SymData &symData, const CachedData &cd,
-								const valarray<double> &scoresToBeat,
-								MatchParams &mp, double &score) const {
-	// There is at least one enabled match aspect,
-	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
-	assert(enabledAspectsCount > 0U && enabledAspectsCount == enabledAspects.size());
-
-	if(UseSkipMatchAspectsHeuristic) {
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-#pragma omp atomic
-		/*
-		We're within a `parallel for` here!!
-
-		However this region is suppressed in the final release, so the speed isn't that relevant.
-		It matters only to get correct values for the count of skipped aspects.
-
-		That's why the `parallel for` doesn't need:
-		reduction(+ : totalIsBetterMatchCalls)
-		*/
-		++totalIsBetterMatchCalls;
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-
-		score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
-		const unsigned lim = (unsigned)enabledAspectsCount - 1U;
-		for(unsigned im1 = 0U, i = 1U; i <= lim; im1 = i++) {
-			if(score < scoresToBeat[im1]) {
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-				for(unsigned j = i; j <= lim; ++j) {
-#pragma omp atomic // See comment from previous MONITOR_SKIPPED_MATCHING_ASPECTS region
-					++skippedAspects[j];
-				}
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-				return false; // skip further aspects checking when score can't beat best match score
-			}
-			score *= enabledAspects[i]->assessMatch(patch, symData, cd, mp);
-		}
-
-		return score > scoresToBeat[lim];
-	
-	} else { // UseSkipMatchAspectsHeuristic == false
-		score = enabledAspects[0]->assessMatch(patch, symData, cd, mp);
-		for(unsigned i = 1U; i < enabledAspectsCount; ++i)
-			score *= enabledAspects[i]->assessMatch(patch, symData, cd, mp);
-		return score > scoresToBeat[0];
-	}
 }
 
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {

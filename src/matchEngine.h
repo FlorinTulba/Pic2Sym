@@ -45,23 +45,18 @@
 #include "clusterEngine.h"
 #include "cachedData.h"
 #include "preselectSyms.h"
-#include "countSkippedAspects.h"
-
-#pragma warning ( push, 0 )
-
-#include <valarray>
-
-#pragma warning ( pop )
 
 // Forward declarations
-struct MatchParams;
 struct BestMatch;
 struct Patch;
 class Settings;
 class MatchAspect;
+class MatchAssessor;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine {
+	friend class Controller;
+
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
 	typedef VSymData::const_iterator VSymDataCIt;
@@ -78,22 +73,17 @@ protected:
 	VSymData symsSet;			///< set of most information on each symbol
 	VSymData tinySymsSet;		///< set of most information on each tiny symbol
 	ClusterEngine ce;			///< clusters manager
-	
+
 	CachedData cachedDataForTinySyms;	///< data precomputed for tiny symbols preselection
 
-	// matching aspects
-	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
-	std::vector<const MatchAspect*> enabledAspects;			///< the enabled aspects only
-
-#ifdef UNIT_TESTING // UnitTesting project needs access to cachedData and invMaxIncreaseFactors
+#ifdef UNIT_TESTING // UnitTesting project needs access to cachedData
 public:
 #endif // UNIT_TESTING
 	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
 
-	std::valarray<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
-
 protected:
-	size_t enabledAspectsCount = 0U;	///< count of the enabled aspects
+	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
+	MatchAssessor &matchAssessor;		///< match manager based on the enabled matching aspects
 
 	/// Should the symbols be compared against the patches individually, or first by clusters?
 	bool matchByClusters = false;
@@ -108,6 +98,8 @@ public:
 	VSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
 	const std::set<unsigned>& getClusterOffsets() const;
+
+	const MatchAssessor& assessor() const; ///< access to the const methods of the matchAssessor
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
 	void getReady();		///< called before a series of improvesBasedOnBatch
@@ -124,35 +116,11 @@ public:
 									   BestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
 									   ) const;
 
-	/// Determines if symData is a better match for patch than previous matching symbol.
-	bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
-					   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
-					   const CachedData &cd,	///< precomputed values
-					   const std::valarray<double> &scoresToBeat,///< scores after each aspect that beat the current best match
-					   MatchParams &mp,			///< matching parameters resulted from the comparison
-					   double &score			///< achieved score of the new assessment
-					   ) const;
-
 	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
 	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
-
-	void newlyEnabledMatchAspect();		///< increments enabledAspectsCount
-	void newlyDisabledMatchAspect();	///< decrements enabledAspectsCount
-	
-	void updateEnabledMatchAspectsCount();		///< updates enabledAspectsCount by checking which aspects are enabled
-	
-	size_t enabledMatchAspectsCount() const;	///< provides enabledAspectsCount
-
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-	mutable size_t totalIsBetterMatchCalls = 0U; ///< used for reporting skipped aspects
-	mutable std::vector<size_t> skippedAspects; ///< used for reporting skipped aspects
-
-	/// While reporting, the particular aspects that were used during the transformation are required
-	const std::vector<const MatchAspect*>& getEnabledAspects() const { return enabledAspects; }
-#endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 };
 
 #endif // H_MATCH_ENGINE
