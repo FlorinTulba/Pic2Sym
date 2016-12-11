@@ -116,10 +116,10 @@ namespace {
 	The method is for debugging, to get a clearer perspective on the magnitude spectrum.
 	*/
 	Mat fftShift(const Mat &rawMagnSpectrum, unsigned sz, unsigned halfSz, unsigned lastSzBit) {
-		Mat result(sz, sz, CV_64FC1);
+		Mat result((int)sz, (int)sz, CV_64FC1);
 		const unsigned mid1 = halfSz + lastSzBit, mid2 = sz - mid1;
-		const Range range1(0U, mid1), range2(mid1, sz),		// ranges within the raw spectrum
-					range1_(0U, mid2), range2_(mid2, sz);	// ranges within the rearranged spectrum
+		const Range range1(0, (int)mid1), range2((int)mid1, (int)sz),	// ranges within the raw spectrum
+					range1_(0, (int)mid2), range2_((int)mid2, (int)sz);	// ranges within the rearranged spectrum
 
 		// quadrants of the raw spectrum
 		const Mat q1raw(rawMagnSpectrum, range1, range1), q3raw(rawMagnSpectrum, range2, range2),
