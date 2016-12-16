@@ -80,14 +80,16 @@ namespace {
 #endif // UNIT_TESTING
 } // anonymous namespace
 
-TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/) : SymData(code_, symIdx_),
+TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0ULL*/) : SymData(code_, symIdx_),
 		mat((int)TinySymsSize, (int)TinySymsSize, CV_64FC1, 0.),
 		hAvgProj(1, (int)TinySymsSize, CV_64FC1, 0.), vAvgProj((int)TinySymsSize, 1, CV_64FC1, 0.),
-		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.), slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.) {}
+		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.),
+		slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.) {}
 
 TinySym::TinySym(const PixMapSym &refSym) : 
 		SymData(refSym.symCode, refSym.symIdx, refSym.avgPixVal, refSym.mc),
-		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1), slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1) {
+		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1),
+		slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1) {
 
 	const Mat refSymMat = refSym.toMatD01(RefSymSz);
 

@@ -44,7 +44,7 @@
 #include "tinySym.h"
 
 /// Allows providing tiny symbols both from FontEngine and from UnitTesting
-struct ITinySymsProvider {
+struct ITinySymsProvider /*abstract*/ {
 	ITinySymsProvider() {}
 	ITinySymsProvider(const ITinySymsProvider&) = delete;
 	void operator=(const ITinySymsProvider&) = delete;

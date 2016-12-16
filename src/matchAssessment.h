@@ -103,7 +103,7 @@ Match manager based on the enabled matching aspects:
 - selects and rearranges the enabled matching aspects
 - applies them while approximating each patch
 */
-class MatchAssessor {
+class MatchAssessor /*abstract*/ {
 protected:
 	/// The available matching aspects, enabled or not
 	const std::vector<std::shared_ptr<MatchAspect>> *availAspects = nullptr;

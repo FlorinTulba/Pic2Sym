@@ -80,7 +80,7 @@ namespace {
 
 	/// Base class for validators of the configuration items from 'res/varConfig.txt'
 	template<class Type>
-	struct ConfigItemValidator {
+	struct ConfigItemValidator /*abstract*/ {
 		/// Should throw an appropriate exception when itemVal is wrong for itemName
 		virtual void examine(const string &itemName, const Type &itemVal) const = 0;
 		virtual ~ConfigItemValidator() = 0 {}

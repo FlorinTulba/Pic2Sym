@@ -95,7 +95,7 @@ that will be initialized in varConfig.cpp unit like this:
 
 	BlurEngine::ConfInstRegistrator Derived::cir("<blurTypeName_from_varConfig.txt>", Derived::configuredInstance());
 */
-class BlurEngine {
+class BlurEngine /*abstract*/ {
 protected:
 	/// Mapping type between blurTypes and corresponding configured blur instances
 	typedef std::map<const std::string, const BlurEngine*> ConfiguredInstances;
