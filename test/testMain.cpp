@@ -38,57 +38,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#define BOOST_TEST_MODULE Tests for Pic2Sym project
+#define BOOST_TEST_MODULE Tests for project Pic2Sym
 
 #include "testMain.h"
-
-// Including the CPP files allows parsing UNIT_TESTING guarded regions.
-// Disadvantage: namespace pollution
-#include "misc.cpp"
-#include "constants.cpp"
-#include "timing.cpp"
-#include "fontEngine.cpp"
-#include "fontErrorsHelper.cpp"
-#include "matchEngine.cpp"
-#include "matchAssessment.cpp"
-#include "clusterEngine.cpp"
-#include "tinySym.cpp"
-#include "tinySymsProvider.cpp"
-#include "tinySymsDataSerialization.cpp"
-#include "symData.cpp"
-#include "match.cpp"
-#include "patch.cpp"
-#include "transform.cpp"
-#include "preselectSyms.cpp"
-#include "controller.cpp"
-#include "img.cpp"
-#include "matchSettings.cpp"
-#include "pixMapSym.cpp"
-#include "varConfig.cpp"
-#include "presentation.cpp"
-#include "matchParams.cpp"
-#include "symSettings.cpp"
-#include "cachedData.cpp"
-#include "structuralSimilarity.cpp"
-#include "propsReader.cpp"
-#include "transformTrace.cpp"
-#include "matchAspectsFactory.cpp"
-#include "symFilter.cpp"
-#include "filledRectanglesFilter.cpp"
-#include "gridBarsFilter.cpp"
-#include "bulkySymsFilter.cpp"
-#include "unreadableSymsFilter.cpp"
-#include "sievesSymsFilter.cpp"
-#include "symsSerialization.cpp"
-#include "clusterAlg.cpp"
-#include "noClustering.cpp"
-#include "partitionClustering.cpp"
-#include "ttsasClustering.cpp"
-#include "blur.cpp"
-#include "boxBlur.cpp"
-#include "extBoxBlur.cpp"
-#include "stackBlur.cpp"
-#include "gaussBlur.cpp"
+#include "controller.h"
+#include "matchEngine.h"
+#include "fontEngine.h"
+#include "settings.h"
+#include "taskMonitor.h"
+#include "jobMonitor.h"
+#include "clusterSerialization.h"
+#include "tinySymsDataSerialization.h"
 
 #pragma warning ( push, 0 )
 
@@ -96,10 +56,18 @@
 #include <random>
 
 #include <boost/optional/optional.hpp>
+#include <boost/filesystem/operations.hpp>
+
+#include <opencv2/imgcodecs/imgcodecs.hpp>
 
 #pragma warning ( pop )
 
-const unsigned SymsBatch_defaultSz = 25U;
+using namespace std;
+using namespace cv;
+using namespace boost;
+using namespace boost::filesystem;
+
+extern const double INV_255();
 
 #pragma warning(disable:4273) // inconsistent DLL linkage
 int __cdecl omp_get_thread_num(void) {

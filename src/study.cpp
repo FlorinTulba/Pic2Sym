@@ -38,6 +38,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "study.h"
 #include "misc.h"
 
@@ -83,3 +85,5 @@ void study(int argc, char* argv[]) {
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 }
+
+#endif // UNIT_TESTING not defined

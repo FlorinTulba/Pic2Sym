@@ -38,6 +38,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "views.h"
 #include "presentCmap.h"
 #include "misc.h"
@@ -169,3 +171,5 @@ void CmapInspect::updatePageIdx(int newPage, void *userdata) {
 	CmapInspect *pCmi = reinterpret_cast<CmapInspect*>(userdata);
 	pCmi->showPage((unsigned)newPage);
 }
+
+#endif // UNIT_TESTING not defined

@@ -163,4 +163,4 @@ bool MatchSettingsManip::parseCfg(MatchSettings &ms, const boost::filesystem::pa
 	return correct;
 }
 
-#endif
+#endif // UNIT_TESTING not defined

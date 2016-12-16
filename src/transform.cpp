@@ -57,7 +57,16 @@
 #pragma warning ( push, 0 )
 
 #include <Windows.h>
+
+#ifndef UNIT_TESTING
+// The project uses parallelism
 #include <omp.h>
+
+#else // UNIT_TESTING is defined below
+// Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
+extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
+
+#endif // UNIT_TESTING
 
 #include <sstream>
 #include <numeric>
@@ -67,7 +76,7 @@
 #pragma warning ( pop )
 
 /// Checks if the user wants to cancel the image transformation by pressing ESC
-static bool checkCancellationRequest();
+extern bool checkCancellationRequest();
 
 #ifndef UNIT_TESTING
 
@@ -190,13 +199,13 @@ static void logDataForBestMatches(volatile bool &isCanceled,
 extern const Size BlurWinSize;
 extern const double BlurStandardDeviation, AdmitOnShortListEvenForInferiorScoreFactor;
 extern const bool UsingOMP, ParallelizeTr_PatchRowLoops, PreselectionByTinySyms;
-extern const unsigned SymsBatch_defaultSz, ShortListLength;
+extern const unsigned ShortListLength;
 extern unsigned TinySymsSz();
 extern const bool UseSkipMatchAspectsHeuristic;
 
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 						 MatchEngine &me_, Img &img_) :
-		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_), symsBatchSz(SymsBatch_defaultSz) {}
+		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {}
 
 void Transformer::run() {
 	isCanceled = false;

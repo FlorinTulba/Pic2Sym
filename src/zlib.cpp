@@ -11,6 +11,8 @@ just comment USE_ZLIB_COMPRESSION in the 'compressOption.h' file
 
 ************************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "compressOption.h"
 
 // Compiling the file only when the compression / decompression feature is desired.
@@ -209,3 +211,5 @@ namespace boost {
 } // End namespaces iostreams, boost.
 
 #endif // USE_ZLIB_COMPRESSION && BOOST_IOSTREAMS_NO_LIB
+
+#endif // UNIT_TESTING not defined

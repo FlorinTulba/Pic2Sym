@@ -38,7 +38,7 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "matchSettingsManip.h"
+#include "matchSettings.h"
 
 #pragma warning ( push, 0 )
 
@@ -49,10 +49,14 @@
 using namespace std;
 
 #ifndef UNIT_TESTING
+
+#include "matchSettingsManip.h"
+
 MatchSettings::MatchSettings() {
 	MatchSettingsManip::instance().initMatchSettings(*this);
 }
-#endif
+
+#endif // UNIT_TESTING not defined
 
 MatchSettings& MatchSettings::setResultMode(bool hybridResultMode_) {
 	if(hybridResultMode != hybridResultMode_) {

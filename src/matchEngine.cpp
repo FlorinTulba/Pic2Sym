@@ -49,11 +49,20 @@
 #include "taskMonitor.h"
 #include "ompTrace.h"
 
+#ifndef UNIT_TESTING
+
 #pragma warning ( push, 0 )
 
+// The project uses parallelism
 #include <omp.h>
 
 #pragma warning ( pop )
+
+#else // UNIT_TESTING is defined below
+// Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
+extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
+
+#endif // UNIT_TESTING
 
 using namespace std;
 using namespace cv;

@@ -55,6 +55,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace boost::filesystem;
 
 extern unsigned TinySymsSz();
 
@@ -67,8 +68,6 @@ extern unsigned TinySymsSz();
 #include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
-
-using namespace boost::filesystem;
 
 bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
 										   boost::filesystem::path &tinySymsDataFile) {

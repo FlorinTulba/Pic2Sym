@@ -53,6 +53,12 @@
 
 #pragma warning ( pop )
 
+#ifndef UNIT_TESTING
+
+extern const unsigned SymsBatch_defaultSz;
+
+#endif // UNIT_TESTING not defined
+
 // Forward declarations
 class Settings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
@@ -85,7 +91,12 @@ protected:
 	unsigned sz = 0U;			///< font size used during transformation
 	unsigned symsCount = 0U;	///< symbols count within the used cmap
 
-	volatile unsigned symsBatchSz;	///< runtime control of how large next symbol batches are
+	/// runtime control of how large next symbol batches are
+#ifdef UNIT_TESTING
+	volatile unsigned symsBatchSz = UINT_MAX; // no batching in Unit Testing mode
+#else // when UNIT_TESTING is not defined, start with batching SymsBatch_defaultSz symbols
+	volatile unsigned symsBatchSz = SymsBatch_defaultSz;
+#endif // UNIT_TESTING
 
 	volatile bool isCanceled = false;	///< has the process been canceled?
 

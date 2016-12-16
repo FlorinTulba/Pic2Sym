@@ -38,6 +38,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #include "taskMonitor.h"
 #include "jobMonitorBase.h"
 #include "misc.h"
@@ -83,3 +85,4 @@ void TaskMonitor::taskAborted() {
 	parent.taskAborted(seqId);
 }
 
+#endif // UNIT_TESTING not defined

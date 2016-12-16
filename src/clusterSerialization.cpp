@@ -90,4 +90,4 @@ bool ClusterIO::saveTo(const string &path) const {
 	return save<binary_oarchive>(ofs, path, *this);;
 }
 
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING not defined

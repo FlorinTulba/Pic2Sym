@@ -98,6 +98,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\*.cpp" />
     <ClCompile Include="test\testClustering.cpp" />
     <ClCompile Include="test\testFontEngine.cpp" />
     <ClCompile Include="test\testMain.cpp" />
@@ -110,6 +111,7 @@
     <None Include="res\vga855.fon" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\*.h" />
     <ClInclude Include="test\fileIterationHelper.h" />
     <ClInclude Include="test\mockDlgs.h" />
     <ClInclude Include="test\mockUi.h" />
