@@ -3,8 +3,6 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the %Project% project.
-
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
 		License: <http://www.boost.org/LICENSE_1_0.txt>
