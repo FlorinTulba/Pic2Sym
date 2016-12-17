@@ -62,6 +62,7 @@
 // Forward declarations
 class ControlPanel;
 class AbsJobMonitor;
+class PreselManager;
 
 /// Manager of the views and data.
 class Controller :
@@ -81,6 +82,7 @@ protected:
 	Settings &cfg;		///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
 	Transformer &t;		///< transforming engine
+	PreselManager &pm;	///< preselection manager
 
 	// Views
 	Comparator &comp;					///< view for comparing original & result
@@ -136,6 +138,7 @@ public: // Providing get<field> as public for Unit Testing
 	FontEngine& getFontEngine(const SymSettings &ss_) const;
 	MatchEngine& getMatchEngine(const Settings &cfg_) const;
 	Transformer& getTransformer(const Settings &cfg_) const;
+	PreselManager& getPreselManager(const Settings &cfg_) const;
 	ControlPanel& getControlPanel(Settings &cfg_);
 
 public:

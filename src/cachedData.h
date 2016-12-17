@@ -95,14 +95,8 @@ struct CachedData {
 	CachedData(bool forTinySyms_ = false);
 	void operator=(const CachedData&) = delete;
 
-protected:
-	friend class MatchEngine;
 	void update(unsigned sz_, const FontEngine &fe_);
 	void update(const FontEngine &fe_);
-
-#ifdef UNIT_TESTING // UnitTesting project should have public access to 'useNewSymSize' method
-public:
-#endif
 	void useNewSymSize(unsigned sz_);
 };
 

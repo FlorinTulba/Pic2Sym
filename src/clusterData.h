@@ -43,6 +43,8 @@
 
 #include "symData.h"
 
+struct SymsSupport; // Forward declaration
+
 /**
 Synthesized symbol as the representative of several symbols that were clustered together.
 Inherits from SymData to qualify in passing as SymData& parameter to assessMatch method.
@@ -61,12 +63,11 @@ struct ClusterData : SymData {
 	@param symsSet the set of all normal / tiny symbols (before clustering)
 	@param idxOfFirstSym_ index of the first symbol from symsSet that belongs to this cluster
 	@param clusterSymIndices the indices towards the symbols from symsSet which belong to this cluster
-	@param forTinySyms set on true when using tiny symbols preselection, so that
-			the generated clusters are formed from tiny symbols
+	@param symsSupport ensures that the generated clusters are formed from tiny symbols for preselection mode
 	*/
 	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 				const std::vector<unsigned> &clusterSymIndices,
-				bool forTinySyms);
+				SymsSupport &symsSupport);
 
 	ClusterData(ClusterData &&other);
 

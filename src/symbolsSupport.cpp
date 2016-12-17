@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,31 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
+#include "symbolsSupport.h"
+#include "symData.h"
 
-#include "match.h"
-#include "matchParams.h"
+using namespace std;
+using namespace cv;
 
-#pragma warning ( push, 0 )
+extern const double INV_255();
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
-
-#pragma warning ( pop )
-
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
-
-/// unit testing namespace
-namespace ut {
-
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
-
-	/**
-	Generates an uniformly-distributed random unsigned char.
-
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
-
-	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
-	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
+bool SymsSupport::usingTinySymbols() const {
+	return false;
 }
 
-#endif
+void SymsSupport::computeClusterRepresentative(const vector<const SymData*> &clusterSyms,
+											   int symSz, double invClusterSz,
+											   Mat &synthesizedSym, Mat &negSym) const {
+	Mat negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
+	for(const auto pSymData : clusterSyms) {
+		assert(!pSymData->negSym.empty()); // normal-size symbol are guaranteed to be non-blank
+		Mat negSymD;
+		pSymData->negSym.convertTo(negSymD, CV_64FC1);
+		negSynthesizedSym += negSymD;
+	}
+	negSynthesizedSym *= invClusterSz;
+
+	// cluster representatives for normal symbols have negSym of type byte
+	negSynthesizedSym.convertTo(negSym, CV_8UC1);
+	synthesizedSym = 1. - negSynthesizedSym * INV_255(); // providing a symbol in 0..1 range
+}

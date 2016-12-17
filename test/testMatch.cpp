@@ -51,6 +51,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 
 // Common part until #else (included just once)
 #include "testMain.h"
+#include "preselectSyms.h"
 #include "preselectionHelper.h"
 #include "fileIterationHelper.h"
 #include "misc.h"
@@ -60,6 +61,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "controller.h"
 #include "matchAspects.h"
 #include "matchAssessment.h"
+#include "matchSupportWithPreselection.h"
 #include "structuralSimilarity.h"
 #include "blur.h"
 
@@ -560,21 +562,25 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 
 			// Below using 3 instead of ShortListLength, to avoid surprises caused by altered configurations
 			TopCandidateMatches tcm(3U);
+			MatchProgressWithPreselection mpwp(tcm);
+			MatchSupportWithPreselection mswp(me.cachedData, me.symsSet,
+											  me.matchAssessor, ms);
 
 			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz) {
 				// Value from below is 0.8 instead of AdmitOnShortListEvenForInferiorScoreFactor
 				// to avoid surprises caused by altered configurations
 				tcm.reset(bestTiny.score = best.score * 0.8);
-				if(me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), bestTiny, &tcm)) {
+				if(me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), bestTiny, mpwp)) {
 					tcm.prepareReport();
 					auto &&shortList = tcm.getShortList();
-					me.improvesBasedOnBatchShortList(std::move(shortList), best);
+					mswp.improvesBasedOnBatchShortList(std::move(shortList), best);
 				}
 			}
 
 		} else { // PreselectionByTinySyms == false here
+			MatchProgress dummy;
 			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz)
-				me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), best);
+				me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), best, dummy);
 		}
 
 		if(best.symIdx != idx) {

@@ -49,6 +49,7 @@
 #include "jobMonitor.h"
 #include "clusterSerialization.h"
 #include "tinySymsDataSerialization.h"
+#include "preselectManager.h"
 
 #pragma warning ( push, 0 )
 
@@ -90,13 +91,15 @@ namespace ut {
 	bool Controller::initFontEngine = false;
 	bool Controller::initMatchEngine = false;
 	bool Controller::initTransformer = false;
+	bool Controller::initPreselManager = false;
 	bool Controller::initComparator = false;
 	bool Controller::initControlPanel = false;
 
 	Fixt::Fixt() {
 		// reinitialize all these fields
 		Controller::initImg = Controller::initFontEngine = Controller::initMatchEngine =
-		Controller::initTransformer = Controller::initComparator = Controller::initControlPanel =
+		Controller::initTransformer = Controller::initPreselManager =
+		Controller::initComparator = Controller::initControlPanel =
 			true;
 	}
 
@@ -330,6 +333,10 @@ Transformer& Controller::getTransformer(const Settings &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
+PreselManager& Controller::getPreselManager(const Settings &cfg_) const {
+	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
+}
+
 ControlPanel& Controller::getControlPanel(Settings &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
@@ -400,6 +407,47 @@ void JobMonitor::taskAdvanced(double, unsigned) {}
 void JobMonitor::taskDone(unsigned) {}
 
 void JobMonitor::taskAborted(unsigned) {}
+
+TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, double avgPixVal_/* = 0.*/) :
+		SymData(mc_, avgPixVal_),
+		backslashDiagAvgProj(1, 2*negSym_.rows-1, CV_64FC1),
+		slashDiagAvgProj(1, 2*negSym_.rows-1, CV_64FC1) {
+	assert(!negSym_.empty());
+	negSym = negSym_;
+	Mat tinySymMat = 1 - negSym * INV_255();
+	SymData::computeFields(tinySymMat,
+						   masks[FG_MASK_IDX], masks[BG_MASK_IDX],
+						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX],
+						   masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
+						   minVal, diffMinMax, true);
+
+	mat = masks[GROUNDED_SYM_IDX].clone();
+	// computing average projections
+	reduce(mat, hAvgProj, 0, CV_REDUCE_AVG);
+	reduce(mat, vAvgProj, 1, CV_REDUCE_AVG);
+
+	Mat flippedMat;
+	flip(mat, flippedMat, 1); // flip around vertical axis
+	const int tinySymSz = negSym_.rows;
+	const double invTinySymSz = 1./tinySymSz,
+				invTinySymArea = invTinySymSz * invTinySymSz,
+				invDiagsCountTinySym = 1./(2*tinySymSz-1);
+	for(int diagIdx = -tinySymSz+1, i = 0;
+		diagIdx < tinySymSz; ++diagIdx, ++i) {
+		const Mat backslashDiag = mat.diag(diagIdx);
+		backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
+
+		const Mat slashDiag = flippedMat.diag(-diagIdx);
+		slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
+	}
+
+	// Ensuring the sum of all elements of the following matrices is in [0..1] range
+	mat *= invTinySymArea;
+	hAvgProj *= invTinySymSz;
+	vAvgProj *= invTinySymSz;
+	backslashDiagAvgProj *= invDiagsCountTinySym;
+	slashDiagAvgProj *= invDiagsCountTinySym;
+}
 
 SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
 				 double avgPixVal_, const Point2d &mc_, const SymData::IdxMatMap &relevantMats,

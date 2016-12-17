@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,44 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
+#ifndef H_CLUSTER_SUPPORT_WITH_PRESELECTION
+#define H_CLUSTER_SUPPORT_WITH_PRESELECTION
 
-#include "match.h"
-#include "matchParams.h"
+#include "clusterSupport.h"
 
-#pragma warning ( push, 0 )
+struct ITinySymsProvider; // Forward declaration
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
+/// Helper for clustering the tiny symbols.
+class ClustersSupportWithPreselection : public ClustersSupport {
+protected:
+	ITinySymsProvider &tsp;	///< provider of tiny symbols
+	VSymData tinySymsSet;	///< set of most information on each tiny symbol
 
-#pragma warning ( pop )
+public:
+	/// Besides the parameters from the base constructor, it also needs tsp_ to get the tiny symbols
+	ClustersSupportWithPreselection(ITinySymsProvider &tsp_, ClusterEngine &ce_,
+									SymsSupport &ss_, VSymData &symsSet_);
 
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
-
-/// unit testing namespace
-namespace ut {
-
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
-
-	/**
-	Generates an uniformly-distributed random unsigned char.
-
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
+	ClustersSupportWithPreselection(const ClustersSupportWithPreselection&) = delete;
+	ClustersSupportWithPreselection(ClustersSupportWithPreselection&&) = delete;
+	void operator=(const ClustersSupportWithPreselection&) = delete;
+	void operator=(ClustersSupportWithPreselection&&) = delete;
 
 	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
+	Clusters symsSet and also the tiny symbols.
+	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
-}
+	void groupSyms(const std::string &fontType = "") override;
 
-#endif
+	/**
+	Rearranges symsSet and its tiny correspondent version.
+	Computes the cluster representatives and marks the limits between the symbols for different clusters.
+	*/
+	void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+					   VClusterData &clusters, std::set<unsigned> &clusterOffsets) override;
+
+	/// Returns the rearranged tiny correspondent version of symsSet
+	const VSymData& clusteredSyms() const override;
+};
+
+#endif // H_CLUSTER_SUPPORT_WITH_PRESELECTION

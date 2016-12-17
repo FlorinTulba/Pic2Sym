@@ -39,12 +39,16 @@
  ***********************************************************************************************/
 
 #include "clusterEngine.h"
+#include "clusterSupport.h"
+#include "symbolsSupport.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "misc.h"
 
 #ifndef UNIT_TESTING
+
 #include "appStart.h"
+
 #endif // UNIT_TESTING
 
 #pragma warning ( push, 0 )
@@ -63,8 +67,7 @@ using namespace cv;
 using namespace boost::filesystem;
 
 extern const string ClusterAlgName;
-extern unsigned TinySymsSz();
-extern const double INV_255();
+extern const double MinAverageClusterSize;
 
 namespace {
 	/**
@@ -73,28 +76,38 @@ namespace {
 	When tinySymsSet isn't empty (when using tiny symbols preselection),
 	the actual returned clusters will contain the tiny symbols
 	*/
-	void computeClusterOffsets(vector<vector<unsigned>> &symsIndicesPerCluster, unsigned clustersCount,
-							   VSymData &symsSet, VSymData &tinySymsSet,
-							   VClusterData &clusters, set<unsigned> &clusterOffsets) {
-		const bool usingTinySyms = !tinySymsSet.empty();
+	void computeClusterOffsets(vector<vector<unsigned>> &symsIndicesPerCluster,
+							   unsigned clustersCount, VSymData &symsSet,
+							   VClusterData &clusters, set<unsigned> &clusterOffsets,
+							   ClustersSupport &support, bool worthGrouping) {
+		auto itFirstClusterWithOneItem = begin(symsIndicesPerCluster);
+		if(!worthGrouping) {
+			cout<<"Ignoring clustering due to the low average cluster size."<<endl;
 
-		// Add the clusters in descending order of their size:
+		} else { // Add the clusters in descending order of their size
+			// Typically, there are only a few clusters larger than 1 element.
+			// This partition separates the actual formed clusters from one-of-a-kind elements
+			// leaving less work to perform to the sort executed afterwards
+			itFirstClusterWithOneItem = partition(BOUNDS(symsIndicesPerCluster),
+												  [] (const vector<unsigned> &a) {
+				return a.size() > 1ULL; // place actual clusters at the beginning of the vector
+			});
 
-		// Typically, there are only a few clusters larger than 1 element.
-		// This partition separates the actual formed clusters from one-of-a-kind elements
-		// leaving less work to perform to the sort executed afterwards
-		auto itFirstClusterWithOneItem = partition(BOUNDS(symsIndicesPerCluster),
-														  [] (const vector<unsigned> &a) {
-			return a.size() > 1U; // place actual clusters at the beginning of the vector
-		});
+			// Sort non-trivial clusters in descending order of their size
+			// and then in ascending order of avgPixVal (taken from last cluster member)
+			sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
+				 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
+				const size_t szA = a.size(), szB = b.size();
+				return (szA > szB) || ((szA == szB) && (symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal));
+			});
 
-		// Sort non-trivial clusters in descending order of their size
-		// and then in ascending order of avgPixVal (taken from last cluster member)
-		sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
-					[&] (const vector<unsigned> &a, const vector<unsigned> &b) {
-			const size_t szA = a.size(), szB = b.size();
-			return (szA > szB) || ((szA == szB) && (symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal));
-		});
+			const unsigned nonTrivialClusters = (unsigned)distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem),
+						symsCount = (unsigned)symsSet.size(),
+						clusteredSyms = symsCount - (clustersCount - nonTrivialClusters);
+			cout<<"There are "<<nonTrivialClusters
+				<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
+			cout<<"Largest cluster contains "<<symsIndicesPerCluster[0ULL].size()<<" symbols."<<endl;
+		}
 
 		// Sort trivial clusters in ascending order of avgPixVal
 		sort(itFirstClusterWithOneItem, end(symsIndicesPerCluster),
@@ -102,92 +115,39 @@ namespace {
 			return symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal;
 		});
 
-		const unsigned nonTrivialClusters = (unsigned)distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem),
-					symsCount = (unsigned)symsSet.size(),
-					clusteredSyms = symsCount - ((unsigned)symsIndicesPerCluster.size() - nonTrivialClusters);
-		cout<<"There are "<<nonTrivialClusters
-			<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
-		cout<<"Largest cluster contains "<<symsIndicesPerCluster[0].size()<<" symbols."<<endl;
-		cout<<"Average cluster size is "<<(double)symsCount/clustersCount<<endl;
-
-		VSymData newSymsSet, newTinySymsSet;
-		newSymsSet.reserve(symsCount);
-		if(usingTinySyms)
-			newTinySymsSet.reserve(symsCount);
-
-		VSymData &sourceSet = (usingTinySyms ? tinySymsSet : symsSet);
-		for(unsigned i = 0U, offset = 0U; i<clustersCount; ++i) {
-			const auto &symsIndices = symsIndicesPerCluster[i];
-			const unsigned clusterSz = (unsigned)symsIndices.size();
-			clusterOffsets.insert(offset);
-			clusters.emplace_back(sourceSet, offset, symsIndices, usingTinySyms); // needs sourceSet[symsIndices] !!
-
-			for(const auto idx : symsIndices) {
-				// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
-				newSymsSet.push_back(symsSet[idx]);
-
-				if(usingTinySyms)
-					// Don't use move for tinySymsSet[idx], as the symbols need to remain in tinySymsSet for later examination
-					newTinySymsSet.push_back(tinySymsSet[idx]);
-			}
-
-			offset += clusterSz;
-		}
-		clusterOffsets.insert(symsCount); // delimit last cluster
-
-		symsSet = move(newSymsSet);
-		if(usingTinySyms)
-			tinySymsSet = move(newTinySymsSet);
+		support.delimitGroups(symsIndicesPerCluster, clusters, clusterOffsets);
 	}
 } // anonymous namespace
 
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 const vector<unsigned> &clusterSymIndices,
-						 bool forTinySyms) : SymData(),
+						 SymsSupport &symsSupport) : SymData(),
 		idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
+	const double invClusterSz = 1./sz;
 	const Mat &firstNegSym = symsSet[0].negSym;
 	const int symSz = firstNegSym.rows;
 	double avgPixVal_ = 0.;
 	Point2d mc_;
-	Mat synthesizedSym, negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
+	vector<const SymData*> clusterSyms; clusterSyms.reserve((size_t)sz);
 
-	if(forTinySyms) { // tiny symbols have negSym of type double already
-		for(const auto clusterSymIdx : clusterSymIndices) {
-			const SymData &symData = symsSet[clusterSymIdx];
-			if(!symData.negSym.empty()) // A non-blank normal-size symbol can become a blank when shrunken
-				negSynthesizedSym += symData.negSym;
+	for(const auto clusterSymIdx : clusterSymIndices) {
+		const SymData &symData = symsSet[clusterSymIdx];
+		clusterSyms.push_back(&symData);
 
-			// avgPixVal and mc are taken from the normal-size symbol (guaranteed to be non-blank)
-			avgPixVal_ += symData.avgPixVal;
-			mc_ += symData.mc;
-		}
-
-	} else { // normal symbols need to convert their negSym from byte to double when averaging
-		for(const auto clusterSymIdx : clusterSymIndices) {
-			const SymData &symData = symsSet[clusterSymIdx];
-			assert(!symData.negSym.empty()); // normal-size symbol are guaranteed to be non-blank
-			Mat negSymD;
-			symData.negSym.convertTo(negSymD, CV_64FC1);
-			negSynthesizedSym += negSymD;
-			avgPixVal_ += symData.avgPixVal;
-			mc_ += symData.mc;
-		}
+		// avgPixVal and mc are taken from the normal-size symbol (guaranteed to be non-blank)
+		avgPixVal_ += symData.avgPixVal;
+		mc_ += symData.mc;
 	}
-	const double invClusterSz = 1./sz;
-	negSynthesizedSym *= invClusterSz;
-	if(forTinySyms) // cluster representatives for tiny symbols have negSym of type double
-		negSym = negSynthesizedSym;
-	else // cluster representatives for normal symbols have negSym of type byte
-		negSynthesizedSym.convertTo(negSym, CV_8UC1);
+	avgPixVal = avgPixVal_ * invClusterSz;
+	mc = mc_ * invClusterSz;
 
-	synthesizedSym = 1. - negSynthesizedSym * INV_255(); // providing a symbol in 0..1 range
+	Mat synthesizedSym;
+	symsSupport.computeClusterRepresentative(clusterSyms, symSz, invClusterSz, synthesizedSym, negSym);
+
 	computeFields(synthesizedSym, masks[FG_MASK_IDX], masks[BG_MASK_IDX], masks[EDGE_MASK_IDX],
 				  masks[GROUNDED_SYM_IDX], masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
-				  minVal, diffMinMax, forTinySyms);
-
-	avgPixVal	= avgPixVal_ * invClusterSz;
-	mc			= mc_ * invClusterSz;
+				  minVal, diffMinMax, symsSupport.usingTinySymbols());
 }
 
 ClusterData::ClusterData(ClusterData &&other) : SymData(move(other)),
@@ -196,25 +156,36 @@ ClusterData::ClusterData(ClusterData &&other) : SymData(move(other)),
 ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
 	clustAlg(ClusterAlg::algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
 
-void ClusterEngine::process(VSymData &symsSet, VSymData &tinySymsSet, const string &fontType/* = ""*/) {
+void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) {
 	if(symsSet.empty())
 		return;
 
 	vector<vector<unsigned>> symsIndicesPerCluster;
 	clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
 
+	const double averageClusterSize = (double)symsSet.size()/clustersCount;
+	cout<<"Average cluster size is "<<averageClusterSize<<endl;
+
+	worthy = averageClusterSize > MinAverageClusterSize;
+
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	clusters.clear(); clusterOffsets.clear();
-	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet, tinySymsSet, clusters, clusterOffsets);
+	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet,
+						  clusters, clusterOffsets, *support, worthy);
 	reorderClusters.taskDone(); // mark it as already finished
 }
 
 ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
 	clustAlg.useSymsMonitor(symsMonitor_);
+	return *this;
+}
+
+ClusterEngine& ClusterEngine::supportedBy(ClustersSupport &support_) {
+	support = &support_;
 	return *this;
 }
 

@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,61 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
-
-#include "match.h"
-#include "matchParams.h"
+#ifndef H_CLUSTER_SUPPORT
+#define H_CLUSTER_SUPPORT
 
 #pragma warning ( push, 0 )
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
+#include <vector>
+#include <set>
+#include <string>
 
 #pragma warning ( pop )
 
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
+// Forward declarations
+class ClusterEngine;
+struct SymData;
+struct ClusterData;
+struct SymsSupport;
+typedef std::vector<const SymData> VSymData;
+typedef std::vector<const ClusterData> VClusterData;
 
-/// unit testing namespace
-namespace ut {
+/**
+Polymorphic helper for clustering the symbols depending on the value of PreselectionByTinySyms.
+For PreselectionByTinySyms == true, the clusters include tiny symbols.
+*/
+class ClustersSupport {
+protected:
+	ClusterEngine &ce;		///< clusters manager
+	SymsSupport &ss;		///< helper for symbols
+	VSymData &symsSet;		///< set of most information on each symbol
 
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
+public:
+	/// Base constructor
+	ClustersSupport(ClusterEngine &ce_, SymsSupport &ss_, VSymData &symsSet_);
 
-	/**
-	Generates an uniformly-distributed random unsigned char.
+	ClustersSupport(const ClustersSupport&) = delete;
+	ClustersSupport(ClustersSupport&&) = delete;
+	void operator=(const ClustersSupport&) = delete;
+	void operator=(ClustersSupport&&) = delete;
 
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
+	virtual ~ClustersSupport() {}
 
 	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
+	Clusters symsSet. For PreselectionByTinySyms == true it clusters also the tiny symbols.
+	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
-}
+	virtual void groupSyms(const std::string &fontType = "");
 
-#endif
+	/**
+	Rearranges symsSet and its tiny correspondent version when PreselectionByTinySyms == true.
+	Computes the cluster representatives and marks the limits between the symbols for different clusters.
+	*/
+	virtual void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+							   VClusterData &clusters, std::set<unsigned> &clusterOffsets);
+
+	/// Returns the rearranged symsSet or its tiny correspondent version when PreselectionByTinySyms == true.
+	virtual const VSymData& clusteredSyms() const;
+};
+
+#endif // H_CLUSTER_SUPPORT

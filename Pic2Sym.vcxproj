@@ -28,6 +28,8 @@
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterEngine.h" />
     <ClInclude Include="src\clusterSerialization.h" />
+    <ClInclude Include="src\clusterSupport.h" />
+    <ClInclude Include="src\clusterSupportWithPreselection.h" />
     <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
@@ -36,7 +38,10 @@
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
     <ClInclude Include="src\matchAssessment.h" />
+    <ClInclude Include="src\matchSupport.h" />
+    <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
+    <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\serializer.h" />
@@ -74,6 +79,8 @@
     <ClInclude Include="src\stackBlur.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
+    <ClInclude Include="src\symbolsSupport.h" />
+    <ClInclude Include="src\symbolsSupportWithPreselection.h" />
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symData.h" />
     <ClInclude Include="src\symFilter.h" />
@@ -87,6 +94,8 @@
     <ClInclude Include="src\tinySymsDataSerialization.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\transformSupport.h" />
+    <ClInclude Include="src\transformSupportWithPreselection.h" />
     <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\ttsasClustering.h" />
     <ClInclude Include="src\unreadableSymsFilter.h" />
@@ -105,6 +114,8 @@
     <ClCompile Include="src\clusterAlg.cpp" />
     <ClCompile Include="src\clusterEngine.cpp" />
     <ClCompile Include="src\clusterSerialization.cpp" />
+    <ClCompile Include="src\clusterSupport.cpp" />
+    <ClCompile Include="src\clusterSupportWithPreselection.cpp" />
     <ClCompile Include="src\constants.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
@@ -116,9 +127,12 @@
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\matchAssessment.cpp" />
+    <ClCompile Include="src\matchSupport.cpp" />
+    <ClCompile Include="src\matchSupportWithPreselection.cpp" />
     <ClCompile Include="src\noClustering.cpp" />
     <ClCompile Include="src\partitionClustering.cpp" />
     <ClCompile Include="src\patch.cpp" />
+    <ClCompile Include="src\preselectManager.cpp" />
     <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\img.cpp" />
@@ -136,6 +150,8 @@
     <ClCompile Include="src\stackBlur.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\study.cpp" />
+    <ClCompile Include="src\symbolsSupport.cpp" />
+    <ClCompile Include="src\symbolsSupportWithPreselection.cpp" />
     <ClCompile Include="src\symData.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
@@ -146,6 +162,8 @@
     <ClCompile Include="src\tinySym.cpp" />
     <ClCompile Include="src\tinySymsDataSerialization.cpp" />
     <ClCompile Include="src\tinySymsProvider.cpp" />
+    <ClCompile Include="src\transformSupport.cpp" />
+    <ClCompile Include="src\transformSupportWithPreselection.cpp" />
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />

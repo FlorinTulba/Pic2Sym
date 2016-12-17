@@ -55,6 +55,8 @@
 
 #pragma warning ( push, 0 )
 
+#include <Windows.h>
+
 #include <functional>
 #include <thread>
 
@@ -92,6 +94,7 @@ void showUsage() {
 // so it won't refer viewMismatches and viewMisfiltered from below.
 // But it will start a Pic2Sym instance that will do such calls.
 #ifndef UNIT_TESTING
+
 void viewMismatches(const string &testTitle, const Mat &mismatches) {
 	const int twiceTheRows = mismatches.rows, rows = twiceTheRows>>1, cols = mismatches.cols;
 	const Mat reference = mismatches.rowRange(0, rows), // upper half is the reference
@@ -126,6 +129,7 @@ void viewMisfiltered(const string &testTitle, const Mat &misfiltered) {
 	displayStatusBar(winName, "Press Esc to close this window");
 	waitKey();
 }
+
 #endif // UNIT_TESTING not defined
 
 ostream& operator<<(ostream &os, const Settings &s) {
@@ -314,12 +318,16 @@ Controller::Controller(Settings &s) :
 		img(getImg()), fe(getFontEngine(s.ss).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
 		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
+		pm(getPreselManager(s)),
 		comp(getComparator()), cp(getControlPanel(s)) {
+	me.usePreselManager(pm);
+	t.usePreselManager(pm);
+
 	comp.setPos(0, 0);
 	comp.permitResize(false);
-	extern const string Comparator_initial_title;
+
+	extern const string Comparator_initial_title, Comparator_statusBar;
 	comp.setTitle(Comparator_initial_title);
-	extern const string Comparator_statusBar;
 	comp.setStatus(Comparator_statusBar);
 }
 #pragma warning( default : WARN_BASE_INIT_USING_THIS )

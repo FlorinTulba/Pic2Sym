@@ -39,6 +39,7 @@
  ***********************************************************************************************/
 
 #include "controller.h"
+#include "preselectManager.h"
 #include "matchAssessment.h"
 #include "matchParams.h"
 #include "misc.h"
@@ -596,6 +597,10 @@ MatchEngine& Controller::getMatchEngine(const Settings &cfg_) const {
 
 Transformer& Controller::getTransformer(const Settings &cfg_) const {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
+}
+
+PreselManager& Controller::getPreselManager(const Settings &cfg_) const {
+	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
 }
 
 ControlPanel& Controller::getControlPanel(Settings &cfg_) {

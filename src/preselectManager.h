@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,43 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
+#ifndef H_PRESELECT_MANAGER
+#define H_PRESELECT_MANAGER
 
-#include "match.h"
-#include "matchParams.h"
+// Forward declarations
+struct SymsSupport;
+class ClustersSupport;
+class MatchSupport;
+class TransformSupport;
+class MatchEngine;
+class Transformer;
 
-#pragma warning ( push, 0 )
+/**
+A friend of MatchEngine and Transformer for implementing preselection modes.
+It is an abstract factory controlled by PreselectionByTinySyms.
+*/
+class PreselManager {
+protected:
+	SymsSupport * const symsSupport_;			///< blurring and computing cluster representatives
+	ClustersSupport * const clustersSupport_;	///< clusters isolation
+	MatchSupport * const matchSupport_;			///< cached data management
+	TransformSupport * const transfSupport;		///< initializes and updates draft matches
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
+public:
+	/// Gets its data from its 2 friends: MatchEngine and Transformer
+	PreselManager(MatchEngine &me, Transformer &tr);
 
-#pragma warning ( pop )
+	PreselManager(const PreselManager&) = delete;
+	PreselManager(PreselManager&&) = delete;
+	void operator=(const PreselManager&) = delete;
+	void operator=(PreselManager&&) = delete;
+	
+	~PreselManager(); ///< Destroys all the heap-allocated fields
 
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
+	SymsSupport& symsSupport() const;
+	ClustersSupport& clustersSupport() const;
+	MatchSupport& matchSupport() const;
+	TransformSupport& transformSupport() const;
+};
 
-/// unit testing namespace
-namespace ut {
-
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
-
-	/**
-	Generates an uniformly-distributed random unsigned char.
-
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
-
-	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
-	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
-}
-
-#endif
+#endif // H_PRESELECT_MANAGER

@@ -43,6 +43,8 @@
 #include "settings.h"
 #include "matchParams.h"
 #include "patch.h"
+#include "preselectManager.h"
+#include "transformSupport.h"
 #include "preselectSyms.h"
 #include "match.h"
 #include "jobMonitorBase.h"
@@ -197,11 +199,8 @@ static void logDataForBestMatches(volatile bool &isCanceled,
 #endif // _DEBUG && !UNIT_TESTING
 
 extern const Size BlurWinSize;
-extern const double BlurStandardDeviation, AdmitOnShortListEvenForInferiorScoreFactor;
-extern const bool UsingOMP, ParallelizeTr_PatchRowLoops, PreselectionByTinySyms;
-extern const unsigned ShortListLength;
-extern unsigned TinySymsSz();
-extern const bool UseSkipMatchAspectsHeuristic;
+extern const double BlurStandardDeviation;
+extern const bool ParallelizeTr_PatchRowLoops;
 
 Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
 						 MatchEngine &me_, Img &img_) :
@@ -287,9 +286,10 @@ void Transformer::run() {
 
 void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion,
 								   unsigned patchesPerCol, unsigned patchesPerRow) {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const unsigned TinySymsSize = TinySymsSz();
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+	if(preselManager == nullptr)
+		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before " __FUNCTION__, logic_error);
+
+	auto &trSupport = preselManager->transformSupport();
 
 	// processing new resized image
 	if(newResizedImg || draftMatches.empty()) {
@@ -298,53 +298,10 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 		GaussianBlur(resized, resizedBlurred, BlurWinSize,
 					 BlurStandardDeviation, BlurStandardDeviation, BORDER_REPLICATE);
 		
-		draftMatches.clear(); draftMatches.resize(patchesPerCol);
+		trSupport.initDrafts(isColor, sz, patchesPerCol, patchesPerRow);
 
-		if(PreselectionByTinySyms) {
-			const Size imgSzForTinySyms(int(TinySymsSize * patchesPerRow), int(TinySymsSize * patchesPerCol));
-			resize(resized, resizedForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
-			resize(resizedBlurred, resBlForTinySyms, imgSzForTinySyms, 0., 0., INTER_AREA);
-			draftMatchesForTinySyms.clear(); draftMatchesForTinySyms.resize(patchesPerCol);
-		}
-
-#pragma omp parallel if(UsingOMP)
-#pragma omp for schedule(static, 1) nowait
-		for(int r = 0; r < (int)patchesPerCol; ++r) {
-			const auto initDraftRow = [&] (vector<vector<BestMatch>> &draft,
-										   const Mat &res, const Mat &resBlurred, 
-										   int patchSz) {
-				const int row = r * patchSz;
-				const Range rowRange(row, row + patchSz);
-
-				auto &draftMatchesRow = draft[(size_t)r]; draftMatchesRow.reserve(patchesPerRow);
-				for(int c = 0, cLim = (int)patchesPerRow * patchSz; c < cLim; c += patchSz) {
-					const Range colRange(c, c+patchSz);
-					const Mat patch(res, rowRange, colRange),
-							blurredPatch(resBlurred, rowRange, colRange);
-
-					// Building a Patch with the blurred patch computed for its actual borders
-					draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
-				}
-			};
-
-			initDraftRow(draftMatches, resized, resizedBlurred, (int)sz);
-			if(PreselectionByTinySyms)
-				initDraftRow(draftMatchesForTinySyms, resizedForTinySyms, resBlForTinySyms, (int)TinySymsSize);
-		}
 	} else { // processing same ResizedImg
-#pragma omp parallel if(UsingOMP)
-#pragma omp for schedule(static, 1) nowait
-		for(int r = 0; r < (int)patchesPerCol; ++r) {
-			const auto resetDraftRow = [&] (vector<vector<BestMatch>> &draft) {
-				auto &draftMatchesRow = draft[(size_t)r];
-				for(auto &draftMatch : draftMatchesRow)
-					draftMatch.reset(); // leave nothing but the Patch field
-			};
-
-			resetDraftRow(draftMatches);
-			if(PreselectionByTinySyms)
-				resetDraftRow(draftMatchesForTinySyms);
-		}
+		trSupport.resetDrafts(patchesPerCol);
 	}
 }
 
@@ -352,10 +309,14 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	// Cannot set finalizedRows as reduction(+ : finalizedRows) in the for below,
 	// since its value is checked during the loop - the same story as for isCanceled
 	volatile size_t finalizedRows = 0U;
+
+	assert(preselManager != nullptr);
+	auto &trSupport = preselManager->transformSupport();
 	const int patchesPerCol = h / (int)sz;
 	const size_t rowsOfPatches = size_t(patchesPerCol),
 				batchSz = size_t(upperIdx - fromIdx),
 				prevSteps = (size_t)fromIdx * rowsOfPatches;
+	const MatchSettings &ms = cfg.matchSettings();
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
@@ -365,70 +326,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 
 		ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: [%d - %d); row = %d", fromIdx, upperIdx, r);
 
-		const int row = r * (int)sz;
-		const Range rowRange(row, row + (int)sz);
-		auto &draftMatchesRow = draftMatches[(size_t)r];
-
-		/// Update the visualized draft
-		const auto patchImproved = [&] (const BestMatch &draftMatch, int startCol) {
-			const Mat &approximation = draftMatch.bestVariant.approx;
-			Mat destRegion(result, rowRange, Range(startCol, startCol + (int)sz));
-			approximation.copyTo(destRegion);
-		};
-		
-		/// Update PatchApprox for uniform Patch only during the compare with 1st sym (from 1st batch)
-		const auto manageUnifPatch = [&] (BestMatch &draftMatch, int startCol) {
-			if(draftMatch.bestVariant.approx.empty()) {
-				draftMatch.updatePatchApprox(cfg.matchSettings());
-				patchImproved(draftMatch, startCol);
-			}
-		};
-
-		/// Determines if a given patch is worth approximating (Uniform patches don't make sense approximating)
-		const auto checkUnifPatch = [&] (BestMatch &draftMatch) {
-			return !draftMatch.patch.needsApproximation;
-		};
-
-		if(PreselectionByTinySyms) {
-			auto &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
-
-			TopCandidateMatches tcm(ShortListLength);
-
-			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
-				// Skip patches who appear rather uniform either in tiny or normal format
-				auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
-				auto &draftMatchTiny = draftMatchesRowTiny[(size_t)patchColumn];
-				if(checkUnifPatch(draftMatchTiny) || checkUnifPatch(draftMatch)) {
-					manageUnifPatch(draftMatch, c);
-					continue;
-				}
-
-				// Using the actual score as reference for the original threshold
-				tcm.reset(draftMatchTiny.score = draftMatch.score * AdmitOnShortListEvenForInferiorScoreFactor);
-
-				if(me.improvesBasedOnBatch(fromIdx, upperIdx, draftMatchTiny, &tcm)) {
-					tcm.prepareReport();
-					auto &&shortList = tcm.getShortList();
-					
-					// Examine shortList on actual patches and symbols, not tiny ones
-					if(me.improvesBasedOnBatchShortList(std::move(shortList), draftMatch))
-						patchImproved(draftMatch, c);
-				}
-			} // columns loop
-		
-		} else { // PreselectionByTinySyms == false here
-			for(int c = 0, patchColumn = 0; c < w; c += (int)sz, ++patchColumn) {
-				// Skip patches who appear rather uniform
-				auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
-				if(checkUnifPatch(draftMatch)) {
-					manageUnifPatch(draftMatch, c);
-					continue;
-				}
-
-				if(me.improvesBasedOnBatch(fromIdx, upperIdx, draftMatch))
-					patchImproved(draftMatch, c);
-			} // columns loop
-		}
+		trSupport.approxRow(r, w, sz, fromIdx, upperIdx, result);
 
 #pragma omp atomic
 		++finalizedRows;
@@ -465,5 +363,10 @@ void Transformer::setSymsBatchSize(int symsBatchSz_) {
 
 Transformer& Transformer::useTransformMonitor(AbsJobMonitor &transformMonitor_) {
 	transformMonitor = &transformMonitor_;
+	return *this;
+}
+
+Transformer& Transformer::usePreselManager(PreselManager &preselManager_) {
+	preselManager = &preselManager_;
 	return *this;
 }

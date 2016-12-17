@@ -52,8 +52,11 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 // Common part until #else (included just once)
 #include "testMain.h"
 #include "preselectionHelper.h"
+#include "symbolsSupportWithPreselection.h"
+#include "clusterSupportWithPreselection.h"
 #include "fileIterationHelper.h"
 #include "clusterEngine.h"
+#include "clusterSupport.h"
 #include "noClustering.h"
 #include "partitionClustering.h"
 #include "ttsasClustering.h"
@@ -128,6 +131,29 @@ namespace ut {
 		}
 	};
 
+	/// Creates and destroys necessary ClustersSupport objects
+	struct ClusterHelper {
+		SymsSupport * const symsSupport_;			///< symbols helper
+		ClustersSupport * const clustersSupport_;	///< clusters helper
+
+		/// Constructs the appropriate clustersSupport_ considering PreselectionByTinySyms
+		ClusterHelper(ITinySymsProvider &tsp, ClusterEngine &ce, VSymData &symsSet) :
+			symsSupport_(PreselectionByTinySyms ?
+				new SymsSupportWithPreselection() :
+				new SymsSupport()),
+			clustersSupport_(PreselectionByTinySyms ?
+				new ClustersSupportWithPreselection(tsp, ce, *symsSupport_, symsSet) :
+				new ClustersSupport(ce, *symsSupport_, symsSet)) {
+			ce.supportedBy(*clustersSupport_);
+		}
+
+		/// Destroys generated objects
+		~ClusterHelper() {
+			delete clustersSupport_;
+			delete symsSupport_;
+		}
+	};
+
 	const unsigned TinySymsSize = TinySymsSz();
 	const double TinySymArea = double(TinySymsSize*TinySymsSize);
 	const unsigned TinySymMidSide = TinySymsSize>>1, // TinySymsSize is odd, so it's ok to keep center as unsigned value
@@ -143,7 +169,7 @@ namespace ut {
 	Initializes the diagonal projection of a diagonal matrix of size TinySymsSize
 	All elements 0 except the central one, which is TinySymsSize * 1 = TinySymsSize
 
-	Needed to provide a parameter for constructing MainDiagTinySym object from below.
+	Needed to provide a parameter for constructing MainDiagTinySym() object from below.
 	*/
 	const Mat slashProjectionOfMatWithMainDiagSet() {
 		static Mat result(1, TinySymDiagsCount, CV_64FC1, 0.);
@@ -155,11 +181,14 @@ namespace ut {
 		return result.clone();
 	}
 
-	const TinySym EmptyTinySym,
-		MainDiagTinySym(Point2d(.5, .5), .2, Mat::eye(TinySymsSize, TinySymsSize, CV_64FC1),
-						Mat::ones(1, TinySymsSize, CV_64FC1), Mat::ones(1, TinySymsSize, CV_64FC1),
-						slashProjectionOfMatWithMainDiagSet(),
-						Mat::ones(1, TinySymDiagsCount, CV_64FC1));
+	const TinySym& EmptyTinySym() {
+		static const TinySym ts(Mat(TinySymsSize, TinySymsSize, CV_64FC1, 255.));
+		return ts;
+	}
+	const TinySym& MainDiagTinySym() {
+		static const TinySym ts(255.-255.*Mat::eye(TinySymsSize, TinySymsSize, CV_64FC1), Point2d(.5, .5), .2);
+		return ts;
+	}
 
 	/// Updates the central pixel of the tiny symbol sym and all the other involved parameters
 	void updateCentralPixel(TinySym &sym, double pixelVal) {
@@ -188,12 +217,6 @@ namespace ut {
 
 #undef UpdateProjectionAt
 	};
-
-	/// negSym from tiny symbols need to have double type
-	void fixNegSyms(VSymData &tinySymsSet) {
-		for(auto &tsd : tinySymsSet)
-			tsd.negSym.convertTo(tsd.negSym, CV_64FC1);
-	}
 
 	/// symIdx from the symsSet become consecutive values
 	void fixSymIndices(VSymData &symsSet) {
@@ -263,10 +286,10 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		size_t symsCount = 6U;
-		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
-		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
-		ce.process(symsSet, tinySymsSet);
+		tsp.tinySyms.assign(symsCount, EmptyTinySym());
+		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
+		ClusterHelper ch(tsp, ce, symsSet);
+		ch.clustersSupport_->groupSyms();
 		BOOST_REQUIRE(ce.getClusters().size() == symsCount);
 	}
 
@@ -275,10 +298,10 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
-		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
-		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
-		ce.process(symsSet, tinySymsSet);
+		tsp.tinySyms.assign(symsCount, EmptyTinySym());
+		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
+		ClusterHelper ch(tsp, ce, symsSet);
+		ch.clustersSupport_->groupSyms();
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
 
@@ -287,10 +310,10 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
-		tsp.tinySyms.assign(symsCount, EmptyTinySym);
-		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
-		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
-		ce.process(symsSet, tinySymsSet);
+		tsp.tinySyms.assign(symsCount, EmptyTinySym());
+		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
+		ClusterHelper ch(tsp, ce, symsSet);
+		ch.clustersSupport_->groupSyms();
 		BOOST_REQUIRE(ce.getClusters().size() == 1U);
 	}
 
@@ -298,11 +321,11 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		refClusterAlgName = "Partition";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
-		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym, EmptyTinySym, MainDiagTinySym, EmptyTinySym, MainDiagTinySym };
+		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
-		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
-		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
-		ce.process(symsSet, tinySymsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
+		ClusterHelper ch(tsp, ce, symsSet);
+		ch.clustersSupport_->groupSyms();
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);
@@ -318,11 +341,11 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		refClusterAlgName = "TTSAS";
 		ClusterEngine ce(tsp);
 		ce.useSymsMonitor(jm);
-		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym, EmptyTinySym, MainDiagTinySym, EmptyTinySym, MainDiagTinySym };
+		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
-		VSymData symsSet(symsCount, EmptySymData5x5), tinySymsSet; fixSymIndices(symsSet);
-		if(PreselectionByTinySyms) { tinySymsSet = symsSet; fixNegSyms(tinySymsSet); }
-		ce.process(symsSet, tinySymsSet);
+		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
+		ClusterHelper ch(tsp, ce, symsSet);
+		ch.clustersSupport_->groupSyms();
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);
@@ -346,19 +369,19 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 			// Use n identical symbols => a single cluster
 			BOOST_TEST_MESSAGE("Checking member thresholds with a set of " << n << " identical symbols");
 
-			tsp.tinySyms.assign(n, EmptyTinySym); symsSet.assign(n, EmptySymData5x5); fixSymIndices(symsSet);
+			tsp.tinySyms.assign(n, EmptyTinySym()); symsSet.assign(n, EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_REQUIRE(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
 			const double ThresholdForNplus1 = TTSAS_Threshold_Member / (n+1U);
 
 			// Append a symbol beyond the threshold => 2 clusters
-			TinySym newSym = EmptyTinySym; // changing only central pixel => same mass-center
+			TinySym newSym = EmptyTinySym(); // changing only central pixel => same mass-center
 			updateCentralPixel(newSym, ThresholdForNplus1 + EPS);
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(2U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
 			// Just check that adding now a symbol below the threshold results in a single cluster
-			updateCentralPixel(newSym = EmptyTinySym, ThresholdForNplus1 - EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), ThresholdForNplus1 - EPS);
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 			tsp.tinySyms.pop_back(); symsSet.pop_back(); // Remove last added element
@@ -374,12 +397,12 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 						BorderMemberNplus2 = CentralPixelOfCentroidNplus1 + ThresholdForNplus2;
 
 			// Append a symbol beyond the threshold => 2 clusters
-			updateCentralPixel(newSym = EmptyTinySym, BorderMemberNplus2 + EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 + EPS);
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(2U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
 			// Bring that last symbol below the threshold => a single cluster
-			updateCentralPixel(newSym = EmptyTinySym, BorderMemberNplus2 - EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 - EPS);
 			const_cast<TinySym&>(tsp.tinySyms.back()) = newSym;
 			BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
@@ -421,7 +444,7 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 		7) S2 rechecks the updated C1 from updated clusters and accepts the long-waited promotion of C1
 		*/
 
-		TinySym sym = EmptyTinySym; // changing only central pixel => same mass-center
+		TinySym sym = EmptyTinySym(); // changing only central pixel => same mass-center
 		const double Border4 = TTSAS_Threshold_Member / 2., // Border for 4th symbol
 
 					// Border for 2nd and 3rd symbols (1/(2^2) + 1/3) * TTSAS_Threshold_Member
@@ -431,18 +454,18 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 2nd symbol, which promotes its updated reserve cluster to parent cluster in 3rd loop
-		updateCentralPixel(sym = EmptyTinySym, Border23 + EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border23 + EPS);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 3rd symbol, which accepts the parent at the end of 2nd loop from previous new clusters
 		// Normally, this is also a promotion of updated reserve candidate,
 		// but the update was kept in newClusters instead of updatedClusters,
 		// as the cluster was just created during that loop
-		updateCentralPixel(sym = EmptyTinySym, Border23 - EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border23 - EPS);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 4th symbol, which accepts the parent at the end of 1st loop from new clusters
-		updateCentralPixel(sym = EmptyTinySym, Border4 - EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border4 - EPS);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));

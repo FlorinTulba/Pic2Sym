@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,58 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
+#ifndef H_MATCH_SUPPORT
+#define H_MATCH_SUPPORT
 
-#include "match.h"
-#include "matchParams.h"
+// Forward declarations
+struct CachedData;
+class FontEngine;
 
-#pragma warning ( push, 0 )
+/**
+Type for a polymorphic parameter to be passed to MatchEngine::improvesBasedOnBatch.
+The type is adjusted based on the value of PreselectionByTinySyms.
+Each time the method finds a better match, it calls remarkedMatch from this class.
+*/
+class MatchProgress {
+public:
+	/// Base class constructor
+	MatchProgress() {}
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
+	MatchProgress(const MatchProgress&) = delete;
+	MatchProgress(MatchProgress&&) = delete;
+	void operator=(const MatchProgress&) = delete;
+	void operator=(MatchProgress&&) = delete;
 
-#pragma warning ( pop )
-
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
-
-/// unit testing namespace
-namespace ut {
-
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
-
-	/**
-	Generates an uniformly-distributed random unsigned char.
-
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
+	virtual ~MatchProgress() {}
 
 	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
+	For PreselectionByTinySyms == false, it does nothing.
+	For PreselectionByTinySyms == true, it checks if the new match is worth placing on the short candidate list.
 	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
-}
+	virtual void remarkedMatch(unsigned /*symIdx*/, double /*score*/) {}
+};
 
-#endif
+/// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
+class MatchSupport {
+protected:
+	CachedData& cd;	///< cached data corresponding to normal size symbols
+
+public:
+	/// Base class constructor
+	MatchSupport(CachedData &cd_);
+	
+	MatchSupport(const MatchSupport&) = delete;
+	MatchSupport(MatchSupport&&) = delete;
+	void operator=(const MatchSupport&) = delete;
+	void operator=(MatchSupport&&) = delete;
+
+	virtual ~MatchSupport() {}
+
+	/// cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
+	virtual const CachedData& cachedData() const;
+
+	/// update cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
+	virtual void updateCachedData(unsigned fontSz, const FontEngine &fe);
+};
+
+#endif // H_MATCH_SUPPORT

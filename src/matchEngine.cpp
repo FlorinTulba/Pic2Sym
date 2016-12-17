@@ -44,10 +44,14 @@
 #include "matchAspectsFactory.h"
 #include "matchParams.h"
 #include "patch.h"
+#include "preselectManager.h"
 #include "preselectSyms.h"
+#include "clusterSupport.h"
+#include "matchSupport.h"
 #include "settings.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
+#include "misc.h"
 
 #ifndef UNIT_TESTING
 
@@ -102,15 +106,12 @@ namespace {
 } // anonymous namespace
 
 MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce(fe_),
-			cachedDataForTinySyms(true),
 			matchAssessor(MatchAssessor::specializedInstance(availAspects)) {
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.matchSettings()));
 
 	matchAssessor.updateEnabledMatchAspectsCount();
-
-	cachedDataForTinySyms.useNewSymSize(TinySymsSz());
 }
 
 void MatchEngine::updateSymbols() {
@@ -172,26 +173,10 @@ void MatchEngine::updateSymbols() {
 
 	fieldsComputations.taskDone();
 
-	extern const bool PreselectionByTinySyms;
-	if(PreselectionByTinySyms) {
-		tinySymsSet.clear();
-		tinySymsSet.reserve(symsSet.size());
-		const auto &allTinySyms = fe.getTinySyms();
-		for(const auto &sym : symsSet)
-			tinySymsSet.push_back(allTinySyms[sym.symIdx]);
-
-		// Clustering on tinySymsSet (Both sets get reordered)
-		ce.process(symsSet, tinySymsSet, fe.getFontType());
-
-		fe.disposeTinySyms();
-
-	} else {
-		// Clustering on symsSet (Both sets get reordered)
-		ce.process(symsSet, tinySymsSet, fe.getFontType());
-	}
-
-	extern const double MinAverageClusterSize;
-	matchByClusters = (symsCount > MinAverageClusterSize * ce.getClustersCount());
+	if(preselManager!=nullptr)
+		preselManager->clustersSupport().groupSyms(fe.getFontType());
+	else
+		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }
@@ -228,28 +213,24 @@ const MatchAssessor& MatchEngine::assessor() const {
 void MatchEngine::getReady() {
 	updateSymbols();
 
-	cachedData.update(cfg.symSettings().getFontSz(), fe);
-	cachedDataForTinySyms.update(fe);
+	if(preselManager!=nullptr)
+		preselManager->matchSupport().updateCachedData(cfg.symSettings().getFontSz(), fe);
+	else
+		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
 
 	matchAssessor.getReady(cachedData);
 }
 
 bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx,
-									   BestMatch &draftMatch,
-									   TopCandidateMatches *tcm/* = nullptr*/) const {
+									   BestMatch &draftMatch, MatchProgress &matchProgress) const {
 	assert(matchAssessor.enabledMatchAspectsCount() > 0ULL);
 	assert(draftMatch.patch.needsApproximation);
 	assert(upperSymIdx <= getSymsCount());
+	assert(preselManager != nullptr);
 
-	bool tinySymsMode = false;
-	const CachedData *cd = &cachedData;
-	const VSymData *inspectedSet = &symsSet;
-
-	if(nullptr != tcm) {
-		tinySymsMode = true;
-		cd = &cachedDataForTinySyms;
-		inspectedSet = &tinySymsSet;
-	}
+	auto &matchSupport = preselManager->matchSupport();
+	const CachedData &cd = matchSupport.cachedData();
+	const VSymData &inspectedSet = preselManager->clustersSupport().clusteredSyms();
 
 	const Mat &toApprox = draftMatch.patch.matrixToApprox();
 	MatchParams &mp = draftMatch.bestVariant.params;
@@ -258,7 +239,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 	double score;
 	bool betterMatchFound = false;
-	if(matchByClusters) { // Matching is performed first with clusters and only afterwards with individual symbols
+	if(ce.worthGrouping()) { // Matching is performed first with clusters and only afterwards with individual symbols
 		unsigned fromCluster, firstSymIdxWithinFromCluster, lastCluster, lastSymIdxWithinLastCluster;
 		locateIdx(ce.getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
 		locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
@@ -278,12 +259,11 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 			const unsigned upperLimit = (fromCluster < lastCluster) ?
 											clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-									*this, toApprox, *inspectedSet, *cd,
+									*this, toApprox, inspectedSet, cd,
 									scoresToBeatBySyms,
 									draftMatch, mp)) {
 				scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
-				if(tinySymsMode)
-					tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
+				matchProgress.remarkedMatch(*draftMatch.symIdx, draftMatch.score);
 
 				betterMatchFound = true;
 			}
@@ -306,30 +286,28 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 			if(cluster.sz == 1U) { // Trivial cluster
 				// Single element clusters have same score as their content.
 				const unsigned symIdx = cluster.idxOfFirstSym;
-				const auto &symData = (*inspectedSet)[symIdx];
-				if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+				const auto &symData = inspectedSet[symIdx];
+				if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
 					draftMatch.update(score, symData.code, symIdx, symData, mp);
 					matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
 					scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
-					if(tinySymsMode)
-						tcm->checkCandidate(symIdx, score);
+					matchProgress.remarkedMatch(symIdx, score);
 
 					betterMatchFound = true;
 				}
 			
 			} else { // Nontrivial cluster
-				if(matchAssessor.isBetterMatch(toApprox, cluster, *cd, scoresToBeatByClusters, mp, score)) {
+				if(matchAssessor.isBetterMatch(toApprox, cluster, cd, scoresToBeatByClusters, mp, score)) {
 					draftMatch.lastPromisingNontrivialCluster = clusterIdx; // cluster is a selected candidate
 
 					const unsigned upperLimit = (clusterIdx < lastCluster) ?
 						cluster.sz : lastSymIdxWithinLastCluster;
 					if(checkRangeWithinCluster(0U, upperLimit, 
-												*this, toApprox, *inspectedSet, *cd,
+												*this, toApprox, inspectedSet, cd,
 												scoresToBeatBySyms,
 												draftMatch, mp)) {
 						scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
-						if(tinySymsMode)
-							tcm->checkCandidate(*draftMatch.symIdx, draftMatch.score);
+						matchProgress.remarkedMatch(*draftMatch.symIdx, draftMatch.score);
 
 						betterMatchFound = true;
 					}
@@ -340,15 +318,14 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	} else { // Matching is performed directly with individual symbols, not with clusters
 		// Examine all remaining symbols within current batch
 		for(unsigned symIdx = fromSymIdx; symIdx < upperSymIdx; ++symIdx) {
-			const auto &symData = (*inspectedSet)[symIdx];
+			const auto &symData = inspectedSet[symIdx];
 
 			mp.reset(); // preserves patch-invariant fields
 
-			if(matchAssessor.isBetterMatch(toApprox, symData, *cd, scoresToBeatBySyms, mp, score)) {
+			if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
 				draftMatch.update(score, symData.code, symIdx, symData, mp);
 				matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
-				if(tinySymsMode)
-					tcm->checkCandidate(symIdx, score);
+				matchProgress.remarkedMatch(symIdx, score);
 
 				betterMatchFound = true;
 			}
@@ -361,43 +338,14 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	return betterMatchFound;
 }
 
-bool MatchEngine::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
-												BestMatch &draftMatch) const {
-	bool betterMatchFound = false;
-	
-	double score;
-
-	MatchParams &mp = draftMatch.bestVariant.params;
-	ScoreThresholds scoresToBeat; 
-	matchAssessor.scoresToBeat(draftMatch.score, scoresToBeat);
-
-	while(!shortList.empty()) {
-		auto candidateIdx = shortList.top();
-
-		mp.reset(); // preserves patch-invariant fields
-
-		if(matchAssessor.isBetterMatch(draftMatch.patch.matrixToApprox(),
-										symsSet[candidateIdx], cachedData,
-										scoresToBeat, mp, score)) {
-			const auto &symData = symsSet[candidateIdx];
-			draftMatch.update(score, symData.code, candidateIdx, symData, mp);
-			matchAssessor.scoresToBeat(score, scoresToBeat);
-
-			betterMatchFound = true;
-		}
-
-		shortList.pop();
-	}
-
-	if(betterMatchFound)
-		draftMatch.updatePatchApprox(cfg.matchSettings());
-
-	return betterMatchFound;
-}
-
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
 	ce.useSymsMonitor(symsMonitor_);
+	return *this;
+}
+
+MatchEngine& MatchEngine::usePreselManager(PreselManager &preselManager_) {
+	preselManager = &preselManager_;
 	return *this;
 }
 

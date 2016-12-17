@@ -59,12 +59,6 @@ struct TinySym : SymData {
 	/// Ratio between reference symbols and the shrunken symbol
 	enum { RatioRefTiny = 8 };
 
-	static void computeFields(const PixMapSym &refSym,
-							  double &minVal, double &maxVal,
-							  MatArray &symAndMasks,
-							  cv::Mat &hAvgProj, cv::Mat &vAvgProj,
-							  cv::Mat &backslashDiagAvgProj, cv::Mat &slashDiagAvgProj);
-
 	/*
 	Next 5 matrices from below are for the grounded version, not the original.
 	Each would normally contain elements in range 0..1, but all of them were
@@ -90,7 +84,7 @@ struct TinySym : SymData {
 	cv::Mat backslashDiagAvgProj;	///< normal diagonal projection divided by TinySymDiagsCount
 	cv::Mat slashDiagAvgProj;		///< inverse diagonal projection divided by TinySymDiagsCount
 
-	TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0U); ///< Empty symbols with the code & index from cmap
+	TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL); ///< Empty symbols with the code & index from cmap
 	TinySym(const PixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
 
 	/// Used to create the centroid of a cluster
@@ -106,6 +100,10 @@ struct TinySym : SymData {
 			hAvgProj & vAvgProj & 
 			backslashDiagAvgProj & slashDiagAvgProj;
 	}
+
+#ifdef UNIT_TESTING
+	TinySym(const cv::Mat &negSym_, const cv::Point2d &mc_ = cv::Point2d(.5,.5), double avgPixVal_ = 0.); ///< generate the tiny symbol based on a negative
+#endif // UNIT_TESTING defined
 };
 
 BOOST_CLASS_VERSION(TinySym, TinySym::VERSION);

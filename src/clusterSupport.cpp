@@ -2,7 +2,7 @@
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
- This file belongs to the UnitTesting project.
+ This file belongs to the Pic2Sym project.
 
  Copyrights from the libraries used by the program:
  - (c) 2016 Boost (www.boost.org)
@@ -38,70 +38,44 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_TEST_MAIN
-#define H_TEST_MAIN
+#include "clusterSupport.h"
+#include "clusterEngine.h"
+#include "symData.h"
 
-#include "match.h"
-#include "matchParams.h"
+using namespace std;
 
-#pragma warning ( push, 0 )
+ClustersSupport::ClustersSupport(ClusterEngine &ce_, SymsSupport &ss_, VSymData &symsSet_) :
+	ce(ce_), ss(ss_), symsSet(symsSet_) {}
 
-#include <boost/test/unit_test.hpp>
-#include <boost/preprocessor/cat.hpp>
-
-#pragma warning ( pop )
-
-/// Defines test case named Name and ensures it will show its name when launched
-#define AutoTestCase(Name) \
-	BOOST_AUTO_TEST_CASE(Name) { \
-		BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name))
-
-/// unit testing namespace
-namespace ut {
-
-	/// Generates an uniformly-distributed random unsigned
-	unsigned randUnifUint();
-
-	/**
-	Generates an uniformly-distributed random unsigned char.
-
-	@param minIncl fist possible random value
-	@param maxIncl last possible random value
-	@return the random value
-	*/
-	unsigned char randUnsignedChar(unsigned char minIncl = 0U, unsigned char maxIncl = 255U);
-
-	/// Used for a global fixture to reinitialize Controller's fields for each test
-	struct Controller {
-
-		/*
-		Which Controller's fields to reinitialize.
-		The global fixture sets them to true.
-		After initialization each is set to false.
-		*/
-		static bool initImg, initFontEngine, initMatchEngine,
-			initTransformer, initPreselManager, initComparator, initControlPanel;
-	};
-
-	/// Mock MatchEngine
-	struct MatchEngine {};
-
-	/// Fixture to be used before every test
-	struct Fixt {
-		Fixt();		///< set up
-		~Fixt();	///< tear down
-	};
-
-	/**
-	When detecting mismatches during Unit Testing, it displays a comparator window with them.
-
-	@param testTitle the name of the test producing mismatches.
-	It's appended with a unique id to distinguish among homonym tests
-	from different unit testing sessions.
-	@param mismatches vector of BestMatch objects
-	*/
-	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
+void ClustersSupport::groupSyms(const string &fontType/* = ""*/) {
+	// Clustering on symsSet
+	ce.process(symsSet, fontType);
 }
 
-#endif
+void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerCluster,
+									VClusterData &clusters, set<unsigned> &clusterOffsets) {
+	const auto symsCount = symsSet.size();
+	VSymData newSymsSet;
+	newSymsSet.reserve(symsCount);
+
+	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
+		const auto &symsIndices = symsIndicesPerCluster[i];
+		const unsigned clusterSz = (unsigned)symsIndices.size();
+		clusterOffsets.insert(offset);
+		clusters.emplace_back(symsSet, offset, symsIndices, ss); // needs symsSet[symsIndices] !!
+
+		for(const auto idx : symsIndices) {
+			// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
+			newSymsSet.push_back(symsSet[idx]);
+		}
+
+		offset += clusterSz;
+	}
+	clusterOffsets.insert((unsigned)symsCount); // delimit last cluster
+
+	symsSet = move(newSymsSet);
+}
+
+const VSymData& ClustersSupport::clusteredSyms() const {
+	return symsSet;
+}

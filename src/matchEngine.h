@@ -44,18 +44,25 @@
 #include "fontEngine.h"
 #include "clusterEngine.h"
 #include "cachedData.h"
-#include "preselectSyms.h"
+
+#pragma warning ( push, 0 )
+
+#include <vector>
+
+#pragma warning ( pop )
 
 // Forward declarations
 struct BestMatch;
-struct Patch;
 class Settings;
 class MatchAspect;
 class MatchAssessor;
+class MatchProgress;
+class PreselManager;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine {
 	friend class Controller;
+	friend class PreselManager;
 
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
@@ -70,23 +77,18 @@ protected:
 	AbsJobMonitor *symsMonitor = nullptr;
 
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
-	VSymData symsSet;			///< set of most information on each symbol
-	VSymData tinySymsSet;		///< set of most information on each tiny symbol
 	ClusterEngine ce;			///< clusters manager
 
-	CachedData cachedDataForTinySyms;	///< data precomputed for tiny symbols preselection
-
-#ifdef UNIT_TESTING // UnitTesting project needs access to cachedData
+#ifdef UNIT_TESTING // UnitTesting project needs access to following fields
 public:
 #endif // UNIT_TESTING
+	VSymData symsSet;			///< set of most information on each symbol
 	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
+	MatchAssessor &matchAssessor;			///< match manager based on the enabled matching aspects
 
 protected:
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
-	MatchAssessor &matchAssessor;		///< match manager based on the enabled matching aspects
-
-	/// Should the symbols be compared against the patches individually, or first by clusters?
-	bool matchByClusters = false;
+	PreselManager *preselManager = nullptr;	///< preselection manager
 
 public:
 	MatchEngine(const Settings &cfg_, FontEngine &fe_);
@@ -105,20 +107,16 @@ public:
 	void getReady();		///< called before a series of improvesBasedOnBatch
 
 	/// @return true if a new better match is found within the new batch of symbols
-	bool improvesBasedOnBatch(unsigned fromSymIdx,		///< start of the batch
-							  unsigned upperSymIdx,		///< end of the batch (exclusive)
-							  BestMatch &draftMatch,	///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
-							  TopCandidateMatches *tcm = nullptr ///< preselection manager when performing tiny symbols preselection
+	bool improvesBasedOnBatch(unsigned fromSymIdx,			///< start of the batch
+							  unsigned upperSymIdx,			///< end of the batch (exclusive)
+							  BestMatch &draftMatch,		///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
+							  MatchProgress &matchProgress	///< observer notified for each new improved match
 							  ) const;
-
-	/// @return true if a new better match is found within this short list
-	bool improvesBasedOnBatchShortList(CandidatesShortList &&shortList,	///< most promising candidates from current batch of symbols
-									   BestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
-									   ) const;
 
 	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
 
-	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_);		///< setting the symbols monitor
+	MatchEngine& usePreselManager(PreselManager &preselManager_);	///< setting the preselection manager
 
 	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
 };

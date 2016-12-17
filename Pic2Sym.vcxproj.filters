@@ -372,6 +372,33 @@
     <ClInclude Include="src\matchAssessment.h">
       <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClInclude>
+    <ClInclude Include="src\clusterSupport.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterSupportWithPreselection.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\preselectManager.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symbolsSupport.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symbolsSupportWithPreselection.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSupportWithPreselection.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSupport.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformSupport.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformSupportWithPreselection.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -544,6 +571,33 @@
     </ClCompile>
     <ClCompile Include="src\matchAssessment.cpp">
       <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterSupport.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\preselectManager.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterSupportWithPreselection.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symbolsSupport.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symbolsSupportWithPreselection.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchSupportWithPreselection.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchSupport.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transformSupport.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transformSupportWithPreselection.cpp">
+      <Filter>Source Files\Controller\TransformEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

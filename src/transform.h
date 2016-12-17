@@ -64,9 +64,13 @@ class Settings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
 class TaskMonitor;
+class PreselManager;
+struct BestMatch;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
+	friend class PreselManager;
+
 protected:
 	const IPicTransformProgressTracker &ctrler;	///< data & views manager
 	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
@@ -79,12 +83,11 @@ protected:
 
 	std::string studiedCase;	///< unique id for the studied case
 	cv::Mat resized;			///< resized version of the original
-	cv::Mat resizedForTinySyms;	///< resized version of the original used by tiny symbols preselection
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
-	cv::Mat resBlForTinySyms;	///< blurred version of the resized used by tiny symbols preselection
 
 	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
-	std::vector<std::vector<BestMatch>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
+
+	PreselManager *preselManager = nullptr;	///< preselection manager
 
 	int w = 0;					///< width of the resized image
 	int h = 0;					///< height of the resized image
@@ -126,6 +129,7 @@ public:
 	void setSymsBatchSize(int symsBatchSz_);
 
 	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_); ///< setting the transformation monitor
+	Transformer& usePreselManager(PreselManager &preselManager_);		///< setting the preselection manager
 };
 
 #endif
