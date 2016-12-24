@@ -67,55 +67,23 @@ using namespace boost::filesystem;
 extern const string ClusterAlgName;
 extern const double MinAverageClusterSize;
 
-namespace {
-	/**
-	Reorders the clusters by their size - largest ones first and collects the offsets of each cluster.
-	
-	When tinySymsSet isn't empty (when using tiny symbols preselection),
-	the actual returned clusters will contain the tiny symbols
-	*/
-	void computeClusterOffsets(vector<vector<unsigned>> &symsIndicesPerCluster,
-							   unsigned clustersCount, VSymData &symsSet,
-							   VClusterData &clusters, set<unsigned> &clusterOffsets,
-							   ClustersSupport &support, bool worthGrouping) {
-		auto itFirstClusterWithOneItem = begin(symsIndicesPerCluster);
-		if(!worthGrouping) {
-			cout<<"Ignoring clustering due to the low average cluster size."<<endl;
+/// Reports various details about the identified clusters
+static void reportClustersInfo(const vector<vector<unsigned>> &symsIndicesPerCluster,
+							   unsigned clustersCount, const VSymData &symsSet) {
+	const auto maxClusterSz = max_element(CBOUNDS(symsIndicesPerCluster),
+										  [] (const vector<unsigned> &a, const vector<unsigned> &b) {
+		return a.size() < b.size();
+	})->size();
+	const auto nonTrivialClusters = (unsigned)count_if(CBOUNDS(symsIndicesPerCluster),
+													   [] (const vector<unsigned> &a) {
+		return a.size() > 1ULL;
+	});
+	const auto clusteredSyms = (unsigned)symsSet.size() - (clustersCount - nonTrivialClusters);
 
-		} else { // Add the clusters in descending order of their size
-			// Typically, there are only a few clusters larger than 1 element.
-			// This partition separates the actual formed clusters from one-of-a-kind elements
-			// leaving less work to perform to the sort executed afterwards
-			itFirstClusterWithOneItem = partition(BOUNDS(symsIndicesPerCluster),
-												  [] (const vector<unsigned> &a) {
-				return a.size() > 1ULL; // place actual clusters at the beginning of the vector
-			});
-
-			// Sort non-trivial clusters in descending order of their size
-			// and then in ascending order of avgPixVal (taken from last cluster member)
-			sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
-				 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
-				const size_t szA = a.size(), szB = b.size();
-				return (szA > szB) || ((szA == szB) && (symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal));
-			});
-
-			const unsigned nonTrivialClusters = (unsigned)distance(begin(symsIndicesPerCluster), itFirstClusterWithOneItem),
-						symsCount = (unsigned)symsSet.size(),
-						clusteredSyms = symsCount - (clustersCount - nonTrivialClusters);
-			cout<<"There are "<<nonTrivialClusters
-				<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
-			cout<<"Largest cluster contains "<<symsIndicesPerCluster[0ULL].size()<<" symbols."<<endl;
-		}
-
-		// Sort trivial clusters in ascending order of avgPixVal
-		sort(itFirstClusterWithOneItem, end(symsIndicesPerCluster),
-			 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
-			return symsSet[a.back()].avgPixVal < symsSet[b.back()].avgPixVal;
-		});
-
-		support.delimitGroups(symsIndicesPerCluster, clusters, clusterOffsets);
-	}
-} // anonymous namespace
+	cout<<"There are "<<nonTrivialClusters
+		<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
+	cout<<"Largest cluster contains "<<maxClusterSz<<" symbols."<<endl;
+}
 
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 const vector<unsigned> &clusterSymIndices,
@@ -158,22 +126,47 @@ void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) 
 	if(symsSet.empty())
 		return;
 
-	vector<vector<unsigned>> symsIndicesPerCluster;
+	clusters.clear(); clusterOffsets.clear(); symsIndicesPerCluster.clear();
+
 	clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
 
-	const double averageClusterSize = (double)symsSet.size()/clustersCount;
+	const double averageClusterSize = (double)symsSet.size() / clustersCount;
 	cout<<"Average cluster size is "<<averageClusterSize<<endl;
-
-	worthy = averageClusterSize > MinAverageClusterSize;
 
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor reorderClusters("reorders clusters", *symsMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	clusters.clear(); clusterOffsets.clear();
-	computeClusterOffsets(symsIndicesPerCluster, clustersCount, symsSet,
-						  clusters, clusterOffsets, *support, worthy);
+	// Sort symsIndicesPerCluster in ascending order of avgPixVal taken from the first symbol from each cluster
+	sort(BOUNDS(symsIndicesPerCluster),
+		 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
+		return symsSet[(size_t)a.front()].avgPixVal < symsSet[(size_t)b.front()].avgPixVal;
+	});
+
+	if(averageClusterSize > MinAverageClusterSize) {
+		worthy = true;
+		reportClustersInfo(symsIndicesPerCluster, clustersCount, symsSet);
+
+		// Trivial clusters are already in ascending order of avgPixVal (see the sort from above)
+
+		support->delimitGroups(symsIndicesPerCluster, clusters, clusterOffsets);
+
+	} else {
+		worthy = false;
+		cout<<"Ignoring clustering due to the low average cluster size."<<endl;
+	}
+
 	reorderClusters.taskDone(); // mark it as already finished
+}
+
+const VClusterData& ClusterEngine::getClusters() const {
+	assert(worthy); // when worthGrouping returns false, one shouldn't need clusters, nor rely on their value
+	return clusters;
+}
+
+const set<unsigned>& ClusterEngine::getClusterOffsets() const {
+	assert(worthy); // when worthGrouping returns false, one shouldn't need clusterOffsets, nor rely on their value
+	return clusterOffsets;
 }
 
 ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {

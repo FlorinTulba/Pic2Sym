@@ -46,6 +46,7 @@
 #include "preselectSyms.h"
 #include "clusterSupport.h"
 #include "matchSupport.h"
+#include "cmapPerspective.h"
 #include "settings.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
@@ -103,7 +104,8 @@ namespace {
 	}
 } // anonymous namespace
 
-MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_) : cfg(cfg_), fe(fe_), ce(fe_),
+MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
+			cfg(cfg_), fe(fe_), cmP(cmP_), ce(fe_),
 			matchAssessor(MatchAssessor::specializedInstance(availAspects)) {
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
@@ -171,33 +173,17 @@ void MatchEngine::updateSymbols() {
 
 	fieldsComputations.taskDone();
 
-	if(preselManager!=nullptr)
-		preselManager->clustersSupport().groupSyms(fe.getFontType());
-	else
+	if(preselManager == nullptr)
 		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
+
+	preselManager->clustersSupport().groupSyms(fe.getFontType());
+	cmP.reset(symsSet, ce.getSymsIndicesPerCluster());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }
 
-MatchEngine::VSymDataCItPair MatchEngine::getSymsRange(unsigned from, unsigned count) const {
-	const unsigned sz = (unsigned)symsSet.size();
-	const VSymDataCIt itEnd = symsSet.cend();
-	if(from >= sz)
-		return make_pair(itEnd, itEnd);
-
-	const VSymDataCIt itStart = next(symsSet.cbegin(), from);
-	if(from + count >= sz)
-		return make_pair(itStart, itEnd);
-
-	return make_pair(itStart, next(itStart, count));
-}
-
 unsigned MatchEngine::getSymsCount() const {
 	return (unsigned)symsSet.size();
-}
-
-const set<unsigned>& MatchEngine::getClusterOffsets() const {
-	return ce.getClusterOffsets();
 }
 
 const vector<std::shared_ptr<MatchAspect>>& MatchEngine::availMatchAspects() const {

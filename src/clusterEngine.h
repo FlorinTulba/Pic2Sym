@@ -67,6 +67,7 @@ protected:
 	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
 	VClusterData clusters;
 	std::set<unsigned> clusterOffsets;	///< start indices in symsSet where each cluster starts
+	std::vector<std::vector<unsigned>> symsIndicesPerCluster; ///< indices of the member symbols from each cluster
 	unsigned clustersCount = 0U;		///< number of clusters
 	bool worthy = false;				///< grouping symbols is worth-doing only above a threshold average cluster size
 
@@ -89,11 +90,17 @@ public:
 	*/
 	void process(VSymData &symsSet, const std::string &fontType = "");
 
-	/// The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
-	inline const VClusterData& getClusters() const { return clusters; }
-	inline unsigned getClustersCount() const { return clustersCount; }
-	inline const std::set<unsigned>& getClusterOffsets() const { return clusterOffsets; }
 	inline bool worthGrouping() const { return worthy; }
+	inline unsigned getClustersCount() const { return clustersCount; }
+	inline const std::vector<std::vector<unsigned>>& getSymsIndicesPerCluster() const { return symsIndicesPerCluster; }
+
+	/**
+	The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
+	Use it only if worthGrouping() returns true.
+	@return clusters
+	*/
+	const VClusterData& getClusters() const;
+	const std::set<unsigned>& getClusterOffsets() const; ///< returns clusterOffsets ; use it only if worthGrouping() returns true
 
 	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 

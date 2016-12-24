@@ -40,6 +40,13 @@
 #include "tinySymsProvider.h"
 #include "clusterEngine.h"
 #include "symData.h"
+#include "misc.h"
+
+#pragma warning ( push, 0 )
+
+#include <numeric>
+
+#pragma warning ( pop )
 
 using namespace std;
 
@@ -71,9 +78,9 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 	newTinySymsSet.reserve(symsCount);
 
 	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
-		const auto &symsIndices = symsIndicesPerCluster[i];
+		auto &symsIndices = symsIndicesPerCluster[i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
-		clusterOffsets.insert(offset);
+		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
 		clusters.emplace_back(tinySymsSet, offset, symsIndices, ss); // needs tinySymsSet[symsIndices] !!
 
 		for(const auto idx : symsIndices) {
@@ -84,9 +91,11 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 			newTinySymsSet.push_back(tinySymsSet[idx]);
 		}
 
+		iota(BOUNDS(symsIndices), offset); // new pointers will be consecutive
+
 		offset += clusterSz;
 	}
-	clusterOffsets.insert((unsigned)symsCount); // delimit last cluster
+	clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)symsCount); // delimit last cluster
 
 	symsSet = move(newSymsSet);
 	tinySymsSet = move(newTinySymsSet);

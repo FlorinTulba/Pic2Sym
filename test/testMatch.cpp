@@ -520,8 +520,7 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 	me.getReady();
 
 	// Recognizing the glyphs from current cmap
-	::MatchEngine::VSymDataCIt it, itEnd;
-	tie(it, itEnd) = me.getSymsRange(0U, UINT_MAX);
+	VSymData::const_iterator it = cbegin(me.symsSet), itEnd = cend(me.symsSet);
 	const unsigned symsCount = (unsigned)distance(it, itEnd),
 					SymsBatchSz = 25U;
 	vector<const BestMatch> mismatches;

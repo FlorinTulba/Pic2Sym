@@ -36,53 +36,63 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "clusterSupport.h"
-#include "clusterEngine.h"
-#include "symData.h"
-#include "misc.h"
+#ifdef UNIT_TESTING
+#	include "../test/mockCmapPerspective.h"
+
+#else // UNIT_TESTING not defined
+
+#ifndef H_CMAP_PERSPECTIVE
+#define H_CMAP_PERSPECTIVE
 
 #pragma warning ( push, 0 )
 
-#include <numeric>
+#include <vector>
+#include <set>
 
 #pragma warning ( pop )
 
-using namespace std;
+// Forward declarations
+struct SymData;
+typedef std::vector<const SymData> VSymData;
 
-ClustersSupport::ClustersSupport(ClusterEngine &ce_, SymsSupport &ss_, VSymData &symsSet_) :
-	ce(ce_), ss(ss_), symsSet(symsSet_) {}
+/**
+Ensures the symbols from the Cmap Viewer appear sorted by cluster size and then by average pixels sum.
+This arrangement of the symbols is true even when the clusters will be ignored
+while transforming images.
+*/
+class CmapPerspective {
+public:
+	// Displaying the symbols requires dividing them into pages (ranges using iterators)
+	typedef std::vector<const SymData*> VPSymData;
+	typedef VPSymData::const_iterator VPSymDataCIt;
+	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
 
-void ClustersSupport::groupSyms(const string &fontType/* = ""*/) {
-	// Clustering on symsSet
-	ce.process(symsSet, fontType);
-}
+protected:
+	VPSymData pSyms;					///< vector of pointers towards the symbols from symsSet
+	std::set<unsigned> clusterOffsets;	///< offsets of the clusters, considering pSyms
 
-void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerCluster,
-									VClusterData &clusters, set<unsigned> &clusterOffsets) {
-	const auto symsCount = symsSet.size();
-	VSymData newSymsSet;
-	newSymsSet.reserve(symsCount);
+public:
+	CmapPerspective() {}
 
-	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
-		auto &symsIndices = symsIndicesPerCluster[i];
-		const unsigned clusterSz = (unsigned)symsIndices.size();
-		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.emplace_back(symsSet, offset, symsIndices, ss); // needs symsSet[symsIndices] !!
+	CmapPerspective(const CmapPerspective&) = delete;
+	CmapPerspective(CmapPerspective&&) = delete;
+	void operator=(const CmapPerspective&) = delete;
+	void operator=(CmapPerspective&&) = delete;
 
-		for(const auto idx : symsIndices) {
-			// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
-			newSymsSet.push_back(symsSet[idx]);
-		}
+	/**
+	Rebuilds pSyms and clusterOffsets based on new values of parameters
+	symsSet and symsIndicesPerCluster_.
+	*/
+	void reset(const VSymData &symsSet,
+			   const std::vector<std::vector<unsigned>> &symsIndicesPerCluster_);
 
-		iota(BOUNDS(symsIndices), offset); // new pointers will be consecutive
+	/// Needed to display the cmap - returns a pair of symsSet iterators
+	VPSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
 
-		offset += clusterSz;
-	}
-	clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)symsCount); // delimit last cluster
+	/// Offsets of the clusters, considering pSyms
+	const std::set<unsigned>& getClusterOffsets() const;
+};
 
-	symsSet = move(newSymsSet);
-}
+#endif // H_CMAP_PERSPECTIVE
 
-const VSymData& ClustersSupport::clusteredSyms() const {
-	return symsSet;
-}
+#endif // UNIT_TESTING not defined

@@ -56,20 +56,17 @@ class MatchAspect;
 class MatchAssessor;
 class MatchProgress;
 class PreselManager;
+class CmapPerspective;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine {
 	friend class Controller;
 	friend class PreselManager;
 
-public:
-	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef VSymData::const_iterator VSymDataCIt;
-	typedef std::pair< VSymDataCIt, VSymDataCIt > VSymDataCItPair;
-
 protected:
 	const Settings &cfg;		///< settings for the engine
 	FontEngine &fe;				///< symbols set manager
+	CmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
@@ -80,24 +77,21 @@ protected:
 #ifdef UNIT_TESTING // UnitTesting project needs access to following fields
 public:
 #endif // UNIT_TESTING
-	VSymData symsSet;			///< set of most information on each symbol
-	CachedData cachedData;	///< data precomputed by getReady before performing the matching series
-	MatchAssessor &matchAssessor;			///< match manager based on the enabled matching aspects
+	VSymData symsSet;				///< set of most information on each symbol
+	CachedData cachedData;			///< data precomputed by getReady before performing the matching series
+	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
 protected:
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
 	PreselManager *preselManager = nullptr;	///< preselection manager
 
 public:
-	MatchEngine(const Settings &cfg_, FontEngine &fe_);
+	MatchEngine(const Settings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
 	void operator=(const MatchEngine&) = delete;
 
 	std::string getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
 
-	/// Needed to display the cmap - returns a pair of symsSet iterators
-	VSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
-	const std::set<unsigned>& getClusterOffsets() const;
 
 	const MatchAssessor& assessor() const; ///< access to the const methods of the matchAssessor
 

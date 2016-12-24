@@ -281,9 +281,6 @@
     <ClInclude Include="src\countSkippedAspects.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\dlgs.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\extBoxBlur.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -473,11 +470,11 @@
     <ClInclude Include="src\updateSymSettings.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\views.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\warnings.h">
       <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockCmapPerspective.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

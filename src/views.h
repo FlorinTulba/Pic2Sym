@@ -47,6 +47,7 @@
 #include "matchEngine.h"
 #include "img.h"
 #include "updateSymsActions.h"
+#include "cmapPerspective.h"
 
 #pragma warning ( push, 0 )
 
@@ -145,7 +146,7 @@ protected:
 	cv::Mat createGrid();			///< generates the grid that separates the glyphs
 
 	/// content = grid + glyphs for current page specified by a pair of iterators
-	void populateGrid(const MatchEngine::VSymDataCItPair &itPair,
+	void populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 					  const std::set<unsigned> &clusterOffsets,
 					  unsigned idxOfFirstSymFromPage);
 

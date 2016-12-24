@@ -63,30 +63,24 @@
 
 #pragma warning ( pop )
 
+#ifndef UNIT_TESTING
+
+#include "cmapPerspective.h"
+
+#pragma warning ( push, 0 )
+
+#include <numeric>
+
+#pragma warning ( pop )
+
+#endif // UNIT_TESTING
+
 using namespace std;
 using namespace std::chrono;
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::lockfree;
 using namespace cv;
-
-void pauseAfterError() {
-	string line;
-	cout<<endl<<"Press Enter to leave"<<endl;
-	getline(cin, line);
-}
-
-void showUsage() {
-	cout<<"Usage:"<<endl;
-	cout<<"There are 3 launch modes:"<<endl;
-	cout<<"A) Normal launch mode (no parameters)"<<endl;
-	cout<<"		Pic2Sym.exe"<<endl<<endl;
-	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
-	cout<<"		Pic2Sym.exe mismatches \"<testTitle>\""<<endl<<endl;
-	cout<<"C) View misfiltered symbols launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
-	cout<<"		Pic2Sym.exe misfiltered \"<testTitle>\""<<endl<<endl;
-	pauseAfterError();
-}
 
 // UnitTesting project launches an instance of Pic2Sym to visualize any discovered issues,
 // so it won't refer viewMismatches and viewMisfiltered from below.
@@ -129,6 +123,24 @@ void viewMisfiltered(const string &testTitle, const Mat &misfiltered) {
 }
 
 #endif // UNIT_TESTING not defined
+
+void pauseAfterError() {
+	string line;
+	cout<<endl<<"Press Enter to leave"<<endl;
+	getline(cin, line);
+}
+
+void showUsage() {
+	cout<<"Usage:"<<endl;
+	cout<<"There are 3 launch modes:"<<endl;
+	cout<<"A) Normal launch mode (no parameters)"<<endl;
+	cout<<"		Pic2Sym.exe"<<endl<<endl;
+	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"		Pic2Sym.exe mismatches \"<testTitle>\""<<endl<<endl;
+	cout<<"C) View misfiltered symbols launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"		Pic2Sym.exe misfiltered \"<testTitle>\""<<endl<<endl;
+	pauseAfterError();
+}
 
 ostream& operator<<(ostream &os, const Settings &s) {
 	os<<s.ss<<s.is<<s.ms<<endl;
@@ -374,12 +386,8 @@ const string Controller::textHourGlass(const std::string &prefix, double progres
 	return oss.str();
 }
 
-MatchEngine::VSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
-	return me.getSymsRange(from, maxCount);
-}
-
-const set<unsigned>& Controller::getClusterOffsets() const {
-	return me.getClusterOffsets();
+bool Controller::markClustersAsNotUsed() const {
+	return !me.ce.worthGrouping();
 }
 
 void Controller::showUnofficialSymDetails(unsigned symsCount) const {
@@ -590,7 +598,7 @@ const SymData* Controller::pointedSymbol(int x, int y) const {
 	if(symIdx >= me.getSymsCount())
 		return nullptr;
 
-	return &*me.getSymsRange(symIdx, 1U).first;
+	return *cmP.getSymsRange(symIdx, 1U).first;
 }
 
 void Controller::displaySymCode(unsigned long symCode) const {
@@ -619,6 +627,14 @@ void Controller::symbolsReadyToInvestigate() const {
 
 	ut::saveSymsSelection(destFile.string(), symsToInvestigate);
 	symsToInvestigate.clear();
+}
+
+CmapPerspective::VPSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
+	return cmP.getSymsRange(from, maxCount);
+}
+
+const set<unsigned>& Controller::getClusterOffsets() const {
+	return cmP.getClusterOffsets();
 }
 
 Comparator::Comparator() : CvWin("Pic2Sym") {
@@ -676,7 +692,8 @@ namespace {
 	template<typename Iterator>
 	void populateGrid(Iterator it, Iterator itEnd,
 					  NegSymExtractor<Iterator> negSymExtractor,
-					  Mat &content, const Mat &grid, const IPresentCmap &cmapPresenter,
+					  Mat &content, const Mat &grid,
+					  const IPresentCmap &cmapPresenter,
 					  const set<unsigned> &clusterOffsets = {},
 					  unsigned idxOfFirstSymFromPage = UINT_MAX) {
 		content = grid.clone();
@@ -703,17 +720,28 @@ namespace {
 		// Display cluster limits if last 2 parameters provide this information
 		auto showMark = [&] (unsigned offsetNewCluster, bool endMark) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-			static const Scalar ClusterMarkColor(0U, 0U, 255U),
+			static const Vec3b ClusterMarkColor(0U, 0U, 255U),
 							ClustersEndMarkColor(128U, 0U, 64U);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 			const unsigned symsInArow = (unsigned)((width - 1) / cellSide);
 			const div_t pos = div((int)offsetNewCluster, (int)symsInArow);
-			const unsigned r = (unsigned)pos.quot * cellSide + 1,
-				c = (unsigned)pos.rem * cellSide;
-			const Mat clusterMark(fontSz, 1, CV_8UC3,
-								  endMark ? ClustersEndMarkColor : ClusterMarkColor);
-			clusterMark.copyTo((const Mat&)content.col((int)c).rowRange((int)r, (int)r + fontSz));
+			const int r = pos.quot * cellSide + 1,
+						c = pos.rem * cellSide;
+			const Vec3b splitColor = endMark ? ClustersEndMarkColor : ClusterMarkColor;
+			if(cmapPresenter.markClustersAsNotUsed()) { // use dashed lines as splits
+				const Point up(c, r), down(c, r + fontSz - 1);
+				const int dashLen = (fontSz + 4) / 5; // ceiling(fontSz/5) - at most 3 dashes with 2 breaks in between
+				LineIterator lit(content, up, down, 4);
+				for(int idx = 0, lim = lit.count; idx < lim; ++idx, ++lit) {
+					if(0 == (1 & (idx / dashLen)))
+						content.at<Vec3b>(lit.pos()) = splitColor;
+				}
+
+			} else { // use filled lines as splits
+				const Mat clusterMark(fontSz, 1, CV_8UC3, splitColor);
+				clusterMark.copyTo((const Mat&)content.col(c).rowRange(r, r + fontSz));
+			}
 		};
 
 		const auto itBegin = clusterOffsets.cbegin();
@@ -750,16 +778,16 @@ namespace {
 	}
 } // anonymous namespace
 
-void CmapInspect::populateGrid(const MatchEngine::VSymDataCItPair &itPair,
+void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 							   const set<unsigned> &clusterOffsets,
 							   unsigned idxOfFirstSymFromPage) {
-	MatchEngine::VSymDataCIt it = itPair.first, itEnd = itPair.second;
+	CmapPerspective::VPSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
-				   (NegSymExtractor<MatchEngine::VSymDataCIt>) // conversion
-				   [](const MatchEngine::VSymDataCIt &iter) -> Mat { 
-						if(iter->removable)
-							return 255U - iter->negSym;
-						return iter->negSym;
+				   (NegSymExtractor<CmapPerspective::VPSymDataCIt>) // conversion
+				   [](const CmapPerspective::VPSymDataCIt &iter) -> Mat {
+						if((*iter)->removable)
+							return 255U - (*iter)->negSym;
+						return (*iter)->negSym;
 					},
 				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
 }
@@ -839,6 +867,71 @@ Mat CmapInspect::createGrid() {
 	for(int i = 0; i < CmapInspect_pageSz.height; i += cellSide)
 		emptyGrid.row(i).setTo(GridColor);
 	return emptyGrid;
+}
+
+void CmapPerspective::reset(const VSymData &symsSet,
+							const vector<vector<unsigned>> &symsIndicesPerCluster_) {
+	assert(!symsSet.empty());
+	assert(!symsIndicesPerCluster_.empty());
+
+	const auto symsCount = symsSet.size(),
+				clustersCount = symsIndicesPerCluster_.size();
+
+	vector<const vector<unsigned> *> symsIndicesPerCluster(clustersCount);
+	size_t clustIdx = 0ULL;
+	for(const auto &clusterMembers : symsIndicesPerCluster_)
+		symsIndicesPerCluster[clustIdx++] = &clusterMembers;
+
+	// View the clusters in descending order of their size
+
+	// Typically, there are only a few clusters larger than 1 element.
+	// This partition separates the actual formed clusters from one-of-a-kind elements
+	// leaving less work to perform to the sort executed afterwards.
+	// Using the stable algorithm version, to preserve avgPixVal sorting
+	// set by ClusterEngine::process
+	auto itFirstClusterWithOneItem = stable_partition(BOUNDS(symsIndicesPerCluster),
+													  [] (const vector<unsigned> *a) {
+		return a->size() > 1ULL; // place actual clusters at the beginning of the vector
+	});
+
+	// Sort non-trivial clusters in descending order of their size.
+	// Using the stable algorithm version, to preserve avgPixVal sorting
+	// set by ClusterEngine::process
+	stable_sort(begin(symsIndicesPerCluster), itFirstClusterWithOneItem,
+				[] (const vector<unsigned> *a, const vector<unsigned> *b) {
+		return a->size() > b->size();
+	});
+
+	pSyms.resize(symsCount);
+
+	size_t offset = 0ULL;
+	clusterOffsets.clear();
+	clusterOffsets.insert((unsigned)offset);
+	for(auto clusterMembers : symsIndicesPerCluster) {
+		const auto prevOffset = offset;
+		offset += clusterMembers->size();
+		clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)offset);
+		for(size_t idxPSyms = prevOffset, idxCluster = 0ULL; idxPSyms < offset; ++idxPSyms, ++idxCluster)
+			pSyms[idxPSyms] = &symsSet[(size_t)(*clusterMembers)[idxCluster]];
+	}
+}
+
+CmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(unsigned from, unsigned count) const {
+	const auto sz = pSyms.size();
+	const VPSymDataCIt itEnd = pSyms.cend();
+	if((size_t)from >= sz)
+		return make_pair(itEnd, itEnd);
+
+	const VPSymDataCIt itStart = next(pSyms.cbegin(), from);
+	const auto maxCount = sz - (size_t)from;
+	if((size_t)count >= maxCount)
+		return make_pair(itStart, itEnd);
+
+	return make_pair(itStart, next(itStart, count));
+}
+
+const set<unsigned>& CmapPerspective::getClusterOffsets() const {
+	return clusterOffsets;
 }
 
 extern const wstring ControlPanel_aboutText;

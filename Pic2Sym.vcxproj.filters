@@ -399,6 +399,9 @@
     <ClInclude Include="src\transformSupportWithPreselection.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
+    <ClInclude Include="src\cmapPerspective.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

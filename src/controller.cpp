@@ -589,15 +589,15 @@ FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Settings &cfg_) const {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss));
+MatchEngine& Controller::getMatchEngine(const Settings &cfg_) {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss), cmP);
 }
 
-Transformer& Controller::getTransformer(const Settings &cfg_) const {
+Transformer& Controller::getTransformer(const Settings &cfg_) {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
-PreselManager& Controller::getPreselManager(const Settings &cfg_) const {
+PreselManager& Controller::getPreselManager(const Settings &cfg_) {
 	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
 }
 

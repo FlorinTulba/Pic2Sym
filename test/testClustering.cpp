@@ -288,7 +288,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
 		ClusterHelper ch(tsp, ce, symsSet);
 		ch.clustersSupport_->groupSyms();
-		BOOST_REQUIRE(ce.getClusters().size() == symsCount);
+		BOOST_REQUIRE(!ce.worthGrouping());
+		BOOST_REQUIRE(ce.getClustersCount() == symsCount);
 	}
 
 	AutoTestCase1(UsingPartitionClustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
@@ -300,7 +301,7 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
 		ClusterHelper ch(tsp, ce, symsSet);
 		ch.clustersSupport_->groupSyms();
-		BOOST_REQUIRE(ce.getClusters().size() == 1U);
+		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
 	AutoTestCase1(UsingTTSASclustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
@@ -312,7 +313,7 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
 		ClusterHelper ch(tsp, ce, symsSet);
 		ch.clustersSupport_->groupSyms();
-		BOOST_REQUIRE(ce.getClusters().size() == 1U);
+		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
 	AutoTestCase1(UsingPartitionClustering_x0x0xSequence_2Clusters, SuiteSuffix);
@@ -324,6 +325,7 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
 		ClusterHelper ch(tsp, ce, symsSet);
 		ch.clustersSupport_->groupSyms();
+		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);
@@ -344,6 +346,7 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		VSymData symsSet(symsCount, EmptySymData5x5); fixSymIndices(symsSet);
 		ClusterHelper ch(tsp, ce, symsSet);
 		ch.clustersSupport_->groupSyms();
+		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
 		BOOST_REQUIRE(clusters.size() == 2U);

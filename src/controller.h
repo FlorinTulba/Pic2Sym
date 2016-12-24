@@ -71,6 +71,8 @@ protected:
 	std::shared_ptr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
 	std::shared_ptr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
 
+	CmapPerspective cmP;	///< reorganized symbols to be visualized within the cmap viewer
+
 	// Data
 	Img &img;			///< original image to process after resizing
 
@@ -134,9 +136,9 @@ public: // Providing get<field> as public for Unit Testing
 	static Img& getImg();
 	static Comparator& getComparator();
 	FontEngine& getFontEngine(const SymSettings &ss_) const;
-	MatchEngine& getMatchEngine(const Settings &cfg_) const;
-	Transformer& getTransformer(const Settings &cfg_) const;
-	PreselManager& getPreselManager(const Settings &cfg_) const;
+	MatchEngine& getMatchEngine(const Settings &cfg_);
+	Transformer& getTransformer(const Settings &cfg_);
+	PreselManager& getPreselManager(const Settings &cfg_);
 	ControlPanel& getControlPanel(Settings &cfg_);
 
 public:
@@ -191,8 +193,9 @@ public:
 	void displaySymCode(unsigned long symCode) const override;
 	void enlistSymbolForInvestigation(const SymData &sd) const override;
 	void symbolsReadyToInvestigate() const override;
-	MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
+	CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 	const std::set<unsigned>& getClusterOffsets() const override;
+	bool markClustersAsNotUsed() const override;
 	void showUnofficialSymDetails(unsigned symsCount) const override;
 
 	// Implementation of IUpdateSymSettings below

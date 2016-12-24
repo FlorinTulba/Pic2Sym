@@ -184,7 +184,6 @@
     <ClInclude Include="src\controlPanel.h" />
     <ClInclude Include="src\controlPanelActions.h" />
     <ClInclude Include="src\countSkippedAspects.h" />
-    <ClInclude Include="src\dlgs.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontEngine.h" />
@@ -248,9 +247,9 @@
     <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\updateSymSettings.h" />
-    <ClInclude Include="src\views.h" />
     <ClInclude Include="src\warnings.h" />
     <ClInclude Include="test\fileIterationHelper.h" />
+    <ClInclude Include="test\mockCmapPerspective.h" />
     <ClInclude Include="test\mockDlgs.h" />
     <ClInclude Include="test\mockUi.h" />
     <ClInclude Include="test\preselectionHelper.h" />

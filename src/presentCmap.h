@@ -39,8 +39,14 @@
 #ifndef H_PRESENT_CMAP
 #define H_PRESENT_CMAP
 
-#include "matchEngine.h"
+#include "cmapPerspective.h"
 #include "controllerBase.h"
+
+#pragma warning ( push, 0 )
+
+#include <set>
+
+#pragma warning ( pop )
 
 /**
 Provides read-only access to Cmap data.
@@ -61,10 +67,14 @@ struct IPresentCmap /*abstract*/ : virtual IController {
 	virtual void symbolsReadyToInvestigate() const = 0;
 
 	/// Getting the fonts to fill currently displayed page
-	virtual MatchEngine::VSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
+	virtual CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
 	/// Allows visualizing the symbol clusters within the Cmap View
 	virtual const std::set<unsigned>& getClusterOffsets() const = 0;
+
+	/// The viewer presents the identified clusters even when they're not used during the image transformation.
+	/// In that case, the splits between the clusters use dashed line instead of a filled line.
+	virtual bool markClustersAsNotUsed() const = 0;
 
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;

@@ -30,6 +30,7 @@
     <ClInclude Include="src\clusterSerialization.h" />
     <ClInclude Include="src\clusterSupport.h" />
     <ClInclude Include="src\clusterSupportWithPreselection.h" />
+    <ClInclude Include="src\cmapPerspective.h" />
     <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />

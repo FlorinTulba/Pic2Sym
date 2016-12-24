@@ -323,15 +323,15 @@ FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Settings &cfg_) const {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss));
+MatchEngine& Controller::getMatchEngine(const Settings &cfg_) {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss), cmP);
 }
 
-Transformer& Controller::getTransformer(const Settings &cfg_) const {
+Transformer& Controller::getTransformer(const Settings &cfg_) {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
 }
 
-PreselManager& Controller::getPreselManager(const Settings &cfg_) const {
+PreselManager& Controller::getPreselManager(const Settings &cfg_) {
 	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
 }
 
@@ -383,6 +383,22 @@ void Controller::displaySymCode(unsigned long symCode) const {}
 void Controller::enlistSymbolForInvestigation(const SymData &sd) const {}
 
 void Controller::symbolsReadyToInvestigate() const {}
+
+namespace {
+	CmapPerspective::VPSymDataCIt dummyIt;
+	CmapPerspective::VPSymDataCItPair dummyFontFaces(dummyIt, dummyIt);
+	set<unsigned> dummyClusterOffsets;
+} // anonymous namespace
+
+CmapPerspective::VPSymDataCItPair Controller::getFontFaces(unsigned, unsigned) const {
+	return dummyFontFaces;
+}
+
+const set<unsigned>& Controller::getClusterOffsets() const {
+	return dummyClusterOffsets;
+}
+
+void CmapPerspective::reset(...) {}
 
 TaskMonitor::TaskMonitor(const string&, AbsJobMonitor&) : AbsTaskMonitor("") {}
 
