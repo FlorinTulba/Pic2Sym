@@ -36,6 +36,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifdef UNIT_TESTING
+#	include "../test/mockJobMonitor.h"
+
+#else // UNIT_TESTING not defined
+
 #ifndef H_JOB_MONITOR
 #define H_JOB_MONITOR
 
@@ -52,8 +57,6 @@ struct IProgressNotifier; // forward declaration
 
 /// Implementation of AbsJobMonitor for supervising a given job
 class JobMonitor : public AbsJobMonitor {
-
-#ifndef UNIT_TESTING
 protected:
 	/// Estimates about when a certain task should start while performing a given job and how long will it take
 	struct TaskDetails {
@@ -91,16 +94,7 @@ public:
 	*/
 	JobMonitor(const std::string &monitoredActivity, std::shared_ptr<IProgressNotifier> userNotifier_,
 			   double minProgressForUserNotifications_);
-
-#else // UNIT_TESTING is defined
-public:
-	JobMonitor(...); ///< Convenience constructor during Unit testing
-
-#endif // UNIT_TESTING
-	
 	void operator=(const JobMonitor&) = delete;
-
-public:
 
 	/**
 	Before starting a certain job, usually there is enough information to provide
@@ -149,3 +143,5 @@ public:
 };
 
 #endif // H_JOB_MONITOR
+
+#endif // UNIT_TESTING not defined

@@ -68,7 +68,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	StructuralSimilarity(const MatchSettings &cfg);
 	void operator=(const StructuralSimilarity&) = delete;

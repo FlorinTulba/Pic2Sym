@@ -48,7 +48,7 @@
 
 #ifdef UNIT_TESTING
 #	include <map>
-#endif
+#endif // UNIT_TESTING defined
 
 #include <boost/serialization/version.hpp>
 #include <opencv2/core/core.hpp>
@@ -154,7 +154,7 @@ struct SymData {
 
 	/// A clone with different symIdx
 	SymData clone(size_t symIdx_);
-#endif
+#endif // UNIT_TESTING defined
 
 protected:
 	/* Constructors callable from derived classes only */

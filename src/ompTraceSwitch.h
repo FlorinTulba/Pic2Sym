@@ -36,10 +36,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #ifndef H_OMP_TRACE_SWITCH
 #define H_OMP_TRACE_SWITCH
 
-#ifndef UNIT_TESTING
 
 /**
 GENERATE_OPEN_MP_TRACE should be defined when traces from OpenMP are desired
@@ -47,6 +48,6 @@ in the main project. The UnitTesting project doesn't generate any OpenMP traces.
 */
 //#define GENERATE_OPEN_MP_TRACE
 
-#endif // UNIT_TESTING
-
 #endif // H_OMP_TRACE_SWITCH
+
+#endif // UNIT_TESTING

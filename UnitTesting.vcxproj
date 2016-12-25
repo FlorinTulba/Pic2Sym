@@ -167,7 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\appStart.h" />
-    <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\boxBlur.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
@@ -175,15 +174,12 @@
     <ClInclude Include="src\clusterAlg.h" />
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterEngine.h" />
-    <ClInclude Include="src\clusterSerialization.h" />
     <ClInclude Include="src\clusterSupport.h" />
     <ClInclude Include="src\clusterSupportWithPreselection.h" />
     <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controller.h" />
     <ClInclude Include="src\controllerBase.h" />
-    <ClInclude Include="src\controlPanel.h" />
     <ClInclude Include="src\controlPanelActions.h" />
-    <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontEngine.h" />
@@ -193,7 +189,6 @@
     <ClInclude Include="src\gridBarsFilter.h" />
     <ClInclude Include="src\img.h" />
     <ClInclude Include="src\imgSettings.h" />
-    <ClInclude Include="src\jobMonitor.h" />
     <ClInclude Include="src\jobMonitorBase.h" />
     <ClInclude Include="src\match.h" />
     <ClInclude Include="src\matchAspects.h" />
@@ -202,7 +197,6 @@
     <ClInclude Include="src\matchEngine.h" />
     <ClInclude Include="src\matchParams.h" />
     <ClInclude Include="src\matchSettings.h" />
-    <ClInclude Include="src\matchSettingsManip.h" />
     <ClInclude Include="src\matchSupport.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\matSerialization.h" />
@@ -217,9 +211,7 @@
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
-    <ClInclude Include="src\progressNotifier.h" />
     <ClInclude Include="src\propsReader.h" />
-    <ClInclude Include="src\serializer.h" />
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\stackBlur.h" />
@@ -233,24 +225,26 @@
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\symsSerialization.h" />
-    <ClInclude Include="src\taskMonitor.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\tinySym.h" />
-    <ClInclude Include="src\tinySymsDataSerialization.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformSupport.h" />
     <ClInclude Include="src\transformSupportWithPreselection.h" />
-    <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\ttsasClustering.h" />
     <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\updateSymSettings.h" />
     <ClInclude Include="src\warnings.h" />
     <ClInclude Include="test\fileIterationHelper.h" />
+    <ClInclude Include="test\mockClusterSerialization.h" />
     <ClInclude Include="test\mockCmapPerspective.h" />
     <ClInclude Include="test\mockDlgs.h" />
+    <ClInclude Include="test\mockJobMonitor.h" />
+    <ClInclude Include="test\mockTaskMonitor.h" />
+    <ClInclude Include="test\mockTinySymsDataSerialization.h" />
+    <ClInclude Include="test\mockTransformTrace.h" />
     <ClInclude Include="test\mockUi.h" />
     <ClInclude Include="test\preselectionHelper.h" />
     <ClInclude Include="test\testMain.h" />

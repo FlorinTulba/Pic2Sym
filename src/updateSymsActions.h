@@ -55,4 +55,4 @@ struct IUpdateSymsAction /*abstract*/ {
 /// Lock-free queue of size 102 (maximum 100 progress notifications + 2 cmap update actions)
 typedef boost::lockfree::queue<IUpdateSymsAction*, boost::lockfree::capacity<102>> LockFreeQueue;
 
-#endif
+#endif // H_UPDATE_SYMS_ACTIONS

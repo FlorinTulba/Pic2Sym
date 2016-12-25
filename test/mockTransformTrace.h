@@ -36,37 +36,18 @@ along with this program ('agpl-3.0.txt').
 If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
 ***********************************************************************************************/
 
-#ifndef H_MOCK_CMAP_PERSPECTIVE
-#define H_MOCK_CMAP_PERSPECTIVE
+#ifndef H_MOCK_TRANSFORM_TRACE
+#define H_MOCK_TRANSFORM_TRACE
 
-#ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif // UNIT_TESTING not defined
+#if defined _DEBUG && !defined UNIT_TESTING
+#	error Shouldn't include this header unless in Release or Unit Testing mode
+#endif // Debug mode and UNIT_TESTING not defined
 
-#pragma warning ( push, 0 )
-
-#include <vector>
-
-#pragma warning ( pop )
-
-// Forward declarations
-struct SymData;
-
-class CmapPerspective {
+/// Mock class when tracing isn't actually performed 
+class TransformTrace {
 public:
-	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const SymData*> VPSymData;
-	typedef VPSymData::const_iterator VPSymDataCIt;
-	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
-
-	CmapPerspective() {}
-
-	CmapPerspective(const CmapPerspective&) = delete;
-	CmapPerspective(CmapPerspective&&) = delete;
-	void operator=(const CmapPerspective&) = delete;
-	void operator=(CmapPerspective&&) = delete;
-
-	void reset(...);
+	TransformTrace(...) {}
+	inline void newEntry(...) {}
 };
 
-#endif // H_MOCK_CMAP_PERSPECTIVE
+#endif // H_MOCK_TRANSFORM_TRACE

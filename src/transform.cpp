@@ -62,7 +62,7 @@
 // The project uses parallelism
 #include <omp.h>
 
-#else // UNIT_TESTING is defined below
+#else // UNIT_TESTING defined
 // Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
 extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
 
@@ -125,7 +125,7 @@ struct ResultFileManager {
 			create_directory(outputFolder);
 	}
 
-	bool detectedPreviouslyProcessedCase() const { return alreadyProcessedCase; }
+	inline bool detectedPreviouslyProcessedCase() const { return alreadyProcessedCase; }
 
 	ResultFileManager(const string &studiedCase,	///< unique id describing the transformation params
 					  volatile bool &isCanceled_,	///< reference to the cancel flag
@@ -174,7 +174,17 @@ struct ResultFileManager {
 	}
 };
 
-#endif // UNIT_TESTING not defined
+#else // UNIT_TESTING defined
+
+/// Unit Tests don't need any management for the result file
+struct ResultFileManager {
+	ResultFileManager(...) {}
+	void operator=(const ResultFileManager&) = delete;
+
+	inline bool detectedPreviouslyProcessedCase() const { return false; }
+};
+
+#endif // UNIT_TESTING
 
 #if defined _DEBUG && !defined UNIT_TESTING
 /// In Debug mode (not UnitTesting), when the transformation wasn't canceled, log the parameters of the matches
@@ -192,9 +202,11 @@ static void logDataForBestMatches(volatile bool &isCanceled,
 		}
 	}
 }
-#else // ignore the call to logDataForBestMatches
-#define logDataForBestMatches(...)
-#endif // _DEBUG && !UNIT_TESTING
+
+#else // UNIT_TESTING || !_DEBUG  - ignore the call to logDataForBestMatches
+#	define logDataForBestMatches(...)
+
+#endif // _DEBUG, UNIT_TESTING
 
 extern const Size BlurWinSize;
 extern const double BlurStandardDeviation;
@@ -225,11 +237,10 @@ void Transformer::run() {
 	h = resizedVersion.rows; w = resizedVersion.cols;
 	updateStudiedCase(h, w);
 
-#ifndef UNIT_TESTING
 	ResultFileManager rf(studiedCase, isCanceled, result, timer);
 	if(rf.detectedPreviouslyProcessedCase())
 		return;
-#endif
+
 	const unsigned patchesPerRow = (unsigned)w/sz, patchesPerCol = (unsigned)h/sz;
 	initDraftMatches(newResizedImg, resizedVersion, patchesPerCol, patchesPerRow);
 

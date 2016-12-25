@@ -100,7 +100,7 @@ std::wostream& operator<<(std::wostream &os, const BestMatch &bm) {
 	return os;
 }
 
-#endif // defined _DEBUG || defined UNIT_TESTING
+#endif // _DEBUG || UNIT_TESTING
 
 
 #if defined _DEBUG && !defined UNIT_TESTING

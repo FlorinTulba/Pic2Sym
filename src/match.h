@@ -159,7 +159,7 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 
 	#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 	protected:
-	#endif
+	#endif // UNIT_TESTING defined
 		/// Constructor Details
 		<NewAspect>(const MatchSettings &ms);
 

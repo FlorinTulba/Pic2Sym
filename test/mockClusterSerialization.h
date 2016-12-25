@@ -36,8 +36,8 @@ along with this program ('agpl-3.0.txt').
 If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
 ***********************************************************************************************/
 
-#ifndef H_MOCK_CMAP_PERSPECTIVE
-#define H_MOCK_CMAP_PERSPECTIVE
+#ifndef H_MOCK_CLUSTER_SERIALIZATION
+#define H_MOCK_CLUSTER_SERIALIZATION
 
 #ifndef UNIT_TESTING
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
@@ -49,24 +49,21 @@ If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
 
 #pragma warning ( pop )
 
-// Forward declarations
-struct SymData;
+struct ClusterIO {
+	template<class Archive>
+	void serialize(Archive&, const unsigned) {}
 
-class CmapPerspective {
-public:
-	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const SymData*> VPSymData;
-	typedef VPSymData::const_iterator VPSymDataCIt;
-	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
+	std::vector<int> clusterLabels;
+	unsigned clustersCount = 0U;
 
-	CmapPerspective() {}
+	ClusterIO() {}
+	ClusterIO(const ClusterIO&) = delete;
+	ClusterIO(ClusterIO&&) = delete;
+	void operator=(const ClusterIO&) = delete;
+	ClusterIO& operator=(ClusterIO &&) { return *this; }
 
-	CmapPerspective(const CmapPerspective&) = delete;
-	CmapPerspective(CmapPerspective&&) = delete;
-	void operator=(const CmapPerspective&) = delete;
-	void operator=(CmapPerspective&&) = delete;
-
-	void reset(...);
+	bool loadFrom(...) { return true; }
+	bool saveTo(...) const { return true; }
 };
 
-#endif // H_MOCK_CMAP_PERSPECTIVE
+#endif // H_MOCK_CLUSTER_SERIALIZATION

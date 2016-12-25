@@ -39,6 +39,7 @@
 #include "ttsasClustering.h"
 #include "clusterEngine.h"
 #include "clusterSerialization.h"
+#include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "tinySym.h"
 #include "tinySymsProvider.h"

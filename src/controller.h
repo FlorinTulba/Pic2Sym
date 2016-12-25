@@ -131,7 +131,7 @@ protected:
 
 #ifdef UNIT_TESTING
 public: // Providing get<field> as public for Unit Testing
-#endif
+#endif // UNIT_TESTING defined
 	// Methods for initialization
 	static Img& getImg();
 	static Comparator& getComparator();
@@ -257,7 +257,7 @@ public:
 #ifdef UNIT_TESTING
 	// Method available only in Unit Testing mode
 	bool newImage(const cv::Mat &imgMat);	///< Provide directly a matrix instead of an image
-#endif
+#endif // UNIT_TESTING defined
 };
 
-#endif
+#endif // H_CONTROLLER

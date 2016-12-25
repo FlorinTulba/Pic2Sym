@@ -103,7 +103,6 @@ void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {
 
 	// Notify the user only as frequently as demanded
 	if(progress_ - lastUserNotifiedProgress > minProgressForNotifications) {
-#ifndef UNIT_TESTING
 		const double updatedElapsed = timer->elapsed(),
 					timeDiff = updatedElapsed - lastUserNotifiedElapsedTime,
 					progressDiff = progress_ - lastUserNotifiedProgress;
@@ -116,7 +115,6 @@ void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {
 		}
 
 		lastUserNotifiedElapsedTime = updatedElapsed;
-#endif // UNIT_TESTING not defined
 
 		notifier->notifyUser(monitoredJob_,
 							 lastUserNotifiedProgress = progress_);

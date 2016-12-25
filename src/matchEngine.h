@@ -76,7 +76,7 @@ protected:
 
 #ifdef UNIT_TESTING // UnitTesting project needs access to following fields
 public:
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING defined
 	VSymData symsSet;				///< set of most information on each symbol
 	CachedData cachedData;			///< data precomputed by getReady before performing the matching series
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects

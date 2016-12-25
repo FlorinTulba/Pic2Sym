@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "noClustering.h"
+#include "jobMonitorBase.h"
 #include "taskMonitor.h"
 
 using namespace std;

@@ -41,7 +41,7 @@
 
 #ifndef UNIT_TESTING
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif
+#endif // UNIT_TESTING not defined
 
 class CvWin /*abstract*/ {
 protected:

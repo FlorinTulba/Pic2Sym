@@ -39,6 +39,7 @@
 #include "partitionClustering.h"
 #include "clusterEngine.h"
 #include "clusterSerialization.h"
+#include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "tinySym.h"
 #include "tinySymsProvider.h"
@@ -85,7 +86,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 #if defined _DEBUG && !defined UNIT_TESTING
 		unsigned countAvgPixDiff = 0U, countMcsOffset = 0U, countDiff = 0U,
 				countHdiff = 0U, countVdiff = 0U, countBslashDiff = 0U, countSlashDiff = 0U;
-#endif
+#endif // _DEBUG && !UNIT_TESTING
 
 		const unsigned tinySymsCount = (unsigned)tinySyms.size();
 		rawClusters.clusterLabels.resize(tinySymsCount, -1);
@@ -138,7 +139,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 			return true;
 
-#else // DEBUG mode and UNIT_TESTING is not defined
+#else // DEBUG mode and UNIT_TESTING not defined
 			if(!FastDistSymToClusterComputation) {
 				const double l1Dist = norm(a.mat - b.mat, NORM_L1);
 				return l1Dist <= MaxAvgProjErrForPartitionClustering;
@@ -177,7 +178,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 #undef CheckDifferences
 
 			return true;
-#endif // DEBUG, UNIT_TESTING
+#endif // _DEBUG, UNIT_TESTING
 		});
 		cout<<endl<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
 			<<rawClusters.clustersCount<<" groups"<<endl;
@@ -190,7 +191,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 		PRINTLN(countBslashDiff);
 		PRINTLN(countSlashDiff);
 		PRINTLN(countDiff);
-#endif // DEBUG, UNIT_TESTING
+#endif // _DEBUG && !UNIT_TESTING
 		
 		rawClusters.saveTo(clusteredSetFile.string());
 	}

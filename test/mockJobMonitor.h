@@ -36,49 +36,25 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#if defined UNIT_TESTING || !defined _DEBUG
-#	include "../test/mockTransformTrace.h"
+#ifndef H_MOCK_JOB_MONITOR
+#define H_MOCK_JOB_MONITOR
 
-#else // Debug mode and UNIT_TESTING not defined
+#ifndef UNIT_TESTING
+#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
+#endif // UNIT_TESTING not defined
 
-#ifndef H_TRANSFORM_TRACE
-#define H_TRANSFORM_TRACE
+#include "jobMonitorBase.h"
 
-#pragma warning ( push, 0 )
-
-#include <string>
-#include <fstream>
-
-#pragma warning ( pop )
-
-struct BestMatch; // forward declaration
-
-/**
-Facilitates the tracing process during the transformation of an image.
-*/
-class TransformTrace {
-protected:
-	const std::string &studiedCase;	///< used to establish the name of the generated trace file
-
-	std::wofstream ofs;				///< trace file stream
-
-	const unsigned sz;		///< symbol size
-
-	unsigned transformingRow = 0U;	///< the index of the current row being transformed
-
-	const bool isUnicode;	///< Unicode symbols are logged in symbol format, while other encodings log just their code
-
+class JobMonitor : public AbsJobMonitor {
 public:
-	/// Opens a trace file stream and initializes required fields
-	TransformTrace(const std::string &studiedCase_, unsigned sz_, bool isUnicode_);
-	TransformTrace(const TransformTrace&) = delete;
-	void operator=(const TransformTrace&) = delete;
-	~TransformTrace(); ///< closes the trace stream
+	JobMonitor(...) : AbsJobMonitor("") {}
+	void operator=(const JobMonitor&) = delete;
 
-	/// adds a new line to the trace file containing row, column and details about the best match for a new patch
-	void newEntry(unsigned r, unsigned c, const BestMatch &best);
+	void setTasksDetails(const std::vector<double>&, Timer&) override {}
+	unsigned monitorNewTask(AbsTaskMonitor&) override { return 0U; }
+	void taskAdvanced(double, unsigned) override {}
+	void taskDone(unsigned) override {}
+	void taskAborted(unsigned) override {}
 };
 
-#endif // !H_TRANSFORM_TRACE
-
-#endif // _DEBUG , UNIT_TESTING
+#endif // H_MOCK_JOB_MONITOR

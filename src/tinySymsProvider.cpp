@@ -82,7 +82,7 @@ bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
 	return exists(tinySymsDataFile);
 }
 
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING not defined
 
 const VTinySyms& FontEngine::getTinySyms() {
 	/*

@@ -36,37 +36,24 @@ along with this program ('agpl-3.0.txt').
 If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
 ***********************************************************************************************/
 
-#ifndef H_MOCK_CMAP_PERSPECTIVE
-#define H_MOCK_CMAP_PERSPECTIVE
+#ifndef H_MOCK_TASK_MONITOR
+#define H_MOCK_TASK_MONITOR
 
 #ifndef UNIT_TESTING
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif // UNIT_TESTING not defined
 
-#pragma warning ( push, 0 )
+#include "taskMonitorBase.h"
 
-#include <vector>
-
-#pragma warning ( pop )
-
-// Forward declarations
-struct SymData;
-
-class CmapPerspective {
+class TaskMonitor : public AbsTaskMonitor {
 public:
-	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const SymData*> VPSymData;
-	typedef VPSymData::const_iterator VPSymDataCIt;
-	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
+	TaskMonitor(...) : AbsTaskMonitor("") {}
+	void operator=(const TaskMonitor&) = delete;
 
-	CmapPerspective() {}
-
-	CmapPerspective(const CmapPerspective&) = delete;
-	CmapPerspective(CmapPerspective&&) = delete;
-	void operator=(const CmapPerspective&) = delete;
-	void operator=(CmapPerspective&&) = delete;
-
-	void reset(...);
+	void setTotalSteps(size_t) override {}
+	void taskAdvanced(size_t) override {}
+	void taskDone() override {}
+	void taskAborted() override {}
 };
 
-#endif // H_MOCK_CMAP_PERSPECTIVE
+#endif // H_MOCK_TASK_MONITOR

@@ -65,7 +65,7 @@ namespace {
 				invDiagsCountTinySym = 1. / DiagsCountTinySym;
 	const Size SizeTinySyms((int)TinySymsSize, (int)TinySymsSize);
 
-#else // UNIT_TESTING is defined
+#else // UNIT_TESTING defined
 
 #define TinySymsSize			TinySymsSz()
 #define RefSymSz				(TinySymsSize * (unsigned)TinySym::RatioRefTiny)
@@ -142,4 +142,4 @@ TinySym::TinySym(const Point2d &mc_, double avgPixVal_, const Mat &mat_,
 #undef invDiagsCountTinySym
 #undef SizeTinySyms
 
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING defined

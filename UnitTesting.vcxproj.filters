@@ -230,9 +230,6 @@
     <ClInclude Include="src\appStart.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\appState.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\blur.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -254,9 +251,6 @@
     <ClInclude Include="src\clusterEngine.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\clusterSerialization.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\clusterSupport.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -272,13 +266,7 @@
     <ClInclude Include="src\controllerBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\controlPanel.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\controlPanelActions.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\countSkippedAspects.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\extBoxBlur.h">
@@ -308,9 +296,6 @@
     <ClInclude Include="src\imgSettings.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\jobMonitor.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\jobMonitorBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -333,9 +318,6 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\matchSettings.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\matchSettingsManip.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\matchSupport.h">
@@ -380,13 +362,7 @@
     <ClInclude Include="src\presentCmap.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\progressNotifier.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\propsReader.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\serializer.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\settings.h">
@@ -428,9 +404,6 @@
     <ClInclude Include="src\symsSerialization.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\taskMonitor.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\taskMonitorBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -438,9 +411,6 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\tinySym.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tinySymsDataSerialization.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\tinySymsProvider.h">
@@ -453,9 +423,6 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\transformSupportWithPreselection.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\transformTrace.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\ttsasClustering.h">
@@ -474,6 +441,21 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="test\mockCmapPerspective.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockTransformTrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockJobMonitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockTaskMonitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockClusterSerialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\mockTinySymsDataSerialization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

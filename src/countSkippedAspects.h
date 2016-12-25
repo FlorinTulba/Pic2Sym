@@ -36,10 +36,10 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #ifndef H_COUNT_SKIPPED_ASPECTS
 #define H_COUNT_SKIPPED_ASPECTS
-
-#ifndef UNIT_TESTING
 
 /**
 Square patches from an image must be approximated by some fonts of the same size.
@@ -56,6 +56,6 @@ by category, together with their relative computational complexity.
 */
 //#define MONITOR_SKIPPED_MATCHING_ASPECTS
 
-#endif // UNIT_TESTING
-
 #endif // H_COUNT_SKIPPED_ASPECTS
+
+#endif // UNIT_TESTING

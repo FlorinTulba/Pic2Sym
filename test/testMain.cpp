@@ -43,10 +43,6 @@
 #include "matchEngine.h"
 #include "fontEngine.h"
 #include "settings.h"
-#include "taskMonitor.h"
-#include "jobMonitor.h"
-#include "clusterSerialization.h"
-#include "tinySymsDataSerialization.h"
 #include "preselectManager.h"
 
 #pragma warning ( push, 0 )
@@ -400,28 +396,6 @@ const set<unsigned>& Controller::getClusterOffsets() const {
 
 void CmapPerspective::reset(...) {}
 
-TaskMonitor::TaskMonitor(const string&, AbsJobMonitor&) : AbsTaskMonitor("") {}
-
-void TaskMonitor::setTotalSteps(size_t) {}
-
-void TaskMonitor::taskAdvanced(size_t/* = 1U*/) {}
-
-void TaskMonitor::taskDone() {}
-
-void TaskMonitor::taskAborted() {}
-
-JobMonitor::JobMonitor(...) : AbsJobMonitor("") {}
-
-unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) { return 0U; }
-
-void JobMonitor::setTasksDetails(const vector<double>&, Timer&) {}
-
-void JobMonitor::taskAdvanced(double, unsigned) {}
-
-void JobMonitor::taskDone(unsigned) {}
-
-void JobMonitor::taskAborted(unsigned) {}
-
 TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, double avgPixVal_/* = 0.*/) :
 		SymData(mc_, avgPixVal_),
 		backslashDiagAvgProj(1, 2*negSym_.rows-1, CV_64FC1),
@@ -501,12 +475,6 @@ static const Mat blurredVersionOf(const Mat &orig_) {
 
 Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
 
-// Implementations of next 3 methods can be changed to actually test also the branches they avoid now
 bool ClusterEngine::clusteredAlready(const string&, const string&, boost::filesystem::path&) { return false; }
-bool ClusterIO::loadFrom(const string&) { return false; }
-bool ClusterIO::saveTo(const string&) const { return false; }
 
-// Implementations of next 3 methods can be changed to actually test also the branches avoided now
-bool FontEngine::isTinySymsDataSavedOnDisk(const string&, boost::filesystem::path &tinySymsDataFile) { return false; }
-bool VTinySymsIO::loadFrom(const string&) { return false; }
-bool VTinySymsIO::saveTo(const string&) const { return false; }
+bool FontEngine::isTinySymsDataSavedOnDisk(const string&, boost::filesystem::path&) { return false; }

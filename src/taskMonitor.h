@@ -36,6 +36,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifdef UNIT_TESTING
+#	include "../test/mockTaskMonitor.h"
+
+#else // UNIT_TESTING not defined
+
 #ifndef H_TASK_MONITOR
 #define H_TASK_MONITOR
 
@@ -45,8 +50,6 @@ class AbsJobMonitor; // forward declaration
 
 /// Implementation of AbsTaskMonitor for supervising a task with a job
 class TaskMonitor : public AbsTaskMonitor {
-
-#ifndef UNIT_TESTING
 protected:
 	AbsJobMonitor &parent;	///< reference of the parent job
 
@@ -57,8 +60,6 @@ protected:
 	double totalSteps = 0.;
 
 	unsigned seqId;			///< order of the supervised task among job's tasks
-
-#endif // UNIT_TESTING not defined
 
 public:
 	/**
@@ -77,3 +78,5 @@ public:
 };
 
 #endif // H_TASK_MONITOR
+
+#endif // UNIT_TESTING not defined

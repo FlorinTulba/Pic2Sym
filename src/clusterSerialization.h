@@ -36,6 +36,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifdef UNIT_TESTING
+#	include "../test/mockClusterSerialization.h"
+
+#else // UNIT_TESTING not defined
+
 #ifndef H_CLUSTER_SERIALIZATION
 #define H_CLUSTER_SERIALIZATION
 
@@ -80,3 +85,5 @@ struct ClusterIO {
 BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
 
 #endif // H_CLUSTER_SERIALIZATION
+
+#endif // UNIT_TESTING not defined

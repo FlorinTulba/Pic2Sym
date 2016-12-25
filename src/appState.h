@@ -36,6 +36,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifndef UNIT_TESTING
+
 #ifndef H_APP_STATE
 #define H_APP_STATE
 
@@ -76,4 +78,6 @@ struct ActionPermit /*abstract*/ {
 	virtual ~ActionPermit() = 0 {}
 };
 
-#endif
+#endif // H_APP_STATE
+
+#endif // UNIT_TESTING

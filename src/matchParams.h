@@ -105,17 +105,13 @@ struct MatchParams {
 	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData);
 	void computeSsim(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
 
-#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
-	
+#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging	
 	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
-
 #endif // defined _DEBUG || defined UNIT_TESTING
 
 #ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
-
 protected:
-
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING not defined
 
 	/// Both computeFg and computeBg simply call this
 	static void computeMean(const cv::Mat &patch, const cv::Mat &mask, boost::optional<double> &miu);
@@ -203,4 +199,4 @@ struct BestMatch {
 	BestMatch(const BestMatch&) = default;
 };
 
-#endif
+#endif // H_MATCH_PARAMS

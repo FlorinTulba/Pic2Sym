@@ -143,7 +143,7 @@ struct PixMapSym {
 			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
 			  const cv::Mat &revConsec	///< vector of consecutive values sz-1 .. 0
 			  );
-#endif
+#endif // UNIT_TESTING defined
 };
 
 struct IPresentCmap; // forward declaration

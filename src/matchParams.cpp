@@ -347,4 +347,4 @@ BestMatch& BestMatch::setUnicode(bool unicode_) {
 	return *this;
 }
 
-#endif // _DEBUG
+#endif // _DEBUG || UNIT_TESTING

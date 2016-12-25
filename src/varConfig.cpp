@@ -494,7 +494,7 @@ extern READ_STR_PROP_CONVERT(CmapInspect_pageTrackName, String);
 extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfigRef().read<string>("ControlPanel_aboutText")));
 extern READ_WSTR_PROP(ControlPanel_instructionsText);
 
-#endif // ifndef UNIT_TESTING
+#endif // UNIT_TESTING not defined
 
 extern const string Comparator_initial_title = replacePlaceholder(varConfigRef().read<string>("Comparator_initial_title"));
 extern READ_STR_PROP(Comparator_statusBar);

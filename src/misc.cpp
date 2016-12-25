@@ -77,7 +77,7 @@ namespace {
 				   MB_OK | MB_TASKMODAL | MB_SETFOREGROUND | msgCateg.val());
 	}
 
-#else // UNIT_TESTING is defined
+#else // UNIT_TESTING defined
 	/// When performing Unit Testing, the messages will appear on the console
 	void msg(const MsgCateg &msgCateg, const string &title, const string &text) {
 		cout.flush(); cerr.flush();

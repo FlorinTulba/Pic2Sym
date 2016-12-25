@@ -48,6 +48,7 @@
 #include "matchSupport.h"
 #include "cmapPerspective.h"
 #include "settings.h"
+#include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
 #include "misc.h"
@@ -61,7 +62,7 @@
 
 #pragma warning ( pop )
 
-#else // UNIT_TESTING is defined below
+#else // UNIT_TESTING defined
 // Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
 extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
 

@@ -59,7 +59,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	FgMatch(const MatchSettings &cfg);
 	void operator=(const FgMatch&) = delete;
@@ -85,7 +85,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	BgMatch(const MatchSettings &cfg);
 	void operator=(const BgMatch&) = delete;
@@ -111,7 +111,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	EdgeMatch(const MatchSettings &cfg);
 	void operator=(const EdgeMatch&) = delete;
@@ -137,7 +137,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	BetterContrast(const MatchSettings &cfg);
 	void operator=(const BetterContrast&) = delete;
@@ -163,7 +163,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	GravitationalSmoothness(const MatchSettings &cfg);
 	void operator=(const GravitationalSmoothness&) = delete;
@@ -189,7 +189,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	DirectionalSmoothness(const MatchSettings &cfg);
 	void operator=(const DirectionalSmoothness&) = delete;
@@ -215,7 +215,7 @@ protected:
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:
-#endif
+#endif // UNIT_TESTING defined
 
 	LargerSym(const MatchSettings &cfg);
 	void operator=(const LargerSym&) = delete;
@@ -223,4 +223,4 @@ public:
 	REGISTER_MATCH_ASPECT(LargerSym);
 };
 
-#endif
+#endif // H_MATCH_ASPECTS

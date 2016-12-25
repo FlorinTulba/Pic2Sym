@@ -91,15 +91,17 @@ protected:
 	int h = 0;					///< height of the resized image
 	unsigned sz = 0U;			///< font size used during transformation
 	unsigned symsCount = 0U;	///< symbols count within the used cmap
+	
+#ifndef UNIT_TESTING
+	// when UNIT_TESTING is not defined, start with batching SymsBatch_defaultSz symbols and allow canceling
+	volatile unsigned symsBatchSz = SymsBatch_defaultSz;	///< runtime control of how large next symbol batches are
+	volatile bool isCanceled = false;						///< has the process been canceled?
 
-	/// runtime control of how large next symbol batches are
-#ifdef UNIT_TESTING
-	volatile unsigned symsBatchSz = UINT_MAX; // no batching in Unit Testing mode
-#else // when UNIT_TESTING is not defined, start with batching SymsBatch_defaultSz symbols
-	volatile unsigned symsBatchSz = SymsBatch_defaultSz;
+#else // no batching, nor canceling in Unit Testing mode
+	unsigned symsBatchSz = UINT_MAX;	///< runtime control of how large next symbol batches are
+	bool isCanceled = false;			///< has the process been canceled?
+
 #endif // UNIT_TESTING
-
-	volatile bool isCanceled = false;	///< has the process been canceled?
 
 	void updateStudiedCase(int rows, int cols); ///< Updates the unique id for the studied case
 
@@ -130,4 +132,4 @@ public:
 	Transformer& usePreselManager(PreselManager &preselManager_);		///< setting the preselection manager
 };
 
-#endif
+#endif // H_TRANSFORM

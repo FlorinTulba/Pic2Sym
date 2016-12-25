@@ -44,6 +44,7 @@
 #include "dlgs.h"
 #include "settings.h"
 #include "controlPanel.h"
+#include "matchSettingsManip.h"
 #include "match.h"
 
 #pragma warning ( push, 0 )
@@ -54,10 +55,6 @@
 #include <boost/filesystem/operations.hpp>
 
 #pragma warning ( pop )
-
-#ifndef UNIT_TESTING
-#	include "matchSettingsManip.h"
-#endif
 
 using namespace std;
 using namespace boost::filesystem;
@@ -453,7 +450,8 @@ void Controller::restoreUserDefaultMatchSettings() {
 
 #ifndef UNIT_TESTING
 	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
-#endif
+#endif // UNIT_TESTING not defined
+
 	cp.updateMatchSettings(cfg.ms);
 	me.matchAssessor.updateEnabledMatchAspectsCount();
 }
@@ -466,7 +464,7 @@ void Controller::setUserDefaultMatchSettings() const {
 
 #ifndef UNIT_TESTING
 	MatchSettingsManip::instance().saveUserDefaults(cfg.ms);
-#endif
+#endif // UNIT_TESTING not defined
 }
 
 void Controller::loadSettings() {

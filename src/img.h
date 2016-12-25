@@ -62,7 +62,7 @@ protected:
 
 #ifdef UNIT_TESTING
 public: // Providing reset(Mat) as public for Unit Testing
-#endif
+#endif // UNIT_TESTING defined
 	bool reset(const cv::Mat &source_);
 
 public:

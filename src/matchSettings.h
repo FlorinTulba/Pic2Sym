@@ -48,10 +48,6 @@
 
 #pragma warning ( pop )
 
-#ifndef UNIT_TESTING
-class MatchSettingsManip; // forward declaration
-#endif
-
 /// MatchSettings class controls the matching parameters for transforming one or more images.
 class MatchSettings {
 public:
@@ -73,7 +69,7 @@ protected:
 #ifndef UNIT_TESTING
 	bool initialized = false;		///< true after FIRST completed initialization
 	friend class MatchSettingsManip; // to access initialized
-#endif
+#endif // UNIT_TESTING not defined
 
 	/**
 	Loading a MatchSettings object of a given version.
@@ -88,7 +84,7 @@ protected:
 	void load(Archive &ar, const unsigned version) {
 #ifndef UNIT_TESTING
 		MatchSettingsManip::instance().load(*this, ar, version);
-#endif
+#endif // UNIT_TESTING not defined
 
 		// It is useful to see which settings changed when loading =>
 		// Loading data in a temporary object and comparing with existing values.
@@ -182,4 +178,4 @@ public:
 
 BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
 
-#endif
+#endif // H_MATCH_SETTINGS

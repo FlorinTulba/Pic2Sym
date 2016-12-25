@@ -36,12 +36,9 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "tinySymsDataSerialization.h"
-
-VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
-
 #ifndef UNIT_TESTING
 
+#include "tinySymsDataSerialization.h"
 #include "serializer.h"
 
 #pragma warning ( push, 0 )
@@ -56,6 +53,8 @@ VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
 
 using namespace std;
 using namespace boost::archive;
+
+VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
 
 bool VTinySymsIO::loadFrom(const string &path) {
 	ifstream ifs(path, ios::binary);

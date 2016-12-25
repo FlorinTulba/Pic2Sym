@@ -81,7 +81,7 @@ struct Patch {
 #ifdef UNIT_TESTING
 	/// Constructor delegating its job to the one with 3 parameters
 	Patch(const cv::Mat &orig_);
-#endif //UNIT_TESTING
+#endif // UNIT_TESTING defined
 };
 
 #endif // H_PATCH

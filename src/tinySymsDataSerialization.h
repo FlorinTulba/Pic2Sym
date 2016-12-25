@@ -36,6 +36,11 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#ifdef UNIT_TESTING
+#	include "../test/mockTinySymsDataSerialization.h"
+
+#else // UNIT_TESTING not defined
+
 #ifndef H_TINY_SYMS_DATA_SERIALIZATION
 #define H_TINY_SYMS_DATA_SERIALIZATION
 
@@ -74,3 +79,5 @@ struct VTinySymsIO {
 BOOST_CLASS_VERSION(VTinySymsIO, VTinySymsIO::VERSION);
 
 #endif // H_TINY_SYMS_DATA_SERIALIZATION
+
+#endif // UNIT_TESTING not defined

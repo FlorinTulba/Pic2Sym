@@ -47,7 +47,13 @@
 
 #include "appStart.h"
 
-#endif // UNIT_TESTING
+#pragma warning ( push, 0 )
+
+#include <boost/filesystem/operations.hpp>
+
+#pragma warning ( pop )
+
+#endif // UNIT_TESTING not defined
 
 #pragma warning ( push, 0 )
 
@@ -56,13 +62,11 @@
 #include <numeric>
 
 #include <opencv2/imgproc/imgproc.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
-using namespace boost::filesystem;
 
 extern const string ClusterAlgName;
 extern const double MinAverageClusterSize;
@@ -182,6 +186,8 @@ ClusterEngine& ClusterEngine::supportedBy(ClustersSupport &support_) {
 
 #ifndef UNIT_TESTING
 
+using namespace boost::filesystem;
+
 bool ClusterEngine::clusteredAlready(const string &fontType, const string &algName, path &clusteredSetFile) {
 	if(fontType.empty())
 		return false;
@@ -196,4 +202,4 @@ bool ClusterEngine::clusteredAlready(const string &fontType, const string &algNa
 	return exists(clusteredSetFile);
 }
 
-#endif // UNIT_TESTING
+#endif // UNIT_TESTING not defined
