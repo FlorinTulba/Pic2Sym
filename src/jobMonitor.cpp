@@ -42,12 +42,12 @@
 #include "taskMonitorBase.h"
 #include "progressNotifier.h"
 #include "timing.h"
-#include "misc.h"
 
 #pragma warning ( push, 0 )
 
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 
 #pragma warning ( pop )
 
@@ -60,11 +60,8 @@ JobMonitor::JobMonitor(const string &monitoredActivity, std::shared_ptr<IProgres
 		// Slightly diminish the threshold for how often to notify the progress of the job to the user
 		minProgressForNotifications(minProgressForUserNotifications_ - EPS) {
 
-	if(!notifier)
-		THROW_WITH_CONST_MSG("userNotifier_ parameter from " __FUNCTION__ " must be non-null!", invalid_argument);
-
-	if(minProgressForUserNotifications_ < 0. || minProgressForUserNotifications_ > 1.)
-		THROW_WITH_CONST_MSG("minProgressForUserNotifications_ parameter from " __FUNCTION__ " must be within 0..1 range!", invalid_argument);
+	assert(notifier);
+	assert(minProgressForUserNotifications_ >= 0. && minProgressForUserNotifications_ <= 1.);
 }
 
 unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) {
@@ -89,8 +86,7 @@ void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer
 		contribStart += totalTaskContrib;
 	}
 
-	if(abs(contribStart - 1.) > EPS)
-		THROW_WITH_CONST_MSG("Sum of the values stored in the totalContribValues of " __FUNCTION__ " must equal to 1!", invalid_argument);
+	assert(abs(contribStart - 1.) < EPS);
 
 	aborted = false;
 	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = progress_ = 0.;

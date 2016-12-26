@@ -37,7 +37,12 @@
  ***********************************************************************************************/
 
 #include "preselectSyms.h"
-#include "misc.h"
+
+#pragma warning ( push, 0 )
+
+#include <cassert>
+
+#pragma warning ( pop )
 
 using namespace std;
 
@@ -60,8 +65,7 @@ bool TopCandidateMatches::Candidate::
 TopCandidateMatches::TopCandidateMatches(unsigned shortListLength/* = 1U*/,
 										 double origThreshScore/* = 0.*/) :
 		thresholdScore(origThreshScore), n(shortListLength) {
-	if(shortListLength == 0U)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " requires a shortListLength > 0!", invalid_argument);
+	assert(shortListLength > 0U);
 }
 
 void TopCandidateMatches::reset(double origThreshScore) {
@@ -73,8 +77,7 @@ void TopCandidateMatches::reset(double origThreshScore) {
 }
 
 bool TopCandidateMatches::checkCandidate(unsigned candidateIdx, double score) {
-	if(shortListReady)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only before prepareReport()!", logic_error);
+	assert(!shortListReady); // this method should be called only before prepareReport()
 
 	if(score <= thresholdScore)
 		return false;
@@ -93,8 +96,7 @@ bool TopCandidateMatches::checkCandidate(unsigned candidateIdx, double score) {
 }
 
 void TopCandidateMatches::prepareReport() {
-	if(shortListReady)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only once!", logic_error);
+	assert(!shortListReady); // this method should be called only once
 
 	while(!scrapbook.empty()) {
 		shortList.push(scrapbook.top().idx); // place worse candidates to the bottom of the stack
@@ -109,8 +111,6 @@ bool TopCandidateMatches::foundAny() const {
 }
 
 CandidatesShortList TopCandidateMatches::getShortList() const {
-	if(!shortListReady)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after prepareReport()!", logic_error);
-
+	assert(shortListReady); // this method should be called only after prepareReport()
 	return shortList;
 }

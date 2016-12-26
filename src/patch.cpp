@@ -38,7 +38,6 @@
 
 #include "patch.h"
 #include "matchEngine.h"
-#include "misc.h"
 
 #pragma warning ( push, 0 )
 
@@ -50,10 +49,8 @@ using namespace std;
 using namespace cv;
 
 const Mat& Patch::matrixToApprox() const {
-	if(needsApproximation)
-		return grayD;
-
-	THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be called when needsApproximation is false!", logic_error);
+	assert(needsApproximation);
+	return grayD;
 }
 
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :

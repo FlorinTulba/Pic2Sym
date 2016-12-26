@@ -40,7 +40,14 @@
 
 #include "taskMonitor.h"
 #include "jobMonitorBase.h"
-#include "misc.h"
+#include "warnings.h"
+
+#pragma warning ( push, 0 )
+
+#include <iostream>
+#include <cassert>
+
+#pragma warning ( pop )
 
 using namespace std;
 
@@ -60,11 +67,9 @@ void TaskMonitor::setTotalSteps(size_t totalSteps_) {
 }
 
 void TaskMonitor::taskAdvanced(size_t steps/* = 1U*/) {
+	assert(totalSteps > 0.); // Please call this method only after setTotalSteps()
 	if(0U == steps)
 		return;
-
-	if(totalSteps == 0.)
-		THROW_WITH_CONST_MSG("Please call " __FUNCTION__ " only after TaskMonitor::setTotalSteps()!", logic_error);
 
 	double taskProgress = steps / totalSteps;
 	if(taskProgress > EPSp1()) {

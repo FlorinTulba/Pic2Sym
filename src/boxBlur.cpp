@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "boxBlur.h"
-#include "misc.h"
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -66,11 +66,8 @@ class BoxBlur::Impl {
 	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
 	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details
 	Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) {
-		if(0U == iterations_)
-			THROW_WITH_CONST_MSG("iterations_ should be > 0 in " __FUNCTION__, invalid_argument);
-
-		if(desiredSigma < 0.)
-			THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
+		assert(iterations_ > 0U);
+		assert(desiredSigma > 0.);
 
 		iterations = iterations_;
 		const double common = 12. * desiredSigma * desiredSigma,
@@ -87,8 +84,7 @@ class BoxBlur::Impl {
 
 	/// Reconfigure mask width (wl) for performing all iterations and destroys the wu mask
 	Impl& setWidth(unsigned boxWidth_) {
-		if(0U == (boxWidth_ & 1U))
-			THROW_WITH_CONST_MSG("Parameter should be an odd value in " __FUNCTION__, invalid_argument);
+		assert(1U == (boxWidth_ & 1U)); // Parameter should be an odd value
 
 		wl = boxWidth_;
 		countWu = 0U; // cancels any iterations for filters with width wu
@@ -99,8 +95,7 @@ class BoxBlur::Impl {
 
 	/// Reconfigure iterations count for wl and destroys the wu mask
 	Impl& setIterations(unsigned iterations_) {
-		if(0U == iterations_)
-			THROW_WITH_CONST_MSG("iterations_ should be > 0 in " __FUNCTION__, invalid_argument);
+		assert(iterations_ > 0U);
 
 		iterations = countWl = iterations_;
 		countWu = 0U; // cancels any iterations for filters with width wu

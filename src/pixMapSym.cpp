@@ -347,8 +347,7 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 }
 
 void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
-	if(ready)
-		THROW_WITH_CONST_MSG("Cannot call " __FUNCTION__ " after setAsReady without reset-ing", logic_error);
+	assert(!ready); // method shouldn't be called after setAsReady without reset-ing
 	
 	const FT_Bitmap b = g->bitmap;
 	const unsigned height = b.rows, width = b.width;

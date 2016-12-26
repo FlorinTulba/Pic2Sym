@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "gaussBlur.h"
-#include "misc.h"
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -53,11 +53,8 @@ GaussBlur::GaussBlur(double desiredSigma, unsigned kernelWidth_/* = 0U*/) {
 }
 
 GaussBlur& GaussBlur::configure(double desiredSigma, unsigned kernelWidth_/* = 0U*/) {
-	if(desiredSigma < 0.)
-		THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
-
-	if(kernelWidth_ != 0U && (kernelWidth_ & 1U) != 1U)
-		THROW_WITH_CONST_MSG("kernelWidth_ should be an odd value or 0 in " __FUNCTION__, invalid_argument);
+	assert(desiredSigma > 0.);
+	assert((kernelWidth_ == 0U) || ((kernelWidth_ & 1U) == 1U)); // kernelWidth_ should be an odd value or 0
 
 	nonTinySymsParams.sigma = desiredSigma;
 	nonTinySymsParams.kernelWidth = kernelWidth_;

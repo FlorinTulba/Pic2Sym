@@ -49,7 +49,6 @@
 #include "symsSerialization.h"
 #include "views.h"
 #include "dlgs.h"
-#include "misc.h"
 
 #pragma warning ( push, 0 )
 
@@ -266,8 +265,7 @@ string FontEngine::getFontType() {
 
 string MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.symSettings().getFontSz();
-	if(!Settings::isFontSizeOk(sz))
-		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(sz) + ") in " __FUNCTION__, logic_error);
+	assert(Settings::isFontSizeOk(sz));
 
 	ostringstream oss;
 	oss<<fe.getFontType()<<'_'<<sz;

@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "extBoxBlur.h"
-#include "misc.h"
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -88,11 +88,8 @@ class ExtBoxBlur::Impl {
 
 	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
 	Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) {
-		if(0U == iterations_)
-			THROW_WITH_CONST_MSG("iterations should be > 0 in " __FUNCTION__, invalid_argument);
-
-		if(desiredSigma < 0.)
-			THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
+		assert(iterations_ > 0U);
+		assert(desiredSigma > 0.);
 
 		extendedBoxKernel(desiredSigma, iterations_);
 
@@ -101,8 +98,7 @@ class ExtBoxBlur::Impl {
 
 	/// Reconfigure iterations count for wl and destroys the wu mask
 	Impl& setIterations(unsigned iterations_) {
-		if(0U == iterations_)
-			THROW_WITH_CONST_MSG("iterations should be > 0 in " __FUNCTION__, invalid_argument);
+		assert(iterations_ > 0U);
 
 		extendedBoxKernel(sigma, iterations_);
 

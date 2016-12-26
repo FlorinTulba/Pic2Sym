@@ -52,7 +52,7 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 */
 
 #include "stackBlur.h"
-#include "misc.h"
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -79,8 +79,7 @@ class StackBlur::Impl {
 
 	/// Reconfigure the filter through a new desired standard deviation
 	Impl& setSigma(double desiredSigma) {
-		if(desiredSigma < 0.)
-			THROW_WITH_CONST_MSG("desiredSigma should be > 0 in " __FUNCTION__, invalid_argument);
+		assert(desiredSigma > 0.);
 
 		// Empirical relation, based on which radius minimizes the L2 error
 		// compared to a Gaussian with a given standard deviation
@@ -94,8 +93,7 @@ class StackBlur::Impl {
 
 	/// Reconfigure the filter through a new radius
 	Impl& setRadius(unsigned radius) {
-		if(radius == 0U || radius > 254U)
-			THROW_WITH_CONST_MSG("Parameter radius must be in range 1..254 in " __FUNCTION__, invalid_argument);
+		assert(radius >= 1U && radius <= 254U); // radius must be in range 1..254
 		r = radius;
 
 		return *this;

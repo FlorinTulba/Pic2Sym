@@ -384,11 +384,11 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	if(face == nullptr)
 		THROW_WITH_CONST_MSG("Please use FontEngine::newFont before calling " __FUNCTION__ "!", logic_error);
 
-	if(!Settings::isFontSizeOk(fontSz_))
-		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(fontSz_) + ") for " __FUNCTION__ "!", invalid_argument);
-
 	if(nullptr == symsMonitor)
 		THROW_WITH_CONST_MSG("Please use FontEngine::setSymsMonitor before calling " __FUNCTION__ "!", logic_error);
+
+	if(!Settings::isFontSizeOk(fontSz_))
+		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(fontSz_) + ") for " __FUNCTION__ "!", invalid_argument);
 
 	cout<<"Setting font size "<<fontSz_<<endl;
 
