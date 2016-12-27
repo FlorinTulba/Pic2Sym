@@ -82,9 +82,10 @@ omp_lock_t ompTraceLock;
 #endif // defined(GENERATE_OPEN_MP_TRACE)
 
 namespace {
+	const string hBar(80, '=');
+
 	/// Displays Copyright text
 	void copyrightNotice() {
-		const string hBar(80, '=');
 		cout<<hBar<<endl;
 		cout<<copyrightText<<endl;
 		cout<<hBar<<endl<<endl;
