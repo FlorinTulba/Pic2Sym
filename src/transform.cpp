@@ -325,7 +325,6 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	const size_t rowsOfPatches = size_t(patchesPerCol),
 				batchSz = size_t(upperIdx - fromIdx),
 				prevSteps = (size_t)fromIdx * rowsOfPatches;
-	const MatchSettings &ms = cfg.matchSettings();
 
 #pragma omp parallel if(ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait

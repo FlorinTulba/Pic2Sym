@@ -141,7 +141,7 @@ size_t MatchAssessor::enabledMatchAspectsCount() const {
 	return enabledAspectsCount;
 }	
 
-void MatchAssessor::getReady(const CachedData &cachedData) {
+void MatchAssessor::getReady(const CachedData &/*cachedData*/) {
 	enabledAspects.clear();
 	if(availAspects != nullptr) {
 		for(auto pAspect : *availAspects)
