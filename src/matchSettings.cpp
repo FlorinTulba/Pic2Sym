@@ -44,8 +44,6 @@
 
 #pragma warning ( pop )
 
-using namespace std;
-
 #ifndef UNIT_TESTING
 
 #include "matchSettingsManip.h"
@@ -55,6 +53,8 @@ MatchSettings::MatchSettings() {
 }
 
 #endif // UNIT_TESTING not defined
+
+using namespace std;
 
 MatchSettings& MatchSettings::setResultMode(bool hybridResultMode_) {
 	if(hybridResultMode != hybridResultMode_) {
