@@ -38,7 +38,12 @@
 
 #include "misc.h"
 
+#pragma warning ( push, 0 )
+
+#define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
+
+#pragma warning ( pop )
 
 using namespace std;
 
