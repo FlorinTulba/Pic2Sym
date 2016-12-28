@@ -69,7 +69,9 @@ protected:
 	@throw invalid_argument when loading an obsolete 'initMatchSettings.cfg'
 	*/
 	template<class Archive>
-	void load(MatchSettings &ms, Archive &/*ar*/, const unsigned version) {
+	void load(MatchSettings &ms, Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(ar);
+
 		if(version < MatchSettings::VERSION) {
 			/*
 			MatchSettings is considered correctly initialized if its data is read from

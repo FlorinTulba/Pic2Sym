@@ -39,6 +39,8 @@
 #ifndef H_IMG_SETTINGS
 #define H_IMG_SETTINGS
 
+#include "misc.h"
+
 #pragma warning ( push, 0 )
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -65,7 +67,9 @@ protected:
 	@param version the version of the loaded ImgSettings
 	*/
 	template<class Archive>
-	void load(Archive &ar, const unsigned /*version*/) {
+	void load(Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(version);
+
 		// It is useful to see which settings changed when loading
 		ImgSettings defSettings(*this); // create as copy of previous values
 

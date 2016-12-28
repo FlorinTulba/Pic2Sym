@@ -61,7 +61,8 @@ class Settings {
 	When saving to ar, it's the last version of Settings
 	*/
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
+	void serialize(Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(version);
 		ar & ss & is & ms;
 	}
 	friend class boost::serialization::access;

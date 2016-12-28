@@ -64,7 +64,9 @@ protected:
 	@param version the version of the loaded object
 	*/
 	template<class Archive>
-	void load(Archive &ar, const unsigned /*version*/) {
+	void load(Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(version);
+
 		// It is useful to see which settings changed when loading
 		SymSettings defSettings(*this); // create as copy of previous values
 
