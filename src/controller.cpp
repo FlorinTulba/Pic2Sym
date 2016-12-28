@@ -108,20 +108,22 @@ bool Controller::validState(bool imageRequired/* = true*/) const {
 	return false;
 }
 
-void Controller::newImage(const string &imgPath) {
+bool Controller::newImage(const string &imgPath, bool silent/* = false*/) {
 	extern const cv::String ControlPanel_selectImgLabel;
 	const auto permit = cp.actionDemand(ControlPanel_selectImgLabel);
 	if(nullptr == permit)
-		return;
+		return false;
 
 	if(img.absPath().compare(absolute(imgPath)) == 0)
-		return; // same image
+		return true; // same image
 
 	if(!img.reset(imgPath)) {
-		ostringstream oss;
-		oss<<"Invalid image file: '"<<imgPath<<'\'';
-		errMsg(oss.str());
-		return;
+		if(!silent) {
+			ostringstream oss;
+			oss<<"Invalid image file: '"<<imgPath<<'\'';
+			errMsg(oss.str());
+		}
+		return false;
 	}
 
 	ostringstream oss;
@@ -136,6 +138,7 @@ void Controller::newImage(const string &imgPath) {
 	const cv::Mat &orig = img.original();
 	comp.setReference(orig); // displays the image
 	comp.resize();
+	return true;
 }
 
 bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
@@ -429,7 +432,7 @@ bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_)
 	return result;
 }
 
-bool Controller::performTransformation() {
+bool Controller::performTransformation(double *durationS/* = nullptr*/) {
 	extern const cv::String ControlPanel_transformImgLabel;
 	const auto permit = cp.actionDemand(ControlPanel_transformImgLabel);
 	if(nullptr == permit)
@@ -439,6 +442,10 @@ bool Controller::performTransformation() {
 		return false;
 
 	t.run();
+
+	if(nullptr != durationS)
+		*durationS = t.duration();
+
 	return true;
 }
 
@@ -467,30 +474,38 @@ void Controller::setUserDefaultMatchSettings() const {
 #endif // UNIT_TESTING not defined
 }
 
-void Controller::loadSettings() {
+bool Controller::loadSettings(const string &from/* = ""*/) {
 	extern const cv::String ControlPanel_loadSettingsLabel;
 	const auto permit = cp.actionDemand(ControlPanel_loadSettingsLabel);
 	if(nullptr == permit)
-		return;
+		return false;
 
+	string sourceFile;
+	if(!from.empty()) {
+		sourceFile = from;
+	
+	} else { // prompting the user for the file to be loaded
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static SettingsSelector ss; // loader
+		static SettingsSelector ss; // loader
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	if(!ss.promptForUserChoice())
-		return;
-	
+		if(!ss.promptForUserChoice())
+			return false;
+
+		sourceFile = ss.selection();
+	}
+
 	const SymSettings prevSymSettings(cfg.ss); // keep a copy of old SymSettings
-	cout<<"Loading settings from '"<<ss.selection()<<'\''<<endl;
+	cout<<"Loading settings from '"<<sourceFile<<'\''<<endl;
 
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
-		ifstream ifs(ss.selection(), ios::binary);
+		ifstream ifs(sourceFile, ios::binary);
 		binary_iarchive ia(ifs);
 		ia>>cfg;
 	} catch(...) {
 		cerr<<"Couldn't load these settings"<<endl;
-		return;
+		return false;
 	}
 #pragma warning ( default : WARN_SEH_NOT_CAUGHT )
 
@@ -499,7 +514,7 @@ void Controller::loadSettings() {
 	cp.updateImgSettings(cfg.is);
 
 	if(prevSymSettings==cfg.ss)
-		return;
+		return true;
 
 	bool fontFileChanged = false, encodingChanged = false;
 	const auto newEncName = cfg.ss.getEncoding();
@@ -526,6 +541,7 @@ void Controller::loadSettings() {
 	cp.updateSymSettings(currEncIdx, cfg.ss.getFontSz());
 	
 	symbolsChanged();
+	return true;
 }
 
 void Controller::saveSettings() const {

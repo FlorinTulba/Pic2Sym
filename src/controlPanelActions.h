@@ -57,12 +57,20 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 	virtual void restoreUserDefaultMatchSettings() = 0;
 	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current MatchSettings to 'initMatchSettings.cfg'
 
-	virtual void loadSettings() = 0;		///< updating the Settings object
+	virtual bool loadSettings(const std::string &from = "") = 0;	///< updating the Settings object
 	virtual void saveSettings() const = 0;	///< saving the Settings object
 
 	virtual unsigned getFontEncodingIdx() const = 0; ///< needed to restore encoding index
 
-	virtual void newImage(const std::string &imgPath) = 0;
+	/**
+	Sets an image to be transformed.
+	@param imgPath the image to be set
+	@param silent when true, it doesn't show popup windows if the image is not valid
+
+	@return false if the image cannot be set
+	*/
+	virtual bool newImage(const std::string &imgPath, bool silent = false) = 0;
+	
 	virtual void newFontFamily(const std::string &fontFile) = 0;
 	virtual void newFontEncoding(int encodingIdx) = 0;
 	virtual bool newFontEncoding(const std::string &encName) = 0;
@@ -89,7 +97,14 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 	*/
 	virtual void setResultMode(bool hybrid) = 0;
 
-	virtual bool performTransformation() = 0;
+	/**
+	Approximates an image based on current settings
+
+	@param durationS if not nullptr, it will return the duration of the transformation (when successful)
+
+	@return false if the transformation cannot be started; true otherwise (even when the transformation is canceled and the result is just a draft)
+	*/
+	virtual bool performTransformation(double *durationS = nullptr) = 0;
 
 	virtual void showAboutDlg(const std::string &title, const std::wstring &content) = 0;
 	virtual void showInstructionsDlg(const std::string &title, const std::wstring &content) = 0;

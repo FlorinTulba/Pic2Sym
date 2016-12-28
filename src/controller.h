@@ -154,10 +154,19 @@ public:
 	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
 	void restoreUserDefaultMatchSettings() override;
 	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
-	void loadSettings() override;		///< updating the Settings object
+	bool loadSettings(const std::string &from = "") override;	///< updating the Settings object
 	void saveSettings() const override;	///< saving the Settings object
 	unsigned getFontEncodingIdx() const override;
-	void newImage(const std::string &imgPath) override;
+	
+	/**
+	Sets an image to be transformed.
+	@param imgPath the image to be set
+	@param silent when true, it doesn't show popup windows if the image is not valid
+
+	@return false if the image cannot be set
+	*/
+	bool newImage(const std::string &imgPath, bool silent = false) override;
+	
 	void newFontFamily(const std::string &fontFile) override;
 	void newFontEncoding(int encodingIdx) override;
 	bool newFontEncoding(const std::string &encName) override;
@@ -182,7 +191,7 @@ public:
 	@param hybrid boolean: when true, establishes the cosmeticized mode; otherwise leaves the actual result as it is
 	*/
 	void setResultMode(bool hybrid) override;
-	bool performTransformation() override;
+	bool performTransformation(double *durationS = nullptr) override;
 	void showAboutDlg(const std::string &title, const std::wstring &content) override;
 	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
 

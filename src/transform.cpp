@@ -218,6 +218,7 @@ Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Sett
 
 void Transformer::run() {
 	isCanceled = false;
+	durationS = 0.;
 
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);

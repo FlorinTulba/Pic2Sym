@@ -134,9 +134,11 @@ void showUsage() {
 	cout<<"There are 3 launch modes:"<<endl;
 	cout<<"A) Normal launch mode (no parameters)"<<endl;
 	cout<<"		Pic2Sym.exe"<<endl<<endl;
-	cout<<"B) View mismatches launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"B) Timing a certain scenario (5 parameters)"<<endl;
+	cout<<"		Pic2Sym.exe timing \"<caseName>\" \"<settingsPath>\" \"<imagePath>\" \"<reportFilePath>\""<<endl<<endl;
+	cout<<"C) View mismatches launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
 	cout<<"		Pic2Sym.exe mismatches \"<testTitle>\""<<endl<<endl;
-	cout<<"C) View misfiltered symbols launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
+	cout<<"D) View misfiltered symbols launch mode (Support for Unit Testing, using 2 parameters)"<<endl;
 	cout<<"		Pic2Sym.exe misfiltered \"<testTitle>\""<<endl<<endl;
 	pauseAfterError();
 }
@@ -511,6 +513,7 @@ void Controller::TimerActions_ImgTransform::onStart() {
 void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
 	ctrler.reportTransformationProgress(1.);
 	ctrler.presentTransformationResults(elapsedS);
+	ctrler.t.durationS = elapsedS;
 }
 
 void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {

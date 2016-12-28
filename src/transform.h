@@ -68,6 +68,7 @@ struct BestMatch;
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
 	friend class PreselManager;
+	friend class Controller;
 
 protected:
 	const IPicTransformProgressTracker &ctrler;	///< data & views manager
@@ -86,6 +87,8 @@ protected:
 	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
 
 	PreselManager *preselManager = nullptr;	///< preselection manager
+
+	double durationS = 0.;		///< transformation duration in seconds
 
 	int w = 0;					///< width of the resized image
 	int h = 0;					///< height of the resized image
@@ -119,7 +122,8 @@ public:
 
 	void run();	///< applies the configured transformation onto current/new image
 
-	const cv::Mat& getResult() const { return result; }
+	inline const cv::Mat& getResult() const { return result; }
+	inline double duration() const { return durationS; }
 
 	/**
 	Updates symsBatchSz.
