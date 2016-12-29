@@ -39,7 +39,7 @@ Explanations concerning the values within the table:
 
 #### Existing versions compared by their speed:
 
--   Version **2.0** is typically superior to the previous versions. However, it can disable all its features except *Skipping Matching Aspects Heuristic*. In that case it will be slightly inferior to **v1.1 - v1.3** when the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* Matching Aspect isn't enabled along with a few other aspects.
+-   Version **2.0** is typically superior to the previous versions. However, it can disable all its new features. In that case it will be slightly inferior to **v1.3**.
 
 -   Version **1.3** allows *visualizing drafts* and preserves the *most efficient multithreading switches* from *v1.2*. It performs better than **v1.2** as long as demanding only a few drafts.
 
@@ -65,9 +65,11 @@ Continuing with more relevant features from the application performance point of
 
 I) ***Skipping Matching Aspects Heuristic***
 
-It belongs to the [**Draft Improver**](../appendix/modules/draftImprover.md) module.
+Its purpose is to identify poor matches as early and as cheap as possible. When patches are compared against the symbols using multiple matching aspects, poor matches might be spotted after evaluating only a few scores of those matching aspects. For that it is enough to know the total score of the best match found so far and the maximum score that can be obtained for the current pair: patch - symbol.
 
-This is the only new feature that gets disabled not by changing the configuration file, but by using a single Matching Aspect for transforming an image. In that case, when no other feature is enabled, **v2.0** is slower than **v1.3** because of the introduced infrastructure ready to support all those new features.
+This feature belongs to the [**Draft Improver**](../appendix/modules/draftImprover.md) module.
+
+The heuristic doesn't apply when using a single Matching Aspect. Besides, there are some entries within the configuration file to adjust (*EnableSkipAboveMatchRatio*) or disable the discussed feature (*UseSkipMatchAspectsHeuristic*). As explained below, the efficiency of the technique depends a lot on the image to approximate.
 
 Next 2 images, both with the same size (27540 patches), are used during the following explanations:
 
@@ -108,9 +110,11 @@ Next 2 images, both with the same size (27540 patches), are used during the foll
 
 > Uniform patches are just blurred and copied to the result image. Only the remaining patches must be matched against the entire symbols set.
 >
-> Typically, for coarse patches there are only a few viable match candidates among the symbols. A much serious competition appears when searching the match for patches with finely-grained texture - the race gets decided late, probably only after the last challenge.
+> Typically, for coarse patches there are a few viable (good) match candidates among the symbols.
+>
+> Finely-grained patches rarely have good matches, thus the scores of their best matches are quite low. This means that the scores of the symbols are close to each other. Replacing the previous best match happens therefore rather easy and often. But such high frequency of best match replacement is costly.
 
-Now let's observe the count of matching aspects that were skipped while transforming the 2 images based on:
+Now let's observe the maximum count of matching aspects that can be skipped while transforming the 2 images based on:
 
 -   the configuration from [this example](../results/Example1_v1.3.jpg) (using 125 glyphs)
 -   *Parallelism* (2 threads)
@@ -120,18 +124,18 @@ Now let's observe the count of matching aspects that were skipped while transfor
 |---------------------------------------------------------------------------------|-----------:|---------------------------------------:|----------------------------------------:|
 | *Prefer Larger Symbols*                                                         |       0.001|                                   0.00%|                                    0.00%|
 | *Prefer Better Contrast*                                                        |       2.000|                                   0.00%|                                    0.00%|
-| *Foreground matching*                                                           |       3.100|                                  11.24%|                                    0.41%|
-| *Background matching*                                                           |       3.200|                                  11.72%|                                    0.44%|
-| *Edges matching*                                                                |       4.000|                                  14.30%|                                    0.64%|
-| *Gravitational Smoothness*                                                      |      15.000|                                  15.90%|                                    0.83%|
-| *Directional Smoothness*                                                        |      15.100|                                  16.23%|                                    0.85%|
-| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.19%|                                   13.66%|
+| *Foreground matching*                                                           |       3.100|                                  11.11%|                                    0.40%|
+| *Background matching*                                                           |       3.200|                                  11.58%|                                    0.43%|
+| *Edges matching*                                                                |       4.000|                                  14.10%|                                    0.61%|
+| *Gravitational Smoothness*                                                      |      15.000|                                  15.64%|                                    0.78%|
+| *Directional Smoothness*                                                        |      15.100|                                  15.96%|                                    0.80%|
+| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.40%|                                   13.66%|
 
 > The 2 scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
 
 In the presented cases, the 2 least complex matching aspects (*Prefer Larger Symbols* and *Prefer Better Contrast*) had to be evaluated for all compare operations. Only after cumulating the scores from both of them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
 
-Apart from the substantial number of uniform patches, image [I1](../../examples/6.jpg) presents also many coarse-textured regions, which generally reduce the number of potential matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
+Apart from the substantial number of uniform patches, image [I1](../../examples/6.jpg) presents also many coarse-textured regions, which generally have a few good matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
 
 Comparing now the durations required to approximate the images either by all matching aspects, or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one):
 
@@ -151,7 +155,11 @@ Current percentage of skipped SS aspects for transforming image I2 with all aspe
 -   required count of additionally skipped SS aspects is: <i>(73.408s - 60.681s) / tSS = 721675.9</i>, to be rounded to 721676
 -   the result is: <i>13.66% + (100 \* 721676 / 3440875)% = 34.63362%</i>. This means that the paradox of evaluating more aspects in less time happens only when there are at least 35%-40% skipped SS aspects
 
-So, ***this feature is most valuable when skipping many evaluations of the Structural Similarity matching aspect***, thus on images with more frequent coarse patches.
+So, this feature is most valuable when transforming images with more frequent coarse patches.
+
+To efficiently deal with all kind of patches, the heuristic starts getting used only when the score of the best match found so far is larger than a given threshold (*EnableSkipAboveMatchRatio*). In this way, the cost of frequent poor matches replacement is avoided.
+
+The order of the symbols during investigation is relevant for this heuristic, as well. The sooner a good match is found, the more aspects are skipped for subsequent poor match symbols. The adopted compromise is appropriate for most matching aspects - traversing the symbols sorted in ascending order of their *density* (how much space they occupy from their square), while maintaining found clusters together. The matching aspect *Prefer Larger Symbols* clearly suffers because of this order, but this is the cheapest matching aspect to compute.
 
 ------------------------------------------------------------------------
 
@@ -159,7 +167,9 @@ So, ***this feature is most valuable when skipping many evaluations of the Struc
 
 II) ***Symbol Set Filtering***
 
-It belongs to the [**Symbols Provider**](../appendix/modules/symbolsProvider.md) module.
+The duration of the image approximation process depends on how many symbols need to be compared to each image patch. Filtering can shrink the symbols set by removing undesired glyphs and will contribute in this way to shortening the image transformation time.
+
+The feature belongs to the [**Symbols Provider**](../appendix/modules/symbolsProvider.md) module.
 
 The implemented filters can be enabled / disabled separately.
 
@@ -175,23 +185,27 @@ Let's see how various font families shrink after applying all implemented filter
 
 | Font Type                           |  Initial Symbols|  Remaining Symbols|  Transformation Time|
 |-------------------------------------|----------------:|------------------:|--------------------:|
-| BpMono\_Bold\_AppleRoman            |              125|                 58|                   16|
-| ProFontWindows\_Regular\_AppleRoman |              201|                134|                   30|
-| EnvyCode\_Regular\_AppleRoman       |              220|                192|                   40|
-| Consolas\_Bold\_Unicode             |             2215|               1462|                  332|
-| CourierNew\_Bold\_Unicode           |             2846|               2062|                  444|
-| DengXian\_Regular\_Unicode          |            28541|               7248|                 1299|
-| Osaka\_Regular\_Unicode             |            14963|               7889|                 1607|
+| BpMono\_Bold\_AppleRoman            |              125|                 58|                   15|
+| ProFontWindows\_Regular\_AppleRoman |              201|                134|                   29|
+| EnvyCode\_Regular\_AppleRoman       |              220|                192|                   39|
+| Consolas\_Bold\_Unicode             |             2215|               1465|                  211|
+| CourierNew\_Bold\_Unicode           |             2846|               2064|                  237|
+| DengXian\_Regular\_Unicode          |            28541|               7247|                 1230|
+| Osaka\_Regular\_Unicode             |            14963|               7884|                 1526|
 
-As stated before, the processing time should be proportional to the count of symbols used for approximating a certain image. Next *log-log* plot confirms this statement:<br> <img src="./LinearModelForAnImg-1.png" style="display: block; margin: auto;" />
+The processing time looks quasi-proportional to the count of (remaining) symbols used for approximating a certain image. See next *log-log* plot for the values from the previous table:<br> <img src="./LinearModelForAnImg-1.png" style="display: block; margin: auto;" />
 
-So, when using **Pic2Sym v2.0** with all features enabled, the time required for the transformation of the image [I1](../../examples/6.jpg) could be approximated by the rule:<br> <i>Duration = 0.191 \* RemainingSymbols + 18.668</i>
+So, when using **Pic2Sym v2.0** with all features enabled, the time required for the transformation of the image [I1](../../examples/6.jpg) could be approximated by the rule:<br> <i>Duration = 0.182 \* RemainingSymbols + 1.752</i>
+
+The resulted times for the fonts *Consolas\_Bold\_Unicode* and *CourierNew\_Bold\_Unicode* are clearly better than expected and this is because those font families can be **grouped in larger clusters** than the other font types, resulting in an even smaller count of remaining symbols (there will be just one representative symbol for each group of glyphs). These aspects are better explained within the [Symbols Clustering](#SymsClustering) section from below.
 
 ------------------------------------------------------------------------
 
 <a name = "SymsPreselection"></a>
 
 III) ***Symbols Preselection***
+
+The goal of this feature is reducing the complexity of the operations involved when comparing a symbol against an image patch. This was realized by initially using tiny versions of the symbols and of the image patches - in a *preselection phase*, followed by comparing the normal size patches with only the most promising symbols from the *short list* resulted from the first phase.
 
 This feature interacts with several modules, but affects mostly the following 2: [Draft Improver](../appendix/modules/draftImprover.md) and [Image Transformer](../appendix/modules/transformer.md).
 
@@ -204,6 +218,8 @@ Additionaly, the larger the original font size, the higher the acceleration rate
 
 <img src="./PreselectionGainByFontSize-1.png" style="display: block; margin: auto;" />
 
+The values from the graph are computed like this: <i>(timingWithPreselection / timingWithoutPreselection) \* 100%</i>
+
 The images [I1](../../examples/6.jpg) and [I2](../../examples/15.jpg) were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
 
 The quality of the result is a subjective matter. One could not even notice how this feature provides poor matches for some patches. However, the [Unit Tests](../UnitTesting/UnitTesting.md) demonstrated a significant drop of the accuracy for approximations using the Preselection mode.
@@ -214,11 +230,13 @@ The quality of the result is a subjective matter. One could not even notice how 
 
 IV) ***Symbols Clustering***
 
-It belongs to the [**Symbols Provider**](../appendix/modules/symbolsProvider.md) module.
+Typically, the symbol sets contain several groups of similar glyphs. When such a group is not similar to a given patch, it is more efficient to compare just the representative of the group against the patch and then move to other symbols. When the representative appears quite similar to the patch all the members of the group need to be compared with the patch, to find the best match among them.
 
-Most of the scenarios from the [results](../results/results.md) page induce the wrong idea that *Clustering the Symbols* might just slow the transformation process (apart from [*Scenarios 7*](../results/results.md#Scenario7) and [*8*](../results/results.md#Scenario8), all the other show worse performance when clustering the glyph set).
+This feature belongs to the [**Symbols Provider**](../appendix/modules/symbolsProvider.md) module.
 
-Here are 2 transformations that might redeem this feature:
+Most of the scenarios from the [results](../results/results.md) page induce the wrong idea that *Clustering the Symbols* might be useless most of the time (apart from [*Scenarios 7*](../results/results.md#Scenario7) and [*8*](../results/results.md#Scenario8), all the other ones show no performance gain when clustering the glyph set).
+
+Here are 2 transformations that might redeem this feature (please ignore the durations reported in the images - current version is faster, as the table below will illustrate):
 
 -   [first one](6_Consolas_Unicode_Bold_10_SmallSet_1462.jpg) based on the font type *Consolas Bold Unicode*
 -   [the second](6_CourierNew_Unicode_Bold_10_SmallSet_2062.jpg) using *Courier New Bold Unicode*
@@ -237,8 +255,8 @@ All features were enabled for a first measurement, then the clustering was disab
 <tr class="header">
 <th></th>
 <th align="center">Average Cluster Size</th>
-<th align="center">Transformation using Clustering</th>
-<th align="center">Transformation without Clustering</th>
+<th align="center">Using all Features</th>
+<th align="center">All Features except Clustering</th>
 <th align="center">Gain from Clustering</th>
 </tr>
 </thead>
@@ -246,32 +264,27 @@ All features were enabled for a first measurement, then the clustering was disab
 <tr class="odd">
 <td><em>Consolas Bold Unicode</em></td>
 <td align="center">1.28</td>
-<td align="center">332s</td>
-<td align="center">394s</td>
-<td align="center">118% (1.18 x faster)</td>
+<td align="center">211s</td>
+<td align="center">259s</td>
+<td align="center">123% (1.23 x faster)</td>
 </tr>
 <tr class="even">
 <td><em>Courier New Bold Unicode</em></td>
 <td align="center">1.32</td>
-<td align="center">444s</td>
-<td align="center">556s</td>
-<td align="center">125% (1.25 x faster)</td>
+<td align="center">237s</td>
+<td align="center">293s</td>
+<td align="center">124% (1.24 x faster)</td>
 </tr>
 </tbody>
 </table>
 
 The *average cluster size = acs* represents how large the existing clusters are, on average. It gets reported in the *console window* each time a font type is loaded.
 
-Using this notion, I've analyzed its value for the scenarios from the [results](../results/results.md) page:
+Typically, there is a threshold average cluster size (*MinAverageClusterSize*) under which the clustering mechanism would slow the transformation. This threshold is around 1.12 when using 2 threads.
 
--   [*Scenarios 7*](../results/results.md#Scenario7) presents a Preselection mode with 4s faster than not using that mode. The *acs* was 1.18
--   [*Scenarios 8*](../results/results.md#Scenario8) is in favor of the Preselection mode. 2s is the difference between the 2 modes. The *acs* was 1.13
--   all other scenarios are against the Preselection mode. Their *acs* values were below 1.12
+The application has been configured to use Clustering only when *acs* is above *MinAverageClusterSize*. When ignored, the displayed clusters are separated with interrupted lines (dashes), instead of continuous red lines.
 
-So I reckon there is a ***threshold*** *average cluster size* around 1.12:
-
--   for values below it, clustering will typically perform worse
--   for values above it, it *might be faster if the generated clusters are of superior quality*
+The symbols are not compared against patches in the order presented by the Symbols View. The traversal order is always determined only by glyph density (keeping clusters together when they don't get ignored).
 
 Several points on *clustering quality*:
 
@@ -296,9 +309,11 @@ These times were achieved only after introducing a heuristic method for computin
 
 V) ***Alternative Blur Algorithms***
 
-They belong to the [**Draft Improver**](../appendix/modules/draftImprover.md) module.
-
 One possible *Matching Aspect* to be used during image approximation is *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)*. It relies heavily on *Gaussian blurring*, whose implementation is already optimized in OpenCV for a sequential run. However, `GaussianBlur` function is the most time-consuming operation during image approximation when using the previously mentioned *Matching Aspect*.
+
+Several alternatives for the Gaussian blur algorithm were investigated and some were integrated in the project.
+
+These blur algorithms belong to the [**Draft Improver**](../appendix/modules/draftImprover.md) module.
 
 For the typical standard deviation of 1.5, `GaussianBlur` from OpenCV still remains the fastest when compared to other tested sequential innovative algorithms:
 
@@ -309,7 +324,7 @@ For the typical standard deviation of 1.5, `GaussianBlur` from OpenCV still rema
 
 All those competitor algorithms are less accurate than *Extended Box Blur* configured with just 2 repetitions.<br> When applied only once, sequential *Box-based blur* techniques can be 1.5 - 3 times faster than `GaussianBlur` from OpenCV.<br> However, basic *Box blurring* with no repetitions has poor quality, while *Extended Box blurring* incurs additional time costs for an improved quality.
 
-[Here](http://dev.ipol.im/~getreuer/code/doc/gaussian_20131215_doc/group__ebox__gaussian.html) is one implementation of the *Extended Box blurring*.<br> This project contains its own implementation of this blur technique (**ExtBoxBlur**).
+[Here](http://dev.ipol.im/~getreuer/code/doc/gaussian_20131215_doc/group__ebox__gaussian.html) is one implementation of the *Extended Box blurring*. This project contains its own implementation of this blur technique (**ExtBoxBlur**).
 
 The project includes following blur algorithms:
 
