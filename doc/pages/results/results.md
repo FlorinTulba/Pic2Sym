@@ -149,11 +149,11 @@ The following cases:
 
 ------------------------------------------------------------------------
 
-Filtering shrank the font family *Osaka Regular Unicode* from 14963 symbols to 7889.<br> So, 27540 patches to approximate using 7889 symbols requires in *v2.0* 1607s (around 27 minutes):<br> [![](Osaka_v2.0.jpg)](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> Here the *Hybrid Result* mode was not used, to be able to inspect the result better.<br> The amount of required memory was around 330MB.
+Filtering shrank the font family *Osaka Regular Unicode* from 14963 symbols to less than 7900.<br> So, 27540 patches to approximate using around 7900 symbols require 1526s (around 26 minutes) in *v2.0* (better than in the screenshot below):<br> [![](Osaka_v2.0.jpg)](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> Here the *Hybrid Result* mode was not used, to be able to inspect the result better.<br> The amount of required memory was around 330MB.
 
 ------------------------------------------------------------------------
 
-Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to 7248.<br> So, 27540 patches to approximate using 7248 symbols requires in *v2.0* 1299s (around 22 minutes):<br> [![](DengXian_v2.0.jpg)](../../examples/6_DengXian_Regular_UNICODE_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> This time, the *Hybrid Result* mode was enabled.
+Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to less than 7250.<br> So, 27540 patches to approximate using around 7250 symbols require 1230s (around 21 minutes) in *v2.0* (better than in the screenshot below):<br> [![](DengXian_v2.0.jpg)](../../examples/6_DengXian_Regular_UNICODE_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> This time, the *Hybrid Result* mode was enabled.
 
 ------------------------------------------------------------------------
 
@@ -187,7 +187,7 @@ Cases **to avoid**:
     -   are *italic* when there are many regions with textures tilted differently
     -   contain *glyphs filling almost solid their square* (such symbols are very likely to approximate ambiguous patches and ***they appear rigid, despite they are correctly selected***)
 
-**Hybrid Results** mode, **Symbols Filtering, Clustering and Preselection** are now able to tackle most of these problematic contexts.
+**Hybrid Results** mode, **Symbols Filtering, Clustering, Preselection** and **Skipping Matching Aspects** are now able to tackle most of these problematic contexts.
 
 For optimal configuration of the application, please refer to the [Control Panel](../CtrlPanel/CtrlPanel.md) and [Appendix](../appendix/appendix.md) materials.
 

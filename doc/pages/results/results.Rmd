@@ -17,11 +17,12 @@ versions <- c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0")  # x axis
 # Monitored evolution criteria from version to version
 criteria <- c("1 Thread, Basic", 
               "2 Threads, Basic",
-              "2 Threads, Clustering (Cl)",
               "2 Threads, Box Blur (BB)",
+              "2 Threads, Clustering (Cl)",
               "2 Threads, Filters (Fil)",
               "2 Threads, Preselection (Pre)",
-              "2 Threads, BB+Cl+Fil+Pre")
+              "2 Threads, Skip Aspects (SA)",
+              "2 Threads, BB+Cl+Fil+Pre+SA")
 
 versionsCount <- length(versions)
 criteriaCount <- length(criteria)
@@ -30,7 +31,7 @@ xrange <- c(1, versionsCount)
 cexVal <- 0.7 # Resize factor for plot title, symbols and legend
 
 #colours <- rainbow(criteriaCount, alpha=0.75)      # Didn't provide colors distinct enough
-colours <- c("black", "coral", "blue", "red", "darkgray", "brown", "green", "pink", "violet") # Added a few more
+colours <- c("black", "coral", "blue", "red", "darkgray", "brown", "green", "violet", "pink") # Added a few more
 
 # Initializes the values (NA) from the series of times (versionsCount rows by criteriaCount columns)
 initValues <- function() {
@@ -65,10 +66,13 @@ renderValues <- function(times, legendPos = "topright") {
              xlab='', ylab='', axes=F, xaxt="n", yaxt="n") # inhibit any axis information
     }
     
-    legend(legendPos, legend=criteria,
+    criteriaIndices <- seq_len(criteriaCount)
+    validCriteriaIndices <- criteriaIndices[sapply(criteriaIndices, function(idx) F%in%is.na(times[,idx]))]
+    
+    legend(legendPos, legend=criteria[validCriteriaIndices],
            cex=cexVal,
-           pch=seq_len(criteriaCount),
-           col=colours[1:criteriaCount],
+           pch=validCriteriaIndices,
+           col=colours[validCriteriaIndices],
            bty="n") # Show no rectangle around the legend
 }
 ```
@@ -121,19 +125,20 @@ Some of the glyphs used here are quite similar, in the sense they have just diff
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(256, 150, 174, 154, 113)
+    c(256, 150, 174, 154, 158)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(93, 82, 60)
+    c(93, 82, 83)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(65, 52, 52, 47, 40)
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(70, 83, 73, 67, 63, 39)
 
-renderValues(times)
+renderValues(times, "bottomleft")
 ```
 
 _ _ _
@@ -151,19 +156,20 @@ Although declared as *Regular*, the symbols look bold\-ish.
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(240, 138, 158, 142, 103)
+    c(240, 138, 158, 142, 149)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(82, 74, 55)
+    c(82, 74, 76)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(57, 48, 37, 45, 30)
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(65, 77, 52, 63, 54, 29)
 
-renderValues(times)
+renderValues(times, "bottomleft")
 ```
 
 _ _ _
@@ -180,17 +186,18 @@ Their background decides how clear they remain.
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(250, 209, 234, 213, 204)
+    c(250, 209, 234, 213, 218)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(129, 111, 109)
+    c(129, 111, 116)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(109, 97, 84, 86, 65)
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(99, 116, 89, 98, 108, 62)
 
 renderValues(times, "bottomleft")
 ```
@@ -211,17 +218,17 @@ Besides that, disabling [Structural Similarity][] produced the result several ti
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(30, 23, 27, 25, 36)
+    c(30, 23, 27, 25, 26)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(18, 13, 18)
+    c(18, 13, 13)
 
 times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(19, 18, 10, 15, 9)
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(13, 7, 11, 18, 8)
 
 renderValues(times, "bottomleft")
 ```
@@ -241,17 +248,17 @@ Using only [Structural Similarity][], this time; 27405 patches to approximate us
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(172, 129, 137, 128, 131)
+    c(172, 129, 137, 128, 132)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(103, 67, 70)
+    c(103, 67, 69)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(70, 57, 34, 58, 26)
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(59, 69, 32, 58, 25)
 
 renderValues(times, "bottomleft")
 ```
@@ -285,19 +292,20 @@ Notice how the **symbols avoid imposing themselves** and are **more visible only
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(153, 88, 101, 91, 72)
+    c(153, 88, 101, 91, 93)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(57, 48, 38)
+    c(57, 48, 48)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(39, 33, 19, 30, 16)
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(42, 49, 24, 40, 37, 15)
 
-renderValues(times)
+renderValues(times, "bottomleft")
 ```
 
 * * *
@@ -324,14 +332,14 @@ times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
     c(385, 291, 314, 299, 305)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(180, 159, 164)
+    c(180, 159, 160)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(160, 134, 132, 138, 98)
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(137, 140, 134, 136, 87)
 
 renderValues(times, "bottomleft")
 ```
@@ -356,17 +364,17 @@ A reason might be that there are many large background differences among neighbo
 times <- initValues()
 
 times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(186, 188, 198, 191, 196)
+    c(186, 188, 198, 191, 195)
 
 times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(106, 101, 102)
+    c(106, 101, 101)
 
-times["v2.0", c("2 Threads, Clustering (Cl)",
-                "2 Threads, Box Blur (BB)",
+times["v2.0", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
                 "2 Threads, Preselection (Pre)",
-                "2 Threads, BB+Cl+Fil+Pre")] <-
-    c(100, 86, 94, 88, 68)
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(87, 92, 95, 88, 65)
 
 renderValues(times, "bottomleft")
 ```
@@ -399,16 +407,16 @@ The following cases:
 
 ---
 
-Filtering shrank the font family *Osaka Regular Unicode* from 14963 symbols to 7889.<br>
-So, 27540 patches to approximate using 7889 symbols requires in *v2.0* 1607s (around 27 minutes):<br>
+Filtering shrank the font family *Osaka Regular Unicode* from 14963 symbols to less than 7900.<br>
+So, 27540 patches to approximate using around 7900 symbols require 1526s (around 26 minutes) in *v2.0* (better than in the screenshot below):<br>
 [![](Osaka_v2.0.jpg)](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br>
 Here the *Hybrid Result* mode was not used, to be able to inspect the result better.<br>
 The amount of required memory was around 330MB.
 
 ---
 
-Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to 7248.<br>
-So, 27540 patches to approximate using 7248 symbols requires in *v2.0* 1299s (around 22 minutes):<br>
+Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to less than 7250.<br>
+So, 27540 patches to approximate using around 7250 symbols require 1230s (around 21 minutes) in *v2.0* (better than in the screenshot below):<br>
 [![](DengXian_v2.0.jpg)](../../examples/6_DengXian_Regular_UNICODE_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br>
 This time, the *Hybrid Result* mode was enabled.
 
@@ -444,7 +452,7 @@ Cases **to avoid**:
 	* are *italic* when there are many regions with textures tilted differently
 	* contain *glyphs filling almost solid their square* (such symbols are very likely to approximate ambiguous patches and ***they appear rigid, despite they are correctly selected***)
 
-**Hybrid Results** mode, **Symbols Filtering, Clustering and Preselection** are now able to tackle most of these problematic contexts.
+**Hybrid Results** mode, **Symbols Filtering, Clustering, Preselection** and **Skipping Matching Aspects** are now able to tackle most of these problematic contexts.
 
 For optimal configuration of the application, please refer to the [Control Panel](../CtrlPanel/CtrlPanel.md) and [Appendix](../appendix/appendix.md) materials.
 
