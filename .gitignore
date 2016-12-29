@@ -10,6 +10,7 @@
 *.[bB][aA][kK]
 *.uml
 *.~ml
+*.Rhistory
 /*.props
 
 ## Folders to ignore
