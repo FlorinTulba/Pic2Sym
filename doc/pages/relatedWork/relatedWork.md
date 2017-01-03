@@ -1,7 +1,7 @@
 ## Related work ##
 [Back to start page](../../../ReadMe.md)
 
-Most applications in this area first average the brightness of every cell to be approximated within the original image. Then they quantize those means, resulting only a few brightness bins, instead of 255. Finally they associate an appropriately large ASCII character to each bin so that the symbol&#39;s size will let it be perceived as the desired luma level.
+Most applications in this area first average the brightness of every tile of the original image. Then they quantize the obtained means, resulting only a few brightness bins, instead of 255. Finally they associate an appropriately large ASCII character to each bin so that the symbol&#39;s size will let it be perceived as the desired luma level.
 
 Generating color results is typically tackled by generating chroma using colored symbols (their foreground) and again, the size of the glyphs standing for luma.
 
@@ -11,7 +11,10 @@ A **remarkably short Python solution** for an image\-to\-ASCII grayscale transfo
 
 Another interesting related application is **VLC**, which has an [ASCII play mode](https://www.youtube.com/watch?v=fuQjDfZ9lV4) running in a console with its 16 available colors.
 
-Other applications **don&#39;t stick to using same size symbols** or to **position them vertically**.
+Other related applications:
+- **allow positioning the symbols in any direction**
+- **don&#39;t require using symbols of the same size / width** - see [TexToPix](http://www.mazaika.com/textopix.html)
+- **use sets of small images instead of symbols** - see [Mazaika](http://www.mazaika.com/mazaika.html)
 
 ----------
 

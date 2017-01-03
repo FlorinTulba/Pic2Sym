@@ -5,6 +5,7 @@
 -------
 
 ![](SymProvider_classes.jpg)<br>
+
 ***FontEngine***:
 
 - (through the interfaces derived from ***IController***)
@@ -68,10 +69,14 @@ It was customized to:
 
 There might be some additional improvements to this algorithm, like [**Using the Triangle Inequality to Accelerate TTSAS Cluster Algorithm**][improvedTTSAS].
 
-The ***MatchEngine*** maintains the set of (filtered) normal and tiny symbols. The mechanism how to regroup these symbols (***ClusterEngine***) was included therefore here, as well. So, when the ***Controller***:
+The ***MatchEngine*** maintains the set of (filtered) normal-size symbols. The mechanism how to regroup these symbols (***ClusterEngine***) was included therefore here, as well. So, when the ***Controller***:
 
 - updates the symbol set and lets the ***MatchEngine*** know that, clustering data gets updated, as well
 - performs an image approximation, the candidate symbols for each image patch can be grouped and iterated by clusters
+
+The ***ClusterEngine*** is helped by ***ClusterSupport*** and ***ClusterSupportWithPreselection*** (part of ***PreselManager***) to perform clustering on normal-size or tiny versions of the symbols, based on the preselection mode.
+
+***CmapPerspective*** permits visualizing the glyphs grouped by clusters (largest groups first). Image transformations might use a different symbols order and even ignore clustering if the average cluster size is too low, to prevent inefficient symbols traversal.
 
 -------
 [Back to the Appendix](../appendix.md) or jump to the [start page](../../../../ReadMe.md)

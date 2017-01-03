@@ -4,7 +4,7 @@ This application **approximates images** by a **grid of colored symbols with col
 It runs on **64\-bit Windows \(at least version 7\)**. 
 <hr>
 <table style="width:100%; margin-left:0; margin-right:0" border="0" cellpadding="0" cellspacing="0">
-  <tr valign="top"  style="vertical-align:top">
+  <tr valign="top" style="vertical-align:top">
     <td width="40%">
 		<strong>Topics:</strong>
 		<ol>
@@ -13,10 +13,10 @@ It runs on **64\-bit Windows \(at least version 7\)**.
 			<li><a href="doc/pages/results/results.md">Example results</a></li>
 			<li><a href="doc/pages/performance/performance.md">Performance</a></li>
 			<li><a href="doc/pages/conclusions/conclusions.md">Conclusions and further directions</a></li>
-			<li><a href="doc/pages/testBinary/testBinary.md">Testing the provided binary</a> (<i>64-bit Windows only</i>)</li>
+			<li><a href="doc/pages/testBinary/testBinary.md">Testing the application</a> (<i>64-bit Windows only</i>)</li>
+			<li><a href="doc/pages/dev/dev.md">Development environment configuration</a></li>
 			<li><a href="../version_1.0/doc/releases.md">Other released versions</a></li>
 			<li><a href="doc/pages/appendix/appendix.md">Appendix</a> (<i>various technical details</i>)</li>
-			<li><a href="doc/pages/issues/issues.md">Known issues</a></li>
 		</ol>
     </td> 
     <td rowspan="2" align="center" style="padding-top:0; padding-bottom:0; padding-right:0">
@@ -66,7 +66,7 @@ Several **features** from *Pic2Sym* (explained in more detail in the [Appendix][
 	- comparing *initially* **tiny versions** of the glyphs from the symbol set and of the patches from the image
 	- a *second step* tackles normal-size glyphs and patches and just **selects the best matching symbol among the few good candidates** resulted from the *first pass*
 - The user might **specify several aspects of interest** for every transformation (like a preference for results with many *large symbols* \[(*3*) from image above\], or if the patches might get approximated by less similar symbols, but with *better contrast* \[(*4*) from image above\]). See [Control Panel][CtrlPanel] for the entire list of *matching aspects*
-- All requested matching aspects (mentioned above) will use a *heuristic evaluation* and will get rearranged in a *particular order* that allows **detecting as cheap and as early as possible** when a symbol *cannot be the best match for a given patch of the image*. A **surprising consequence**:
+- All requested matching aspects (mentioned above) will use a *heuristic evaluation* and will get rearranged in a *particular order* that allows **detecting as cheap and as early as possible** when a symbol *cannot be the best match for a given patch of the image*. A **surprising consequence** for images with rather coarse texture:
 	- when using only a single *complex* enabled matching aspect, this must be evaluated for each pair symbol\-patch
 	- but when using the *same complex matching aspect* *together with a few simpler enabled aspects*, this allows *skipping often enough the evaluation of the most complex ones*. In turn, this means **a faster transformation, despite there are more enabled matching aspects to consider** compared to the first case
 - The application is **faster on multi-core machines** (unless it&#39;s configured for no parallelism)
@@ -82,7 +82,7 @@ The **Control Panel** contains all the necessary controls to **customize and gen
 The user can **display / hide** it using **Ctrl\+P** or the **last tool from the toolbar** from any other window:<br>
 ![](doc/pages/CtrlPanelWithinToolbar.jpg)<br>
 
-To **leave the application**, please **activate a window** (except the console and the Control Panel) and **press ESC** \(check these [limitations][Issues] on that\).
+To **leave the application**, please **activate a window** (except the console and the Control Panel) and **press ESC** \(check this [limitation][CloseWinIssue] on that\).
 
 - - -
 
@@ -113,4 +113,4 @@ Kindly address any observations, suggestions or questions to me using ***<florin
 
 [CtrlPanel]:doc/pages/CtrlPanel/CtrlPanel.md
 [Appendix]:doc/pages/appendix/appendix.md
-[Issues]:doc/pages/issues/issues.md
+[CloseWinIssue]:https://github.com/FlorinTulba/Pic2Sym/issues/1

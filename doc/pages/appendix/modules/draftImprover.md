@@ -4,29 +4,14 @@
 
 -------
 ![](DraftImprover_classes.jpg)<br>
-The submodule ***Symbols Preselection*** tackles the feature with the same name, which is a heuristic for reducing the count of complex computations by splitting the transformation process in 2:
-
-- the initial phase works with *tiny versions* of the symbols and of the patches. It looks for several good symbols that approximate a certain patch (***TopCandidateMatches***) and creates a &quot;**short list**&quot; from them (***CandidateShortList***)
-- the final phase works with the normal-size versions of the symbols from the short list. One of them could become the ***BestMatch*** known so far
-
-Since **preselection** works much more on tiny symbols than on normal-size ones, theoretically it should be much faster. Practically:
-
-- the larger the original symbols size is, the faster the transformation is. However, for small font sizes, the gain is less obvious, because:
-- smaller resolution means that:
-    - tiny symbols within large sets are harder to distinguish based on equally tiny binary masks, thus the small glyphs generally need additional computations performed on less data
-    - matching accuracy drops - not all the features from a higher resolution can be reproduced in the tiny symbol versions and different font size also suffer from possibly different framing - slightly different shifts or crops
-
-Here is what should be remembered about the **preselection** mechanism:
-
-- it is good for larger font sizes
-- it is less accurate
 
 ***MatchEngine***:
 
-- holds the (filtered) set of symbols to be used during the image approximation and also a version of the same set but containing tiny symbols if the **preselection mechanism** is enabled
-- similarly, it has some precomputed values for normal-size symbol and also for the tiny ones (***CachedData***)
+- holds the (filtered) set of symbols to be used during the image approximation 
+- similarly, it has some precomputed values for normal-size symbols (***CachedData***)
 - keeps also the ***ClusterEngine***, which allows grouping the previously mentioned symbols in clusters, to reduce the count of compare operations between symbols and patches
-- improves the drafts ***BestMatch*** for the ***Patch***es based on tiny / normal size fonts, as explained above. The best draft known for a given patch is stored in ***ApproxVariant***, together with the relevant parameters (***MatchParams***)
+- improves the drafts ***BestMatch*** for the ***Patch***es based on normal-size fonts, as explained above. The best draft known for a given patch is stored in ***ApproxVariant***, together with the relevant parameters (***MatchParams***)
+- collaborates with the submodule ***Symbols Preselection*** to respect the preselection mode
 - reports draft improvement progress through a ***TaskMonitor*** to the ***AbsJobMonitor*** supervising the image transformation process
 - uses several ***MatchAspect***s (created by ***MatchAspectsFactory***) which are configurable from the [***Control Panel***][CtrlPanel] and reflected in ***MatchSettings***. The aspects whose sliders are on 0 are disabled and not used while transforming the image
 
@@ -40,7 +25,9 @@ Since the final score for comparing a certain symbol with a patch (approximating
 
 There is also one surprising consequence of this heuristic approach:
 
-- *several simple aspects enabled along a few complex ones* might run **faster** than *enabling the complex aspects alone*. This is because the complex aspects can be skipped more frequently in the first case and less often in the second
+- *several simple aspects enabled along a few complex ones* might run **faster** than *enabling the complex aspects alone* when transforming an image with **rather coarse texture**. This is because the complex aspects can be skipped more frequently in the first case and less often in the second
+
+The extra management of scores (**ScoreThresholds** class) brought by the heuristic is less productive on **finely-grained** patches. So the skip mechanism might be disabled altogether or just adjusted to start when there are more chances to be efficient (the classes derived from **MatchAssessor**).
 
 Currently, the most complex **MatchAspect** is [***StructuralSimilarity***][Structural Similarity]. It produces aesthetic results, but it is also quite slow. It involves several image processing operations, among which there is also *blurring*. The recommended blur type is the Gaussian one. Profiling the application demonstrated that this blur operation is really expensive. Starting from this observation, several alternative blur algorithms were investigated and implemented. Any of them can be configured to be used in [**res/varConfig.txt**][varConfig].<br>
 

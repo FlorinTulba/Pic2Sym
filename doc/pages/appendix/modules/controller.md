@@ -7,7 +7,7 @@
 The ***Controller*** manages the other modules partly through the following interfaces virtually extending ***IController***:
 
 - ***IControlPanelActions*** \- methods to address each action from [**Control Panel**][CtrlPanel]
-- ***IPresentCmap*** \- support for *displaying a page of glyphs from current charmap* (see ***CmapInspect***, ***UpdateSymsAction*** and ***LockFreeQueue***) and for *creating custom lists of symbols* to be used by the tests from Unit Testing
+- ***IPresentCmap*** \- support for *displaying a page of glyphs from current charmap* (see ***CmapInspect***, ***CmapPerspective***, ***UpdateSymsAction*** and ***LockFreeQueue***) and for *creating custom lists of symbols* to be used by the tests from Unit Testing
 - ***IGlyphsProgressTracker*** \- *timing for loading and preprocessing* of a new / updated set of glyphs (see ***Timer***, ***TimerActions_SymSetUpdate*** and ***SymsUpdateProgressNotifier***)
 - ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process (see ***Timer***, ***TimerActions_ImgTransform*** and ***PicTransformProgressNotifier***)
 - ***IUpdateSymSettings*** \- updates the symbol settings ***SymSettings*** with some new valid values
@@ -23,6 +23,8 @@ While loading a new symbol set, some of the initial effort is directed towards d
 - updating the status bar from the symbol set window to present the total count of glyphs from the set
 - reporting current progress of the loading job
 - displaying the first page of the set
+
+The ***Patch***-es to be transformed are of 2 types: normal-size or tiny versions. The tiny ones are used when the *preselection mechanism* is enabled. This mechanism is delegated by ***PreselManager*** to a ***TransformSupport*** object.
 
 Finally, the ***Controller*** orchestrates the interaction between ***MatchEngine***, ***FontEngine***, ***Transformer***, ***Img***, ***Settings*** and ***ResizedImg***.
 

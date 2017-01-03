@@ -8,8 +8,6 @@ A. [**Visualizing Draft Results while Transforming an Image**](#VisualizeDrafts)
 B. [**Several Configurable Settings**](#ConfigurableSettings)<br>
 C. [**Inspecting Interesting Suppressed Execution Details**](#RequestSuppressedDetails)<br>
 D. [**Technical Details and Modules Description**](#TechnicalDetails)<br>
-E. [**Installation of Pic2Sym**](#Installation)<br>
-F. [**Directory Structure**](#DirectoryStructure)<br>
 
 ----
 
@@ -18,7 +16,7 @@ F. [**Directory Structure**](#DirectoryStructure)<br>
 
 Starting with version **1.3** it&#39;s possible visualizing several *draft results* during the image approximation process. The user can adjust *dynamically* such feedback from the application using the **&#39;Batch syms&#39;** slider. The transformation uses dynamic charmap partitioning, so a new better draft is generated for each new lot of considered symbols. The mentioned slider dictates the size of next lots.<br>
 ![](DraftsCmapPartitioning.jpg)<br>
-In this case, **&#39;Batch syms&#39;** was left from the beginning to the end of the transformation on value **5**. The *charmap* contains **125 symbols**, so there were 125 / 5 = **25 drafts** - *one generated every 4%*. Reported progress is **92%**, so the displayed draft is **23rd**. The application was just computing **24th** draft, based on the symbols with indeces *115 - 119* (the ones surrounded with *orange contour* in the image). None of the symbols 115-124 would appear in the 23rd draft, as they were not compared with the patches yet.
+In this case, **&#39;Batch syms&#39;** was left from the beginning to the end of the transformation on value **5**. The *charmap* contains **125 symbols**, so there were 125 / 5 = **25 drafts** - *one generated every 4%*. Reported progress is **92%**, so the displayed draft is **23rd**. The application was just computing **24th** draft, based on the symbols with indices *115 - 119* (the ones surrounded with *orange contour* in the image). None of the symbols 115-124 would appear in the 23rd draft, as they were not compared with the patches yet. \[*The comments about the indices 115-119/124 are valid before version 2.0.; There is a note about the changes from v2.0 a few lines below.*\]
 
 Suppose at the captured instant the user moves the slider on value **1**. Then next batches (starting with symbol index *120*) will have size **1**, so there will be **5** additional drafts following the one currently generated.
 
@@ -27,6 +25,8 @@ Slider value **0** wouldn&#39;t make any sense, but since 0 is a *mandatory slid
 While the last batch is considered (the one generating the final result), any changes of the **&#39;Batch syms&#39;** slider will no longer affect this transformation. So charmap partitioning is dynamic as long as there still are unprocessed batches left.
 
 Keep in mind that although drafts are preferable to the simpler completion percents, they incur some time penalty. *Quickest approximation* is obtained with **&#39;Batch syms&#39;** slider on **0**. The *slowest* happens for **1**.
+
+**Note:** Versions starting from **2.0** allow traversing the symbols in a different order than presented in the Symbol Set window. That window conveniently can show the clusters sorted by size. However, the image transformation can be performed faster when iterating the symbols in a different fashion. Best generic traversal manner found so far is in ascending order of density of the glyphs (how large they are). This means that one can no longer be sure about which symbols do (or do not) appear in a given draft. The only certainty is that larger symbols can appear only in later drafts.
 
 
 <a name = "ConfigurableSettings"></a>
@@ -58,6 +58,9 @@ Some behavior aspects of the application can be changed without recompiling the 
 1. **Setting the Blur algorithm used by the Structural Similarity matching aspect**<br>
 	See &quot;*StructuralSimilarity_BlurType*&quot; from the [configuration file][].<br>
 	Using Box blurring (with a single iteration), by default<br><br>
+1. **Configuring the heuristic for Skipping Matching Aspects while approximating image patches**<br>
+	See &quot;*UseSkipMatchAspectsHeuristic*&quot; and &quot;*EnableSkipAboveMatchRatio*&quot; from the [configuration file][].<br>
+	Initially, the heuristic is enabled and *EnableSkipAboveMatchRatio* is set to 0.125<br><br>
 1. **Enabling and Adjusting the mechanism of Symbols Preselection during Image Transformations**<br>
 	See &quot;*PreselectionByTinySyms*&quot;, &quot;*ShortListLength*&quot; and &quot;*AdmitOnShortListEvenForInferiorScoreFactor*&quot; from the [configuration file][].<br>
 	Preselection is enabled initially and the length of its short list is 2<br>
@@ -99,9 +102,7 @@ However, it *runs only under Windows*, as it uses Windows\-specific:
 - *Open / Save Dialog*
 - *Select Font Dialog* and also *reads the registries* to find the *font file for the chosen font* (**FreeType** needs that file).
 
-The decision to offer *support only for 64\-bit machines* originated from the lengthy compilation of **OpenCV** from latest sources (*version 3.0.0 at that time*). There were no binaries yet for that version. Now [they exist](http://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/opencv-3.0.0.exe/download).
-
-If *interested in the 32\-bit version of Pic2Sym*, you may search for ***Win32*** *binaries* of **OpenCV**, **FreeType 2** and **Boost**(*Serialization*, *System*, *Filesystem* and *Unit Test Framework*), then link them within the project.
+The decision to offer *support only for 64\-bit machines* originated from the lengthy compilation of **OpenCV** from latest sources (*version 3.0.0 at that time*). There were no binaries yet for that version. Now [they exist](http://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/opencv-3.0.0.exe/download), but they lack the Qt support needed by parts of the application&#39;s GUI.
 
 - - -
 
@@ -128,8 +129,7 @@ The [**ImageTransformer**][transformer]:
 
 The [**DraftImprover**][draftImprover]:
 
-- takes a new batch of (preselected) symbols and enhances it based on them the previous **DraftApproximations**
-- when **SymbolsPreselection** is enabled, first it finds several good candidate symbols within the batch (whose tiny versions are good matches for the tiny patches) and then it picks the best match among them (now comparing normal-size patches and symbols)
+- takes a new batch of (preselected) symbols and enhances the previous **DraftApproximations** based on these newer gyphs
 - uses heuristics to reduce patch - symbol compare time by:
 	- skipping the evaluation of any remaining matching aspect as soon as the current symbol can no longer achieve a better matching score than the existing best score
 	- reordering the enabled **MatchingAspects** to skip complex matching aspects more often
@@ -139,61 +139,32 @@ The [**SymbolsProvider**][symbolsProvider]:
 - notifies the user of the progress during loading of a new glyph set with **GlyphsLoadProgressTracker**
 - applies all enabled filters on the original symbol set to get rid of all undesired glyphs (only the **UsedSymbols** remain)
 - regroups by similarity **UsedSymbols** (when clustering is enabled)
-- is able to provide also tiny versions of the **UsedSymbols** (relevant when **SymbolsPreselection** from [**DraftImprover**][draftImprover] is enabled)
 - saves and reuses data about tiny symbols and about clustering
 - uses heuristics to accelerate the clustering process:
 	- compares the tiny versions of the symbols
 	- uses several cheaper compare criteria before the evaluation of the actual compare function. Whenever the cheaper criteria are not met, the remaining more complex computations are no longer necessary
 
+The [**SymbolsPreselection**][symbolsPreselection]:
+
+- when **SymbolsPreselection** is enabled:
+	- it provides support to [**DraftImprover**][draftImprover] to find first several good candidate symbols within the batch (whose tiny versions are good matches for the tiny patches) and then to pick the best match among them (now comparing normal-size patches and symbols)
+	- is able to provide normal and tiny versions of the:
+		- **UsedSymbols** to [**SymbolsProvider**][symbolsProvider]
+		- **ResizedPatches** to [**PatchesProvider**][patchesProvider]
+- when false, the transformation uses just normal-size patches and symbols and there is no second phase during the approximation process
+
 The [**UserInteraction**][UI] component:
 
 - ensures that the user is informed and corrected through the **UserRequestsValidator** whenever he attempts an invalid action for a given state of the application
-- displays progress and updates during the loading of a new symbol set and while transforming an image
+- displays progress and draft updates during the loading of a new symbol set and while transforming an image
 - allows comparing a certain draft result with the original
-- allows browsing the pages of a loaded symbol set
+- allows browsing the pages of a loaded symbol set, grouped by clusters (larger ones first)
 
 The linked pages and the comments within the code provide more explanations.
-
-
-<a name = "Installation"></a>
-#### E.	Installation of Pic2Sym
-
-1.	Download the repository files
-1.	Copy ***Common.props***, ***Debug.props*** and ***Release.props*** from **install/** folder to the solution folder
-1.	Unpack ***include.zip*** and ***lib.zip*** to the solution folder
-1.	Open the solution file and build it for **64bits** platform
-1.	*Optionally* install the free font file ***BPmonoBold.ttf*** from the **res/** folder or from [here][BpMono], in order to be visible while running the application
-
-
-<a name = "DirectoryStructure"></a>
-#### F.	Directory Structure
-
-- **bin**/ contains:
-	- ***Pic2Sym.zip*** with the *executable*
-    - ***dlls.zip*** with the *required dll\-s*
-    - ***agpl-3.0.txt*** - the *license* of the application
-- **doc**/ contains following folders
-	- **pages** with the *documentation of the project*
-	- **examples** with various results generated by the Pic2Sym project
-	- **licenses** with the *license files* from *Boost*, *FreeType* and *OpenCV*
-- **install**/ contains following files (*generated by scripts*) needed during installation:
-	- 3 *properties files* (***Common.props***, ***Debug.props*** and ***Release.props***) used by the 2 projects: Pic2Sym and UnitTesting
-	- 2 *archives* ***include.zip*** and ***lib.zip*** that contain the *headers* and *libraries* needed by the 2 projects, except from those provided already by Windows and Visual Studio
-- **res**/ contains:
-	- the folder ***TestSymFilters*** with the files used for testing the implemented symbol filters
-    - 2 small free *font files* (***BPmonoBold.ttf*** and ***vga855.fon***) used by Unit Tests
-    - ***NoImage.jpg*** that appears when the application starts
-    - ***defaultMatchSettings.txt*** \- configuration file used for the first start
-	- ***varConfig.txt*** \- configurable constants controlling look and behavior of the application
-- **src**/ contains the *sources* of the project
-- **test**/ contains *Unit Test* files
-
-The root folder contains also the *solution file*, *projects\-specific* files and the license file *agpl-3.0.txt*.
 
 -------
 [Back to start page](../../../ReadMe.md)
 
-[BpMono]:http://www.dafont.com/bpmono.font
 [configuration file]:../../../res/varConfig.txt
 [CtrlPanel]:../CtrlPanel/CtrlPanel.md
 [controller]:modules/controller.md
@@ -202,4 +173,5 @@ The root folder contains also the *solution file*, *projects\-specific* files an
 [patchesProvider]:modules/patchesProvider.md
 [draftImprover]:modules/draftImprover.md
 [symbolsProvider]:modules/symbolsProvider.md
+[symbolsPreselection]:modules/symbolsPreselection.md
 [UI]:modules/UI.md
