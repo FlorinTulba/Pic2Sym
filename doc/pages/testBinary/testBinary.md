@@ -13,7 +13,7 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 <table style="width:100%; margin-left:0; margin-right:0" border="0" cellpadding="0" cellspacing="5">
 	<tr valign="top" style="vertical-align:top">
 		<td width="60%" align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			1. Double\-click **[bin][BinFolder]/Pic2Sym.msi** to install the application.
+			1. Double-click <b><a href="../../../bin/">bin</a>/Pic2Sym.msi</b> to install the application.
 			<p>
 			The installer:
 			<ul>
@@ -23,39 +23,39 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 			</ul>
 		</td>
 		<td>
-			![](installedApp.jpg)
+			<img src="installedApp.jpg"></img>
 		</td>
 	</tr>
 	<tr valign="top" style="vertical-align:top">
 		<td align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			2. Launch **Pic2Sym.exe**, then activate the [*Control Panel*][CtrlPanel] from the *main window* by:
+			2. Launch <b>Pic2Sym.exe</b>, then activate the <i><a href="../CtrlPanel/CtrlPanel.md">Control Panel</a></i> from the <i>main window</i> by:
 			<ul>
-				<li>either pressing **Ctrl\+P**</li>
+				<li>either pressing <b>Ctrl+P</b></li>
 				<li>or by clicking the tool marked with red within the toolbar</li>
 			</ul>
 		</td>
 		<td>
-			![](mainWindow.jpg)
+			<img src="mainWindow.jpg"></img>
 		</td>
 	</tr>
 	<tr valign="top" style="vertical-align:top">
 		<td align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			3. Adjust the settings for a *first* ***rapid*** transformation based on the highlighted controls from the right:
+			3. Adjust the settings for a <i>first <b>rapid</b></i> transformation based on the highlighted controls from the right:
 			<ul>
-				<li>select a **small image** to transform</li>
-				<li>select a *font family* with **less than 400 symbols**. The *symbols window* should provide information about the size of the loaded font family:<br>
-    ![](smallFontFamily.jpg)</li>
-				<li>bring **[Structural Similarity][] slider to 0**</li>
-				<li>*optionally* set **Batch syms** slider on a **small non-zero value** if you prefer *more frequent draft results*</li>
+				<li>select a <b>small image</b> to transform</li>
+				<li>select a <i>font family</i> with <b>less than 400 symbols</b>. The <i>symbols window</i> should provide information about the size of the loaded font family:<br>
+					<img src="smallFontFamily.jpg"></img></li>
+				<li>bring <b>[Structural Similarity][] slider to 0</b></li>
+				<li><i>optionally</i> set <b>Batch syms</b> slider on a <b>small non-zero value</b> if you prefer <i>more frequent draft results</i></li>
 			</ul>
 		</td>
 		<td>
-			![](rapidTestConfig.jpg)
+			<img src="rapidTestConfig.jpg"></img>
 		</td>
 	</tr>
 	<tr valign="top" style="vertical-align:top">
 		<td colspan="2" align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			4. Finally hit **Transform the Image**. The approximation process can be **canceled** at any time by **pressing ESC**. At the end of the transformation you&#39;ll be able to *inspect the result* with the *Transparency slider* and the *Zoom feature* from the main window
+			4. Finally hit <b>Transform the Image</b>. The approximation process can be <b>canceled</b> at any time by <b>pressing ESC</b>. At the end of the transformation you&#39;ll be able to <i>inspect the result</i> with the <i>Transparency slider</i> and the <i>Zoom feature</i> from the main window
 		</td>
 	</tr>
 </table>

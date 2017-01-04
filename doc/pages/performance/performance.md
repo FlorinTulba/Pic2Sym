@@ -207,7 +207,7 @@ III) ***Symbols Preselection***
 
 The goal of this feature is reducing the complexity of the operations involved when comparing a symbol against an image patch. This was realized by initially using tiny versions of the symbols and of the image patches - in a *preselection phase*, followed by comparing the normal size patches with only the most promising symbols from the *short list* resulted from the first phase.
 
-This feature interacts with several modules, but affects mostly the following 2: [Draft Improver](../appendix/modules/draftImprover.md) and [Image Transformer](../appendix/modules/transformer.md).
+This feature belongs to the [**Symbols Preselection**](../appendix/modules/symbolsPreselection.md) module.
 
 The performance of this mechanism depends on the count of symbols that may qualify to the final round after the *preselection phase*. This count is referred as the *Short List length*. The first phase deals with smaller symbols and patches, while the last phase handles normal size ones. Therefore:
 
