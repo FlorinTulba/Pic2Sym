@@ -45,7 +45,7 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 				<li>select a <b>small image</b> to transform</li>
 				<li>select a <i>font family</i> with <b>less than 400 symbols</b>. The <i>symbols window</i> should provide information about the size of the loaded font family:<br>
 					<img src="smallFontFamily.jpg"></img></li>
-				<li>bring <b>[Structural Similarity][] slider to 0</b></li>
+				<li>bring <b><a href="https://ece.uwaterloo.ca/~z70wang/research/ssim">Structural Similarity</a> slider to 0</b></li>
 				<li><i>optionally</i> set <b>Batch syms</b> slider on a <b>small non-zero value</b> if you prefer <i>more frequent draft results</i></li>
 			</ul>
 		</td>
