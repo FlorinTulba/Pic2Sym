@@ -226,7 +226,15 @@ void Transformer::run() {
 
 	Timer timer = ctrler.createTimerForImgTransform();
 
-	me.updateSymbols(); // throws for invalid cmap/size
+	try {
+		me.updateSymbols(); // throws for invalid cmap/size
+	} catch(TinySymsLoadingFailure &tslf) {
+		timer.invalidate();
+		const_cast<IPicTransformProgressTracker&>(ctrler).transformFailedToStart();
+		tslf.informUser("Couldn't load the tiny versions of the selected font, "
+						"thus the transformation was aborted!");
+		return;
+	}
 
 	sz = cfg.symSettings().getFontSz();
 	

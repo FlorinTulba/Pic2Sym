@@ -120,6 +120,8 @@ public:
 	void operator=(const FontEngine&) = delete;
 	~FontEngine();
 
+	void invalidateFont();	///< When unable to process a font type, invalidate it completely
+
 	bool newFont(const std::string &fontFile_);		///< Tries to use the font from 'fontFile_'
 	void setFontSz(unsigned fontSz_);				///< Sets the desired font height in pixels
 

@@ -43,8 +43,11 @@
 #include "controllerBase.h"
 #include "timing.h"
 
-/// Interface to monitor the progress of loading and preprocessing a charmap.
+/// Interface to monitor the progress of transforming an image.
 struct IPicTransformProgressTracker /*abstract*/ : virtual IController {
+	/// Called when unable to load the symbols right when attempting to transform an image
+	virtual void transformFailedToStart() = 0;
+
 	/// Returns true if transforming a new image or the last one, but under other image parameters
 	virtual bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) = 0;
 

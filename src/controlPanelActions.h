@@ -71,6 +71,7 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 	*/
 	virtual bool newImage(const std::string &imgPath, bool silent = false) = 0;
 	
+	virtual void invalidateFont() = 0;	///< When unable to process a font type, invalidate it completely
 	virtual void newFontFamily(const std::string &fontFile) = 0;
 	virtual void newFontEncoding(int encodingIdx) = 0;
 	virtual bool newFontEncoding(const std::string &encName) = 0;

@@ -7,10 +7,10 @@
 ![](UI_classes.jpg)<br>
 The ***Controller*** manages the dialog with the user through the following interfaces virtually extending ***IController***:
 
-- ***IControlPanelActions*** \- methods to *address each action from [**Control Panel**][CtrlPanel]*
+- ***IControlPanelActions*** \- methods to *address each action from [**Control Panel**][CtrlPanel]*, plus a method to invalidate font types that cannot be processed
 - ***IPresentCmap*** \- support for *displaying a page of glyphs from current charmap* and for *creating custom lists of symbols* to be used by the tests from Unit Testing
 - ***IGlyphsProgressTracker*** \- *timing for loading and preprocessing* of a new / updated set of glyphs
-- ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process
+- ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process; it also handles the case when the transformation cannot start
 
 The ***Controller*** is responsible also for prompting the user with ***SettingsSelector*** for a settings file to be loaded or saved.
 

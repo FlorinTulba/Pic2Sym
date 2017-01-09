@@ -52,6 +52,12 @@
 
 #pragma warning ( pop )
 
+/// Distinct exception class for easier catching and handling font location failures
+struct FontLocationFailure : std::runtime_error {
+	explicit FontLocationFailure(const std::string &_Message) : std::runtime_error(_Message.c_str()) {}
+	explicit FontLocationFailure(const char *_Message) : runtime_error(_Message) {}
+};
+
 /// Dlg is the base class for the standard Windows dialogs from below
 class Dlg /*abstract*/ {
 protected:

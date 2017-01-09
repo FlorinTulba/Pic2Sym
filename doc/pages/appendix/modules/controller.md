@@ -6,10 +6,10 @@
 ![](ControllerRelated_classes.jpg)<br>
 The ***Controller*** manages the other modules partly through the following interfaces virtually extending ***IController***:
 
-- ***IControlPanelActions*** \- methods to address each action from [**Control Panel**][CtrlPanel]
+- ***IControlPanelActions*** \- methods to address each action from [**Control Panel**][CtrlPanel], plus a method for invalidating font types that cannot be processed
 - ***IPresentCmap*** \- support for *displaying a page of glyphs from current charmap* (see ***CmapInspect***, ***CmapPerspective***, ***UpdateSymsAction*** and ***LockFreeQueue***) and for *creating custom lists of symbols* to be used by the tests from Unit Testing
 - ***IGlyphsProgressTracker*** \- *timing for loading and preprocessing* of a new / updated set of glyphs (see ***Timer***, ***TimerActions_SymSetUpdate*** and ***SymsUpdateProgressNotifier***)
-- ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process (see ***Timer***, ***TimerActions_ImgTransform*** and ***PicTransformProgressNotifier***)
+- ***IPicTransformProgressTracker*** \- tracking the *progress during the picture approximation* process (see ***Timer***, ***TimerActions_ImgTransform*** and ***PicTransformProgressNotifier***); it also signals when a transformation couldn&#39;t start
 - ***IUpdateSymSettings*** \- updates the symbol settings ***SymSettings*** with some new valid values
 
 The ***Controller*** is responsible also for prompting the user with ***SettingsSelector*** for a settings file to be loaded or saved.<br>

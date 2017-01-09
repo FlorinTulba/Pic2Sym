@@ -56,16 +56,35 @@ using namespace cv;
 using namespace boost::filesystem;
 
 extern unsigned TinySymsSz();
+extern const string CannotLoadFontErrSuffix;
+
+SymsLoadingFailure::SymsLoadingFailure(const string& _Message) :
+	runtime_error(_Message.c_str()) {}
+
+SymsLoadingFailure::SymsLoadingFailure(const char *_Message) :
+	runtime_error(_Message) {}
+
+void SymsLoadingFailure::informUser(const string &msg) const {
+	ostringstream oss;
+	oss<<msg<<CannotLoadFontErrSuffix;
+	infoMsg(oss.str(), "Manageable Error");
+}
+
+TinySymsLoadingFailure::TinySymsLoadingFailure(const string& _Message) :
+	SymsLoadingFailure(_Message.c_str()) {}
+
+TinySymsLoadingFailure::TinySymsLoadingFailure(const char *_Message) :
+	SymsLoadingFailure(_Message) {}
+
+NormalSymsLoadingFailure::NormalSymsLoadingFailure(const string& _Message) :
+	SymsLoadingFailure(_Message.c_str()) {}
+
+NormalSymsLoadingFailure::NormalSymsLoadingFailure(const char *_Message) :
+	SymsLoadingFailure(_Message) {}
 
 #ifndef UNIT_TESTING // isTinySymsDataSavedOnDisk will have a different implementation in UnitTesting
 
 #include "appStart.h"
-
-#pragma warning ( push, 0 )
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning ( pop )
 
 bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
 										   boost::filesystem::path &tinySymsDataFile) {
@@ -144,7 +163,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 					} else // unexpected glyph
 						THROW_WITH_VAR_MSG("Couldn't load an unexpected glyph (" + to_string(c) +
 											") during initial resizing. Error: " +
-											FtErrors[(size_t)error], runtime_error);
+											FtErrors[(size_t)error], TinySymsLoadingFailure);
 				}
 				FT_GlyphSlot g = face->glyph;
 				FT_Bitmap b = g->bitmap;
@@ -163,13 +182,13 @@ const VTinySyms& FontEngine::getTinySyms() {
 						THROW_WITH_VAR_MSG("Couldn't set font size: " +
 										   to_string(req.height) +
 										   " x " + to_string(req.width) +
-										   "  Error: " + FtErrors[(size_t)error], invalid_argument);
+										   "  Error: " + FtErrors[(size_t)error], TinySymsLoadingFailure);
 
 					error = FT_Load_Char(face, c, FT_LOAD_RENDER);
 					if(error != FT_Err_Ok) 
 						THROW_WITH_VAR_MSG("Couldn't load glyph: " + to_string(c) +
 											" for its second resizing. Error: " + 
-											FtErrors[(size_t)error], runtime_error);
+											FtErrors[(size_t)error], TinySymsLoadingFailure);
 					g = face->glyph;
 					b = g->bitmap;
 
@@ -181,7 +200,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 						THROW_WITH_VAR_MSG("Couldn't set font size: " +
 										   to_string(req.height) +
 										   " x " + to_string(req.width) +
-										   "  Error: " + FtErrors[(size_t)error], invalid_argument);
+										   "  Error: " + FtErrors[(size_t)error], TinySymsLoadingFailure);
 				}
 				const FT_Int left = g->bitmap_left, top = g->bitmap_top;
 				const PixMapSym refSym((unsigned long)c, i, b, (int)left, (int)top, 
@@ -193,7 +212,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 				THROW_WITH_VAR_MSG("Initial resizing of the glyphs found only " +
 									to_string(countOfSymsUnableToLoad) +
 									" symbols that couldn't be loaded when expecting " +
-									to_string(symsUnableToLoad.size()), runtime_error);
+									to_string(symsUnableToLoad.size()), TinySymsLoadingFailure);
 
 			tinySymsDataSerializer.saveTo(tinySymsDataFile.string());
 		}

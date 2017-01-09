@@ -52,7 +52,7 @@ struct IUpdateSymsAction /*abstract*/ {
 	virtual ~IUpdateSymsAction() = 0 {}
 };
 
-/// Lock-free queue of size 102 (maximum 100 progress notifications + 2 cmap update actions)
-typedef boost::lockfree::queue<IUpdateSymsAction*, boost::lockfree::capacity<102>> LockFreeQueue;
+/// Lock-free queue of size 103 (maximum 100 progress notifications + 2 cmap update actions + 1 exception)
+typedef boost::lockfree::queue<IUpdateSymsAction*, boost::lockfree::capacity<103>> LockFreeQueue;
 
 #endif // H_UPDATE_SYMS_ACTIONS

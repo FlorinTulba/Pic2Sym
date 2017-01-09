@@ -167,6 +167,7 @@ public:
 	*/
 	bool newImage(const std::string &imgPath, bool silent = false) override;
 	
+	void invalidateFont() override;	///< When unable to process a font type, invalidate it completely
 	void newFontFamily(const std::string &fontFile) override;
 	void newFontEncoding(int encodingIdx) override;
 	bool newFontEncoding(const std::string &encName) override;
@@ -221,6 +222,7 @@ public:
 	void reportSymsUpdateDuration(double elapsed) const override;
 
 	// Implementation of IPicTransformProgressTracker below
+	void transformFailedToStart() override;	///< When unable to use a font type, invalidate it completely and abandon the transformation
 	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
 	void reportTransformationProgress(double progress, bool showDraft = false) const override;
 	void presentTransformationResults(double completionDurationS = -1.) const override;

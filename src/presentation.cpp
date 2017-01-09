@@ -260,7 +260,6 @@ namespace {
 string FontEngine::getFontType() {
 	ostringstream oss;
 	oss<<getFamily()<<'_'<<getStyle()<<'_'<<getEncoding();
-	// throws logic_error if no family/style
 
 	return oss.str();
 }
@@ -373,6 +372,9 @@ const string Controller::textForComparatorOverlay(double elapsed) const {
 }
 
 const string Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) const {
+	assert(nullptr != fe.getFamily() && 0ULL < strlen(fe.getFamily()));
+	assert(nullptr != fe.getStyle() && 0ULL < strlen(fe.getStyle()));
+	assert(!fe.getEncoding().empty());
 	ostringstream oss;
 	oss<<"Font type '"<<fe.getFamily()<<' '<<fe.getStyle()
 		<<"', size "<<cfg.ss.getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
@@ -428,8 +430,31 @@ void Controller::symbolsChanged() {
 			.61,	// clustering the small symbols
 			.01		// reorders clusters
 		}, timer);
-		fe.setFontSz(cfg.ss.getFontSz());
-		me.updateSymbols();
+
+		try {
+			fe.setFontSz(cfg.ss.getFontSz());
+			me.updateSymbols();
+
+		} catch(NormalSymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
+			const string errText(excObj.what());
+			// An exception with the same errText will be thrown in the main thread when executing next action
+			updateSymsActionsQueue.push(new UpdateSymsAction([errText] {
+				throw NormalSymsLoadingFailure(errText);
+			}));
+
+			updatingSymbols.clear(); // signal task completion
+			return;
+
+		} catch(TinySymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
+			const string errText(excObj.what());
+			// An exception with the same errText will be thrown in the main thread when executing next action
+			updateSymsActionsQueue.push(new UpdateSymsAction([errText] {
+				throw TinySymsLoadingFailure(errText);
+			}));
+
+			updatingSymbols.clear(); // signal task completion
+			return;
+		}
 
 		// Symbols have been changed in the model. Only GUI must be updated
 		// The GUI will display the 1st cmap page.
@@ -441,11 +466,26 @@ void Controller::symbolsChanged() {
 		updatingSymbols.clear(); // signal task completion
 	}).detach(); // termination captured by updatingSymbols flag
 
-	IUpdateSymsAction *evt = nullptr;
+	IUpdateSymsAction *action = nullptr;
 	auto performRegisteredActions = [&] { // lambda used twice below
-		while(updateSymsActionsQueue.pop(evt)) { // perform available actions
-			evt->perform();
-			delete evt;
+		while(updateSymsActionsQueue.pop(action)) { // perform available actions
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
+			try {
+				action->perform();
+			} catch(...) { // making sure action gets deleted even when exceptions are thrown
+				delete action;
+				
+				// Discarding all remaining actions
+				while(updateSymsActionsQueue.pop(action))
+					delete action;
+
+				// Postponing the processing of the exception
+				// See above NormalSymsLoadingFailure & TinySymsLoadingFailure being thrown
+				throw;
+			}
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
+
+			delete action;
 			waitKey(1);
 		}
 	};
@@ -1024,8 +1064,14 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg
 		static SelectFont sf;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-		if(sf.promptForUserChoice())
-			pActions->newFontFamily(sf.selection());
+		try {
+			if(sf.promptForUserChoice())
+				pActions->newFontFamily(sf.selection());
+		} catch(FontLocationFailure&) {
+			pActions->invalidateFont();
+			extern const string CannotLoadFontErrSuffix;
+			infoMsg("Couldn't locate the selected font!" + CannotLoadFontErrSuffix, "Manageable Error");
+		}
 	}, reinterpret_cast<void*>(&performer));
 
 	createTrackbar(ControlPanel_encodingTrName, nullptr, &encoding, 1,

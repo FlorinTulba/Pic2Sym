@@ -131,17 +131,23 @@ namespace {
 		Settings s;
 		Controller c(s);
 
-		if(!c.loadSettings(settingsPath))
-			THROW_WITH_VAR_MSG("Couldn't load settings from `" + settingsPath + '`', runtime_error);
+		if(!c.loadSettings(settingsPath)) {
+			cerr<<caseName<<"\tCouldn't load settings from `"<<settingsPath<<'`'<<endl;
+			return;
+		}
 
-		if(!c.newImage(imgPath, true))
-			THROW_WITH_VAR_MSG("Couldn't load the image `" + imgPath + '`', runtime_error);
+		if(!c.newImage(imgPath, true)) {
+			cerr<<caseName<<"\tCouldn't load the image `"<<imgPath<<'`'<<endl;
+			return;
+		}
 
 		c.newSymsBatchSize(0); // ensure no drafts
 
 		double durationS;
-		if(!c.performTransformation(&durationS))
-			THROW_WITH_VAR_MSG("Couldn't start the transformation for `" + caseName + '`', runtime_error);
+		if(!c.performTransformation(&durationS)) {
+			cerr<<caseName<<"\tCouldn't start the transformation!"<<endl;
+			return;
+		}
 
 		if(!reportFilePath.empty()) {
 			ofstream ofs(reportFilePath, ios::app);

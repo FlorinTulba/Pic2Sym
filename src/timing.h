@@ -106,6 +106,8 @@ public:
 
 	double elapsed() const;			///< reports elapsed seconds
 
+	void invalidate();				///< prevents further use of this timer
+
 	virtual void pause();			///< pauses the timer and reports duration to all observers
 	virtual void resume();			///< resumes the timer
 	virtual void release();			///< stops the timer and reports duration to all observers

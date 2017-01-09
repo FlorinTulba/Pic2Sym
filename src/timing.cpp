@@ -64,6 +64,10 @@ Timer::~Timer() {
 	release();
 }
 
+void Timer::invalidate() {
+	valid = false;
+}
+
 double Timer::elapsed() const {
 	if(!valid)
 		return 0.;

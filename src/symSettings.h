@@ -93,13 +93,13 @@ public:
 
 	bool ready() const { return !fontFile.empty(); }
 
-	const std::string& getFontFile() const { return fontFile; }
+	inline const std::string& getFontFile() const { return fontFile; }
 	void setFontFile(const std::string &fontFile_);
 
-	const std::string& getEncoding() const { return encoding; }
+	inline const std::string& getEncoding() const { return encoding; }
 	void setEncoding(const std::string &encoding_);
 
-	unsigned getFontSz() const { return fontSz; }
+	inline unsigned getFontSz() const { return fontSz; }
 	void setFontSz(unsigned fontSz_);
 
 	bool operator==(const SymSettings &other) const;

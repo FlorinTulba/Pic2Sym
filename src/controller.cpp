@@ -68,6 +68,7 @@ extern const unsigned Settings_MAX_V_SYMS;
 extern const unsigned Settings_MIN_FONT_SIZE;
 extern const unsigned Settings_MAX_FONT_SIZE;
 extern const unsigned Settings_DEF_FONT_SIZE;
+extern const string CannotLoadFontErrSuffix;
 
 bool Settings::isBlanksThresholdOk(unsigned t) {
 	return t < Settings_MAX_THRESHOLD_FOR_BLANKS;
@@ -141,6 +142,18 @@ bool Controller::newImage(const string &imgPath, bool silent/* = false*/) {
 	return true;
 }
 
+void Controller::invalidateFont() {
+	fontFamilyOk = false;
+
+	cp.updateEncodingsCount(1U);
+	if(pCmi)
+		pCmi->clear();
+
+	cfg.ss.setFontFile("");
+	cfg.ss.setEncoding("");
+	fe.invalidateFont();
+}
+
 bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
 	if(fe.fontFileName().compare(fontFile) == 0 && !forceUpdate)
 		return false; // same font
@@ -156,7 +169,8 @@ bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = fal
 
 	if(!fontFamilyOk) {
 		fontFamilyOk = true;
-		pCmi = std::make_shared<CmapInspect>(*this);
+		if(!pCmi)
+			pCmi = std::make_shared<CmapInspect>(*this);
 	}
 
 	return true;
@@ -171,7 +185,15 @@ void Controller::newFontFamily(const string &fontFile) {
 	if(!_newFontFamily(fontFile))
 		return;
 
-	symbolsChanged();
+	try {
+		symbolsChanged();
+	} catch(TinySymsLoadingFailure &tslf) {
+		invalidateFont();
+		tslf.informUser("Couldn't load the tiny versions of the newly selected font family!");
+	} catch(NormalSymsLoadingFailure &nslf) {
+		invalidateFont();
+		nslf.informUser("Couldn't load the normal versions of the newly selected font family!");
+	}
 }
 
 void Controller::selectedFontFile(const string &fName) const {
@@ -179,34 +201,48 @@ void Controller::selectedFontFile(const string &fName) const {
 }
 
 unsigned Controller::getFontEncodingIdx() const {
-	if(!fontFamilyOk)
-		THROW_WITH_CONST_MSG("Please setup a font before calling " __FUNCTION__, logic_error);
+	if(fontFamilyOk) {
+		unsigned currEncIdx;
+		fe.getEncoding(&currEncIdx);
 
-	unsigned currEncIdx;
-	fe.getEncoding(&currEncIdx);
-
-	return currEncIdx;
+		return currEncIdx;
+	}
+	
+	// This method must NOT throw when fontFamilyOk is false,
+	// since the requested index appears on the Control Panel, and must exist if:
+	// - no font was loaded yet
+	// - a font has been loaded
+	// - a requested font couldn't be loaded and was discarded
+	return 0U;
 }
 
 void Controller::newFontEncoding(int encodingIdx) {
-	extern const cv::String ControlPanel_encodingTrName;
-	const auto permit = cp.actionDemand(ControlPanel_encodingTrName);
-	if(nullptr == permit)
-		return;
-
 	// Ignore call if no font yet, or just 1 encoding,
 	// or if the required hack (mentioned in 'ui.h') provoked this call
-	if(!fontFamilyOk || fe.uniqueEncodings() == 1U || cp.encMaxHack())
+	if(!fontFamilyOk || fe.uniqueEncodings() <= 1U || cp.encMaxHack())
 		return;
-	
+
 	unsigned currEncIdx;
 	fe.getEncoding(&currEncIdx);
 	if(currEncIdx == (unsigned)encodingIdx)
 		return;
 
+	extern const cv::String ControlPanel_encodingTrName;
+	const auto permit = cp.actionDemand(ControlPanel_encodingTrName);
+	if(nullptr == permit)
+		return;
+
 	fe.setNthUniqueEncoding((unsigned)encodingIdx);
 
-	symbolsChanged();
+	try {
+		symbolsChanged();
+	} catch(TinySymsLoadingFailure &tslf) {
+		invalidateFont();
+		tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
+	} catch(NormalSymsLoadingFailure &nslf) {
+		invalidateFont();
+		nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
+	}
 }
 
 bool Controller::_newFontEncoding(const string &encName, bool forceUpdate/* = false*/) {
@@ -215,8 +251,19 @@ bool Controller::_newFontEncoding(const string &encName, bool forceUpdate/* = fa
 
 bool Controller::newFontEncoding(const string &encName) {
 	bool result = _newFontEncoding(encName);
-	if(result)
-		symbolsChanged();
+	if(result) {
+		try {
+			symbolsChanged();
+		} catch(TinySymsLoadingFailure &tslf) {
+			invalidateFont();
+			tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
+			return false;
+		} catch(NormalSymsLoadingFailure &nslf) {
+			invalidateFont();
+			nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
+			return false;
+		}
+	}
 
 	return result;
 }
@@ -237,13 +284,14 @@ bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
 	if((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate)
 		return false;
 
+	cfg.ss.setFontSz((unsigned)fontSz);
+
 	if(!fontFamilyOk) {
-		if((unsigned)fontSz != cfg.ss.getFontSz())
-			cfg.ss.setFontSz((unsigned)fontSz);
+		if(pCmi)
+			pCmi->clear();
 		return false;
 	}
 		
-	cfg.ss.setFontSz((unsigned)fontSz);
 	pCmi->updateGrid();
 
 	return true;
@@ -258,7 +306,15 @@ void Controller::newFontSize(int fontSz) {
 	if(!_newFontSize(fontSz))
 		return;
 
-	symbolsChanged();
+	try {
+		symbolsChanged();
+	} catch(TinySymsLoadingFailure &tslf) {
+		invalidateFont();
+		tslf.informUser("Couldn't load the tiny versions of the font whose size has been updated!");
+	} catch(NormalSymsLoadingFailure &nslf) {
+		invalidateFont();
+		nslf.informUser("Couldn't load the requested size versions of the fonts!");
+	}
 }
 
 void Controller::newSymsBatchSize(int symsBatchSz) {
@@ -314,8 +370,7 @@ void Controller::setResultMode(bool hybrid) {
 	if(nullptr == permit)
 		return;
 
-	if(hybrid != cfg.ms.isHybridResult())
-		cfg.ms.setResultMode(hybrid);
+	cfg.ms.setResultMode(hybrid);
 }
 
 unsigned Controller::getFontSize() const {
@@ -328,8 +383,7 @@ void Controller::newThreshold4BlanksFactor(unsigned threshold) {
 	if(nullptr == permit)
 		return;
 
-	if((unsigned)threshold != cfg.ms.getBlankThreshold())
-		cfg.ms.setBlankThreshold(threshold);
+	cfg.ms.setBlankThreshold(threshold);
 }
 
 #define UPDATE_MATCH_ASPECT_VALUE(AspectName, NewValue) \
@@ -540,7 +594,18 @@ bool Controller::loadSettings(const string &from/* = ""*/) {
 	fe.getEncoding(&currEncIdx);
 	cp.updateSymSettings(currEncIdx, cfg.ss.getFontSz());
 	
-	symbolsChanged();
+	try {
+		symbolsChanged();
+	} catch(TinySymsLoadingFailure &tslf) {
+		invalidateFont();
+		tslf.informUser("Couldn't load the tiny versions of the font pointed by this settings file!");
+		return false;
+	} catch(NormalSymsLoadingFailure &nslf) {
+		invalidateFont();
+		nslf.informUser("Couldn't load the normal versions of the font pointed by this settings file!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -617,6 +682,10 @@ PreselManager& Controller::getPreselManager(const Settings &cfg_) {
 
 ControlPanel& Controller::getControlPanel(Settings &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
+}
+
+void Controller::transformFailedToStart() {
+	invalidateFont();
 }
 
 #undef GET_FIELD_NO_ARGS

@@ -168,6 +168,8 @@ public:
 							   std::atomic_flag &updating1stCmapPage,
 							   LockFreeQueue &updateSymsActionsQueue);
 
+	void clear();								///< clears the grid, the status bar and updates required fields
+
 	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
 	void updateGrid();							///< Changing font size must update also the grid
 

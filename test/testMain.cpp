@@ -346,6 +346,8 @@ void Controller::hourGlass(double, const string&) const {}
 
 void Controller::reportGlyphProgress(double) const {}
 
+void Controller::transformFailedToStart() {}
+
 void Controller::updateSymsDone(double) const {}
 
 void Controller::reportTransformationProgress(double, bool) const {}

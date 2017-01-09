@@ -504,6 +504,8 @@ extern READ_STR_PROP(Controller_PREFIX_TRANSFORMATION_PROGRESS);
 
 extern READ_STR_PROP(copyrightText);
 
+extern READ_STR_PROP(CannotLoadFontErrSuffix);
+
 #if defined _DEBUG || defined UNIT_TESTING
 
 extern READ_WSTR_PROP(MatchParams_HEADER);

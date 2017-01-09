@@ -242,6 +242,9 @@ ControlPanel_thresh4BlanksTrName	"Blanks below:"
 ControlPanel_outWTrName	"Max horizontally:"
 ControlPanel_outHTrName	"Max vertically:"
 
+; Suffix of the error message presented when the font settings selected by the user cannot be processed
+CannotLoadFontErrSuffix	"\n\nPlease select a different font type!\n\nSending an email to <florintulba@yahoo.com> explaining the context of this error (font name plus the error message from the black console window) would be greatly appreciated."
+
 ; Initial title of the Comparator window. It contains placeholder $(PIC2SYM_VERSION) to be replaced with the actual version of the application
 Comparator_initial_title	"Pic2Sym v$(PIC2SYM_VERSION) (c) 2016, 2017 Florin Tulba"
 

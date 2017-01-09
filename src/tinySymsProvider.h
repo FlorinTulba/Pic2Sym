@@ -41,6 +41,35 @@
 
 #include "tinySym.h"
 
+#pragma warning ( push, 0 )
+
+#include <string>
+
+#pragma warning ( pop )
+
+/// Base exception class for easier catching and handling failures while loading normal / tiny symbols
+struct SymsLoadingFailure /*abstract*/ : std::runtime_error {
+	explicit SymsLoadingFailure(const std::string &_Message);
+	explicit SymsLoadingFailure(const char *_Message);
+
+	void informUser(const std::string &msg) const; ///< informs the user about the problem
+
+protected:
+	~SymsLoadingFailure() {}
+};
+
+/// Distinct exception class for easier catching and handling failures while loading tiny symbols
+struct TinySymsLoadingFailure : SymsLoadingFailure {
+	explicit TinySymsLoadingFailure(const std::string &_Message);
+	explicit TinySymsLoadingFailure(const char *_Message);
+};
+
+/// Distinct exception class for easier catching and handling failures while loading normal symbols
+struct NormalSymsLoadingFailure : SymsLoadingFailure {
+	explicit NormalSymsLoadingFailure(const std::string &_Message);
+	explicit NormalSymsLoadingFailure(const char *_Message);
+};
+
 /// Allows providing tiny symbols both from FontEngine and from UnitTesting
 struct ITinySymsProvider /*abstract*/ {
 	ITinySymsProvider() {}

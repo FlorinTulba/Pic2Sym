@@ -138,6 +138,15 @@ void CmapInspect::updateGrid() {
 	grid = createGrid();
 }
 
+void CmapInspect::clear() {
+	updateGrid();
+	content = grid;
+	imshow(winName, content);
+	updatePagesCount(0U);
+	setStatus("No Font Loaded");
+	readyToBrowse = false;
+}
+
 void CmapInspect::updatePagesCount(unsigned cmapSize) {
 	updatingPageMax = true;
 	pagesCount = (unsigned)ceil(cmapSize / (double)symsPerPage);

@@ -279,8 +279,8 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_CHECK_THROW(fe.smallGlyphsCoverage(), logic_error);
 		BOOST_CHECK_THROW(fe.uniqueEncodings(), logic_error);
 		BOOST_CHECK_THROW(fe.getEncoding(), logic_error);
-		BOOST_CHECK_THROW(fe.getFamily(), logic_error);
-		BOOST_CHECK_THROW(fe.getStyle(), logic_error);
+		BOOST_CHECK(nullptr != fe.getFamily() && 0ULL == strlen(fe.getStyle()));
+		BOOST_CHECK(nullptr != fe.getStyle() && 0ULL == strlen(fe.getStyle()));
 
 		BOOST_REQUIRE_NO_THROW(name = fe.fontFileName());
 		BOOST_REQUIRE(name.empty());

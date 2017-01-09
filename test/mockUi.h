@@ -72,6 +72,7 @@ public:
 	static void updatePageIdx(...) {}
 	void updatePagesCount(...) {}
 	void updateGrid() {}
+	void clear() {}
 	void showPage(...) {}
 	unsigned getCellSide() const { return 0U; }
 	unsigned getSymsPerRow() const { return 0U; }

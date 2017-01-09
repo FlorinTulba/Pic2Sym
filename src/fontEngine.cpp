@@ -138,6 +138,16 @@ FontEngine::~FontEngine() {
 	FT_Done_FreeType(library);
 }
 
+void FontEngine::invalidateFont() {
+	FT_Done_Face(face);
+	face = nullptr;
+	disposeTinySyms();
+	uniqueEncs.clear();
+	symsCont.reset();
+	symsUnableToLoad.clear();
+	encodingIndex = symsCount = 0U;
+}
+
 bool FontEngine::checkFontFile(const path &fontPath, FT_Face &face_) const {
 	if(!exists(fontPath)) {
 		cerr<<"No such file: "<<fontPath<<endl;
@@ -568,17 +578,17 @@ const string& FontEngine::fontFileName() const {
 }
 
 FT_String* FontEngine::getFamily() const {
-	if(face == nullptr) 
-		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+	if(face != nullptr) 
+		return face->family_name;
 
-	return face->family_name;
+	return "";
 }
 
 FT_String* FontEngine::getStyle() const {
-	if(face == nullptr)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
+	if(face != nullptr)
+		return face->style_name;
 
-	return face->style_name;
+	return "";
 }
 
 FontEngine& FontEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
