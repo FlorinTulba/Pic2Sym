@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "testMain.h"
+#include "selectBranch.h"
 #include "filledRectanglesFilter.h"
 #include "gridBarsFilter.h"
 #include "bulkySymsFilter.h"

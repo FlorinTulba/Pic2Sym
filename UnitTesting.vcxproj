@@ -154,6 +154,7 @@
     <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
+    <ClCompile Include="test\selectBranch.cpp" />
     <ClCompile Include="test\testClustering.cpp" />
     <ClCompile Include="test\testFontEngine.cpp" />
     <ClCompile Include="test\testMain.cpp" />
@@ -247,6 +248,7 @@
     <ClInclude Include="test\mockTransformTrace.h" />
     <ClInclude Include="test\mockUi.h" />
     <ClInclude Include="test\preselectionHelper.h" />
+    <ClInclude Include="test\selectBranch.h" />
     <ClInclude Include="test\testMain.h" />
   </ItemGroup>
   <ItemGroup>

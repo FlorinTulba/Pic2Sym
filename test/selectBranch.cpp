@@ -36,47 +36,17 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_STUDY
-#define H_STUDY
+#include "selectBranch.h"
 
-#pragma warning ( push, 0 )
+using namespace std;
 
-#include <string>
+namespace ut {
+	set<string> forcedBranches {
+		// Add here each context name that need to force certain branches.
+		// The tests can further add / remove such context while they are running.
+	};
+}
 
-#pragma warning ( pop )
-
-/**
-Free function prompting the developer if a certain action is desired at the specified point in the application.
-Helpful for checking branches which are quite difficult to reach while performing some code coverage.
-
-For instance:
-	if(rareCondition) {x;}
-
-should be changed to:
-	if(rareCondition || prompt(question, context)) {x;}
-
-In this way, the developer can choose which branches to inspect.
-
-The Unit Testing project can use this function, as well:
-- instead of prompting the user, the function would return false, unless
-- the context parameter is found within a customizable set of contexts dynamically controlling which branches to take
-*/
-bool prompt(const std::string &question, const std::string &context);
-
-#ifndef UNIT_TESTING // Next 2 functions are used only within main.cpp
-
-/**
-Free function allowing the application to perform some separate studies instead of the normal launch.
-@return false for a classic launch and true when intending to start some separate investigations
-*/
-bool studying();
-
-/**
-Free function to provide the implementation of the case to be studied.
-The parameters are passed further from the main function of the application.
-*/
-void study(int argc, char* argv[]);
-
-#endif // UNIT_TESTING not defined
-
-#endif // H_STUDY
+bool prompt(const string &/*question*/, const string &context) {
+	return ut::forcedBranches.cend() != ut::forcedBranches.find(context);
+}

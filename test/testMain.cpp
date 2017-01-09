@@ -39,6 +39,7 @@
 #define BOOST_TEST_MODULE Tests for project Pic2Sym
 
 #include "testMain.h"
+#include "selectBranch.h"
 #include "controller.h"
 #include "matchEngine.h"
 #include "fontEngine.h"

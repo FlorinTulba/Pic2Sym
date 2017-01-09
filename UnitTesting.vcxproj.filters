@@ -204,6 +204,9 @@
     <ClCompile Include="src\blur.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
+    <ClCompile Include="test\selectBranch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -377,10 +380,10 @@
     <ClInclude Include="src\structuralSimilarity.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\study.h">
+        <ClInclude Include="src\study.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\symbolsSupport.h">
+	<ClInclude Include="src\symbolsSupport.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\symbolsSupportWithPreselection.h">
@@ -456,6 +459,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="test\mockTinySymsDataSerialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\selectBranch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

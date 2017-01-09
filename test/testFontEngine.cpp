@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "testMain.h"
+#include "selectBranch.h"
 #include "fontEngine.h"
 #include "settings.h"
 #include "controller.h"
@@ -280,7 +281,7 @@ BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 		BOOST_CHECK_THROW(fe.getEncoding(), logic_error);
 		BOOST_CHECK_THROW(fe.getFamily(), logic_error);
 		BOOST_CHECK_THROW(fe.getStyle(), logic_error);
-			
+
 		BOOST_REQUIRE_NO_THROW(name = fe.fontFileName());
 		BOOST_REQUIRE(name.empty());
 	}

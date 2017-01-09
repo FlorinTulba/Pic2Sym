@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "testMain.h"
+#include "selectBranch.h"
 #include "settings.h"
 #include "controller.h"
 

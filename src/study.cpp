@@ -75,6 +75,13 @@ namespace {
 	};
 } // anonymous namespace
 
+bool prompt(const string &question, const string &context) {
+	cout<<question<<" in context "<<context<<"? ([y]/n) ";
+	string line;
+	getline(cin, line);
+	return line.empty() || line.compare("y") == 0 || line.compare("Y") == 0;
+}
+
 bool studying() {
 	return false;
 }
