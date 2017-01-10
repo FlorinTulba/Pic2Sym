@@ -274,14 +274,17 @@ void main(int argc, char* argv[]) {
 	AppStart::determinedBy(argv[0]);
 	providePrivateDLLsPaths(argv[0]);
 
-	// Some matters need separate studying, so don't start the actual application when studying them
-	if(studying()) {
-		study(argc, argv);
-		return;
-	}
-		
+	// Some matters need separate studying. In that case, studying() should return true.
+	// However, the study mode should be ignored when launching Pic2Sym from UnitTesting or when timing scenarios,
+	// that is when the command parameters look like:
+	//	- mismatches ...
+	//	- misfiltered ...
+	//	- timing ...
+	bool ignoreStudyMode = false;
+
 	if(1 == argc) { // no parameters
-		normalLaunch();
+		if(!studying())
+			normalLaunch();
 
 	} else {
 		const string firstParam(argv[1]);
@@ -290,11 +293,13 @@ void main(int argc, char* argv[]) {
 
 			if(firstParam.compare("mismatches") == 0) {
 				viewMismatchesMode(secondParam);
+				ignoreStudyMode = true;
 
 			} else if(firstParam.compare("misfiltered") == 0) {
 				viewMisfilteredMode(secondParam);
+				ignoreStudyMode = true;
 
-			} else {
+			} else if(!studying()) {
 				cerr<<"Invalid first parameter '"<<firstParam<<'\''<<endl;
 				showUsage();
 			}
@@ -302,17 +307,22 @@ void main(int argc, char* argv[]) {
 		} else if(6 == argc) { // 5 parameters
 			if(firstParam.compare("timing") == 0) {
 				timingScenario(argv[2], argv[3], argv[4], argv[5]);
+				ignoreStudyMode = true;
 
-			} else {
+			} else if(!studying()) {
 				cerr<<"Invalid first parameter '"<<firstParam<<'\''<<endl;
 				showUsage();
 			}
 
-		} else { // Wrong # of parameters
+		} else if(!studying()) { // Wrong # of parameters
 			cerr<<"There were "<<argc-1<<" parameters!"<<endl;
 			showUsage();
 		}
 	}
+
+	if(studying() && !ignoreStudyMode)
+		study(argc, argv);
+
 }
 
 #endif // UNIT_TESTING not defined
