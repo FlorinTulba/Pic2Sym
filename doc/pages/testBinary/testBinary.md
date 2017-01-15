@@ -8,12 +8,14 @@ Font families with a moderate number of symbols let Pic2Sym produce its results 
 
 The **optional** *free* font ***BpMono bold*** with less than 200 symbols can be installed (with *administrator rights*) from [here][BpMonoBold] or from **[res/][ResFolder]** folder in order to be visible while running the application. *Installing* fonts requires just double-clicking the font file and then pressing **Install** button. *Uninstalling* steps: press ![](WinLogoKeyPlusR.jpg); type &quot;**%windir%\\fonts**&quot;; right click on the desired font and choose **Delete**.
 
+--------
+
 Now the steps for testing Pic2Sym (**no administrative privileges required**):
 
 <table style="width:100%; margin-left:0; margin-right:0" border="0" cellpadding="0" cellspacing="5">
 	<tr valign="center" style="vertical-align:center">
 		<td width="60%" align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			1. Download <b><a href="../../../bin/Pic2Sym.msi">bin/Pic2Sym.msi</a></b> and double-click it to install the application.
+			1. Download <b><a href="https://rawgit.com/FlorinTulba/Pic2Sym/version_2.0/bin/Pic2Sym.msi">Pic2Sym.msi</a></b> and double-click it to install the application.
 			<p>
 			The installer:
 			<ul>
@@ -69,6 +71,7 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 To leave the application, press **ESC**.
 
 --------
+
 [Back to start page](../../../ReadMe.md)
 
 [ResFolder]:../../../res/
