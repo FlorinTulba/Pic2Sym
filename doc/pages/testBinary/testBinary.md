@@ -6,7 +6,7 @@ It&#39;s *recommended* to read first the ***Conclusions*** from the ***[examples
 
 Font families with a moderate number of symbols let Pic2Sym produce its results faster. In any case, as soon as the result appears satisfactory-enough, or when the estimated remaining transformation time is not acceptable, the user can cancel the process while provided with a saved version of the last generated draft result.
 
-The **optional** *free* font ***BpMono bold*** with less than 200 symbols can be installed (with *administrator rights*) from [here][BpMonoBold] or from **[res/][ResFolder]** folder in order to be visible while running the application. *Installing* fonts requires just double-clicking the font file and then pressing **Install** button. *Uninstalling* steps: **Start** button; click **Run**; type &quot;**%windir%\\fonts**&quot;; Right click on desired font; Choose **Delete**.
+The **optional** *free* font ***BpMono bold*** with less than 200 symbols can be installed (with *administrator rights*) from [here][BpMonoBold] or from **[res/][ResFolder]** folder in order to be visible while running the application. *Installing* fonts requires just double-clicking the font file and then pressing **Install** button. *Uninstalling* steps: press ![](WinLogoKeyPlusR.jpg); type &quot;**%windir%\\fonts**&quot;; right click on the desired font and choose **Delete**.
 
 Now the steps for testing Pic2Sym (**no administrative privileges required**):
 
