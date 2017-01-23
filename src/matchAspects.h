@@ -45,7 +45,7 @@
 class FgMatch : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -71,7 +71,7 @@ public:
 class BgMatch : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -97,7 +97,7 @@ public:
 class EdgeMatch : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -123,7 +123,7 @@ public:
 class BetterContrast : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -149,7 +149,7 @@ public:
 class GravitationalSmoothness : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -175,7 +175,7 @@ public:
 class DirectionalSmoothness : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
@@ -201,7 +201,7 @@ public:
 class LargerSym : public MatchAspect {
 public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp

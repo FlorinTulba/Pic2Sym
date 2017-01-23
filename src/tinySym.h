@@ -52,7 +52,7 @@ struct PixMapSym; // Forward declaration
 /// Data for tiny symbols
 struct TinySym : SymData {
 	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of TinySym class
+	static const unsigned VERSION = 1U; ///< version of TinySym class
 
 	/// Ratio between reference symbols and the shrunken symbol
 	enum { RatioRefTiny = 8 };
@@ -86,7 +86,7 @@ struct TinySym : SymData {
 	TinySym(const PixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
 
 	/// Used to create the centroid of a cluster
-	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
+	TinySym(const cv::Point2f &mc_, fp avgPixVal_, const cv::Mat &mat_,
 			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
 			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);
 
@@ -94,13 +94,25 @@ struct TinySym : SymData {
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned int version) {
 		SymData::serialize(ar, version);
-		ar & mat & 
-			hAvgProj & vAvgProj & 
+
+		ar & mat &
+			hAvgProj & vAvgProj &
 			backslashDiagAvgProj & slashDiagAvgProj;
+
+		// TinySym version 0 was using matrices in double-precision; Newer versions use single-precision.
+#pragma warning( disable : WARN_CONST_COND_EXPR )
+		if(version < 1U && Archive::is_loading::value) {
+			mat.convertTo(mat, CV_FC1);
+			hAvgProj.convertTo(hAvgProj, CV_FC1);
+			vAvgProj.convertTo(vAvgProj, CV_FC1);
+			backslashDiagAvgProj.convertTo(backslashDiagAvgProj, CV_FC1);
+			slashDiagAvgProj.convertTo(slashDiagAvgProj, CV_FC1);
+		}
+#pragma warning( default : WARN_CONST_COND_EXPR )
 	}
 
 #ifdef UNIT_TESTING
-	TinySym(const cv::Mat &negSym_, const cv::Point2d &mc_ = cv::Point2d(.5,.5), double avgPixVal_ = 0.); ///< generate the tiny symbol based on a negative
+	TinySym(const cv::Mat &negSym_, const cv::Point2f &mc_ = cv::Point2f(.5f,.5f), fp avgPixVal_ = 0.f); ///< generate the tiny symbol based on a negative
 #endif // UNIT_TESTING defined
 };
 

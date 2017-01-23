@@ -141,10 +141,10 @@ void MatchEngine::updateSymbols() {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
 		const auto &pms = rawSyms[(size_t)i];
-		const Mat glyph = pms.toMatD01(sz),
+		const Mat glyph = pms.toMatFp01(sz),
 				negGlyph = pms.toMat(sz, true);
 		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-		double minVal, diffMinMax; // for very small fonts, minVal might be > 0 and diffMinMax might be < 255
+		fp minVal, diffMinMax; // for very small fonts, minVal might be > 0 and diffMinMax might be < 255
 
 		// Computing SymData fields separately, to keep the critical emplace from below as short as possible
 		SymData::computeFields(glyph, fgMask, bgMask, edgeMask,

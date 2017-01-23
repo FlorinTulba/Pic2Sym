@@ -131,8 +131,8 @@ namespace ut {
 
 			// compute max-span consec and revConsec needed below by SymFilterCache objects
 			extern const unsigned Settings_MAX_FONT_SIZE;
-			Mat consec(1, Settings_MAX_FONT_SIZE, CV_64FC1), revConsec;
-			iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
+			Mat consec(1, Settings_MAX_FONT_SIZE, CV_FC1), revConsec;
+			iota(BOUNDS_FOR_ITEM_TYPE(consec, fp), 0.f);
 			flip(consec, revConsec, 1); revConsec = revConsec.t();
 
 			for(unsigned symIdx = 0U; symIdx < symsCount; ++symIdx) {
@@ -210,7 +210,7 @@ namespace ut {
 #undef SAVE_PREV_ENABLED_STATE
 
 		SymFiltersFixt() : 
-				pms({ 128U }, Mat::ones(1, 1, CV_64FC1), Mat::ones(1, 1, CV_64FC1)),
+				pms({ 128U }, Mat::ones(1, 1, CV_FC1), Mat::ones(1, 1, CV_FC1)),
 				sfc() {
 
 #define ENSURE_ENABLED(FilterType) \

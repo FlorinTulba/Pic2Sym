@@ -39,6 +39,8 @@
 #ifndef H_CACHED_DATA
 #define H_CACHED_DATA
 
+#include "floatType.h"
+
 #pragma warning ( push, 0 )
 
 #include <opencv2/core/core.hpp>
@@ -57,7 +59,7 @@ struct CachedData {
 	In that case, the mean is 127.5 and the std dev is:
 	sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
 	*/
-	static inline const double sdevMaxFgBg() { return 127.5; }
+	static inline const fp sdevMaxFgBg() { return 127.5f; }
 
 	/**
 	Max possible std dev for edge is 255.
@@ -68,25 +70,25 @@ struct CachedData {
 	every pixel from the patch covered by the edge mask has a deviation of 255 from
 	the corresponding zone within the approximated patch.
 	*/
-	static inline const double sdevMaxEdge() { return 255.; }
+	static inline const fp sdevMaxEdge() { return 255.f; }
 
 	/// acceptable distance between mass centers (1/8)
-	static inline const double preferredMaxMcDist() { return .125; }
+	static inline const fp preferredMaxMcDist() { return .125f; }
 		
 	/// The center of a square with unit-length sides
-	static const cv::Point2d& unitSquareCenter();
+	static const cv::Point2f& unitSquareCenter();
 
 	/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-	static const double invComplPrefMaxMcDist();
+	static const fp invComplPrefMaxMcDist();
 
 	// See comment from above the definitions of these static methods in cachedData.cpp, but also from DirectionalSmoothness::score
-	static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
-	static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
+	static const fp a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
+	static const fp b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
 
 	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
 
-	double sz_1;				///< double version of sz - 1
-	double smallGlyphsCoverage;	///< max density for symbols considered small
+	fp sz_1;					///< fp version of sz - 1
+	fp smallGlyphsCoverage;		///< max density for symbols considered small
 
 	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
 

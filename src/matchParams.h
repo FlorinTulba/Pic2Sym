@@ -40,6 +40,7 @@
 #define H_MATCH_PARAMS
 
 #include "patch.h"
+#include "floatType.h"
 
 #pragma warning ( push, 0 )
 
@@ -59,25 +60,25 @@ struct MatchParams {
 	static const MatchParams& perfectMatch();
 
 	// These params are computed only once, if necessary, when approximating the patch
-	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch (range 0..1 x 0..1)
+	boost::optional<cv::Point2f> mcPatch;		///< mass center for the patch (range 0..1 x 0..1)
 	boost::optional<cv::Mat> blurredPatch;		///< blurred version of the patch
 	boost::optional<cv::Mat> blurredPatchSq;	///< blurredPatch element-wise squared
 	boost::optional<cv::Mat> variancePatch;		///< blur(patch^2) - blurredPatchSq
 
 	// These params are evaluated for each symbol compared to the patch
 	boost::optional<cv::Mat> patchApprox;		///< patch approximated by a given symbol
-	boost::optional<cv::Point2d> mcPatchApprox;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
-	boost::optional<double> mcsOffset;			///< distance between the 2 mass centers (range 0..sqrt(2))
-	boost::optional<double> symDensity;			///< % of the box covered by the glyph (0..1)
-	boost::optional<double> fg;					///< color for fg (range 0..255)
-	boost::optional<double> bg;					///< color for bg (range 0..255)
-	boost::optional<double> contrast;			///< fg - bg (range -255..255)
-	boost::optional<double> ssim;				///< structural similarity (-1..1)
+	boost::optional<cv::Point2f> mcPatchApprox;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
+	boost::optional<fp> mcsOffset;			///< distance between the 2 mass centers (range 0..sqrt(2))
+	boost::optional<fp> symDensity;			///< % of the box covered by the glyph (0..1)
+	boost::optional<fp> fg;					///< color for fg (range 0..255)
+	boost::optional<fp> bg;					///< color for bg (range 0..255)
+	boost::optional<fp> contrast;			///< fg - bg (range -255..255)
+	boost::optional<fp> ssim;				///< structural similarity (-1..1)
 
 	// ideal value for the standard deviations below is 0
-	boost::optional<double> sdevFg;		///< standard deviation for fg (0..127.5)
-	boost::optional<double> sdevBg;		///< standard deviation for bg  (0..127.5)
-	boost::optional<double> sdevEdge;	///< standard deviation for contour (0..255)
+	boost::optional<fp> sdevFg;		///< standard deviation for fg (0..127.5)
+	boost::optional<fp> sdevBg;		///< standard deviation for bg  (0..127.5)
+	boost::optional<fp> sdevEdge;	///< standard deviation for contour (0..255)
 
 	/**
 	Prepares for next symbol to match against patch.
@@ -114,11 +115,11 @@ protected:
 #endif // UNIT_TESTING not defined
 
 	/// Both computeFg and computeBg simply call this
-	static void computeMean(const cv::Mat &patch, const cv::Mat &mask, boost::optional<double> &miu);
+	static void computeMean(const cv::Mat &patch, const cv::Mat &mask, boost::optional<fp> &miu);
 
 	/// Both computeSdevFg and computeSdevBg simply call this
 	static void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
-							boost::optional<double> &miu, boost::optional<double> &sdev);
+							boost::optional<fp> &miu, boost::optional<fp> &sdev);
 };
 
 /// A possible way to approximate the patch - average / blur / transformed glyph / hybrid

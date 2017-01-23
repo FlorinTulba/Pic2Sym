@@ -40,6 +40,7 @@
 #define H_PIXMAP_SYM
 
 #include "symFilterBase.h"
+#include "floatType.h"
 
 #pragma warning ( push, 0 )
 
@@ -66,7 +67,7 @@ Fields 'left' and 'top' indicate the position of the top-left corner within the 
 */
 struct PixMapSym {
 	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
-	cv::Point2d mc;
+	cv::Point2f mc;
 
 	/// 256-shades of gray rectangle describing the character (top-down, left-right traversal)
 	std::vector<unsigned char> pixels;
@@ -75,9 +76,9 @@ struct PixMapSym {
 	cv::Mat rowSums; ///< row with the sums of the pixels of each row of the symbol (each pixel in 0..1)
 
 	size_t symIdx = 0U;				///< symbol index within cmap
-	double avgPixVal = 0.;			///< average of the pixel values divided by 255
-
 	unsigned long symCode = 0UL;	///< symbol code
+
+	fp avgPixVal = 0.;				///< average of the pixel values divided by 255
 
 	unsigned char rows = 0U, cols = 0U;	// dimensions of 'pixels' rectangle from below 
 	unsigned char left = 0U, top = 0U;	// position within the drawing square
@@ -104,7 +105,7 @@ struct PixMapSym {
 			  int leftBound,			///< initial position of the symbol considered from the left
 			  int topBound,				///< initial position of the symbol considered from the top
 			  int sz,					///< font size
-			  double maxGlyphSum,		///< max sum of a glyph's pixels
+			  fp maxGlyphSum,			///< max sum of a glyph's pixels
 			  const cv::Mat &consec,	///< vector of consecutive values 0 .. sz-1
 			  const cv::Mat &revConsec,	///< vector of consecutive values sz-1 .. 0
 			  const FT_BBox &bb			///< the bounding box to fit
@@ -122,8 +123,8 @@ struct PixMapSym {
 	/// the symbol within a square of fontSz x fontSz, either as is, or inversed
 	cv::Mat toMat(unsigned fontSz, bool inverse = false) const;
 
-	/// Conversion PixMapSym .. Mat of type double with range [0..1] instead of [0..255]
-	cv::Mat toMatD01(unsigned fontSz) const;
+	/// Conversion PixMapSym to Mat of type fp with range [0..1] instead of [0..255]
+	cv::Mat toMatFp01(unsigned fontSz) const;
 
 	/**
 	Computing the mass center (mc) and average pixel value (divided by 255) of a given symbol.
@@ -131,10 +132,10 @@ struct PixMapSym {
 
 	It's static for easier Unit Testing.
 	*/
-	static void computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const std::vector<unsigned char> &data,
+	static void computeMcAndAvgPixVal(unsigned sz, fp maxGlyphSum, const std::vector<unsigned char> &data,
 									  unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
 									  const cv::Mat &consec, const cv::Mat &revConsec,
-									  cv::Point2d &mc, double &avgPixVal,
+									  cv::Point2f &mc, fp &avgPixVal,
 									  cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
 
 #ifdef UNIT_TESTING
@@ -167,8 +168,8 @@ protected:
 	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
 	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
 
-	double maxGlyphSum;				///< max sum of a glyph's pixels
-	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
+	fp maxGlyphSum;					///< max sum of a glyph's pixels
+	fp coverageOfSmallGlyphs;		///< max ratio for small symbols of glyph area / containing area
 
 	unsigned fontSz = 0U;			///< bounding box size
 
@@ -187,7 +188,7 @@ public:
 	unsigned getBlanksCount() const;
 	unsigned getDuplicatesCount() const;
 	const std::map<unsigned, unsigned>& getRemovableSymsByCateg() const;
-	double getCoverageOfSmallGlyphs() const;
+	fp getCoverageOfSmallGlyphs() const;
 	const std::vector<const PixMapSym>& getSyms() const;
 
 	/// clears & prepares container for new entries

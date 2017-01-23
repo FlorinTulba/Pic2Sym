@@ -566,7 +566,7 @@ const vector<const PixMapSym>& FontEngine::symsSet() const {
 	return symsCont.getSyms();
 }
 
-double FontEngine::smallGlyphsCoverage() const {
+fp FontEngine::smallGlyphsCoverage() const {
 	if(face == nullptr || !symsCont.isReady())
 		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
 

@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "extBoxBlur.h"
+#include "floatType.h"
 #include "warnings.h"
 
 #pragma warning ( push, 0 )
@@ -55,33 +56,33 @@ class ExtBoxBlur::Impl {
 	friend class ExtBoxBlur;
 
 	static ExtBoxBlur::Impl _nonTinySyms, _tinySyms;
-	double sigma;			///< desired standard deviation
+	fp sigma;				///< desired standard deviation
 	unsigned times;			///< iterations count
 
 	// Following fields all are derived from sigma and times. See extendedBoxKernel
 	unsigned kernelWidth;	///< width of the mask (extended box)
-	double boxHeight;		///< ceiling of the box (majority of extended box's values)
-	double w;				///< values on the extension edges of the mask
-	double w1;				///< boxHeight - w
+	fp boxHeight;			///< ceiling of the box (majority of extended box's values)
+	fp w;					///< values on the extension edges of the mask
+	fp w1;					///< boxHeight - w
 
 	Impl() {}
 
 	/// Reconfigures the kernel
 	/// See http://www.mia.uni-saarland.de/Publications/gwosdek-ssvm11.pdf for details
 	void extendedBoxKernel(double sigma_, unsigned times_) {
-		sigma = sigma_; times = times_;
+		sigma = (fp)sigma_; times = times_;
 
-		const double sigmaSq = sigma_*sigma_,
-			sigmaSqOverD = sigmaSq/times_,
-			idealBoxSize = sqrt(1.+12.*sigmaSqOverD);
-		const int l = int((idealBoxSize-1.)/2.),
-			lp1 = l+1,
-			L = (l<<1)|1;
-		const double alpha = L * (l*lp1 - 3.*sigmaSqOverD) / (6. * (sigmaSqOverD - lp1*lp1)),
-			lambda = L + alpha + alpha;
+		const fp sigmaSq = sigma*sigma,
+				sigmaSqOverD = sigmaSq/times_,
+				idealBoxSize = sqrt(1.f + 12.f * sigmaSqOverD);
+		const int l = int((idealBoxSize - 1.f) / 2.f),
+				lp1 = l+1,
+				L = (l<<1)|1;
+		const fp alpha = L * (l*lp1 - 3.f*sigmaSqOverD) / (6.f * (sigmaSqOverD - lp1*lp1)),
+				lambda = L + alpha + alpha;
 
 		kernelWidth = unsigned(L + 2);
-		boxHeight = 1./lambda;
+		boxHeight = 1.f/lambda;
 		w = alpha / lambda;
 		w1 = boxHeight - w;
 	}
@@ -117,7 +118,7 @@ class ExtBoxBlur::Impl {
 		// Temp needs to be processed; blurred holds the outcome
 		Mat temp;
 		transpose(toBlur, temp);
-		blurred = Mat(origWidth, origHeight, CV_64FC1);
+		blurred = Mat(origWidth, origHeight, CV_FC1);
 		int dataRows = temp.rows, dataCols = temp.cols, dataRowsM1 = dataRows - 1, dataColsM1 = dataCols - 1;
 
 		// Lambda to be used for both traversal directions
@@ -129,15 +130,15 @@ class ExtBoxBlur::Impl {
 // #pragma omp for schedule(static, 1) nowait
 				for(int row = 0; row < dataRows; ++row) {
 					// Computations for 1st pixel on current row
-					double *resultIt = blurred.ptr<double>(row);
-					const double *dataItBegin = temp.ptr<double>(row);
-					const double *frontEdge = dataItBegin + kernelRadiusP1;
-					const double firstPixel = *dataItBegin,
+					fp *resultIt = blurred.ptr<fp>(row);
+					const fp *dataItBegin = temp.ptr<fp>(row);
+					const fp *frontEdge = dataItBegin + kernelRadiusP1;
+					const fp firstPixel = *dataItBegin,
 								lastPixel = dataItBegin[dataColsM1];
-					double prevFrontEdgePixel = dataItBegin[kernelRadius], frontEdgePixel,
+					fp prevFrontEdgePixel = dataItBegin[kernelRadius], frontEdgePixel,
 							prevSum = *resultIt =
 								w * (firstPixel + prevFrontEdgePixel) +
-								boxHeight * (firstPixel * kernelRadius + accumulate(dataItBegin + 1, dataItBegin + kernelRadius, 0.));
+								boxHeight * (firstPixel * kernelRadius + accumulate(dataItBegin + 1, dataItBegin + kernelRadius, 0.f));
 
 					// Next few pixels use all first pixel from temp as back edge correction
 					int col = 1;
@@ -148,8 +149,8 @@ class ExtBoxBlur::Impl {
 					}
 
 					// Most pixels have both front & back edges for correction
-					const double *backEdge = dataItBegin + 1;
-					double backEdgePixel, prevBackEdgePixel = firstPixel;
+					const fp *backEdge = dataItBegin + 1;
+					fp backEdgePixel, prevBackEdgePixel = firstPixel;
 					for(; col < dataCols - kernelRadius; prevFrontEdgePixel = frontEdgePixel, ++frontEdge, prevBackEdgePixel = backEdgePixel, ++backEdge, ++col) {
 						frontEdgePixel = *frontEdge;
 						backEdgePixel = *backEdge;

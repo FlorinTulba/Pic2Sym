@@ -44,14 +44,18 @@
 
 #pragma warning ( push, 0 )
 
+#include <boost/algorithm/clamp.hpp>
+
 #include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
 using namespace std;
+using namespace boost::algorithm;
 using namespace cv;
 
-extern const double EPSp1();
+static const fp EPSp1f = EPSf + 1.f;
+static const double EPS_larger = .75;
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
@@ -82,8 +86,8 @@ void StructuralSimilarity::fillRequiredMatchParams(const Mat &patch,
 	mp.computeSsim(patch, symData, cachedData);
 }
 
-double StructuralSimilarity::relativeComplexity() const {
-	return 1000.; // extremely complex compared to the rest of the aspects
+fp StructuralSimilarity::relativeComplexity() const {
+	return 1000.f; // extremely complex compared to the rest of the aspects
 }
 
 void MatchParams::computeBlurredPatch(const Mat &patch, const CachedData &cachedData) {
@@ -128,7 +132,7 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 	// Saving 2 calls to BlurEngine each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-	const double diffRatio = contrast.value() / symData.diffMinMax;
+	const fp diffRatio = contrast.value() / symData.diffMinMax;
 	const Mat blurredPatchApprox = bg.value() + diffRatio *
 										symData.masks[SymData::BLURRED_GR_SYM_IDX],
 				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
@@ -141,28 +145,27 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 
 	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
 	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+	assert(abs(minVal) < EPS_larger);
+	assert(abs(maxVal) < EPS_larger);
 
 	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
 	variancePatchApprox_ -= blurredPatchApproxSq;
 	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+	assert(abs(minVal) < EPS_larger);
+	assert(abs(maxVal) < EPS_larger);
 #endif // checking the simplifications mentioned above
 
 	const Mat productMats = patch.mul(approxPatch),
-		productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
+			productBlurredMats = blurredPatch.value().mul(blurredPatchApprox);
 	StructuralSimilarity::supportBlur.process(productMats, covariance, cachedData.forTinySyms);
 	covariance -= productBlurredMats;
 
-	extern const double StructuralSimilarity_C1, StructuralSimilarity_C2;
-	const Mat numerator = (2.*productBlurredMats + StructuralSimilarity_C1).
-							mul(2.*covariance + StructuralSimilarity_C2),
+	extern const fp StructuralSimilarity_C1, StructuralSimilarity_C2;
+	const Mat numerator = (2.f * productBlurredMats + StructuralSimilarity_C1).
+							mul(2.f * covariance + StructuralSimilarity_C2),
 			denominator = (blurredPatchSq.value() + blurredPatchApproxSq + StructuralSimilarity_C1).
 							mul(variancePatch.value() + variancePatchApprox + StructuralSimilarity_C2);
 
 	divide(numerator, denominator, ssimMap);
-	ssim = *mean(ssimMap).val;
-	assert(abs(*ssim) < EPSp1());
+	ssim = clamp((fp)*mean(ssimMap).val, -1.f, 1.f);
 }

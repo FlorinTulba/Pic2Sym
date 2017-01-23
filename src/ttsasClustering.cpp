@@ -128,8 +128,8 @@ namespace {
 		/// Updates centroid for the expanded cluster that considers also sym as a member
 		void addMember(const TinySym &sym, SymIdx symIdx) {
 			memberIndices.push_back(symIdx);
-			const double invNewMembersCount = 1./memberIndices.size(),
-						oneMinusInvNewMembersCount = 1. - invNewMembersCount;
+			const fp invNewMembersCount = 1.f/memberIndices.size(),
+					oneMinusInvNewMembersCount = 1.f - invNewMembersCount;
 
 			// All fields suffer the transformation below due to the expansion of the cluster
 #define UpdateCentroidField(field) \
@@ -200,11 +200,11 @@ namespace {
 
 			// Comparing glyph & cluster densities
 			if(abs(sym.avgPixVal - centroidCluster.avgPixVal)  >
-						MaxDiffAvgPixelValForTTSAS_Clustering * thresholdOutsider)
+					fp(MaxDiffAvgPixelValForTTSAS_Clustering * thresholdOutsider))
 				return numeric_limits<Dist>::infinity(); // skip the rest for very different densities
 
 			// Comparing glyph & cluster mass-centers
-			const Point2d mcDelta = sym.mc - centroidCluster.mc;
+			const Point2f mcDelta = sym.mc - centroidCluster.mc;
 			const double mcDeltaY = abs(mcDelta.y) / thresholdOutsider;
 			if(mcDeltaY > MaxRelMcOffsetForTTSAS_Clustering) // vertical mass-centers offset
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
@@ -218,14 +218,14 @@ namespace {
 			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
 
-			const double *pDataA, *pDataAEnd, *pDataB,
-						ThresholdOutsider = thresholdOutsider * TTSAS_Threshold_Member;
+			const fp *pDataA, *pDataAEnd, *pDataB,
+					ThresholdOutsider = fp(thresholdOutsider * TTSAS_Threshold_Member);
 
 #define CheckProjections(ProjectionField) \
-			pDataA = reinterpret_cast<const double*>(sym.ProjectionField.datastart); \
-			pDataAEnd = reinterpret_cast<const double*>(sym.ProjectionField.datalimit); \
-			pDataB = reinterpret_cast<const double*>(centroidCluster.ProjectionField.datastart); \
-			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) { \
+			pDataA = reinterpret_cast<const fp*>(sym.ProjectionField.datastart); \
+			pDataAEnd = reinterpret_cast<const fp*>(sym.ProjectionField.datalimit); \
+			pDataB = reinterpret_cast<const fp*>(centroidCluster.ProjectionField.datastart); \
+			for(fp sumOfAbsDiffs = 0.f; pDataA != pDataAEnd;) { \
 				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++); \
 				if(sumOfAbsDiffs > ThresholdOutsider) \
 					return numeric_limits<Dist>::infinity(); /* stop as soon as projections appear too different */ \
@@ -240,16 +240,16 @@ namespace {
 #undef CheckProjections
 
 			// Comparing glyph & cluster L1 norm
-			auto itA = sym.mat.begin<double>(), itAEnd = sym.mat.end<double>(),
-				itB = centroidCluster.mat.begin<double>();
-			double sumOfAbsDiffs = 0.;
+			auto itA = sym.mat.begin<fp>(), itAEnd = sym.mat.end<fp>(),
+				itB = centroidCluster.mat.begin<fp>();
+			fp sumOfAbsDiffs = 0.f;
 			while(itA != itAEnd) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
 				if(sumOfAbsDiffs > ThresholdOutsider)
 					return numeric_limits<Dist>::infinity(); // stop as soon as the increasing sum is beyond threshold
 			}
 
-			return sumOfAbsDiffs;
+			return (Dist)sumOfAbsDiffs;
 		}
 
 	public:
@@ -294,7 +294,7 @@ namespace {
 			const Cluster &cluster = clusters[clustIdx];
 			const TinySym &centroidCluster = cluster.centroid;
 			const size_t clusterSz = cluster.membersCount();
-			const double expandedClusterSz = double(clusterSz + (size_t)1U);
+			const double expandedClusterSz = double(clusterSz + 1ULL);
 
 			// Inf for really distant clusters or if their centroid could become 
 			// too distant for previous members when including this symbol

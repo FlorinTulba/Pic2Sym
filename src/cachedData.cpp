@@ -49,10 +49,10 @@
 using namespace std;
 using namespace cv;
 
-extern const double DirSmooth_DesiredBaseForCenterAndCornerMcs;
+extern const fp DirSmooth_DesiredBaseForCenterAndCornerMcs;
 
 namespace {
-	const double SQRT2 = sqrt(2.);
+	const fp SQRT2 = sqrt(2.f);
 
 	/**
 	Visual Studio 2013 doesn't provide thread-safe initialization of function local static variables:
@@ -112,37 +112,37 @@ Solution:
 a = (DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1) / (maxMcDist/2 - PreferredMaxMcDist)
 b = 1 - a * PreferredMaxMcDist
 */
-const double CachedData::a_mcsOffsetFactor() {
+const fp CachedData::a_mcsOffsetFactor() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const double maxMcDist = SQRT2,
-				MaxAngleFactor = 2. * (2. - SQRT2),
-				NumeratorA_mcsOffsetFactor = DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1.,
-				DenominatorA_mcsOffsetFactor = .5 * maxMcDist - preferredMaxMcDist(),
+	static const fp maxMcDist = SQRT2,
+				MaxAngleFactor = 2.f * (2.f - SQRT2),
+				NumeratorA_mcsOffsetFactor = (fp)DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1.f,
+				DenominatorA_mcsOffsetFactor = .5f * maxMcDist - preferredMaxMcDist(),
 				result = NumeratorA_mcsOffsetFactor / DenominatorA_mcsOffsetFactor;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	return result;
 }
-const double CachedData::b_mcsOffsetFactor() {
+const fp CachedData::b_mcsOffsetFactor() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const double result = 1. - a_mcsOffsetFactor() * preferredMaxMcDist();
+	static const fp result = 1.f - a_mcsOffsetFactor() * preferredMaxMcDist();
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	return result;
 }
 
-const Point2d& CachedData::unitSquareCenter() {
+const Point2f& CachedData::unitSquareCenter() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const Point2d center(.5, .5);
+	static const Point2f center(.5f, .5f);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	return center;
 }
 
 /// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-const double CachedData::invComplPrefMaxMcDist() {
+const fp CachedData::invComplPrefMaxMcDist() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const double result = 1. / (SQRT2 - preferredMaxMcDist());
+	static const fp result = 1.f / (SQRT2 - preferredMaxMcDist());
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	return result;
@@ -151,11 +151,11 @@ const double CachedData::invComplPrefMaxMcDist() {
 CachedData::CachedData(bool forTinySyms_/* = false*/) : forTinySyms(forTinySyms_) {}
 
 void CachedData::useNewSymSize(unsigned sz_) {
-	const double szd = (double)sz_;
-	sz_1 = szd - 1.;
+	const fp szFp = (fp)sz_;
+	sz_1 = szFp - 1.f;
 
-	consec = Mat(1, (int)sz_, CV_64FC1);
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
+	consec = Mat(1, (int)sz_, CV_FC1);
+	iota(BOUNDS_FOR_ITEM_TYPE(consec, fp), 0.f);
 }
 
 void CachedData::update(const FontEngine &fe_) {

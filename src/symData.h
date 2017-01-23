@@ -40,6 +40,7 @@
 #define H_SYM_DATA
 
 #include "matSerialization.h"
+#include "floatType.h"
 
 #pragma warning ( push, 0 )
 
@@ -58,7 +59,7 @@
 /// Most symbol information
 struct SymData {
 	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of SymData class
+	static const unsigned VERSION = 1U; ///< version of SymData class
 
 	/**
 	Computes most information about a symbol based on glyph parameter.
@@ -69,13 +70,13 @@ struct SymData {
 	*/
 	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
 							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
-							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &diffMinMax,
+							  cv::Mat &varianceOfGroundedGlyph, fp &minVal, fp &diffMinMax,
 							  bool forTinySym);
 
 	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
-	cv::Point2d mc = cv::Point2d(.5, .5);
+	cv::Point2f mc = cv::Point2f(.5f, .5f);
 
-	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; double for tiny)
+	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; fp for tiny)
 
 	enum { // indices of each matrix type within a MatArray object
 		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
@@ -94,10 +95,10 @@ struct SymData {
 
 	MatArray masks;				///< various masks
 
-	size_t symIdx = 0U;				///< symbol index within cmap
-	double minVal = 0.;		///< the value of darkest pixel, range 0..1
-	double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
-	double avgPixVal = 0.;	///< average pixel value, each pixel in 0..1
+	size_t symIdx = 0U;			///< symbol index within cmap
+	fp minVal = 0.f;			///< the value of darkest pixel, range 0..1
+	fp diffMinMax = 1.f;		///< difference between brightest and darkest pixels, each in 0..1
+	fp avgPixVal = 0.f;			///< average pixel value, each pixel in 0..1
 
 	unsigned long code = ULONG_MAX;	///< the code of the symbol
 
@@ -115,8 +116,8 @@ struct SymData {
 	bool removable = false;
 
 	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
-	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
-			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_, bool removable_ = false);
+	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, fp minVal_, fp diffMinMax_,
+			fp avgPixVal_, const cv::Point2f &mc_, const MatArray &masks_, bool removable_ = false);
 
 	SymData(const SymData &other);
 	SymData(SymData &&other); ///< moves the matrices from other (instead of just copying them)
@@ -131,26 +132,49 @@ struct SymData {
 	as filtering options might be different for distinct run sessions.
 	*/
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int /*version*/) {
-		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
-		ar & mc.x & mc.y;
-		ar & negSym;
+	void serialize(Archive &ar, const unsigned int version) {
+		const bool isSaving = Archive::is_saving::value;
+
+		ar & code & symIdx;
+
+		// SymData version 0 was using double-precision for several fields; Newer versions use single-precision.
+		if(version >= 1U || isSaving) {
+			ar & minVal & diffMinMax & avgPixVal;
+			ar & mc.x & mc.y;
+			ar & negSym;
+			ar & masks;
+
+		} else { // loading in version 0
+			// SymData version 0 was using double-precision for several fields; Newer versions use single-precision.
+			double minValD, diffMinMaxD, avgPixValD;
+			ar & minValD & diffMinMaxD & avgPixValD;
+			minVal = (fp)minValD; diffMinMax = (fp)diffMinMaxD; avgPixVal = (fp)avgPixValD;
+
+			double mcXD, mcYD;
+			ar & mcXD & mcYD;
+			mc.x = (fp)mcXD; mc.y = (fp)mcYD;
+
+			ar & negSym;
+			if(negSym.type() == CV_64FC1) // this happens for tiny symbols from version 0
+				negSym.convertTo(negSym, CV_FC1);
+
+			ar & masks;
+			masks[GROUNDED_SYM_IDX].convertTo(masks[GROUNDED_SYM_IDX], CV_FC1);
+			masks[BLURRED_GR_SYM_IDX].convertTo(masks[BLURRED_GR_SYM_IDX], CV_FC1);
+			masks[VARIANCE_GR_SYM_IDX].convertTo(masks[VARIANCE_GR_SYM_IDX], CV_FC1);
+		}
 
 		// Make sure a loaded symbol is initially not removable
-#pragma warning( disable : WARN_CONST_COND_EXPR )
-		if(Archive::is_loading::value && removable)
-#pragma warning( default : WARN_CONST_COND_EXPR )
+		if(!isSaving && removable)
 			removable = false;
-
-		ar & masks;
 	}
 
 #ifdef UNIT_TESTING
 	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
 	/// Constructor that allows filling only the relevant matrices from MatArray
-	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
+	SymData(unsigned long code_, size_t symIdx_, fp minVal_, fp diffMinMax_, fp avgPixVal_,
+			const cv::Point2f &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
 
 	/// A clone with different symIdx
 	SymData clone(size_t symIdx_);
@@ -161,10 +185,10 @@ protected:
 
 	/// Used for creation of TinySym and ClusterData
 	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0U,
-			double avgPixVal_ = 0., const cv::Point2d &mc_ = cv::Point2d(.5, .5));
+			fp avgPixVal_ = 0.f, const cv::Point2f &mc_ = cv::Point2f(.5f, .5f));
 
 	/// Used to create the TinySym centroid of a cluster 
-	SymData(const cv::Point2d &mc_, double avgPixVal_);
+	SymData(const cv::Point2f &mc_, fp avgPixVal_);
 };
 
 BOOST_CLASS_VERSION(SymData, SymData::VERSION);

@@ -62,23 +62,19 @@ namespace {
 	bool isEvenlyDistributed(const PixMapSym &pms, const SymFilterCache &sfc, const Mat &brightGlyph,
 							 bool toInvert, unsigned sz, unsigned halfSz, unsigned lastSzBit) {
 		// threshold ratio between 1/4 of the symbol sum and the sum of each quadrant
-		static const double SumQuarterThreshold = 1.5364;
+		static const fp SumQuarterThreshold = 1.5364f;
 
-		double sumBrightGlyph = (toInvert ? (1. - pms.avgPixVal) : pms.avgPixVal) * sfc.areaD;
+		fp sumBrightGlyph = (toInvert ? (1.f - pms.avgPixVal) : pms.avgPixVal) * sfc.areaFp;
 
 		// Ignore central lines when sz is odd
 		if(lastSzBit != 0U) {
-			sumBrightGlyph -= *sum(brightGlyph.row((int)halfSz)).val + *sum(brightGlyph.col((int)halfSz)).val;
+			sumBrightGlyph -= fp(*sum(brightGlyph.row((int)halfSz)).val + *sum(brightGlyph.col((int)halfSz)).val);
 
 			// add back the central pixel, as it was subtracted twice
-			sumBrightGlyph += brightGlyph.at<double>((int)halfSz, (int)halfSz);
+			sumBrightGlyph += brightGlyph.at<fp>((int)halfSz, (int)halfSz);
 		}
 
-		const double sumQuarterBrightGlyph = sumBrightGlyph / 4., // central average value
-
-			// min and max limits of the sum within each quadrant
-			minSumQuarterBrightGlyph = sumQuarterBrightGlyph / SumQuarterThreshold,
-			maxSumQuarterBrightGlyph = sumQuarterBrightGlyph * SumQuarterThreshold;
+		const fp sumQuarterBrightGlyph = sumBrightGlyph / 4.f; // central average value
 
 		// The 4 quadrants and their sums (ignoring mid rows & columns for odd sz)
 		const Range firstHalf(0, (int)halfSz),
@@ -98,6 +94,9 @@ namespace {
 		minMaxIdx(qSums, &minQsum, &maxQsum);
 
 		// The 4 quadrants must contain approx sumQuarterBrightGlyph, as sieves are quite evenly distributed
+		// min and max limits of the sum within each quadrant
+		const double minSumQuarterBrightGlyph = sumQuarterBrightGlyph / SumQuarterThreshold,
+					maxSumQuarterBrightGlyph = sumQuarterBrightGlyph * SumQuarterThreshold;
 		return (minQsum > minSumQuarterBrightGlyph && maxQsum < maxSumQuarterBrightGlyph);
 	}
 
@@ -114,7 +113,7 @@ namespace {
 	The method is for debugging, to get a clearer perspective on the magnitude spectrum.
 	*/
 	Mat fftShift(const Mat &rawMagnSpectrum, unsigned sz, unsigned halfSz, unsigned lastSzBit) {
-		Mat result((int)sz, (int)sz, CV_64FC1);
+		Mat result((int)sz, (int)sz, rawMagnSpectrum.type());
 		const unsigned mid1 = halfSz + lastSzBit, mid2 = sz - mid1;
 		const Range range1(0, (int)mid1), range2((int)mid1, (int)sz),	// ranges within the raw spectrum
 					range1_(0, (int)mid2), range2_((int)mid2, (int)sz);	// ranges within the rearranged spectrum
@@ -136,7 +135,7 @@ namespace {
 	/// Computes the magnitude of the DFT spectrum in raw quadrants order 3412.
 	Mat magnitudeSpectrum(const Mat &brightGlyph, unsigned sz) {
 		// Creating the complex input for DFT - adding zeros for the imaginary parts
-		const Mat cplxGlyphPlanes[] = { brightGlyph, Mat::zeros((int)sz, (int)sz, CV_64FC1) };
+		const Mat cplxGlyphPlanes[] = { brightGlyph, Mat::zeros((int)sz, (int)sz, brightGlyph.type()) };
 		Mat cplxGlyph, dftGlyph, result, dftGlyphPlanes[2];
 		merge(cplxGlyphPlanes, 2U, cplxGlyph);
 
@@ -177,7 +176,9 @@ namespace {
 #if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
 		// Useful while Debugging, to visualize the spectrum quadrants in natural 1234 order
 		Mat shiftedMagnSpectrum = fftShift(rawMagnSpectrum, sz, halfSz, lastSzBit);
-		shiftedMagnSpectrum.at<double>((int)halfSz, (int)halfSz) = 0; // DC value = 0 to maximize the contrast for rest 
+
+		// DC value = 0 to maximize the contrast for rest 
+		shiftedMagnSpectrum.at<fp>((int)halfSz, (int)halfSz) = 0.f;
 #endif // _DEBUG, INSPECT_FFT_MAGNITUDE_SPECTRUM
 
 		/* Building q13 and q24 as representatives for quadrants 1&3 and 2&4 */
@@ -190,7 +191,7 @@ namespace {
 		const Mat q13(rawMagnSpectrum, range2, range2), // quadrant 3 as representative for 1&3
 				q4raw(rawMagnSpectrum, range2, range3); // quadrant 4 without DC column from its left
 
-		Mat q24((int)halfSz, (int)halfSz, CV_64FC1, 0.), // representative for quadrants 2&4
+		Mat q24((int)halfSz, (int)halfSz, rawMagnSpectrum.type(), 0.f), // representative for quadrants 2&4
 			q4Dest(q24, Range::all(), range4); // where to copy quadrant 4 within q24
 		q4raw.copyTo(q4Dest);
 		
@@ -263,10 +264,10 @@ bool SievesSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &
 				lastSzBit = sz & 1U;	// 1 for odd sz, 0 for even sz
 
 	// Using inverted glyph if original is too dark
-	const bool toInvert = (pms.avgPixVal < .5);
-	Mat brightGlyph = pms.toMatD01(sz);
+	const bool toInvert = (pms.avgPixVal < .5f);
+	Mat brightGlyph = pms.toMatFp01(sz);
 	if(toInvert)
-		brightGlyph = 1. - brightGlyph;
+		brightGlyph = 1.f - brightGlyph;
 
 	// Glyphs that aren't distributed evenly cannot be sieves => skip them
 	if(!isEvenlyDistributed(pms, sfc, brightGlyph, toInvert, sz, halfSz, lastSzBit))

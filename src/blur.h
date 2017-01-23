@@ -117,7 +117,7 @@ protected:
 	/**
 	Actual implementation of the blur algorithm
 
-	@param toBlur is a single channel matrix with values of type double
+	@param toBlur is a single channel matrix with values of type fp
 	@param blurred the result of the blur (already initialized when method gets called)
 	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
 			for tiny symbols
@@ -133,7 +133,7 @@ public:
 	/**
 	Template method checking toBlur, initializing blurred and calling doProcess
 
-	@param toBlur is a single channel matrix with values of type double
+	@param toBlur is a single channel matrix with values of type fp
 	@param blurred the result of the blur (not initialized when method gets called)
 	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
 			for tiny symbols

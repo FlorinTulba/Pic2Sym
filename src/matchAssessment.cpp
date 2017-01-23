@@ -178,8 +178,8 @@ void MatchAssessorSkip::getReady(const CachedData &cachedData) {
 	MatchAssessor::getReady(cachedData);
 
 	sort(BOUNDS(enabledAspects), [&] (const MatchAspect *a, const MatchAspect *b) -> bool {
-		const double relComplexityA = a->relativeComplexity(),
-					relComplexityB = b->relativeComplexity();
+		const fp relComplexityA = a->relativeComplexity(),
+				relComplexityB = b->relativeComplexity();
 		// Ascending by complexity
 		if(relComplexityA < relComplexityB)
 			return true;

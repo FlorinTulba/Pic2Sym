@@ -238,6 +238,9 @@ namespace {
 #define READ_UINT_PROP(prop, ...) \
 	READ_PROP(prop, unsigned, __VA_ARGS__)
 
+#define READ_SINGLE_PROP(prop, ...) \
+	READ_PROP(prop, float, __VA_ARGS__)
+
 #define READ_DOUBLE_PROP(prop, ...) \
 	READ_PROP(prop, double, __VA_ARGS__)
 
@@ -374,22 +377,22 @@ extern READ_UINT_PROP(Settings_DEF_FONT_SIZE, moreThanMinFontSize(), lessThanMax
 extern READ_BOOL_PROP(UseSkipMatchAspectsHeuristic);
 extern READ_DOUBLE_PROP(EnableSkipAboveMatchRatio, nonNegativeD(), lessThan1D());
 
-extern READ_DOUBLE_PROP(MinAverageClusterSize, atLeast1D());
+extern READ_SINGLE_PROP(MinAverageClusterSize, atLeast1D());
 extern READ_STR_PROP(ClusterAlgName, availableClusterAlgs());
 extern READ_BOOL_PROP(FastDistSymToClusterComputation);
 extern READ_DOUBLE_PROP(InvestigateClusterEvenForInferiorScoreFactor, lessThan1D(), atLeast0dot8());
 extern READ_DOUBLE_PROP(MaxAvgProjErrForPartitionClustering, positiveD(), lessThan0dot1());
-extern READ_DOUBLE_PROP(StillForegroundThreshold, atLeast0dot001(), lessThan0dot04());
-extern READ_DOUBLE_PROP(ForegroundThresholdDelta, nonNegativeD(), atMost50D());
+extern READ_SINGLE_PROP(StillForegroundThreshold, atLeast0dot001(), lessThan0dot04());
+extern READ_SINGLE_PROP(ForegroundThresholdDelta, nonNegativeD(), atMost50D());
 extern READ_DOUBLE_PROP(MaxRelMcOffsetForPartitionClustering, atLeast0dot001(), lessThan0dot1());
 extern READ_DOUBLE_PROP(MaxRelMcOffsetForTTSAS_Clustering, atLeast0dot001(), lessThan0dot1());
-extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForPartitionClustering, atLeast0dot001(), lessThan0dot1());
+extern READ_SINGLE_PROP(MaxDiffAvgPixelValForPartitionClustering, atLeast0dot001(), lessThan0dot1());
 extern READ_DOUBLE_PROP(MaxDiffAvgPixelValForTTSAS_Clustering, atLeast0dot001(), lessThan0dot1());
 extern READ_BOOL_PROP(TTSAS_Accept1stClusterThatQualifiesAsParent);
 extern READ_DOUBLE_PROP(TTSAS_Threshold_Member, atLeast0dot01(), lessThan0dot1());
 
 extern READ_DOUBLE_PROP(PmsCont_SMALL_GLYPHS_PERCENT, atLeast0dot05(), lessThan0dot4());
-extern READ_DOUBLE_PROP(SymData_computeFields_STILL_BG, nonNegativeD(), lessThan0dot04());
+extern READ_SINGLE_PROP(SymData_computeFields_STILL_BG, nonNegativeD(), lessThan0dot04());
 extern READ_DOUBLE_PROP(Transformer_run_THRESHOLD_CONTRAST_BLURRED, nonNegativeD(), lessThan20D());
 
 extern READ_BOOL_PROP(BulkySymsFilterEnabled);
@@ -400,15 +403,20 @@ extern READ_BOOL_PROP(GridBarsFilterEnabled);
 
 extern READ_BOOL_PROP(PreserveRemovableSymbolsForExamination);
 
-extern READ_DOUBLE_PROP(MinAreaRatioForUnreadableSymsBB, atLeast0dot15(), lessThan1D());
+extern READ_SINGLE_PROP(MinAreaRatioForUnreadableSymsBB, atLeast0dot15(), lessThan1D());
 
-extern READ_DOUBLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs, atLeast0dot8(), lessThan1D());
+extern READ_SINGLE_PROP(DirSmooth_DesiredBaseForCenterAndCornerMcs, atLeast0dot8(), lessThan1D());
 
+#ifndef UNIT_TESTING
 extern READ_STR_PROP(StructuralSimilarity_BlurType, availBlurAlgsForStrSim());
+#else // UNIT_TESTING defined
+extern const string StructuralSimilarity_BlurType("gaussian"); // use only Gaussian blur for UnitTesting
+#endif // UNIT_TESTING
+
 extern READ_INT_PROP(StructuralSimilarity_RecommendedWindowSide, oddI(), atLeast3i(), lessThan20i());
 extern READ_DOUBLE_PROP(StructuralSimilarity_SIGMA, atLeast0dot8(), lessThan5D());
-extern READ_DOUBLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
-extern READ_DOUBLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
+extern READ_SINGLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
+extern READ_SINGLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
 
 // Keep all cir fields before StructuralSimilarity::supportBlur
 BlurEngine::ConfInstRegistrator BoxBlur::cir("box", BoxBlur::configuredInstance()); 

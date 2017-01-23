@@ -154,14 +154,14 @@ namespace ut {
 	};
 
 	const unsigned TinySymsSize = TinySymsSz();
-	const double TinySymArea = double(TinySymsSize*TinySymsSize);
+	const fp TinySymArea = fp(TinySymsSize*TinySymsSize);
 	const unsigned TinySymMidSide = TinySymsSize>>1, // TinySymsSize is odd, so it's ok to keep center as unsigned value
 				TinySymDiagsCount = (TinySymsSize<<1) - 1U;
-	const Point2d TinySymCenter(TinySymMidSide, TinySymMidSide),
-				UnitSquareCenter(.5, .5);
+	const Point2f TinySymCenter((fp)TinySymMidSide, (fp)TinySymMidSide),
+				UnitSquareCenter(.5f, .5f);
 
-	const SymData EmptySymData5x5(0UL, 0U, 0., 0., 0., TinySymCenter,
-					{ { SymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_64FC1, Scalar(0.)) } },
+	const SymData EmptySymData5x5(0UL, 0U, 0.f, 0.f, 0.f, TinySymCenter,
+					{ { SymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_FC1, Scalar(0.f)) } },
 					Mat(TinySymsSize, TinySymsSize, CV_8UC1, Scalar(255U)));
 
 	/**
@@ -171,27 +171,27 @@ namespace ut {
 	Needed to provide a parameter for constructing MainDiagTinySym() object from below.
 	*/
 	const Mat slashProjectionOfMatWithMainDiagSet() {
-		static Mat result(1, TinySymDiagsCount, CV_64FC1, 0.);
+		static Mat result(1, TinySymDiagsCount, CV_FC1, 0.f);
 		static bool initialized = false;
 		if(!initialized) {
-			result.at<double>(TinySymsSize - 1U) = (double)TinySymsSize;
+			result.at<fp>(TinySymsSize - 1U) = (fp)TinySymsSize;
 			initialized = true;
 		}
 		return result.clone();
 	}
 
 	const TinySym& EmptyTinySym() {
-		static const TinySym ts(Mat(TinySymsSize, TinySymsSize, CV_64FC1, 255.));
+		static const TinySym ts(Mat(TinySymsSize, TinySymsSize, CV_FC1, 255.f));
 		return ts;
 	}
 	const TinySym& MainDiagTinySym() {
-		static const TinySym ts(255.-255.*Mat::eye(TinySymsSize, TinySymsSize, CV_64FC1), Point2d(.5, .5), .2);
+		static const TinySym ts(255.f-255.f*Mat::eye(TinySymsSize, TinySymsSize, CV_FC1), Point2f(.5f, .5f), .2f);
 		return ts;
 	}
 
 	/// Updates the central pixel of the tiny symbol sym and all the other involved parameters
-	void updateCentralPixel(TinySym &sym, double pixelVal) {
-		const double oldPixelVal = sym.mat.at<double>(TinySymMidSide, TinySymMidSide),
+	void updateCentralPixel(TinySym &sym, fp pixelVal) {
+		const fp oldPixelVal = sym.mat.at<fp>(TinySymMidSide, TinySymMidSide),
 					oldPixSum = sym.avgPixVal * TinySymArea,
 					diff = pixelVal - oldPixelVal,
 					avgDiff = diff / TinySymsSize;
@@ -203,11 +203,11 @@ namespace ut {
 		// Clone all matrices from sym, to ensure that the central pixel
 		// won't be changed in the template provided as the sym parameter
 		sym.mat = sym.mat.clone();
-		sym.mat.at<double>(TinySymMidSide, TinySymMidSide) = pixelVal;
+		sym.mat.at<fp>(TinySymMidSide, TinySymMidSide) = pixelVal;
 
 #define UpdateProjectionAt(Field, At) \
 		sym.Field = sym.Field.clone(); \
-		sym.Field.at<double>(At) += avgDiff
+		sym.Field.at<fp>(At) += avgDiff
 
 		UpdateProjectionAt(hAvgProj, TinySymMidSide);
 		UpdateProjectionAt(vAvgProj, TinySymMidSide);
@@ -374,16 +374,16 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 			tsp.tinySyms.assign(n, EmptyTinySym()); symsSet.assign(n, EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_REQUIRE(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
-			const double ThresholdForNplus1 = TTSAS_Threshold_Member / (n+1U);
+			const fp ThresholdForNplus1 = fp(TTSAS_Threshold_Member / (n+1U));
 
 			// Append a symbol beyond the threshold => 2 clusters
 			TinySym newSym = EmptyTinySym(); // changing only central pixel => same mass-center
-			updateCentralPixel(newSym, ThresholdForNplus1 + EPS);
+			updateCentralPixel(newSym, ThresholdForNplus1 + fp(EPS));
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(2U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
 			// Just check that adding now a symbol below the threshold results in a single cluster
-			updateCentralPixel(newSym = EmptyTinySym(), ThresholdForNplus1 - EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), ThresholdForNplus1 - fp(EPS));
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 			tsp.tinySyms.pop_back(); symsSet.pop_back(); // Remove last added element
@@ -394,17 +394,17 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 			
 			// By now, the central pixel of the centroid has the value: TTSAS_Threshold_Member / (n+1)^2
 			// The new threshold is TTSAS_Threshold_Member / (n+2)
-			const double CentralPixelOfCentroidNplus1 = TTSAS_Threshold_Member / ((n+1U)*(n+1U)),
-						ThresholdForNplus2 = TTSAS_Threshold_Member / (n+2U),
+			const fp CentralPixelOfCentroidNplus1 = fp(TTSAS_Threshold_Member / ((n+1U)*(n+1U))),
+						ThresholdForNplus2 = fp(TTSAS_Threshold_Member / (n+2U)),
 						BorderMemberNplus2 = CentralPixelOfCentroidNplus1 + ThresholdForNplus2;
 
 			// Append a symbol beyond the threshold => 2 clusters
-			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 + EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 + fp(EPS));
 			tsp.tinySyms.push_back(newSym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 			BOOST_TEST(2U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
 			// Bring that last symbol below the threshold => a single cluster
-			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 - EPS);
+			updateCentralPixel(newSym = EmptyTinySym(), BorderMemberNplus2 - fp(EPS));
 			const_cast<TinySym&>(tsp.tinySyms.back()) = newSym;
 			BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));
 
@@ -447,27 +447,27 @@ FixtureTestSuiteSuffix(SuiteFixture, TTSAS_Clustering_Tests, SuiteSuffix)
 		*/
 
 		TinySym sym = EmptyTinySym(); // changing only central pixel => same mass-center
-		const double Border4 = TTSAS_Threshold_Member / 2., // Border for 4th symbol
+		const fp Border4 = (fp)TTSAS_Threshold_Member / 2.f, // Border for 4th symbol
 
 					// Border for 2nd and 3rd symbols (1/(2^2) + 1/3) * TTSAS_Threshold_Member
-					Border23 = 7. * TTSAS_Threshold_Member / 12.; 
+					Border23 = 7.f * (fp)TTSAS_Threshold_Member / 12.f;
 
 		// 1st symbol - the root of the sole cluster
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 2nd symbol, which promotes its updated reserve cluster to parent cluster in 3rd loop
-		updateCentralPixel(sym = EmptyTinySym(), Border23 + EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border23 + EPSf);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 3rd symbol, which accepts the parent at the end of 2nd loop from previous new clusters
 		// Normally, this is also a promotion of updated reserve candidate,
 		// but the update was kept in newClusters instead of updatedClusters,
 		// as the cluster was just created during that loop
-		updateCentralPixel(sym = EmptyTinySym(), Border23 - EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border23 - EPSf);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		// 4th symbol, which accepts the parent at the end of 1st loop from new clusters
-		updateCentralPixel(sym = EmptyTinySym(), Border4 - EPS);
+		updateCentralPixel(sym = EmptyTinySym(), Border4 - EPSf);
 		tsp.tinySyms.push_back(sym); symsSet.push_back(EmptySymData5x5); fixSymIndices(symsSet);
 
 		BOOST_TEST(1U == tc.formGroups(symsSet, symsIndicesPerCluster));

@@ -58,7 +58,7 @@ struct SymsSupportWithPreselection : SymsSupport {
 
 	/// Generates clusters with tiny format
 	void computeClusterRepresentative(const std::vector<const SymData*> &clusterSyms,
-									  int symSz, double invClusterSz,
+									  int symSz, fp invClusterSz,
 									  cv::Mat &synthesizedSym, cv::Mat &negSym) const override;
 };
 

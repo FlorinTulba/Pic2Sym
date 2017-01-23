@@ -59,7 +59,7 @@ using namespace cv;
 extern const bool FastDistSymToClusterComputation;
 extern const double MaxAvgProjErrForPartitionClustering;
 extern const double MaxRelMcOffsetForPartitionClustering;
-extern const double MaxDiffAvgPixelValForPartitionClustering;
+extern const fp MaxDiffAvgPixelValForPartitionClustering;
 
 const string PartitionClustering::Name("Partition");
 
@@ -79,6 +79,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 		const auto &tinySyms = tsp->getTinySyms();
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
+		static const fp MaxAvgProjErrForPartitionClusteringSp = (fp)MaxAvgProjErrForPartitionClustering;
 		static const double SqMaxRelMcOffsetForClustering =
 						MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
@@ -100,7 +101,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 			if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForPartitionClustering)
 				return false;
-			const Point2d mcDelta = a.mc - b.mc;
+			const Point2f mcDelta = a.mc - b.mc;
 			const double mcDeltaY = abs(mcDelta.y);
 			if(mcDeltaY > MaxRelMcOffsetForPartitionClustering)
 				return false;
@@ -110,15 +111,15 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 			if(mcDeltaX*mcDeltaX + mcDeltaY*mcDeltaY > SqMaxRelMcOffsetForClustering)
 				return false;
 
-			const double *pDataA, *pDataAEnd, *pDataB;
+			const fp *pDataA, *pDataAEnd, *pDataB;
 
 #define CheckProjections(ProjectionField) \
-			pDataA = reinterpret_cast<const double*>(a.ProjectionField.datastart); \
-			pDataAEnd = reinterpret_cast<const double*>(a.ProjectionField.datalimit); \
-			pDataB = reinterpret_cast<const double*>(b.ProjectionField.datastart); \
-			for(double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) { \
+			pDataA = reinterpret_cast<const fp*>(a.ProjectionField.datastart); \
+			pDataAEnd = reinterpret_cast<const fp*>(a.ProjectionField.datalimit); \
+			pDataB = reinterpret_cast<const fp*>(b.ProjectionField.datastart); \
+			for(fp sumOfAbsDiffs = 0.f; pDataA != pDataAEnd;) { \
 				sumOfAbsDiffs += abs(*pDataA++ - *pDataB++); \
-				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClustering) \
+				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClusteringSp) \
 					return false; \
 			}
 
@@ -129,11 +130,11 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 #undef CheckProjections
 
-			auto itA = a.mat.begin<double>(), itAEnd = a.mat.end<double>(),
-				itB = b.mat.begin<double>();
-			for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
+			auto itA = a.mat.begin<fp>(), itAEnd = a.mat.end<fp>(),
+				itB = b.mat.begin<fp>();
+			for(fp sumOfAbsDiffs = 0.f; itA != itAEnd;) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
-				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClustering)
+				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClusteringSp)
 					return false;
 			}
 

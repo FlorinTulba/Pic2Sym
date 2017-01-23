@@ -130,7 +130,7 @@ public:
 
 	unsigned upperSymsCount() const;				///< upper bound of symbols count in the cmap
 	const std::vector<const PixMapSym>& symsSet() const;	///< get the symsSet
-	double smallGlyphsCoverage() const;				///< get coverageOfSmallGlyphs
+	fp smallGlyphsCoverage() const;					///< get coverageOfSmallGlyphs
 
 	const std::string& fontFileName() const;		///< font name provided by Font Dialog
 	unsigned uniqueEncodings() const;				///< Returns the count of unique encodings

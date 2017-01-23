@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "blur.h"
+#include "floatType.h"
 #include "misc.h"
 
 using namespace std;
@@ -63,9 +64,9 @@ const BlurEngine& BlurEngine::byName(const string &blurType) {
 }
 
 void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	assert(!toBlur.empty() && toBlur.type() == CV_64FC1);
+	assert(!toBlur.empty() && toBlur.type() == CV_FC1);
 
-	blurred = Mat(toBlur.size(), CV_64FC1, 0.);
+	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
 	
 	doProcess(toBlur, blurred, forTinySym);
 }

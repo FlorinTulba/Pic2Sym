@@ -69,7 +69,7 @@ using namespace std;
 using namespace cv;
 
 extern const string ClusterAlgName;
-extern const double MinAverageClusterSize;
+extern const fp MinAverageClusterSize;
 
 /// Reports various details about the identified clusters
 static void reportClustersInfo(const vector<vector<unsigned>> &symsIndicesPerCluster,
@@ -94,11 +94,11 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 SymsSupport &symsSupport) : SymData(),
 		idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
-	const double invClusterSz = 1./sz;
+	const fp invClusterSz = 1.f/sz;
 	const Mat &firstNegSym = symsSet[0].negSym;
 	const int symSz = firstNegSym.rows;
-	double avgPixVal_ = 0.;
-	Point2d mc_;
+	fp avgPixVal_ = 0.f;
+	Point2f mc_;
 	vector<const SymData*> clusterSyms; clusterSyms.reserve((size_t)sz);
 
 	for(const auto clusterSymIdx : clusterSymIndices) {
@@ -134,7 +134,7 @@ void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) 
 
 	clustersCount = clustAlg.formGroups(symsSet, symsIndicesPerCluster, fontType);
 
-	const double averageClusterSize = (double)symsSet.size() / clustersCount;
+	const fp averageClusterSize = fp(symsSet.size() / clustersCount);
 	cout<<"Average cluster size is "<<averageClusterSize<<endl;
 
 #pragma warning ( disable : WARN_THREAD_UNSAFE )

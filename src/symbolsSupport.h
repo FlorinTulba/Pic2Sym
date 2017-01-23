@@ -39,6 +39,8 @@
 #ifndef H_SYMBOLS_SUPPORT
 #define H_SYMBOLS_SUPPORT
 
+#include "floatType.h"
+
 #pragma warning ( push, 0 )
 
 #include <vector>
@@ -69,7 +71,7 @@ struct SymsSupport {
 
 	/// Generates clusters with normal / tiny format, depending on PreselectionByTinySyms
 	virtual void computeClusterRepresentative(const std::vector<const SymData*> &clusterSyms,
-											  int symSz, double invClusterSz,
+											  int symSz, fp invClusterSz,
 											  cv::Mat &synthesizedSym, cv::Mat &negSym) const;
 };
 

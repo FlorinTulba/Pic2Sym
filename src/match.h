@@ -111,7 +111,7 @@ public:
 	double maxScore(const CachedData &cachedData) const;
 
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	virtual double relativeComplexity() const = 0;
+	virtual fp relativeComplexity() const = 0;
 
 	virtual const std::string& name() const = 0; ///< provides aspect's name
 

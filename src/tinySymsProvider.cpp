@@ -127,14 +127,14 @@ const VTinySyms& FontEngine::getTinySyms() {
 			*/
 			static const unsigned RefSymsSize = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
 								RefSymsSizeX64 = RefSymsSize << 6;
-			static const double RefSymsSizeD = (double)RefSymsSize,
-								maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);
+			static const double RefSymsSizeD = (double)RefSymsSize;
+			static const fp maxGlyphSum = fp(255U * RefSymsSize * RefSymsSize);
 
-			static Mat consec(1, (int)RefSymsSize, CV_64FC1), revConsec;
+			static Mat consec(1, (int)RefSymsSize, CV_FC1), revConsec;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 			if(revConsec.empty()) {
-				iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
+				iota(BOUNDS_FOR_ITEM_TYPE(consec, fp), 0.f);
 				flip(consec, revConsec, 1);
 				revConsec = revConsec.t();
 			}

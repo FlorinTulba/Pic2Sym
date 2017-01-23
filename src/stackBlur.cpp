@@ -52,6 +52,7 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 */
 
 #include "stackBlur.h"
+#include "floatType.h"
 #include "warnings.h"
 
 #pragma warning ( push, 0 )
@@ -101,7 +102,7 @@ class StackBlur::Impl {
 
 	/**
 	Implementation of the Stack Blur Algorithm by Mario Klingemann (<mario@quasimondo.com>)
-	for single channel images with pixel of type double.
+	for single channel images with pixel of type fp.
 
 	Introduced changes:
 	- processing isn't performed in-place
@@ -117,29 +118,29 @@ class StackBlur::Impl {
 			mul_sum_sq = mul_sum^2, and not twice with mul_sum during each traversal. 
 	*/
 	void apply(const cv::Mat &toBlur, cv::Mat &blurred) const {
-		double * const pResult = (double*)blurred.data;
-		const double * const pToProcess = (double*)toBlur.data; // after processing the rows, it will be reassigned with a const_cast
+		fp * const pResult = (fp*)blurred.data;
+		const fp * const pToProcess = (fp*)toBlur.data; // after processing the rows, it will be reassigned with a const_cast
 		const unsigned w = (unsigned)toBlur.cols, h = (unsigned)toBlur.rows,
 					stride = (unsigned)toBlur.step1(),
 					wm1 = w - 1U, hm1 = h - 1U,
 					rp1 = r + 1U, div = (r<<1) | 1U,
 					xp0 = min(wm1, r), yp0 = min(hm1, r);
-		const double rp2 = double(r + 2U),
-					mul_sum = stack_blur8_mul[r] / pow(2, stack_blur8_shr[r]),
+		const fp rp2 = fp(r + 2U),
+					mul_sum = fp(stack_blur8_mul[r] / pow(2, stack_blur8_shr[r])),
 					mul_sum_sq = mul_sum * mul_sum; // multiply only once, during the processing of columns
 
 		unsigned x, y, xp, yp, i, stack_ptr, stack_start;
 
-		const double *src_pix_ptr;
-		double *dst_pix_ptr, *stack_pix_ptr;
-		double * const stack = new double[div];
-		double sumT, sumIn, sumOut;
+		const fp *src_pix_ptr;
+		fp *dst_pix_ptr, *stack_pix_ptr;
+		fp * const stack = new fp[div];
+		fp sumT, sumIn, sumOut;
 
 		y = 0U;
 		do { // Process image rows, this outer while-loop will be parallel computed by CUDA instead
 			// Get input and output weights
 			const unsigned row_addr = y * stride;
-			double pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + row_addr);
+			fp pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + row_addr);
 			sumIn = 0.;
 			for(i = 1U; i <= xp0; ++i) {
 				stack[i] = pix;
@@ -149,7 +150,7 @@ class StackBlur::Impl {
 			}
 			if(i <= r) { // for a radius larger than image width
 				const unsigned count = rp1 - i;
-				const double total = pix * count;
+				const fp total = pix * count;
 				sumOut += total;  sumIn += total;  sumT += rp2 * total;
 				fill(stack + i, stack + rp1, pix);  fill(stack + i+r, stack + div, pix);
 			}
@@ -186,11 +187,11 @@ class StackBlur::Impl {
 
 		// In-place update of the result for processing the columns
 #pragma warning ( disable : WARN_LVALUE_CAST )
-		const_cast<const double*>(pToProcess) = pResult;
+		const_cast<const fp*>(pToProcess) = pResult;
 #pragma warning ( default : WARN_LVALUE_CAST )
 		x = 0U;
 		do { // Process image columns, this outer while-loop will be parallel computed by CUDA instead
-			double pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + x);
+			fp pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + x);
 			sumIn = 0.;
 			for(i = 1U; i <= yp0; ++i) {
 				stack[i] = pix;
@@ -200,7 +201,7 @@ class StackBlur::Impl {
 			}
 			if(i <= r) { // for a radius larger than image height
 				const unsigned count = rp1 - i;
-				const double total = pix * count;
+				const fp total = pix * count;
 				sumOut += total;  sumIn += total;  sumT += rp2 * total;
 				fill(stack + i, stack + rp1, pix);  fill(stack + i+r, stack + div, pix);
 			}

@@ -58,21 +58,21 @@ STILL_BG was set to 0, as there are font families with extremely similar glyphs.
 When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
 But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
 */
-extern const double SymData_computeFields_STILL_BG;					// darkest shades
-static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
+extern const fp SymData_computeFields_STILL_BG;						// darkest shades
+static const fp STILL_FG = 1.f - SymData_computeFields_STILL_BG;	// brightest shades
 
 extern const double EPSp1();
 
-SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
-				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
+SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, fp minVal_, fp diffMinMax_, 
+				 fp avgPixVal_, const Point2f &mc_, const MatArray &masks_, bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
 	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), removable(removable_), masks(masks_) {}
 
 SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/,
-				 double avgPixVal_/* = 0.*/, const cv::Point2d &mc_/* = Point2d(.5, .5)*/) :
+				 fp avgPixVal_/* = 0.f*/, const cv::Point2f &mc_/* = Point2f(.5f, .5f)*/) :
 	code(code_), symIdx(symIdx_), avgPixVal(avgPixVal_), mc(mc_) {}
 
-SymData::SymData(const cv::Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVal_), mc(mc_) {}
+SymData::SymData(const cv::Point2f &mc_, fp avgPixVal_) : avgPixVal(avgPixVal_), mc(mc_) {}
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
@@ -123,13 +123,15 @@ SymData& SymData::operator=(SymData &&other) {
 
 void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
 							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
-							double &minVal, double &diffMinMax, bool forTinySym) {
-	double maxVal;
-	minMaxIdx(glyph, &minVal, &maxVal);
-	assert(maxVal < EPSp1()); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
+							fp &minVal, fp &diffMinMax, bool forTinySym) {
+	double minValD, maxValD;
+	minMaxIdx(glyph, &minValD, &maxValD);
+	assert(maxValD < EPSp1()); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
 
+	minVal = (fp)minValD;
+	const fp maxVal = (fp)maxValD;
 	diffMinMax = maxVal - minVal;
-	groundedGlyph = (minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0
+	groundedGlyph = (minVal==0.f ? glyph.clone() : (glyph - minVal)); // min val on 0
 
 	fgMask = (glyph >= (minVal + STILL_FG * diffMinMax));
 	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * diffMinMax));
@@ -138,7 +140,7 @@ void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edg
 	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph, forTinySym);
 
 	// edgeMask selects all pixels that are not minVal, nor maxVal
-	inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
+	inRange(glyph, minVal+EPSf, maxVal-EPSf, edgeMask);
 
 	// Storing also the variance of the grounded glyph for structural similarity match aspect
 	// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur

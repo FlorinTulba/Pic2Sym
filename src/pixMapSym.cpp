@@ -61,8 +61,8 @@ using namespace cv;
 extern const double INV_255();
 
 namespace {
-	const Point2d center(.5, .5);
-	const double OneMinEPS = 1. - EPS;
+	const Point2f center(.5f, .5f);
+	const fp OneMinEPS = 1.f - EPSf;
 
 	/// Minimal glyph shifting and cropping or none to fit the bounding box
 	void fitGlyphToBox(const FT_Bitmap &bm, const FT_BBox &bb,
@@ -113,7 +113,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 					 const FT_Bitmap &bm,			// the bitmap to process
 					 int leftBound, int topBound,	// initial position of the symbol
 					 int sz,						// font size
-					 double maxGlyphSum,			// max sum of a glyph's pixels
+					 fp maxGlyphSum,				// max sum of a glyph's pixels
 					 const Mat &consec,				// vector of consecutive values 0 .. sz-1
 					 const Mat &revConsec,			// vector of consecutive values sz-1 .. 0
 					 const FT_BBox &bb) :			// the bounding box to fit
@@ -212,8 +212,8 @@ Mat PixMapSym::toMat(unsigned fontSz, bool inverse/* = false*/) const {
 	return result;
 }
 
-Mat PixMapSym::toMatD01(unsigned fontSz) const {
-	Mat result((int)fontSz, (int)fontSz, CV_64FC1, Scalar(0.));
+Mat PixMapSym::toMatFp01(unsigned fontSz) const {
+	Mat result((int)fontSz, (int)fontSz, CV_FC1, Scalar(0.f));
 
 	const int firstRow = (int)fontSz-(int)top-1;
 	Mat region(result,
@@ -221,57 +221,57 @@ Mat PixMapSym::toMatD01(unsigned fontSz) const {
 			   Range((int)left, (int)(left+cols)));
 
 	Mat pmsData = asNarrowMat();
-	pmsData.convertTo(pmsData, CV_64FC1, INV_255()); // convert to double
+	pmsData.convertTo(pmsData, CV_FC1, INV_255()); // convert to fp
 	pmsData.copyTo(region);
 
 	return result;
 }
 
-void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vector<unsigned char> &pixels_,
+void PixMapSym::computeMcAndAvgPixVal(unsigned sz, fp maxGlyphSum, const vector<unsigned char> &pixels_,
 									  unsigned char rows_, unsigned char cols_,
 									  unsigned char left_, unsigned char top_,
 									  const Mat &consec, const Mat &revConsec,
-									  Point2d &mc, double &avgPixVal,
+									  Point2f &mc, fp &avgPixVal,
 									  Mat *colSums/* = nullptr*/, Mat *rowSums/* = nullptr*/) {
-	const double szM1 = sz - 1.;
+	const fp szM1 = sz - 1.f;
 
-	if(colSums) *colSums = Mat::zeros(1, (int)sz, CV_64FC1);
-	if(rowSums) *rowSums = Mat::zeros(1, (int)sz, CV_64FC1);
+	if(colSums) *colSums = Mat::zeros(1, (int)sz, CV_FC1);
+	if(rowSums) *rowSums = Mat::zeros(1, (int)sz, CV_FC1);
 
 	if(rows_ == 0U || cols_ == 0U) {
-		mc = center; avgPixVal = 0.;
+		mc = center; avgPixVal = 0.f;
 		return;
 	}
 
 	const Mat glyph((int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data());
 	Mat sumPerColumn, sumPerRow;
 
-	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_64F); // sum all rows
-	const double glyphSum = *sum(sumPerColumn).val;
+	reduce(glyph, sumPerColumn, 0, CV_REDUCE_SUM, CV_F); // sum all rows
+	const fp glyphSum = (fp)*sum(sumPerColumn).val;
 	avgPixVal = glyphSum / maxGlyphSum;
 	
 	// Checking if the glyph with non-empty bounding box contains only zeros, or only ones (a Blank)
-	if(avgPixVal < EPS || avgPixVal > OneMinEPS) {
+	if(avgPixVal < EPSf || avgPixVal > OneMinEPS) {
 		mc = center;
 		return;
 	}
 
-	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_64F); // sum all columns
+	reduce(glyph, sumPerRow, 1, CV_REDUCE_SUM, CV_F); // sum all columns
 	Range leftRange((int)left_, (int)(left_+cols_)), topRange((int)(sz-top_)-1, (int)(sz+rows_-top_)-1);
 	if(rowSums) {
-		Mat sumPerRowTransposed = sumPerRow.t()/255.,
+		Mat sumPerRowTransposed = sumPerRow.t()/255.f,
 			destRegion(*rowSums, Range::all(), topRange);
 		sumPerRowTransposed.copyTo(destRegion);
 	}
 	if(colSums) {
 		Mat destRegion(*colSums, Range::all(), leftRange);
-		Mat(sumPerColumn/255.).copyTo(destRegion);
+		Mat(sumPerColumn/255.f).copyTo(destRegion);
 	}
 
-	const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
-				sumY = sumPerRow.dot(Mat(revConsec, topRange));
+	const fp sumX = (fp)sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
+			sumY = (fp)sumPerRow.dot(Mat(revConsec, topRange));
 
-	mc = Point2d(sumX, sumY) / (glyphSum * szM1);
+	mc = Point2f(sumX, sumY) / (glyphSum * szM1);
 }
 
 PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
@@ -312,7 +312,7 @@ const map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg() const {
 	return removableSymsByCateg;
 }
 
-double PmsCont::getCoverageOfSmallGlyphs() const {
+fp PmsCont::getCoverageOfSmallGlyphs() const {
 	if(!ready)
 		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 
@@ -329,19 +329,19 @@ const vector<const PixMapSym>& PmsCont::getSyms() const {
 void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	ready = false;
 	fontSz = fontSz_;
-	maxGlyphSum = (double)(255U * fontSz_ * fontSz_);
+	maxGlyphSum = fp(255U * fontSz_ * fontSz_);
 	blanks = duplicates = 0U;
-	coverageOfSmallGlyphs = 0.;
+	coverageOfSmallGlyphs = 0.f;
 
 	removableSymsByCateg.clear();
 	syms.clear();
 	if(symsCount != 0U)
 		syms.reserve(symsCount);
 
-	consec = Mat(1, (int)fontSz_, CV_64FC1);
+	consec = Mat(1, (int)fontSz_, CV_FC1);
 	revConsec.release();
 
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
+	iota(BOUNDS_FOR_ITEM_TYPE(consec, fp), 0.f);
 	flip(consec, revConsec, 1);
 	revConsec = revConsec.t();
 }
@@ -360,7 +360,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	const PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
 						(int)fontSz, maxGlyphSum, consec, revConsec, bb);
-	if(pms.avgPixVal < EPS || pms.avgPixVal > OneMinEPS) { // discard disguised Space characters
+	if(pms.avgPixVal < EPSf || pms.avgPixVal > OneMinEPS) { // discard disguised Space characters
 		++blanks;
 		return;
 	}

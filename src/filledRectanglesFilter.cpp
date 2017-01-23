@@ -68,7 +68,7 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 
 	double maxVSums;
 	minMaxIdx(sums, nullptr, &maxVSums);
-	const Mat sumsOnMax = (sums==maxVSums); // these should be the white rows/columns
+	const Mat sumsOnMax = (sums==(fp)maxVSums); // these should be the white rows/columns
 	countOfMaxSums = countNonZero(sumsOnMax); // 1..sideLen
 	if(countOfMaxSums == (int)sideLen) // the white rows/columns are consecutive, for sure
 		return true;

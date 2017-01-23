@@ -39,6 +39,7 @@
 #include "patch.h"
 #include "matchEngine.h"
 
+
 #pragma warning ( push, 0 )
 
 #include <opencv2/imgproc/imgproc.hpp>
@@ -50,7 +51,7 @@ using namespace cv;
 
 const Mat& Patch::matrixToApprox() const {
 	assert(needsApproximation);
-	return grayD;
+	return grayFp;
 }
 
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
@@ -75,8 +76,8 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 	const Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
 				blurred : orig;
 	if(isColor)
-		cvtColor(patch2Process, grayD, COLOR_RGB2GRAY);
+		cvtColor(patch2Process, grayFp, COLOR_RGB2GRAY);
 	else
-		grayD = patch2Process.clone();
-	grayD.convertTo(grayD, CV_64FC1);
+		grayFp = patch2Process.clone();
+	grayFp.convertTo(grayFp, CV_FC1);
 }

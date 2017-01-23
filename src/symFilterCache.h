@@ -39,18 +39,19 @@
 #ifndef H_SYM_FILTER_CACHE
 #define H_SYM_FILTER_CACHE
 
+#include "floatType.h"
+
 /// Cached values to be used during glyph filtering
 struct SymFilterCache {
 	// values about the font, no matter its bounding box
 	unsigned szU;		///< font size as unsigned
 	unsigned areaU;		///< font area as unsigned
-	double szD;			///< font size as double
-	double areaD;		///< font area as double
+	fp areaFp;			///< font area as fp
 	void setFontSz(unsigned sz);
 
 	// values about the bounding box of the font
 	unsigned bbAreaU;	///< area of the bounding box as unsigned
-	unsigned bbAreaD;	///< area of the bounding box as double
+	fp bbAreaFp;			///< area of the bounding box as fp
 	void setBoundingBox(unsigned height, unsigned width);
 };
 

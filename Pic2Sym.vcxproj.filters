@@ -402,6 +402,9 @@
     <ClInclude Include="src\cmapPerspective.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="src\floatType.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

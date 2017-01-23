@@ -54,7 +54,7 @@ public:
 	static const BlurEngine &supportBlur;
 
 	/// Providing a clue about how complex is this MatchAspect compared to the others
-	double relativeComplexity() const override;
+	fp relativeComplexity() const override;
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp

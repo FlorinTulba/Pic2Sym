@@ -39,6 +39,7 @@
 #include "symbolsSupport.h"
 #include "symData.h"
 
+
 using namespace std;
 using namespace cv;
 
@@ -49,18 +50,18 @@ bool SymsSupport::usingTinySymbols() const {
 }
 
 void SymsSupport::computeClusterRepresentative(const vector<const SymData*> &clusterSyms,
-											   int symSz, double invClusterSz,
+											   int symSz, fp invClusterSz,
 											   Mat &synthesizedSym, Mat &negSym) const {
-	Mat negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
+	Mat negSynthesizedSym(symSz, symSz, CV_FC1, Scalar(0.f));
 	for(const auto pSymData : clusterSyms) {
 		assert(!pSymData->negSym.empty()); // normal-size symbol are guaranteed to be non-blank
 		Mat negSymD;
-		pSymData->negSym.convertTo(negSymD, CV_64FC1);
+		pSymData->negSym.convertTo(negSymD, CV_FC1);
 		negSynthesizedSym += negSymD;
 	}
 	negSynthesizedSym *= invClusterSz;
 
 	// cluster representatives for normal symbols have negSym of type byte
 	negSynthesizedSym.convertTo(negSym, CV_8UC1);
-	synthesizedSym = 1. - negSynthesizedSym * INV_255(); // providing a symbol in 0..1 range
+	synthesizedSym = 1.f - negSynthesizedSym * (fp)INV_255(); // providing a symbol in 0..1 range
 }

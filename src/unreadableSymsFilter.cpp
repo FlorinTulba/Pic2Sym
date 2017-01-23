@@ -58,36 +58,35 @@ bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCac
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
 	// Usually, fonts of size >= 20 are quite readable
-	if(sfc.szU >= 20)
+	if(sfc.szU >= 20U)
 		return false;
 
 	// Usually unreadable syms are not small
-	extern const double MinAreaRatioForUnreadableSymsBB;
-	if(sfc.bbAreaD < MinAreaRatioForUnreadableSymsBB * sfc.areaD)
+	extern const fp MinAreaRatioForUnreadableSymsBB;
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static const Point defAnchor(-1, -1);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+	if(sfc.bbAreaFp < MinAreaRatioForUnreadableSymsBB * sfc.areaFp)
 		return false;
 
 	const int winSideSE = (sfc.szU > 15U) ? 5 : 3; // masks need to be larger for larger fonts
 	const Size winSE(winSideSE, winSideSE);
 
-	Mat glyph = pms.toMatD01(sfc.szU), thresh, glyphBinAux;
+	Mat glyph = pms.toMatFp01(sfc.szU), thresh, glyphBinAux;
 
 	// adaptiveThreshold has some issues on uniform areas, so here's a customized implementation
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static const Point defAnchor(-1, -1);
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
 	boxFilter(glyph, thresh, -1, winSE, defAnchor, true, BORDER_CONSTANT);
-	extern const double StillForegroundThreshold, ForegroundThresholdDelta;
-	double toSubtract = StillForegroundThreshold;
+	extern const fp StillForegroundThreshold, ForegroundThresholdDelta;
+	fp toSubtract = StillForegroundThreshold;
 	if(sfc.szU < 15U) {
 		// for small fonts, thresholds should be much lower, to encode perceived pixel agglomeration
-		const double delta = (15U-sfc.szU) * ForegroundThresholdDelta/255.;
+		const fp delta = fp((15U-sfc.szU) * ForegroundThresholdDelta/255.f);
 		toSubtract += delta;
 	}
 
 	// lower the threshold, but keep all values positive
 	thresh -= toSubtract;
-	thresh.setTo(0., thresh < 0.);
+	thresh.setTo(0.f, thresh < 0.f);
 	glyphBinAux = glyph > thresh;
 
 	// pad the thresholded matrix with 0-s all around, to allow distanceTransform consider the borders as 0-s
@@ -95,13 +94,13 @@ bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCac
 	const Range innerFrame(1, (int)sfc.szU + 1);
 	Mat glyphBin = Mat(frameSz, frameSz, CV_8UC1, Scalar(0U)), depth;
 	glyphBinAux.copyTo((const Mat&)Mat(glyphBin, innerFrame, innerFrame));
-	distanceTransform(glyphBin, depth, DIST_L2, DIST_MASK_PRECISE);
+	distanceTransform(glyphBin, depth, DIST_L2, DIST_MASK_PRECISE, CV_F);
 
 	double maxValAllowed = 1.9; // just below 2 (2 means there are sections at least 3 pixels thick)
 	if(sfc.szU > 10U)
 		maxValAllowed = sfc.szU/5.; // larger symbols have their core in a thicker shell (>2)
 
-	Mat symCore = depth > maxValAllowed;
+	Mat symCore = depth > (fp)maxValAllowed;
 	const unsigned notAllowedCount = (unsigned)countNonZero(symCore);
 	if(notAllowedCount > sfc.szU - 6U)
 		return true; // limit the count of symCore pixels

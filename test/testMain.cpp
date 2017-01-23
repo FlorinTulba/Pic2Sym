@@ -399,13 +399,13 @@ const set<unsigned>& Controller::getClusterOffsets() const {
 
 void CmapPerspective::reset(...) {}
 
-TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, double avgPixVal_/* = 0.*/) :
+TinySym::TinySym(const Mat &negSym_, const Point2f &mc_/* = Point2f(.5f, .5f)*/, fp avgPixVal_/* = 0.f*/) :
 		SymData(mc_, avgPixVal_),
-		backslashDiagAvgProj(1, 2*negSym_.rows-1, CV_64FC1),
-		slashDiagAvgProj(1, 2*negSym_.rows-1, CV_64FC1) {
+		backslashDiagAvgProj(1, 2*negSym_.rows-1, CV_FC1),
+		slashDiagAvgProj(1, 2*negSym_.rows-1, CV_FC1) {
 	assert(!negSym_.empty());
-	negSym = negSym_;
-	Mat tinySymMat = 1 - negSym * INV_255();
+	negSym = negSym_.clone();
+	Mat tinySymMat = 1.f - negSym * (fp)INV_255();
 	SymData::computeFields(tinySymMat,
 						   masks[FG_MASK_IDX], masks[BG_MASK_IDX],
 						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX],
@@ -420,16 +420,16 @@ TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, d
 	Mat flippedMat;
 	flip(mat, flippedMat, 1); // flip around vertical axis
 	const int tinySymSz = negSym_.rows;
-	const double invTinySymSz = 1./tinySymSz,
+	const fp invTinySymSz = 1.f/tinySymSz,
 				invTinySymArea = invTinySymSz * invTinySymSz,
-				invDiagsCountTinySym = 1./(2*tinySymSz-1);
+				invDiagsCountTinySym = 1.f/(2*tinySymSz-1);
 	for(int diagIdx = -tinySymSz+1, i = 0;
 		diagIdx < tinySymSz; ++diagIdx, ++i) {
 		const Mat backslashDiag = mat.diag(diagIdx);
-		backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
+		backslashDiagAvgProj.at<fp>(i) = (fp)*mean(backslashDiag).val;
 
 		const Mat slashDiag = flippedMat.diag(-diagIdx);
-		slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
+		slashDiagAvgProj.at<fp>(i) = (fp)*mean(slashDiag).val;
 	}
 
 	// Ensuring the sum of all elements of the following matrices is in [0..1] range
@@ -440,8 +440,8 @@ TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, d
 	slashDiagAvgProj *= invDiagsCountTinySym;
 }
 
-SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
-				 double avgPixVal_, const Point2d &mc_, const SymData::IdxMatMap &relevantMats,
+SymData::SymData(unsigned long code_, size_t symIdx_, fp minVal_, fp diffMinMax_,
+				 fp avgPixVal_, const Point2f &mc_, const SymData::IdxMatMap &relevantMats,
 				 const Mat &negSym_/* = Mat()*/) :
 		code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
 		avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_),
@@ -457,7 +457,7 @@ SymData SymData::clone(size_t symIdx_) {
 PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const Mat &revConsec) : 
 		pixels(data) {
 	const unsigned sz = (unsigned)consec.cols;
-	const double maxGlyphSum = double(255U * sz * sz);
+	const fp maxGlyphSum = fp(255U * sz * sz);
 	assert(sz == (unsigned)revConsec.rows);
 	assert(sz*sz == (unsigned)data.size());
 

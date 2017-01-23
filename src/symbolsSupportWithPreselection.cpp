@@ -39,6 +39,7 @@
 #include "symbolsSupportWithPreselection.h"
 #include "symData.h"
 
+
 using namespace std;
 using namespace cv;
 
@@ -49,16 +50,16 @@ bool SymsSupportWithPreselection::usingTinySymbols() const {
 }
 
 void SymsSupportWithPreselection::computeClusterRepresentative(const vector<const SymData*> &clusterSyms,
-															   int symSz, double invClusterSz,
+															   int symSz, fp invClusterSz,
 															   Mat &synthesizedSym, Mat &negSym) const {
-	Mat negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
+	Mat negSynthesizedSym(symSz, symSz, CV_FC1, Scalar(0.f));
 	for(const auto pSymData : clusterSyms) {
 		if(!pSymData->negSym.empty()) // A non-blank normal-size symbol can become a blank when shrunken
 			negSynthesizedSym += pSymData->negSym;
 	}
 	negSynthesizedSym *= invClusterSz;
 
-	// cluster representatives for tiny symbols have negSym of type double
+	// cluster representatives for tiny symbols have negSym of type fp
 	negSym = negSynthesizedSym;
-	synthesizedSym = 1. - negSynthesizedSym * INV_255(); // providing a symbol in 0..1 range
+	synthesizedSym = 1.f - negSynthesizedSym * (fp)INV_255(); // providing a symbol in 0..1 range
 }

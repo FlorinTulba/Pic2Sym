@@ -36,54 +36,19 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_PATCH
-#define H_PATCH
+#ifndef H_FLOAT_TYPE
+#define H_FLOAT_TYPE
 
-#include "floatType.h"
+/// Valid floating point type on any GPU (double might not be supported on all)
+typedef float fp;
 
-#pragma warning ( push, 0 )
+/// Valid floating point type on any GPU (CV_64F might not be supported on all)
+#define CV_F	CV_32F
 
-#include <opencv2/core/core.hpp>
+/// Valid floating point type on any GPU (CV_64FC1 might not be supported on all)
+#define CV_FC1	CV_32FC1
 
-#pragma warning ( pop )
+/// Error margin for fp type
+const fp EPSf = 1e-4f;
 
-// Forward declarations
-class MatchEngine;
-class MatchSettings;
-
-/**
-Holds useful patch information.
-
-It decides whether this patch needs approximation or not - uniform patches
-don't produce interesting approximations.
-
-*/
-struct Patch {
-	cv::Mat grayFp;			///< gray version of the patch to process (its data type is fp)
-	const cv::Mat orig;		///< the patch to approximate
-	const cv::Mat blurred;	///< the blurred version of the orig
-
-	const bool isColor;		///< is the patch color or grayscale?
-
-	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
-
-	/**
-	Initializer
-
-	@param orig_ patch to be approximated
-	@param blurred_ blurred version of the patch, either considering real borders, or replicated ones
-	@param isColor_ type of image - color => true; grayscale => false
-	*/
-	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
-	void operator=(const Patch&) = delete;
-
-	/// specifies which matrix to use during the approximation process
-	const cv::Mat& matrixToApprox() const;
-
-#ifdef UNIT_TESTING
-	/// Constructor delegating its job to the one with 3 parameters
-	Patch(const cv::Mat &orig_);
-#endif // UNIT_TESTING defined
-};
-
-#endif // H_PATCH
+#endif // H_FLOAT_TYPE not defined

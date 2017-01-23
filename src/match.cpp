@@ -46,7 +46,7 @@ using namespace std;
 using namespace cv;
 
 namespace {
-	const Point2d ORIGIN; // (0, 0)
+	const Point2f ORIGIN; // (0, 0)
 	const double TWOmSQRT2 = 2. - sqrt(2);
 
 } // anonymous namespace
@@ -115,10 +115,10 @@ void FgMatch::fillRequiredMatchParams(const Mat &patch,
 	mp.computeSdevFg(patch, symData);
 }
 
-double FgMatch::relativeComplexity() const {
+fp FgMatch::relativeComplexity() const {
 	// Simpler than BgMatch if considering that fg masks are typically smaller than bg ones,
 	// so there are less values to consider
-	return 3.1;
+	return 3.1f;
 }
 
 BgMatch::BgMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevBg()) {}
@@ -143,10 +143,10 @@ void BgMatch::fillRequiredMatchParams(const Mat &patch,
 	mp.computeSdevBg(patch, symData);
 }
 
-double BgMatch::relativeComplexity() const {
+fp BgMatch::relativeComplexity() const {
 	// More complex than FgMatch if considering that fg masks are typically smaller than bg ones,
 	// so bg has more values to consider
-	return 3.2;
+	return 3.2f;
 }
 
 EdgeMatch::EdgeMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevEdge()) {}
@@ -171,9 +171,9 @@ void EdgeMatch::fillRequiredMatchParams(const Mat &patch,
 	mp.computeSdevEdge(patch, symData);
 }
 
-double EdgeMatch::relativeComplexity() const {
+fp EdgeMatch::relativeComplexity() const {
 	// Computes contrast, performs a norm and others => longer than FgMatch/BgMatch
-	return 4.;
+	return 4.f;
 }
 
 BetterContrast::BetterContrast(const MatchSettings &cfg) : MatchAspect(cfg.get_kContrast()) {}
@@ -193,10 +193,10 @@ void BetterContrast::fillRequiredMatchParams(const Mat &patch,
 	mp.computeContrast(patch, symData);
 }
 
-double BetterContrast::relativeComplexity() const {
+fp BetterContrast::relativeComplexity() const {
 	// Simpler than FgMatch/BgMatch, since they compute not only the mean, but also the standard deviation
 	// Normally, computing the 2 means from BetterContrast would be quicker than a mean plus a standard deviation
-	return 2.;
+	return 2.f;
 }
 
 GravitationalSmoothness::GravitationalSmoothness(const MatchSettings &cfg) :
@@ -223,9 +223,9 @@ void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
 	mp.computeMcsOffset(patch, symData, cachedData);
 }
 
-double GravitationalSmoothness::relativeComplexity() const {
+fp GravitationalSmoothness::relativeComplexity() const {
 	// Computes contrast, mass centers, symbol density
-	return 15.;
+	return 15.f;
 }
 
 DirectionalSmoothness::DirectionalSmoothness(const MatchSettings &cfg) :
@@ -242,8 +242,8 @@ The mc-s are consider close when the distance between them is < PreferredMaxMcDi
 So, large k penalizes large (angles & mc-s offsets) and encourages small ones from both.
 */
 double DirectionalSmoothness::score(const MatchParams &mp, const CachedData&) const {
-	const Point2d relMcPatch = mp.mcPatch.value() - CachedData::unitSquareCenter();
-	const Point2d relMcGlyph = mp.mcPatchApprox.value() - CachedData::unitSquareCenter();
+	const Point2f relMcPatch = mp.mcPatch.value() - CachedData::unitSquareCenter();
+	const Point2f relMcGlyph = mp.mcPatchApprox.value() - CachedData::unitSquareCenter();
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1	
 	double cosAngleMCs = 0.; // -1..1 range, best when 1
@@ -264,7 +264,7 @@ double DirectionalSmoothness::score(const MatchParams &mp, const CachedData&) co
 	- 1 for mcsOffset = PreferredMaxMcDist
 	- >1 for mcsOffset < PreferredMaxMcDist
 	*/
-	const double mcsOffsetFactor = 
+	const fp mcsOffsetFactor = 
 		CachedData::a_mcsOffsetFactor() * mp.mcsOffset.value() + CachedData::b_mcsOffsetFactor();
 
 	return pow(angleFactor * mcsOffsetFactor, k);
@@ -277,10 +277,10 @@ void DirectionalSmoothness::fillRequiredMatchParams(const Mat &patch,
 	mp.computeMcsOffset(patch, symData, cachedData);
 }
 
-double DirectionalSmoothness::relativeComplexity() const {
+fp DirectionalSmoothness::relativeComplexity() const {
 	// Although both GravitationalSmoothness and DirectionalSmoothness call only
 	// computeMcsOffset, DirectionalSmoothness has a more complex score method
-	return 15.1;
+	return 15.1f;
 }
 
 LargerSym::LargerSym(const MatchSettings &cfg) : MatchAspect(cfg.get_kSymDensity()) {}
@@ -301,7 +301,7 @@ void LargerSym::fillRequiredMatchParams(const Mat&,
 	mp.computeSymDensity(symData);
 }
 
-double LargerSym::relativeComplexity() const {	
-	return 0.001; // Performs only a value copy
+fp LargerSym::relativeComplexity() const {
+	return 0.001f; // Performs only a value copy
 }
 

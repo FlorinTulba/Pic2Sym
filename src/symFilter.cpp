@@ -50,12 +50,14 @@
 using namespace std;
 
 void SymFilterCache::setFontSz(unsigned sz) {
-	szD = szU = sz;
-	areaD = areaU = szU * szU;
+	szU = sz;
+	areaU = szU * szU;
+	areaFp = (fp)areaU;
 }
 
 void SymFilterCache::setBoundingBox(unsigned height, unsigned width) {
-	bbAreaD = bbAreaU = height * width;
+	bbAreaU = height * width;
+	bbAreaFp = (fp)bbAreaU;
 }
 
 map<unsigned, const string> SymFilter::filterTypes;
