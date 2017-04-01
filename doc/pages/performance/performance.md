@@ -218,7 +218,7 @@ Additionaly, the larger the original font size, the higher the acceleration rate
 
 <img src="./PreselectionGainByFontSize-1.png" style="display: block; margin: auto;" />
 
-The values from the graph are computed like this: <i>(timingWithPreselection / timingWithoutPreselection) \* 100%</i>
+The values from the graph are computed like this: <i>(timingWithoutPreselection / timingWithPreselection) \* 100%</i>
 
 The images [I1](../../examples/6.jpg) and [I2](../../examples/15.jpg) were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
 
@@ -331,7 +331,7 @@ The project includes following blur algorithms:
 -   **GaussBlur** - the reference blur, delegating to sequential `GaussianBlur` from OpenCV
 -   **BoxBlur** - for its versatility: quickest for no repetitions and slower, but increasingly accurate for more repetitions (Every repetition delegates to `blur` from OpenCV)
 -   **ExtBoxBlur** - for its accuracy, even for only a few repetitions. The sequential algorithm is *highly parallelizable*
--   **StackBlur** - for its provided CUDA version that shows terrific time improvement compared to the sequential algorithm
+-   **StackBlur** - because it also provides a reference CUDA implementation to be further improved and adapted for Pic2Sym
 
 When the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* is enabled and the application uses **BoxBlur** (which is configured to use a single iteration) the image transformation performs around 1.17 times faster compared to the **GaussBlur**. Better speed could be achieved with algorithms making use of any accelerator devices from the system.
 
