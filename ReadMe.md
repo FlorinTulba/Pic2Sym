@@ -103,7 +103,7 @@ Illustrating again the power of this main window:<br>
 
 * * *
 
-Kindly address any observations, suggestions or questions to me using ***<florintulba@yahoo.com>***.<br>&copy; 2016, 2017 Florin Tulba (GNU AGPL v3 license)
+Kindly address any observations, suggestions or questions to me using *florintulba@yahoo.com*.<br>&copy; 2016, 2017 Florin Tulba (GNU AGPL v3 license)
 
 * * *
 

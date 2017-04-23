@@ -10,14 +10,14 @@
 - holds the (filtered) set of symbols to be used during the image approximation 
 - similarly, it has some precomputed values for normal-size symbols (***CachedData***)
 - keeps also the ***ClusterEngine***, which allows grouping the previously mentioned symbols in clusters, to reduce the count of compare operations between symbols and patches
-- improves the drafts ***BestMatch*** for the ***Patch***es based on normal-size fonts, as explained above. The best draft known for a given patch is stored in ***ApproxVariant***, together with the relevant parameters (***MatchParams***)
+- improves the drafts ***BestMatch*** for the <b><i>Patch</i></b>es based on normal-size fonts, as explained above. The best draft known for a given patch is stored in ***ApproxVariant***, together with the relevant parameters (***MatchParams***)
 - collaborates with the submodule ***Symbols Preselection*** to respect the preselection mode
 - reports draft improvement progress through a ***TaskMonitor*** to the ***AbsJobMonitor*** supervising the image transformation process
-- uses several ***MatchAspect***s (created by ***MatchAspectsFactory***) which are configurable from the [***Control Panel***][CtrlPanel] and reflected in ***MatchSettings***. The aspects whose sliders are on 0 are disabled and not used while transforming the image
+- uses several <b><i>MatchAspect</i></b>s (created by ***MatchAspectsFactory***) which are configurable from the [***Control Panel***][CtrlPanel] and reflected in ***MatchSettings***. The aspects whose sliders are on 0 are disabled and not used while transforming the image
 
 Since the final score for comparing a certain symbol with a patch (approximating the patch by that symbol) is the product of the scores of each enabled ***MatchAspect***, a heuristic method to compute scores faster has been introduced:
 
-1. the enabled ***MatchAspect***s get rearranged in ascending order of their **specified complexity** and will be evaluated in this new sequence
+1. the enabled <b><i>MatchAspect</i></b>s get rearranged in ascending order of their **specified complexity** and will be evaluated in this new sequence
 2. the aspects are also aware of their **maximum score**
 3. based on 1. and 2., each aspect can compute the **final maximum possible score** based on the product obtained by the evaluation of all previous aspects (it multiplies current product with the maximum scores of the remaining aspects)
 4. if the final maximum possible score is less than the score of the current best match, there is no point further evaluating the remaining aspects, so there are some **skipped aspects**
