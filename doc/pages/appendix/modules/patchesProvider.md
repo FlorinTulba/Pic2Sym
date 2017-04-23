@@ -14,10 +14,10 @@ An original image ***Img*** will be resized to ***ResizedImg***, so that:
 
 The image transformation requires:
 
-- only the normal-size ***Patch***es (when preselection mode is off)
-- normal-size and tiny versions of the ***Patch***es (when preselection mode is on)
+- only the normal-size <b><i>Patch</i></b>es (when preselection mode is off)
+- normal-size and tiny versions of the <b><i>Patch</i></b>es (when preselection mode is on)
 
-The ***Patch***es are provided by the ***TransformSupport*** object which is managed by ***PreselManager***. All ***Patch***es are then reused until a new image is loaded.
+The <b><i>Patch</i></b>es are provided by the ***TransformSupport*** object which is managed by ***PreselManager***. All <b><i>Patch</i></b>es are then reused until a new image is loaded.
 
 The configuration file [**res/varConfig.txt**][varConfig] provides the option of transforming less noisy versions of images (based on this option, the approximations can consider only rather pronounced edges within the patches). The mentioned switch is off by default.
 

@@ -2,7 +2,7 @@
 
 [Back to start page](../../../ReadMe.md)
 
-It&#39;s *recommended* to read first the ***Conclusions*** from the ***[examples page][examples]***, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
+It&#39;s *recommended* to read first the ***Conclusions*** from the _**[examples page][examples]**_, to see *what to expect* and understand *what images and font types are more suitable for the transformation*.
 
 Font families with a moderate number of symbols let Pic2Sym produce its results faster. In any case, as soon as the result appears satisfactory-enough, or when the estimated remaining transformation time is not acceptable, the user can cancel the process while provided with a saved version of the last generated draft result.
 

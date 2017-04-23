@@ -30,7 +30,7 @@ Depending on the context, apart from the pixels of a glyph and its code, the rel
 
 - density (the average pixel value) and mass-center (see ***PixMapSym*** - used mostly to display the symbol set)
 - density, mass-center, plus pixel range and several masks (see ***SymData*** - necessary when approximating image patches or when comparing symbols to each other)
-- the items from ***SymData***, plus several projections of the glyph (heuristics accelerating the clustering of ***TinySym***s)
+- the items from ***SymData***, plus several projections of the glyph (heuristics accelerating the clustering of <b><i>TinySym</i></b>s)
 
 The symbol set is grouped by similarity (clustered). Each group of similar glyphs gets assigned a cluster representative (the average of the members - ***Cluster*** and ***ClusterData***). This reorganizing is beneficial during the image approximation process, since it allows skipping all members of a cluster whose representative is dissimilar to the currently analyzed patch.
 The 2 available clustering algorithms (***PartitionClustering*** and ***TTSAS_Clustering*** derived from ***ClusterAlg***):
