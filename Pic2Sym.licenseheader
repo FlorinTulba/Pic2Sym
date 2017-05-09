@@ -1,4 +1,4 @@
-﻿extensions: .cpp .h
+﻿extensions: .cpp .c .cxx .cu .h .hpp .cuh
 /************************************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
