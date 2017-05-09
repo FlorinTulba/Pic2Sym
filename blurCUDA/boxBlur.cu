@@ -103,22 +103,23 @@ void boxBlurCols(const fp* const __restrict__ imgBuf, fp* const __restrict__ blu
 	}
 }
 
-/// Performs the box blur to the rows
+/// Performs the box blur to the rows. Affected by the uncoalesced global memory accesses
 __global__
 void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const unsigned cols,
 				const unsigned* const __restrict__ maskWidthsDev,
 				const unsigned iterations, const fp scaler) {
-	extern __shared__ fp prevVals[]; // blockDim.x rows of maskRadius columns. Each row is a circular buffer
+	extern __shared__ fp prevVals[]; // maskRadius rows of blockDim.x columns. Each column is a circular buffer
 	const unsigned row = blockDim.x * blockIdx.x + threadIdx.x,
 				idxStartRow = row * cols,
 				idxEndRow = idxStartRow + cols - 1U;
 	if(row < rows) {
+		// Data changes after each iteration, so the texture mechanism isn't practical, as it expect constant data.
+		// The alternative is transposing the data matrix, applying boxBlurColumns on it and then transposing it back
 		for(unsigned iter = 0U; iter < iterations; ++iter) {
 			const fp startRow = ioDataGlob[idxStartRow],
 					endRow = ioDataGlob[idxEndRow];
 			const unsigned maskWidth = maskWidthsDev[iter],
 					maskRadius = maskWidth >> 1,
-					idxStartRowPrevVals = threadIdx.x * maskRadius,
 					min_maskRadius_cols = min(maskRadius, cols);
 
 			/* Perform the box filtering (on each row) with a box of width maskWidth replicating the borders */
@@ -133,7 +134,7 @@ void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const u
 				outIdx = idxStartRow,
 				col = 0U;
 			for(; col < min_maskRadius_cols; ++col, ++outIdx, ++frontIdx) {
-				prevVals[idxStartRowPrevVals + col] = ioDataGlob[outIdx];
+				prevVals[threadIdx.x + col * blockDim.x] = ioDataGlob[outIdx];
 				ioDataGlob[outIdx] = rollingSum;
 				// There is a final rescaling at the end of this kernel (division by the product of all mask widths)
 
@@ -141,16 +142,16 @@ void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const u
 			}
 
 			// Compute columns min_maskRadius_cols .. cols-1
-			for(unsigned colPrevVals = 0U, tailIdx = idxStartRowPrevVals; col < cols;
-					++col, ++outIdx, ++frontIdx,
-					colPrevVals = col % maskRadius, tailIdx = idxStartRowPrevVals + colPrevVals) {
+			for(unsigned tailIdxPrevVals = threadIdx.x + blockDim.x * (col % maskRadius); col < cols;
+					++outIdx, ++frontIdx,
+					tailIdxPrevVals = threadIdx.x + blockDim.x * (++col % maskRadius)) {
 				fp temp = ioDataGlob[outIdx];
 				ioDataGlob[outIdx] = rollingSum;
 				// There is a final rescaling at the end of this kernel (division by the product of all mask widths)
 
 				rollingSum +=
-					(frontIdx < idxEndRow ? ioDataGlob[frontIdx] : endRow) - prevVals[tailIdx];
-				prevVals[tailIdx] = temp;
+					(frontIdx < idxEndRow ? ioDataGlob[frontIdx] : endRow) - prevVals[tailIdxPrevVals];
+				prevVals[tailIdxPrevVals] = temp;
 			}
 		}
 	}
