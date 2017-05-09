@@ -36,39 +36,43 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
+#ifndef H_BLUR_CUDA
+#define H_BLUR_CUDA
+
 #include "floatType.h"
-#include "misc.h"
 
-using namespace std;
-using namespace cv;
+/**
+Performs box blur using CUDA.
+@param imgBuff the image to be blurred
+@param result the blurred image
+@param toBlurDev device buffer for the image to be blurred
+@param blurredDev device buffer for the blurred image
+@param maskWidthsDev device buffer for the widths of the masks used within each iteration
+@param rows number of rows of the image
+@param stride length of a row of the image
+@param iterationsWithLowerWidthMask how many times to apply the lower width mask
+@param lowerWidthMask the width of the lower width box mask
+@param iterationsWithUpperWidthMask how many times to apply the upper width mask
+@param upperWidthMask the width of the upper width box mask
+*/
+void boxBlur(const fp *imgBuff, fp *result,
+			 fp *toBlurDev, fp *blurredDev, unsigned *maskWidthsDev,
+			 unsigned rows, unsigned stride,
+			 unsigned iterationsWithLowerWidthMask, unsigned lowerWidthMask,
+			 unsigned iterationsWithUpperWidthMask, unsigned upperWidthMask);
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+/**
+Performs stack blur using CUDA.
+@param imgBuff the image to be blurred
+@param result the blurred image
+@param toBlurDev device buffer for the image to be blurred
+@param blurredDev device buffer for the blurred image
+@param rows number of rows of the image
+@param stride length of a row of the image
+@param radius the radius of the blur algorithm
+*/
+void stackBlur(const fp *imgBuff, fp *result,
+			   fp *toBlurDev, fp *blurredDev,
+			   unsigned rows, unsigned stride, unsigned radius);
 
-	return configuredInstances_;
-}
-
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
-
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
-	}
-}
-
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
-
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
-}
+#endif // H_BLUR_CUDA not defined

@@ -30,6 +30,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -53,7 +54,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)blurCUDA\;$(CudaToolkitIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DisableSpecificWarnings>4503</DisableSpecificWarnings>
@@ -61,9 +62,9 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
@@ -71,6 +72,15 @@
     <PreBuildEvent>
       <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
+    <CudaCompile>
+      <Include>$(SolutionDir)blurCUDA\</Include>
+      <CudaRuntime>Shared</CudaRuntime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_11,sm_11</CodeGeneration>
+    </CudaCompile>
+    <CudaLink>
+      <GPUDebugInfo />
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -78,7 +88,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)blurCUDA\;$(CudaToolkitIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4503</DisableSpecificWarnings>
@@ -88,9 +98,9 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
@@ -98,10 +108,23 @@
     <PreBuildEvent>
       <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
+    <CudaCompile>
+      <Include>$(SolutionDir)blurCUDA\</Include>
+      <CudaRuntime>Shared</CudaRuntime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_11,sm_11</CodeGeneration>
+    </CudaCompile>
+    <CudaLink>
+      <GPUDebugInfo />
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="blurCUDA\boxBlurCUDA.cpp" />
+    <ClCompile Include="blurCUDA\stackBlurCUDA.cpp" />
+    <ClCompile Include="blurCUDA\util.cpp" />
     <ClCompile Include="src\blur.cpp" />
     <ClCompile Include="src\boxBlur.cpp" />
+    <ClCompile Include="src\boxBlurBase.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\clusterAlg.cpp" />
@@ -136,6 +159,7 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\stackBlur.cpp" />
+    <ClCompile Include="src\stackBlurBase.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\symbolsSupport.cpp" />
     <ClCompile Include="src\symbolsSupportWithPreselection.cpp" />
@@ -163,10 +187,16 @@
     <ClCompile Include="test\testSymFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="blurCUDA\boxBlur.cu" />
+    <None Include="blurCUDA\stackBlur.cu" />
     <None Include="Pic2Sym.licenseheader" />
     <None Include="res\vga855.fon" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="blurCUDA\blurCUDA.h" />
+    <ClInclude Include="blurCUDA\boxBlurCUDA.h" />
+    <ClInclude Include="blurCUDA\stackBlurCUDA.h" />
+    <ClInclude Include="blurCUDA\util.h" />
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\boxBlur.h" />
@@ -216,6 +246,7 @@
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\stackBlur.h" />
+    <ClInclude Include="src\stackBlurBase.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symbolsSupport.h" />
@@ -267,4 +298,7 @@
     <Text Include="res\TestSymFilters\unreadablePositives.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.targets" />
+  </ImportGroup>
 </Project>

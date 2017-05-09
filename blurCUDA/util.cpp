@@ -36,39 +36,67 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "floatType.h"
-#include "misc.h"
+#include "util.h"
+#include "warnings.h"
+
+#pragma warning ( push, 0 )
+
+#include <iostream>
+#include <sstream>
+
+#include <cuda_runtime_api.h>
+
+#pragma warning ( pop )
 
 using namespace std;
-using namespace cv;
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-	return configuredInstances_;
-}
-
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
-
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
+void checkOp(cudaError_t opResult, const string &file, const int lineNo, bool doThrow/* = true*/) {
+	if(cudaSuccess != opResult) {
+		ostringstream oss;
+		oss<<'['<<file<<':'<<lineNo<<"] CUDA error: "<<cudaGetErrorString(opResult);
+		cerr<<oss.str()<<endl;
+		if(doThrow)
+			throw runtime_error(oss.str());
 	}
 }
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
+bool cudaInitOk(cudaDeviceProp *pDeviceProps/* = nullptr*/) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static cudaDeviceProp deviceProps;
+	static bool initialized = false, result = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+	if(!initialized) {
+		int deviceCount = 0;
+		cudaError_t err = cudaGetDeviceCount(&deviceCount);
+		if(err != cudaSuccess) {
+			cerr<<"Couldn't count CUDA-compatible devices! cudaGetDeviceCount returned "<<cudaGetErrorString(err)<<endl;
+		} else if(deviceCount == 0) {
+			cerr<<"There are no CUDA-compatible devices!"<<endl;
+		} else {
+			for(int dev = 0; dev < deviceCount; ++dev) {
+				cudaGetDeviceProperties(&deviceProps, dev);
+				if((deviceProps.major > CUDA_REQUIRED_CC_MAJOR) ||
+						((deviceProps.major == CUDA_REQUIRED_CC_MAJOR) &&
+						(deviceProps.minor >= CUDA_REQUIRED_CC_MINOR))) {
+					cudaSetDevice(dev);
+					result = true;
+					break;
+				}
+			}
 
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
+			if(!result)
+				cerr<<"Existing CUDA devices have cc less than minimum "
+					<<CUDA_REQUIRED_CC_MAJOR<<'.'<<CUDA_REQUIRED_CC_MINOR<<" required!"<<endl;
+		}
+
+		initialized = true;
+	}
+
+	if(pDeviceProps != nullptr && result) {
+		static const size_t szCudaDeviceProp = sizeof(cudaDeviceProp);
+		memcpy_s(pDeviceProps, szCudaDeviceProp, &deviceProps, szCudaDeviceProp);
+	}
+
+	return result;
 }
+

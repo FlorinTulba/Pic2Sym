@@ -36,39 +36,43 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "floatType.h"
-#include "misc.h"
+#ifndef H_STACK_BLUR_CUDA
+#define H_STACK_BLUR_CUDA
 
-using namespace std;
-using namespace cv;
+/*
+// Same interface from StackBlur, but for CUDA this time.
+// A number of static fields and methods made this approach more suitable than inheritance.
+#define StackBlur StackBlurCUDA
+#undef H_STACK_BLUR // allows reparsing the included file
+#include "stackBlur.h"
+#undef StackBlur // "varConfig.cpp" includes both files "stackBlur.h" and "stackBlurCUDA.h", so the undef is required
+*/
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+#include "stackBlurBase.h"
 
-	return configuredInstances_;
-}
+/**
+Stack blurring algorithm (CUDA version)
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
+Note this is a different algorithm than Stacked Integral Image (SII).
 
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
-	}
-}
+Brought several modifications to:
+	Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
+	http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
+	under license: http://www.codeproject.com/info/cpol10.aspx
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
+It was included in the project since it also presents a working version for CUDA.
+Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-net.net.tw/lioucy
+*/
+class StackBlurCUDA : public TStackBlur<StackBlurCUDA> {
+	friend class TStackBlur<StackBlurCUDA>; // for accessing nonTinySyms() and tinySyms() from below
 
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
-}
+protected:
+	static AbsStackBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
+	static AbsStackBlurImpl& tinySyms();	///< handler for tiny symbols
+
+public:
+	/// Configure the filter through the desired radius
+	StackBlurCUDA(unsigned radius);
+};
+
+#endif // H_STACK_BLUR_CUDA

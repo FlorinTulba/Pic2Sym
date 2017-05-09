@@ -23,6 +23,7 @@
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\boxBlur.h" />
+    <ClInclude Include="src\boxBlurBase.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\clusterAlg.h" />
     <ClInclude Include="src\clusterData.h" />
@@ -79,6 +80,7 @@
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\stackBlur.h" />
+    <ClInclude Include="src\stackBlurBase.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symbolsSupport.h" />
@@ -111,6 +113,7 @@
     <ClCompile Include="src\appState.cpp" />
     <ClCompile Include="src\blur.cpp" />
     <ClCompile Include="src\boxBlur.cpp" />
+    <ClCompile Include="src\boxBlurBase.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\clusterAlg.cpp" />
@@ -150,6 +153,7 @@
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\stackBlur.cpp" />
+    <ClCompile Include="src\stackBlurBase.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\study.cpp" />
     <ClCompile Include="src\symbolsSupport.cpp" />
@@ -297,6 +301,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -323,7 +328,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(OpenClDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)blurCUDA;$(CudaToolkitIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
@@ -332,8 +337,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OpenClDir)\lib\$(PlatformName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <DelayLoadDLLs>opencv_highgui$(OpenCvLibConfigSuffix).dll;opencv_videoio$(OpenCvLibConfigSuffix).dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
@@ -341,6 +346,15 @@
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
+    <CudaCompile>
+      <Include>$(SolutionDir)blurCUDA\</Include>
+      <CudaRuntime>Shared</CudaRuntime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_11,sm_11</CodeGeneration>
+    </CudaCompile>
+    <CudaLink>
+      <GPUDebugInfo />
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -351,7 +365,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(OpenClDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)blurCUDA;$(CudaToolkitIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
@@ -363,8 +377,8 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OpenClDir)\lib\$(PlatformName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <AdditionalManifestDependencies>
       </AdditionalManifestDependencies>
@@ -374,6 +388,18 @@
     <PostBuildEvent>
       <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
     </PostBuildEvent>
+    <CudaCompile>
+      <Include>$(SolutionDir)blurCUDA\</Include>
+      <CudaRuntime>Shared</CudaRuntime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_11,sm_11</CodeGeneration>
+    </CudaCompile>
+    <CudaLink>
+      <GPUDebugInfo />
+    </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.targets" />
+  </ImportGroup>
 </Project>

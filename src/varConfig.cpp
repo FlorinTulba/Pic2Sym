@@ -39,10 +39,13 @@
 #include "propsReader.h"
 #include "gaussBlur.h"
 #include "stackBlur.h"
+#include "stackBlurCUDA.h"
 #include "extBoxBlur.h"
 #include "boxBlur.h"
+#include "boxBlurCUDA.h"
 #include "structuralSimilarity.h"
 #include "misc.h"
+#include "util.h"
 
 #pragma warning ( push, 0 )
 
@@ -313,7 +316,7 @@ static VALIDATOR(positiveD,		IsGreaterThan, double, 0.);
 static VALIDATOR(nonNegativeD,	IsGreaterThan, double, 0., true);
 
 static VALIDATOR(availableClusterAlgs,	IsOneOf, string, { "None", "Partition", "TTSAS" });
-static VALIDATOR(availBlurAlgsForStrSim,IsOneOf, string, { "box", "ext_box", "stack", "gaussian" });
+static VALIDATOR(availBlurAlgsForStrSim, IsOneOf, string, { "box", "boxCUDA", "ext_box", "stack", "stackCUDA", "gaussian" });
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
@@ -419,10 +422,18 @@ extern READ_SINGLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
 extern READ_SINGLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
 
 // Keep all cir fields before StructuralSimilarity::supportBlur
-BlurEngine::ConfInstRegistrator BoxBlur::cir("box", BoxBlur::configuredInstance()); 
+BlurEngine::ConfInstRegistrator TBoxBlur<BoxBlur>::cir("box", BoxBlur::configuredInstance());
 BlurEngine::ConfInstRegistrator ExtBoxBlur::cir("ext_box", ExtBoxBlur::configuredInstance());
-BlurEngine::ConfInstRegistrator StackBlur::cir("stack", StackBlur::configuredInstance());
+BlurEngine::ConfInstRegistrator TStackBlur<StackBlur>::cir("stack", StackBlur::configuredInstance());
 BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian", GaussBlur::configuredInstance());
+BlurEngine::ConfInstRegistrator TBoxBlur<BoxBlurCUDA>::cir("boxCUDA", BoxBlurCUDA::preconditionsOk() ?
+														   (const BlurEngine&)BoxBlurCUDA::configuredInstance() :
+														   (cerr<<"Using 'box' blur instead of 'boxCUDA'!"<<endl,
+														   (const BlurEngine&)BoxBlur::configuredInstance()));
+BlurEngine::ConfInstRegistrator TStackBlur<StackBlurCUDA>::cir("stackCUDA", cudaInitOk() ?
+															   (const BlurEngine&)StackBlurCUDA::configuredInstance() :
+															   (cerr<<"Using 'stack' blur instead of 'stackCUDA'!"<<endl,
+															   (const BlurEngine&)StackBlur::configuredInstance()));
 
 // Keep this after StructuralSimilarity_BlurType and below all defined cir static fields
 const BlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(StructuralSimilarity_BlurType);

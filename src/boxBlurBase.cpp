@@ -36,39 +36,53 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "floatType.h"
-#include "misc.h"
+#include "boxBlurBase.h"
 
 using namespace std;
 using namespace cv;
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+AbsBoxBlurImpl& AbsBoxBlurImpl::setSigma(double desiredSigma, unsigned iterations_/* = 1U*/) {
+	assert(iterations_ > 0U);
+	assert(desiredSigma > 0.);
 
-	return configuredInstances_;
-}
+	iterations = iterations_;
+	const double common = 12. * desiredSigma * desiredSigma,
+		idealBoxWidth = sqrt(1. + common / iterations_);
+	wl = (((unsigned((idealBoxWidth-1.)/2.))<<1) | 1U);
+	wu = wl + 2U; // next odd value
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
+	countWl = (unsigned)(std::max)(0,
+								   int(round((common - iterations_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U)))));
+	countWu = iterations_ - countWl;
 
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
+	if(1U == wl) {
+		iterations -= countWl;
+		countWl = 0U;
 	}
+
+	return *this;
 }
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
+AbsBoxBlurImpl& AbsBoxBlurImpl::setWidth(unsigned boxWidth_) {
+	assert(1U == (boxWidth_ & 1U)); // Parameter should be an odd value
 
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
+	if(boxWidth_ == 1U)
+		iterations = 0U;
+	else
+		wl = boxWidth_;
+
+	countWl = iterations;
+	countWu = 0U; // cancels any iterations for filters with width wu
+
+	return *this;
+}
+
+AbsBoxBlurImpl& AbsBoxBlurImpl::setIterations(unsigned iterations_) {
+	if(wl == 1U)
+		iterations_ = 0U;
+
+	iterations = countWl = iterations_;
+	countWu = 0U; // cancels any iterations for filters with width wu
+
+	return *this;
 }

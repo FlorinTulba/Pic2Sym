@@ -36,39 +36,43 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "floatType.h"
-#include "misc.h"
+#ifndef H_BOX_BLUR_CUDA
+#define H_BOX_BLUR_CUDA
 
-using namespace std;
-using namespace cv;
+#include "boxBlurBase.h"
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+/**
+Box blurring algorithm
 
-	return configuredInstances_;
-}
+Brought minor modifications to the Box blur CUDA sample program provided by NVIDIA.
+*/
+class BoxBlurCUDA : public TBoxBlur<BoxBlurCUDA> {
+	friend class TBoxBlur<BoxBlurCUDA>; // for accessing nonTinySyms() and tinySyms() from below
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
+protected:
+	static AbsBoxBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
+	static AbsBoxBlurImpl& tinySyms();		///< handler for tiny symbols
 
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
-	}
-}
+public:
+	/*
+	Following 2 static methods provide each a simple configurable constant.
+	Changing these constants directly in the interface costs lots of compile time.
+	Using methods instead of basic constants:
+	 - ensures the constants are initialized in all sources using them, no matter their compile order
+	 - allows recompiling only a single file
+	*/
+	static unsigned BlockDimRows(); ///< CUDA thread block size when handling row blurring
+	static unsigned BlockDimCols(); ///< CUDA thread block size when handling column blurring
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
+	/**
+	Preconditions for using the CUDA implementation:
+	- there is a device with cc >= 1.1
+	- the shared memory required by the algorithm is within the device bounds
+	*/
+	static bool preconditionsOk();
 
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
-}
+	/// Configure the filter through the mask width and the iterations count
+	BoxBlurCUDA(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
+};
+
+#endif // H_BOX_BLUR_CUDA

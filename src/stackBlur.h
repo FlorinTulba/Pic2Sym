@@ -39,43 +39,30 @@
 #ifndef H_STACK_BLUR
 #define H_STACK_BLUR
 
-#include "blur.h"
+#include "stackBlurBase.h"
 
-/*
+/**
 Stack blurring algorithm
 
 Note this is a different algorithm than Stacked Integral Image (SII).
 
-Brought minor modifications to:
-Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
-http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
-under license: http://www.codeproject.com/info/cpol10.aspx
+Brought several modifications to:
+	Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
+	http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
+	under license: http://www.codeproject.com/info/cpol10.aspx
 
-It was included in the project since it also presents a working version for CUDA that provides
-great time-performance improvement.
-Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-net.net.tw/lioucy
+It was included in the project since it also presents a working version for CUDA.
 */
-class StackBlur : public BlurEngine {
-	static const StackBlur& configuredInstance();	///< Returns a fully configured instance
-	static ConfInstRegistrator cir;					///< Registers the configured instance plus its name
+class StackBlur : public TStackBlur<StackBlur> {
+	friend class TStackBlur<StackBlur>; // for accessing nonTinySyms() and tinySyms() from below
 
 protected:
-	/// Handle class
-	class Impl;
-
-	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
-	static Impl& tinySyms();	///< handler for tiny symbols
-
-	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
+	static AbsStackBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
+	static AbsStackBlurImpl& tinySyms();	///< handler for tiny symbols
 
 public:
 	/// Configure the filter through the desired radius
 	StackBlur(unsigned radius);
-
-	/// Reconfigure the filter through a new desired standard deviation
-	StackBlur& setSigma(double desiredSigma);
-	StackBlur& setRadius(unsigned radius);	///< Reconfigure radius
 };
 
 #endif // H_STACK_BLUR

@@ -41,14 +41,12 @@ Stack blurring algorithm
 
 Note this is a different algorithm than Stacked Integral Image (SII).
 
-Brought minor modifications (see comments from StackBlur::Impl::apply()) to:
-Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
-http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
-under license: http://www.codeproject.com/info/cpol10.aspx
+Brought several modifications (see comments from StackBlur::Impl::apply()) to:
+	Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>:
+	http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA
+	under license: http://www.codeproject.com/info/cpol10.aspx
 
-It was included in the project since it also presents a working version for CUDA that provides
-great time-performance improvement.
-Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-net.net.tw/lioucy
+It was included in the project since it also presents a working version for CUDA.
 */
 
 #include "stackBlur.h"
@@ -66,40 +64,9 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 using namespace std;
 using namespace cv;
 
-// Handle class
-class StackBlur::Impl {
-	friend class StackBlur;
-
-	static StackBlur::Impl _nonTinySyms, _tinySyms;
-	static const int stack_blur8_mul[];	///< array with some multipliers
-	static const int stack_blur8_shr[];	///< array with some shift factors
-
-	unsigned r = 1U;	///< filter radius (valid range: 1..254)
-
-	Impl() {}
-
-	/// Reconfigure the filter through a new desired standard deviation
-	Impl& setSigma(double desiredSigma) {
-		assert(desiredSigma > 0.);
-
-		// Empirical relation, based on which radius minimizes the L2 error
-		// compared to a Gaussian with a given standard deviation
-		// Empirical value of the ratio r / sigma is 2.125
-		r = unsigned(round(2.125 * desiredSigma));
-
-		r = max(1U, min(254U, r));
-
-		return *this;
-	}
-
-	/// Reconfigure the filter through a new radius
-	Impl& setRadius(unsigned radius) {
-		assert(radius >= 1U && radius <= 254U); // radius must be in range 1..254
-		r = radius;
-
-		return *this;
-	}
-
+/// Specialization of AbsStackBlurImpl
+class StackBlurImpl : public AbsStackBlurImpl {
+public:
 	/**
 	Implementation of the Stack Blur Algorithm by Mario Klingemann (<mario@quasimondo.com>)
 	for single channel images with pixel of type fp.
@@ -111,26 +78,28 @@ class StackBlur::Impl {
 
 	- scaling of the result pixels uses a mul_sum that already incorporates
 	  shr_sum right shifting from original implementation:
-			mul_sum = stack_blur8_mul[r] / 2^stack_blur8_shr[r]
+			mul_sum = multipliers[r] / 2^shiftFactors[r]
 
 	- used a single scaling / result pixel instead of 2:
 	  Resulted pixel gets multiplied only during the processing of the columns with
-			mul_sum_sq = mul_sum^2, and not twice with mul_sum during each traversal. 
+			mul_sum_sq = mul_sum^2, and not twice with mul_sum during each traversal.
 	*/
-	void apply(const cv::Mat &toBlur, cv::Mat &blurred) const {
+	void apply(const cv::Mat &toBlur, cv::Mat &blurred) const override {
+		static const unsigned fpSz = (unsigned)sizeof(float);
 		fp * const pResult = (fp*)blurred.data;
 		const fp * const pToProcess = (fp*)toBlur.data; // after processing the rows, it will be reassigned with a const_cast
 		const unsigned w = (unsigned)toBlur.cols, h = (unsigned)toBlur.rows,
-					stride = (unsigned)toBlur.step1(),
-					wm1 = w - 1U, hm1 = h - 1U,
-					rp1 = r + 1U, div = (r<<1) | 1U,
-					xp0 = min(wm1, r), yp0 = min(hm1, r);
+			stride = (unsigned)toBlur.step[0],
+			wm1 = w - 1U, hm1 = h - 1U,
+			rp1 = r + 1U, div = (r<<1) | 1U,
+			xp0 = min(wm1, r), yp0 = min(hm1, r);
 		const fp rp2 = fp(r + 2U),
-					mul_sum = fp(stack_blur8_mul[r] / pow(2, stack_blur8_shr[r])),
-					mul_sum_sq = mul_sum * mul_sum; // multiply only once, during the processing of columns
+			mul_sum = multipliers[r] / fp(1 << shiftFactors[r]),
+			mul_sum_sq = mul_sum * mul_sum; // multiply only once, during the processing of columns
 
 		unsigned x, y, xp, yp, i, stack_ptr, stack_start;
 
+		unsigned char *auxPtr = nullptr;
 		const fp *src_pix_ptr;
 		fp *dst_pix_ptr, *stack_pix_ptr;
 		fp * const stack = new fp[div];
@@ -140,7 +109,8 @@ class StackBlur::Impl {
 		do { // Process image rows, this outer while-loop will be parallel computed by CUDA instead
 			// Get input and output weights
 			const unsigned row_addr = y * stride;
-			fp pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + row_addr);
+			auxPtr = (unsigned char*)pToProcess + row_addr;
+			fp pix = sumT = sumOut = stack[0] = *(src_pix_ptr = (fp*)auxPtr);
 			sumIn = 0.;
 			for(i = 1U; i <= xp0; ++i) {
 				stack[i] = pix;
@@ -156,8 +126,10 @@ class StackBlur::Impl {
 			}
 
 			stack_ptr = r;
-			src_pix_ptr = pToProcess + ((xp = xp0) + row_addr);
-			dst_pix_ptr = pResult + row_addr;
+			auxPtr += fpSz * (xp = xp0);
+			src_pix_ptr = (fp*)auxPtr;
+			auxPtr = (unsigned char*)pResult + row_addr;
+			dst_pix_ptr = (fp*)auxPtr;
 
 			x = 0U;
 			do { // Blur image rows
@@ -196,7 +168,8 @@ class StackBlur::Impl {
 			for(i = 1U; i <= yp0; ++i) {
 				stack[i] = pix;
 				sumT += pix * (i + 1U);  sumOut += pix;
-				stack[i + r] = pix = *(src_pix_ptr += stride);
+				auxPtr = (unsigned char*)src_pix_ptr + stride;
+				stack[i + r] = pix = *(src_pix_ptr = (fp*)auxPtr);
 				sumT += pix * (rp1 - i);  sumIn += pix;
 			}
 			if(i <= r) { // for a radius larger than image height
@@ -207,13 +180,15 @@ class StackBlur::Impl {
 			}
 
 			stack_ptr = r;
-			src_pix_ptr = pToProcess + (x + ((yp = yp0) * stride));
+			auxPtr = (unsigned char*)pToProcess + (x * fpSz + ((yp = yp0) * stride));
+			src_pix_ptr = (fp*)auxPtr;
 			dst_pix_ptr = pResult + x;
 
 			y = 0U;
 			do { // Blur image columns
 				*dst_pix_ptr = sumT/* * mul_sum*/ * mul_sum_sq; // multiply only once with the square of mul_sum
-				dst_pix_ptr += stride;
+				auxPtr = (unsigned char*)dst_pix_ptr + stride;
+				dst_pix_ptr = (fp*)auxPtr;
 
 				sumT -= sumOut;
 				stack_start = stack_ptr + rp1;
@@ -223,7 +198,9 @@ class StackBlur::Impl {
 				sumOut -= *(stack_pix_ptr = stack + stack_start);
 
 				if(yp < hm1) {
-					++yp;  src_pix_ptr += stride;
+					++yp;
+					auxPtr = (unsigned char*)src_pix_ptr + stride;
+					src_pix_ptr = (fp*)auxPtr;
 				}
 
 				sumT += (sumIn += (*stack_pix_ptr = *src_pix_ptr));
@@ -241,95 +218,14 @@ class StackBlur::Impl {
 	}
 };
 
-StackBlur::Impl StackBlur::Impl::_nonTinySyms;
-StackBlur::Impl StackBlur::Impl::_tinySyms;
-
-const int StackBlur::Impl::stack_blur8_mul[] = {
-	512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
-	454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512,
-	482, 454, 428, 405, 383, 364, 345, 328, 312, 298, 284, 271, 259, 496, 475, 456,
-	437, 420, 404, 388, 374, 360, 347, 335, 323, 312, 302, 292, 282, 273, 265, 512,
-	497, 482, 468, 454, 441, 428, 417, 405, 394, 383, 373, 364, 354, 345, 337, 328,
-	320, 312, 305, 298, 291, 284, 278, 271, 265, 259, 507, 496, 485, 475, 465, 456,
-	446, 437, 428, 420, 412, 404, 396, 388, 381, 374, 367, 360, 354, 347, 341, 335,
-	329, 323, 318, 312, 307, 302, 297, 292, 287, 282, 278, 273, 269, 265, 261, 512,
-	505, 497, 489, 482, 475, 468, 461, 454, 447, 441, 435, 428, 422, 417, 411, 405,
-	399, 394, 389, 383, 378, 373, 368, 364, 359, 354, 350, 345, 341, 337, 332, 328,
-	324, 320, 316, 312, 309, 305, 301, 298, 294, 291, 287, 284, 281, 278, 274, 271,
-	268, 265, 262, 259, 257, 507, 501, 496, 491, 485, 480, 475, 470, 465, 460, 456,
-	451, 446, 442, 437, 433, 428, 424, 420, 416, 412, 408, 404, 400, 396, 392, 388,
-	385, 381, 377, 374, 370, 367, 363, 360, 357, 354, 350, 347, 344, 341, 338, 335,
-	332, 329, 326, 323, 320, 318, 315, 312, 310, 307, 304, 302, 299, 297, 294, 292,
-	289, 287, 285, 282, 280, 278, 275, 273, 271, 269, 267, 265, 263, 261, 259
-};
-
-const int StackBlur::Impl::stack_blur8_shr[] = {
-	9, 11, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17,
-	17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 19,
-	19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 20, 20, 20,
-	20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21,
-	21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-	21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22,
-	22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-	22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23,
-	23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
-	23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
-	23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
-	23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-	24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-	24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-	24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-	24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
-};
-
-StackBlur::Impl& StackBlur::nonTinySyms() {
-	return StackBlur::Impl::_nonTinySyms;
+AbsStackBlurImpl& StackBlur::nonTinySyms() {
+	static StackBlurImpl impl;
+	return impl;
 }
 
-StackBlur::Impl& StackBlur::tinySyms() {
-	return StackBlur::Impl::_tinySyms;
+AbsStackBlurImpl& StackBlur::tinySyms() {
+	static StackBlurImpl impl;
+	return impl;
 }
 
-void StackBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
-	if(forTinySym)
-		tinySyms().apply(toBlur, blurred);
-	else
-		nonTinySyms().apply(toBlur, blurred);
-}
-
-StackBlur::StackBlur(unsigned radius) {
-	setRadius(radius);
-}
-
-StackBlur& StackBlur::setSigma(double desiredSigma) {
-	nonTinySyms().setSigma(desiredSigma);
-
-	// Tiny symbols should use a sigma = desiredSigma/2.
-	tinySyms().setSigma(desiredSigma * .5);
-
-	return *this;
-}
-
-StackBlur& StackBlur::setRadius(unsigned radius) {
-	nonTinySyms().setRadius(radius);
-
-	// Tiny symbols should use half the radius from normal symbols
-	tinySyms().setRadius(max((radius>>1), 1U));
-
-	return *this;
-}
-
-const StackBlur& StackBlur::configuredInstance() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static StackBlur result(1U);
-	static bool initialized = false;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-	if(!initialized) {
-		// Stack blur with desired standard deviation
-		extern const double StructuralSimilarity_SIGMA;
-		result.setSigma(StructuralSimilarity_SIGMA);
-		initialized = true;
-	}
-	return result;
-}
+StackBlur::StackBlur(unsigned radius) : TStackBlur<StackBlur>(radius) {}

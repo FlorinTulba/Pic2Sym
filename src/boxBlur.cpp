@@ -37,7 +37,6 @@
  ***********************************************************************************************/
 
 #include "boxBlur.h"
-#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -49,64 +48,14 @@ using namespace std;
 using namespace cv;
 
 // Handle class
-class BoxBlur::Impl {
-	friend class BoxBlur;
+class BoxBlurImpl : public AbsBoxBlurImpl {
+	static const cv::Point midPoint; ///< Default anchor point for a given kernel (its center)
 
-	static BoxBlur::Impl _tinySyms, _nonTinySyms;
-	static const Point midPoint; ///< Default anchor point for a given kernel (its center)
-
-	unsigned wl = 0U;	///< first odd width of the box mask less than the ideal width
-	unsigned wu = 0U;	///< first odd width of the box mask greater than the ideal width
-	unsigned countWl = 0U;	///< the number of times to iterate the filter of width wl
-	unsigned countWu = 0U;	///< the number of times to iterate the filter of width wu
-	unsigned iterations = 0U;	///< desired number of iterations (countWl + countWu)
-
-	Impl() {}
-
-	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
-	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details
-	Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) {
-		assert(iterations_ > 0U);
-		assert(desiredSigma > 0.);
-
-		iterations = iterations_;
-		const double common = 12. * desiredSigma * desiredSigma,
-					idealBoxWidth = sqrt(1. + common / iterations_);
-		wl = (((unsigned((idealBoxWidth-1.)/2.))<<1) | 1U);
-		wu = wl + 2U; // next odd value
-
-		countWl = (unsigned)max(0, 
-								int(round((common - iterations_ * (3U + wl * (wl + 4U)))/(-4. * (wl + 1U)))));
-		countWu = iterations_ - countWl;
-
-		return *this;
-	}
-
-	/// Reconfigure mask width (wl) for performing all iterations and destroys the wu mask
-	Impl& setWidth(unsigned boxWidth_) {
-		assert(1U == (boxWidth_ & 1U)); // Parameter should be an odd value
-
-		wl = boxWidth_;
-		countWu = 0U; // cancels any iterations for filters with width wu
-		countWl = iterations;
-
-		return *this;
-	}
-
-	/// Reconfigure iterations count for wl and destroys the wu mask
-	Impl& setIterations(unsigned iterations_) {
-		assert(iterations_ > 0U);
-
-		iterations = countWl = iterations_;
-		countWu = 0U; // cancels any iterations for filters with width wu
-		
-		return *this;
-	}
-
+public:
 	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
 	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details
-	void apply(const cv::Mat &toBlur, cv::Mat &blurred) {
-		if(countWl == 0U && countWu == 0U) {
+	void apply(const cv::Mat &toBlur, cv::Mat &blurred) override {
+		if(iterations == 0U) {
 			toBlur.copyTo(blurred);
 			return;
 		}
@@ -114,8 +63,8 @@ class BoxBlur::Impl {
 		bool applied = false;
 
 		// The smaller mask (wl) can be a single-point mask (wl == 1), which can be skipped,
-		// as it doesn't affect the result at all
-		if(wl > 1U && countWl > 0U) {
+		// as it doesn't affect the result at all. In that case, countWl is 0
+		if(countWl > 0U) {
 			const Size boxL((int)wl, (int)wl);
 			blur(toBlur, blurred, boxL, midPoint, BORDER_REPLICATE); // 1st time with mask wl
 
@@ -141,66 +90,17 @@ class BoxBlur::Impl {
 	}
 };
 
-BoxBlur::Impl BoxBlur::Impl::_nonTinySyms;
-BoxBlur::Impl BoxBlur::Impl::_tinySyms;
+const Point BoxBlurImpl::midPoint(-1, -1);
 
-const Point BoxBlur::Impl::midPoint(-1, -1);
-
-BoxBlur::Impl& BoxBlur::nonTinySyms() {
-	return BoxBlur::Impl::_nonTinySyms;
+AbsBoxBlurImpl& BoxBlur::nonTinySyms() {
+	static BoxBlurImpl impl;
+	return impl;
 }
 
-BoxBlur::Impl& BoxBlur::tinySyms() {
-	return BoxBlur::Impl::_tinySyms;
+AbsBoxBlurImpl& BoxBlur::tinySyms() {
+	static BoxBlurImpl impl;
+	return impl;
 }
 
-BoxBlur::BoxBlur(unsigned boxWidth_/* = 1U*/, unsigned iterations_/* = 1U*/) {
-	setWidth(boxWidth_).setIterations(iterations_);
-}
-
-BoxBlur& BoxBlur::setSigma(double desiredSigma, unsigned iterations_/* = 1U*/) {
-	nonTinySyms().setSigma(desiredSigma, iterations_);
-
-	// Tiny symbols should use a sigma = desiredSigma/2.
-	tinySyms().setSigma(desiredSigma * .5, iterations_);
-
-	return *this;
-}
-
-BoxBlur& BoxBlur::setWidth(unsigned boxWidth_) {
-	nonTinySyms().setWidth(boxWidth_);
-
-	// Tiny symbols should use a box whose width is next odd value >= boxWidth_/2.
-	tinySyms().setWidth((boxWidth_>>1) | 1U);
-
-	return *this;
-}
-
-BoxBlur& BoxBlur::setIterations(unsigned iterations_) {
-	nonTinySyms().setIterations(iterations_);
-	tinySyms().setIterations(iterations_);
-
-	return *this;
-}
-
-void BoxBlur::doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const {
-	if(forTinySym)
-		tinySyms().apply(toBlur, blurred);
-	else
-		nonTinySyms().apply(toBlur, blurred);
-}
-
-const BoxBlur& BoxBlur::configuredInstance() {
-	extern const double StructuralSimilarity_SIGMA;
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static BoxBlur result;
-	static bool initialized = false;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-	if(!initialized) {
-		// Box blur with single iteration and desired standard deviation
-		result.setSigma(StructuralSimilarity_SIGMA);
-		initialized = true;
-	}
-	return result;
-}
+BoxBlur::BoxBlur(unsigned boxWidth_/* = 1U*/, unsigned iterations_/* = 1U*/) :
+	TBoxBlur<BoxBlur>(boxWidth_, iterations_) {}

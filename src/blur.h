@@ -77,8 +77,10 @@ The project includes following blur algorithms:
 - GaussBlur - the reference blur, delegating to sequential GaussianBlur from OpenCV
 - BoxBlur - for its versatility: quickest for no repetitions and slower, but increasingly accurate for more repetitions
   (Every repetition delegates to blur from OpenCV)
-- ExtBoxBlur - for its accuracy, even for only a few repetitions. The sequential algorithm is highly parallelizable
-- StackBlur - for its provided CUDA version that shows terrific time improvement compared to the sequential algorithm
+- BoxBlur using CUDA
+- ExtBoxBlur - for its accuracy, even for only a few repetitions. The sequential algorithm is highly parallel.
+- StackBlur - sequential implementation of the mentioned CUDA version
+- StackBlur using CUDA - an improved version of the one provided on the mentioned site
 
 All derived classes are expected to provide a static method that provides an instance of them
 already configured for blurring serving structural similarity matching aspect:
@@ -128,7 +130,7 @@ public:
 	/// Provides a specific, completely configured blur engine. Throws invalid_argument for an unrecognized blurType
 	static const BlurEngine& byName(const std::string &blurType);
 
-	virtual ~BlurEngine() = 0 {}
+	virtual ~BlurEngine() {}
 
 	/**
 	Template method checking toBlur, initializing blurred and calling doProcess

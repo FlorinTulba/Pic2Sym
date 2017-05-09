@@ -4,11 +4,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pic2Sym", "Pic2Sym.vcxproj", "{55EC7EFC-7D43-4724-ACBD-6CBE92946D6E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2968735A-DED1-4C53-9B73-203BD8575BEE} = {2968735A-DED1-4C53-9B73-203BD8575BEE}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTesting", "UnitTesting.vcxproj", "{20C321AC-0C0E-45FD-9843-8B5F116CC93D}"
 	ProjectSection(ProjectDependencies) = postProject
+		{2968735A-DED1-4C53-9B73-203BD8575BEE} = {2968735A-DED1-4C53-9B73-203BD8575BEE}
 		{55EC7EFC-7D43-4724-ACBD-6CBE92946D6E} = {55EC7EFC-7D43-4724-ACBD-6CBE92946D6E}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blurCUDA", "blurCUDA\blurCUDA.vcxproj", "{2968735A-DED1-4C53-9B73-203BD8575BEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +30,10 @@ Global
 		{20C321AC-0C0E-45FD-9843-8B5F116CC93D}.Debug|x64.Build.0 = Debug|x64
 		{20C321AC-0C0E-45FD-9843-8B5F116CC93D}.Release|x64.ActiveCfg = Release|x64
 		{20C321AC-0C0E-45FD-9843-8B5F116CC93D}.Release|x64.Build.0 = Release|x64
+		{2968735A-DED1-4C53-9B73-203BD8575BEE}.Debug|x64.ActiveCfg = Debug|x64
+		{2968735A-DED1-4C53-9B73-203BD8575BEE}.Debug|x64.Build.0 = Debug|x64
+		{2968735A-DED1-4C53-9B73-203BD8575BEE}.Release|x64.ActiveCfg = Release|x64
+		{2968735A-DED1-4C53-9B73-203BD8575BEE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

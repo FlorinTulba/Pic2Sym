@@ -36,39 +36,27 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "floatType.h"
-#include "misc.h"
+#ifndef H_UTIL
+#define H_UTIL
 
-using namespace std;
-using namespace cv;
+#include <string>
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+#include <driver_types.h>
 
-	return configuredInstances_;
-}
+// CUDA cc >= 1.1 required
+#define CUDA_REQUIRED_CC_MAJOR 1
+#define CUDA_REQUIRED_CC_MINOR 1
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const BlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
+/**
+Looks for an NVIDIA CUDA-compatible GPU (first one with cc >= 1.1).
+When parameter pDeviceProps is not nullptr and a device was found,
+the properties of the device are copied to that address.
+*/
+bool cudaInitOk(cudaDeviceProp *pDeviceProps = nullptr);
 
-const BlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
-	}
-}
+/// Reports the location of a CUDA operation that failed (opResult != cudaSuccess)
+void checkOp(cudaError_t opResult, const std::string &file, const int lineNo, bool doThrow = true);
+#define CHECK_OP(opResult) checkOp(opResult, __FILE__, __LINE__) // this throws when opResult != cudaSuccess
+#define CHECK_OP_NO_THROW(opResult) checkOp(opResult, __FILE__, __LINE__, false) // this doesn't throw
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	assert(!toBlur.empty() && toBlur.type() == CV_FC1 &&
-		   toBlur.rows <= (int)Settings_MAX_FONT_SIZE && toBlur.cols <= (int)Settings_MAX_FONT_SIZE);
-
-	blurred = Mat(toBlur.size(), toBlur.type(), 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
-}
+#endif // H_UTIL not defined

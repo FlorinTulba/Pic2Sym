@@ -22,6 +22,12 @@
     <Filter Include="Source Files\Pic2Sym">
       <UniqueIdentifier>{d9c885f6-88fe-4e62-9bac-34afcb1fb353}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Pic2Sym\blurCUDA">
+      <UniqueIdentifier>{92fa9fa6-7dae-4e76-9c20-7679e66cab42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Pic2Sym\blurCUDA">
+      <UniqueIdentifier>{745c15ef-ed7f-47b2-a1a1-0c16f0211843}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test\testFontEngine.cpp">
@@ -207,11 +213,32 @@
     <ClCompile Include="test\selectBranch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\boxBlurBase.cpp">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="blurCUDA\boxBlurCUDA.cpp">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </ClCompile>
+    <ClCompile Include="blurCUDA\stackBlurCUDA.cpp">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </ClCompile>
+    <ClCompile Include="blurCUDA\util.cpp">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stackBlurBase.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
     <None Include="res\vga855.fon">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="blurCUDA\boxBlur.cu">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </None>
+    <None Include="blurCUDA\stackBlur.cu">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -463,6 +490,21 @@
     </ClInclude>
     <ClInclude Include="test\selectBranch.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stackBlurBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="blurCUDA\boxBlurCUDA.h">
+      <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="blurCUDA\util.h">
+      <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="blurCUDA\stackBlurCUDA.h">
+      <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="blurCUDA\blurCUDA.h">
+      <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

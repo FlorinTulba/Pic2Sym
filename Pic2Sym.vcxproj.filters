@@ -405,6 +405,12 @@
     <ClInclude Include="src\floatType.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
+    <ClInclude Include="src\stackBlurBase.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
+    <ClInclude Include="src\boxBlurBase.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -604,6 +610,12 @@
     </ClCompile>
     <ClCompile Include="src\transformSupportWithPreselection.cpp">
       <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\boxBlurBase.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stackBlurBase.cpp">
+      <Filter>Source Files\Var\Blurring</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

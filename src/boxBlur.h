@@ -39,7 +39,7 @@
 #ifndef H_BOX_BLUR
 #define H_BOX_BLUR
 
-#include "blur.h"
+#include "boxBlurBase.h"
 
 /*
 Box blurring with optional repetitions and border repetition.
@@ -57,29 +57,16 @@ box blur normally needs just 1/3 of the time of GaussianBlur with the same sigma
 
 However, box blur quality depends on iterations_. For values larger than 2 it gets more similar to Gaussian's quality.
 */
-class BoxBlur : public BlurEngine {
-	static const BoxBlur& configuredInstance();	///< Returns a fully configured instance
-	static ConfInstRegistrator cir;				///< Registers the configured instance plus its name
+class BoxBlur : public TBoxBlur<BoxBlur> {
+	friend class TBoxBlur<BoxBlur>; // for accessing nonTinySyms() and tinySyms() from below
 
 protected:
-	/// Handle class
-	class Impl;
-
-	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
-	static Impl& tinySyms();	///< handler for tiny symbols
-
-	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
+	static AbsBoxBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
+	static AbsBoxBlurImpl& tinySyms();		///< handler for tiny symbols
 
 public:
 	/// Configure the filter through the mask width and the iterations count
 	BoxBlur(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
-
-	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
-	BoxBlur& setSigma(double desiredSigma, unsigned iterations_ = 1U);
-	
-	BoxBlur& setWidth(unsigned boxWidth_);			///< Reconfigure mask width
-	BoxBlur& setIterations(unsigned iterations_);	///< Reconfigure iterations count
 };
 
 #endif // H_BOX_BLUR
