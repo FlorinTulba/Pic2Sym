@@ -2,21 +2,24 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CudaCompile Include="boxBlur.cu">
-      <Filter>Header Files\Source Files</Filter>
+      <Filter>Source Files</Filter>
     </CudaCompile>
     <CudaCompile Include="stackBlur.cu">
-      <Filter>Header Files\Source Files</Filter>
+      <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="boxBlurCUDA.cpp">
-      <Filter>Header Files\Source Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stackBlurCUDA.cpp">
-      <Filter>Header Files\Source Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="util.cpp">
-      <Filter>Header Files\Source Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="streamsManager.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -32,12 +35,15 @@
     <ClInclude Include="util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="streamsManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
       <UniqueIdentifier>{29766d55-f625-44ba-9d66-d0dd06aa5704}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Source Files">
+    <Filter Include="Source Files">
       <UniqueIdentifier>{45251903-b420-44c8-8d7a-a28b076607c7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

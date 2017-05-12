@@ -41,25 +41,29 @@
 
 #include "floatType.h"
 
+#include <driver_types.h>
+
 /**
 Performs box blur using CUDA.
 @param imgBuff the image to be blurred
 @param result the blurred image
 @param toBlurDev device buffer for the image to be blurred
 @param blurredDev device buffer for the blurred image
-@param maskWidthsDev device buffer for the widths of the masks used within each iteration
 @param rows number of rows of the image
-@param stride length of a row of the image
-@param iterationsWithLowerWidthMask how many times to apply the lower width mask
-@param lowerWidthMask the width of the lower width box mask
-@param iterationsWithUpperWidthMask how many times to apply the upper width mask
-@param upperWidthMask the width of the upper width box mask
+@param cols number of columns of the image
+@param buffSz space occupied by input/output data
+@param maskWidthsDev device buffer for the widths of the masks used within each iteration
+@param iterations how many times to apply the blur (the iterations might use different width masks)
+@param largestMaskRadius the radius of the largest mask used during the iterations
+@param scaler factor to rescale the result in the same range as the original
+@param streamId the id of the stream that handles this blur operation
 */
 void boxBlur(const fp *imgBuff, fp *result,
-			 fp *toBlurDev, fp *blurredDev, unsigned *maskWidthsDev,
-			 unsigned rows, unsigned stride,
-			 unsigned iterationsWithLowerWidthMask, unsigned lowerWidthMask,
-			 unsigned iterationsWithUpperWidthMask, unsigned upperWidthMask);
+			 fp *toBlurDev, fp *blurredDev,
+			 unsigned rows, unsigned cols, size_t buffSz,
+			 unsigned *maskWidthsDev, unsigned iterations,
+			 unsigned largestMaskRadius, fp scaler,
+			 cudaStream_t streamId);
 
 /**
 Performs stack blur using CUDA.

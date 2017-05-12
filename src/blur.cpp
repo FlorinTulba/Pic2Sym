@@ -43,6 +43,16 @@
 using namespace std;
 using namespace cv;
 
+size_t BlurEngine::PixelsCountLargestData() {
+	extern const unsigned Settings_MAX_FONT_SIZE;
+	return Settings_MAX_FONT_SIZE * Settings_MAX_FONT_SIZE;
+}
+
+size_t BlurEngine::PixelsCountTinySym() {
+	extern unsigned TinySymsSz();
+	return TinySymsSz() * TinySymsSz();
+}
+
 BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static ConfiguredInstances configuredInstances_;

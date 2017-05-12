@@ -38,11 +38,14 @@
 
 #include "blurCUDA.h"
 #include "boxBlurCUDA.h"
+#include "streamsManager.h"
 #include "util.h"
 
 #include <cuda_runtime.h>
 
 #include <cassert>
+
+#include <omp.h>
 
 using namespace std;
 
@@ -164,40 +167,34 @@ void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const u
 }
 
 /// Launches the 2 kernels (horizontal and vertical) and manipulates the input and the output
-void boxBlur(const fp *imgBuff, fp *result, fp *toBlurDev, fp *blurredDev, unsigned *maskWidthsDev,
-			 unsigned rows, unsigned cols,
-			 unsigned iterationsWithLowerWidthMask, unsigned lowerWidthMask,
-			 unsigned iterationsWithUpperWidthMask, unsigned upperWidthMask) {
-	const unsigned iterations = iterationsWithLowerWidthMask + iterationsWithUpperWidthMask;
-	assert(iterations > 0U);
-	assert(lowerWidthMask > 1U || (lowerWidthMask == 1U && iterationsWithLowerWidthMask == 0U));
-	assert(lowerWidthMask + 2U == upperWidthMask);
+void boxBlur(const fp *imgBuff, fp *result, fp *toBlurDev, fp *blurredDev,
+			 unsigned rows, unsigned cols, size_t buffSz,
+			 unsigned *maskWidthsDev, unsigned iterations,
+			 unsigned largestMaskRadius, fp scaler,
+			 cudaStream_t streamId) {
+	static const size_t fpSz = sizeof(fp);
 
-	const size_t fpSz = sizeof(fp),
-		buffSz = size_t(rows * cols) * fpSz;
-
-	/*
-	Each iteration normally needs to scale the result by 1/maskWidth.
-	The adopted solution performs only a final scaling based on these facts:
-	- there are iterationsWithLowerWidthMask and iterationsWithUpperWidthMask
-	- each mask is applied twice (once horizontally and once vertically)
-	*/
-	const fp scaler = 1.f /
-		fp(pow(lowerWidthMask, iterationsWithLowerWidthMask<<1U) *
-		pow(upperWidthMask, iterationsWithUpperWidthMask<<1U));
-	CHECK_OP(cudaMemcpy((void*)toBlurDev, (void*)imgBuff, buffSz, cudaMemcpyHostToDevice));
+// 	CHECK_OP(cudaHostRegister((void*)imgBuff, buffSz, cudaHostRegisterDefault));
+	CHECK_OP(cudaMemcpyAsync((void*)toBlurDev, (void*)imgBuff, buffSz, cudaMemcpyHostToDevice, streamId));
+// 	CHECK_OP(cudaHostUnregister((void*)imgBuff));
 
 	boxBlurCols<<<(cols + BoxBlurCUDA::BlockDimCols() - 1) / BoxBlurCUDA::BlockDimCols(),
 			BoxBlurCUDA::BlockDimCols(),
-			2U * BoxBlurCUDA::BlockDimCols() * rows * fpSz >>> // dynamic shared memory for in+out row x blockDim tables of floats
+			2U * BoxBlurCUDA::BlockDimCols() * rows * fpSz, // dynamic shared memory for in+out row x blockDim tables of floats
+			streamId>>>
 		(toBlurDev, blurredDev, rows, cols, maskWidthsDev, iterations);
 	CHECK_OP(cudaGetLastError());
 
 	boxBlurRows<<<(rows + BoxBlurCUDA::BlockDimRows() - 1) / BoxBlurCUDA::BlockDimRows(),
 			BoxBlurCUDA::BlockDimRows(),
-			BoxBlurCUDA::BlockDimRows() * (upperWidthMask >> 1) * fpSz>>> // dynamic shared memory for blockDim x largest_mask_radius tables of floats
+			BoxBlurCUDA::BlockDimRows() * largestMaskRadius * fpSz, // dynamic shared memory for blockDim x largest_mask_radius tables of floats
+			streamId>>>
 		(blurredDev, rows, cols, maskWidthsDev, iterations, scaler);
 	CHECK_OP(cudaGetLastError());
 
-	CHECK_OP(cudaMemcpy((void*)result, (void*)blurredDev, buffSz, cudaMemcpyDeviceToHost));
+// 	CHECK_OP(cudaHostRegister((void*)result, buffSz, cudaHostRegisterDefault));
+	CHECK_OP(cudaMemcpyAsync((void*)result, (void*)blurredDev, buffSz, cudaMemcpyDeviceToHost, streamId));
+// 	CHECK_OP(cudaHostUnregister((void*)result));
+
+	CHECK_OP(cudaStreamSynchronize(streamId));
 }

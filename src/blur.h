@@ -130,6 +130,12 @@ public:
 	/// Provides a specific, completely configured blur engine. Throws invalid_argument for an unrecognized blurType
 	static const BlurEngine& byName(const std::string &blurType);
 
+	/// Largest patch to blur has Settings_MAX_FONT_SIZE^2 pixels
+	static size_t PixelsCountLargestData();
+
+	/// Tiny symbols have TinySymsSz()^2 pixels
+	static size_t PixelsCountTinySym();
+
 	virtual ~BlurEngine() {}
 
 	/**

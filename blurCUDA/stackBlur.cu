@@ -38,11 +38,14 @@
 
 #include "blurCUDA.h"
 #include "stackBlurCUDA.h"
+#include "streamsManager.h"
 #include "util.h"
 
 #include <cuda_runtime.h>
 
 #include <cassert>
+
+#include <omp.h>
 
 #define THREADS			64U
 #define ROW_CHUNK_SZ	16U
@@ -396,15 +399,25 @@ void stackBlur(const fp *imgBuff, fp *result, fp *toBlurDev, fp *blurredDev,
 		initialized = true;
 	}
 
-	CHECK_OP(cudaMemcpy((void*)toBlurDev, (void*)imgBuff, buffSz, cudaMemcpyHostToDevice));
+	// There's a CUDA stream for each CPU
+	const auto cpuId = omp_get_thread_num();
+	const auto streamId = StreamsManager::streams()[cpuId];
 
-	stackBlurRows<<<(rows + THREADS - 1) / THREADS, THREADS, fpSz * THREADS * stackSz>>>
+// 	CHECK_OP(cudaHostRegister((void*)imgBuff, buffSz, cudaHostRegisterDefault));
+	CHECK_OP(cudaMemcpyAsync((void*)toBlurDev, (void*)imgBuff, buffSz, cudaMemcpyHostToDevice, streamId));
+// 	CHECK_OP(cudaHostUnregister((void*)imgBuff));
+
+	stackBlurRows<<<(rows + THREADS - 1) / THREADS, THREADS, fpSz * THREADS * stackSz, streamId>>>
 		(toBlurDev, blurredDev, (unsigned)fpSz);
 	CHECK_OP(cudaGetLastError());
 
-	stackBlurCols<<<(cols + THREADS - 1) / THREADS, THREADS, fpSz * THREADS * stackSz>>>
+	stackBlurCols<<<(cols + THREADS - 1) / THREADS, THREADS, fpSz * THREADS * stackSz, streamId>>>
 		(blurredDev, mul_sum_sq);
 	CHECK_OP(cudaGetLastError());
 
-	CHECK_OP(cudaMemcpy((void*)result, (void*)blurredDev, buffSz, cudaMemcpyDeviceToHost));
+// 	CHECK_OP(cudaHostRegister((void*)result, buffSz, cudaHostRegisterDefault));
+	CHECK_OP(cudaMemcpyAsync((void*)result, (void*)blurredDev, buffSz, cudaMemcpyDeviceToHost, streamId));
+// 	CHECK_OP(cudaHostUnregister((void*)result));
+
+	CHECK_OP(cudaStreamSynchronize(streamId));
 }

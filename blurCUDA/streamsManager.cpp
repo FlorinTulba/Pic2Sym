@@ -36,39 +36,49 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_BOX_BLUR_CUDA
-#define H_BOX_BLUR_CUDA
+#include "streamsManager.h"
+#include "util.h"
+#include "misc.h"
 
-#include "boxBlurBase.h"
+#pragma warning ( push, 0 )
 
-/// Box blurring algorithm
-class BoxBlurCUDA : public TBoxBlur<BoxBlurCUDA> {
-	friend class TBoxBlur<BoxBlurCUDA>; // for accessing nonTinySyms() and tinySyms() from below
+#include <cuda_runtime.h>
 
-protected:
-	static AbsBoxBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
-	static AbsBoxBlurImpl& tinySyms();		///< handler for tiny symbols
+#include <omp.h>
 
-public:
-	/*
-	Following 2 static methods provide each a simple configurable constant.
-	Changing these constants directly in the interface costs lots of compile time.
-	Using methods instead of basic constants:
-	 - ensures the constants are initialized in all sources using them, no matter their compile order
-	 - allows recompiling only a single file
-	*/
-	static unsigned BlockDimRows(); ///< CUDA thread block size when handling row blurring
-	static unsigned BlockDimCols(); ///< CUDA thread block size when handling column blurring
+#pragma warning ( pop )
 
-	/**
-	Preconditions for using the CUDA implementation:
-	- there is a device with cc >= 1.1
-	- the shared memory required by the algorithm is within the device bounds
-	*/
-	static bool preconditionsOk();
+using namespace std;
 
-	/// Configure the filter through the mask width and the iterations count
-	BoxBlurCUDA(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
-};
+const StreamsManager& StreamsManager::streams() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static StreamsManager impl;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+	return impl;
+}
 
-#endif // H_BOX_BLUR_CUDA
+StreamsManager::StreamsManager() :
+		count_(cudaInitOk() ? omp_get_num_procs() : 0ULL) {
+	if(count_ > MaxCPUsCount)
+		THROW_WITH_VAR_MSG("Your system appears to have " + to_string(count_) +
+			" CPUs, which more than currently configured - " + to_string(MaxCPUsCount) +
+			". You may edit MaxCPUsCount from '/blurCUDA/streamManager.h' to overcome this issue.",
+			out_of_range);
+
+	for(size_t i = 0ULL; i < count_; ++i)
+		CHECK_OP(cudaStreamCreate(&streams_[i]));
+}
+
+StreamsManager::~StreamsManager() {
+	for(size_t i = 0ULL; i < count_; ++i)
+		CHECK_OP_NO_THROW(cudaStreamDestroy(streams_[i]));
+}
+
+cudaStream_t StreamsManager::operator[](size_t idx) const {
+	if(idx < count_)
+		return streams_[idx];
+
+	THROW_WITH_VAR_MSG(__FUNCTION__ " called with index " + to_string(idx) +
+					   ", while there are only " + to_string(count_) + " CUDA streams!", out_of_range);
+}
+

@@ -116,11 +116,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="blurCUDA.h" />
     <ClInclude Include="boxBlurCUDA.h" />
     <ClInclude Include="stackBlurCUDA.h" />
+    <ClInclude Include="streamsManager.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="boxBlurCUDA.cpp" />
     <ClCompile Include="stackBlurCUDA.cpp" />
+    <ClCompile Include="streamsManager.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -36,39 +36,44 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_BOX_BLUR_CUDA
-#define H_BOX_BLUR_CUDA
+#ifndef H_STREAMS_MANAGER
+#define H_STREAMS_MANAGER
 
-#include "boxBlurBase.h"
+#pragma warning ( push, 0 )
 
-/// Box blurring algorithm
-class BoxBlurCUDA : public TBoxBlur<BoxBlurCUDA> {
-	friend class TBoxBlur<BoxBlurCUDA>; // for accessing nonTinySyms() and tinySyms() from below
+#include <driver_types.h>
 
+#pragma warning ( pop )
+
+/// Manages the CUDA streams
+class StreamsManager {
 protected:
-	static AbsBoxBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
-	static AbsBoxBlurImpl& tinySyms();		///< handler for tiny symbols
-
-public:
-	/*
-	Following 2 static methods provide each a simple configurable constant.
-	Changing these constants directly in the interface costs lots of compile time.
-	Using methods instead of basic constants:
-	 - ensures the constants are initialized in all sources using them, no matter their compile order
-	 - allows recompiling only a single file
-	*/
-	static unsigned BlockDimRows(); ///< CUDA thread block size when handling row blurring
-	static unsigned BlockDimCols(); ///< CUDA thread block size when handling column blurring
+	enum { MaxCPUsCount = 32}; ///< Limit for the streams count (it should be less than the CPU-s count)
+	
+	size_t count_;	///< same as CPU count
 
 	/**
-	Preconditions for using the CUDA implementation:
-	- there is a device with cc >= 1.1
-	- the shared memory required by the algorithm is within the device bounds
-	*/
-	static bool preconditionsOk();
+	One stream for each available CPU, which are hopefully less than MaxCPUsCount.
 
-	/// Configure the filter through the mask width and the iterations count
-	BoxBlurCUDA(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
+	Allocating this array dynamically based on the actual CPU count requires also
+	releasing the memory in the destructor.
+	However, in that case the destructor either crashes, or has to let the mentioned memory leak:
+	http://stackoverflow.com/questions/16979982/cuda-streams-destruction-and-cudadevicereset
+	*/
+	cudaStream_t streams_[MaxCPUsCount];
+
+	StreamsManager(const StreamsManager&) = delete;
+	StreamsManager(StreamsManager&&) = delete;
+
+	StreamsManager();
+
+public:
+	static const StreamsManager& streams();	/// Singleton to construct, provide & destroy the streams
+
+	~StreamsManager();
+
+	inline size_t count() const { return count_; }
+	cudaStream_t operator[](size_t idx) const;
 };
 
-#endif // H_BOX_BLUR_CUDA
+#endif // H_STREAMS_MANAGER

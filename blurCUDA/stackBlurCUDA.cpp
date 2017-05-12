@@ -52,6 +52,7 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 
 #include "stackBlurCUDA.h"
 #include "blurCUDA.h"
+#include "streamsManager.h"
 #include "floatType.h"
 #include "warnings.h"
 #include "util.h"
@@ -60,6 +61,8 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 
 #include <cuda_runtime.h>
 
+#include <omp.h>
+
 #pragma warning ( pop )
 
 using namespace std;
@@ -67,19 +70,16 @@ using namespace cv;
 
 /// Delegates the Stack blur execution to CUDA
 class StackBlurCUDAImpl : public AbsStackBlurImpl {
+	const size_t maxDataPixels;	///< max size of the image to blur in pixels
+
 	fp *toBlurDev = nullptr;	///< region allocated on device for the image to blur
 	fp *blurredDev = nullptr;	///< region allocated on device for the resulted blur
 
 public:
 	/// Allocates space (on the device) for the image to be blurred and the result
-	StackBlurCUDAImpl(bool forTinySyms) : AbsStackBlurImpl() {
-		extern const unsigned Settings_MAX_FONT_SIZE;
-		extern unsigned TinySymsSz();
-		static const size_t fpSz = sizeof(fp),
-			maxBuffSz = Settings_MAX_FONT_SIZE * Settings_MAX_FONT_SIZE * fpSz,
-			tinySymsBuffSz = TinySymsSz() * TinySymsSz() * fpSz;
-
-		const size_t buffSz = forTinySyms ? tinySymsBuffSz : maxBuffSz;
+	StackBlurCUDAImpl(bool forTinySyms) : AbsStackBlurImpl(),
+			maxDataPixels(forTinySyms ? BlurEngine::PixelsCountTinySym() : BlurEngine::PixelsCountLargestData()) {
+		const size_t buffSz = maxDataPixels * sizeof(fp) * StreamsManager::streams().count(); // one separate buffer for each stream
 		CHECK_OP(cudaMalloc((void**)&toBlurDev, buffSz));
 		CHECK_OP(cudaMalloc((void**)&blurredDev, buffSz));
 	}
@@ -109,8 +109,13 @@ public:
 	*/
 	void apply(const cv::Mat &toBlur, cv::Mat &blurred) const override {
 		assert(toBlur.type() == CV_32FC1);
+
+		// Input and output data are mapped in the device memory separately for each stream - ioOffset from below provides the location
+		const auto cpuId = omp_get_thread_num(); // There's a stream for each CPU
+		const auto ioOffset = cpuId * maxDataPixels;
+
 		stackBlur((const fp*)toBlur.data, (fp*)blurred.data,
-				  toBlurDev, blurredDev,
+				  &toBlurDev[ioOffset], &blurredDev[ioOffset],
 				  (unsigned)toBlur.rows, (unsigned)toBlur.step[0], r);
 	}
 };
