@@ -41,7 +41,7 @@
 
 #include "boxBlurBase.h"
 
-/// Box blurring algorithm
+/// Box blurring algorithm performing the operation using only the GPU
 class BoxBlurCUDA : public TBoxBlur<BoxBlurCUDA> {
 	friend class TBoxBlur<BoxBlurCUDA>; // for accessing nonTinySyms() and tinySyms() from below
 
@@ -69,6 +69,20 @@ public:
 
 	/// Configure the filter through the mask width and the iterations count
 	BoxBlurCUDA(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
+};
+
+
+/// Box blurring algorithm performing only the initialization of the rolling sums on the GPU
+class BoxBlurCUDAmin : public TBoxBlur<BoxBlurCUDAmin> {
+	friend class TBoxBlur<BoxBlurCUDAmin>; // for accessing nonTinySyms() and tinySyms() from below
+
+protected:
+	static AbsBoxBlurImpl& nonTinySyms();	///< handler for non-tiny symbols
+	static AbsBoxBlurImpl& tinySyms();		///< handler for tiny symbols
+
+public:
+	/// Configure the filter through the mask width and the iterations count
+	BoxBlurCUDAmin(unsigned boxWidth_ = 1U, unsigned iterations_ = 1U);
 };
 
 #endif // H_BOX_BLUR_CUDA

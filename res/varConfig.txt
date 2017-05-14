@@ -194,7 +194,8 @@ DirSmooth_DesiredBaseForCenterAndCornerMcs	.95
 ; C1 = (.01*255)^2   ;   C2 = (.03*255)^2
 ; Blur type can be:
 ;	- box - BoxBlur with a single iteration
-;	- boxCUDA - BoxBlur using CUDA with a single iteration
+;	- boxCUDA - BoxBlur using CUDA with a single iteration performing the operation using only the GPU
+;	- boxCUDAmin - BoxBlur using CUDA with a single iteration performing only the initialization of the rolling sums on the GPU
 ;	- ext_box - ExtBoxBlur with a single iteration
 ;	- stack - StackBlur adapted for desired standard deviation
 ;	- stackCUDA - StackBlur using CUDA adapted for desired standard deviation

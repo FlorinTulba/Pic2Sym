@@ -316,7 +316,8 @@ static VALIDATOR(positiveD,		IsGreaterThan, double, 0.);
 static VALIDATOR(nonNegativeD,	IsGreaterThan, double, 0., true);
 
 static VALIDATOR(availableClusterAlgs,	IsOneOf, string, { "None", "Partition", "TTSAS" });
-static VALIDATOR(availBlurAlgsForStrSim, IsOneOf, string, { "box", "boxCUDA", "ext_box", "stack", "stackCUDA", "gaussian" });
+static VALIDATOR(availBlurAlgsForStrSim, IsOneOf, string,
+		{ "box", "boxCUDA", "boxCUDAmin", "ext_box", "stack", "stackCUDA", "gaussian" });
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
@@ -426,6 +427,10 @@ BlurEngine::ConfInstRegistrator TBoxBlur<BoxBlur>::cir("box", BoxBlur::configure
 BlurEngine::ConfInstRegistrator ExtBoxBlur::cir("ext_box", ExtBoxBlur::configuredInstance());
 BlurEngine::ConfInstRegistrator TStackBlur<StackBlur>::cir("stack", StackBlur::configuredInstance());
 BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian", GaussBlur::configuredInstance());
+BlurEngine::ConfInstRegistrator TBoxBlur<BoxBlurCUDAmin>::cir("boxCUDAmin", cudaInitOk() ?
+															  (const BlurEngine&)BoxBlurCUDAmin::configuredInstance() :
+															  (cerr<<"Using 'box' blur instead of 'boxCUDAmin'!"<<endl,
+															  (const BlurEngine&)BoxBlur::configuredInstance()));
 BlurEngine::ConfInstRegistrator TBoxBlur<BoxBlurCUDA>::cir("boxCUDA", BoxBlurCUDA::preconditionsOk() ?
 														   (const BlurEngine&)BoxBlurCUDA::configuredInstance() :
 														   (cerr<<"Using 'box' blur instead of 'boxCUDA'!"<<endl,

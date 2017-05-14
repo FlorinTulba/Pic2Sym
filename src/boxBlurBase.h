@@ -52,15 +52,15 @@
 /// Base class for the Box blur implementations
 class AbsBoxBlurImpl /*abstract*/ {
 protected:
-	unsigned wl = 0U;			///< first odd width of the box mask less than the ideal width
-	unsigned wu = 0U;			///< first odd width of the box mask greater than the ideal width
+	unsigned wl = 1U;			///< first odd width of the box mask less than the ideal width
+	unsigned wu = 3U;			///< first odd width of the box mask greater than the ideal width
 	unsigned countWl = 0U;		///< the number of times to iterate the filter of width wl
 	unsigned countWu = 0U;		///< the number of times to iterate the filter of width wu
 	unsigned iterations = 0U;	///< desired number of iterations (countWl + countWu)
 
-public:
 	virtual ~AbsBoxBlurImpl() {}
 
+public:
 	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
 	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details
 	virtual AbsBoxBlurImpl& setSigma(double desiredSigma, unsigned iterations_ = 1U);

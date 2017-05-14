@@ -43,11 +43,44 @@
 
 #include <cuda_runtime.h>
 
-#include <cassert>
-
 #include <omp.h>
 
 using namespace std;
+
+/// Computes the initial rolling sums for each row / column
+__global__
+void initRollSums(fp *dataDev, unsigned rowsOrCols, unsigned providedColsOrRows, unsigned maskRadius) {
+	const unsigned rowOrCol = blockIdx.x * blockDim.x + threadIdx.x,
+		idxStartRowOrCol = rowOrCol,
+		idxEndRowOrCol = (providedColsOrRows - 1U) * rowsOrCols + rowOrCol;
+	const fp dataEndRowOrCol = dataDev[idxEndRowOrCol];
+	if(rowOrCol < rowsOrCols) {
+		fp rollingSum = dataDev[idxStartRowOrCol] * fp(maskRadius + 1U); // init the sum with (radius+1)*1st value
+		for(unsigned colOrRow = 1U, idx = idxStartRowOrCol + rowsOrCols; colOrRow <= maskRadius;
+				++colOrRow, idx += rowsOrCols)
+			rollingSum += (idx < idxEndRowOrCol ? dataDev[idx] : dataEndRowOrCol); // add following radius values
+
+		dataDev[idxStartRowOrCol] = rollingSum;
+	}
+}
+
+void computeInitialRollingSums(fp *firstColOrRow, size_t firstColOrRowDataSz,
+							   fp *nextRelevantColsOrRows, size_t nextRelevantColsOrRowsDataSz,
+							   fp *dataDev, unsigned rowsOrCols, unsigned providedColsOrRows,
+							   unsigned maskRadius, cudaStream_t streamId) {
+	CHECK_OP(cudaMemcpyAsync((void*)&dataDev[rowsOrCols],
+		(void*)nextRelevantColsOrRows,
+		nextRelevantColsOrRowsDataSz, cudaMemcpyHostToDevice, streamId));
+
+	// Launch kernel computing the rolling sum in dataDev[0 .. rowsOrCols]
+	enum { ThreadsPerBlock = 64 };
+	initRollSums<<<1 + (int(rowsOrCols)-1)/ThreadsPerBlock, ThreadsPerBlock, 0ULL, streamId>>>
+		(dataDev, rowsOrCols, providedColsOrRows, maskRadius);
+	CHECK_OP(cudaGetLastError());
+
+	CHECK_OP(cudaMemcpyAsync((void*)firstColOrRow, (void*)dataDev,
+		firstColOrRowDataSz, cudaMemcpyDeviceToHost, streamId));
+}
 
 /// Performs the box blur to the columns
 __global__
@@ -56,13 +89,13 @@ void boxBlurCols(const fp* const __restrict__ imgBuf, fp* const __restrict__ blu
 				const unsigned* const __restrict__ maskWidthsDev, const unsigned iterations) {
 	extern __shared__ fp ioData[]; // 2*'rows' rows and blockDim.x columns
 	const unsigned col = blockDim.x * blockIdx.x + threadIdx.x,
-		maxInIdx = rows * blockDim.x;
+				maxInIdx = rows * blockDim.x;
 	fp *inData = ioData, *outData = inData + maxInIdx, *aux = nullptr;
 
 	// Copy data (columns accessed by this block from imgBuf) to shared memory
 	if(col < cols) {
 		for(unsigned row = 0U, inIdx = threadIdx.x, imgIdx = col; row < rows;
-			++row, inIdx += blockDim.x, imgIdx += cols)
+				++row, inIdx += blockDim.x, imgIdx += cols)
 			inData[inIdx] = imgBuf[imgIdx];
 	}
 	__syncthreads();
@@ -71,9 +104,9 @@ void boxBlurCols(const fp* const __restrict__ imgBuf, fp* const __restrict__ blu
 		for(unsigned iter = 0U; iter < iterations;
 				++iter, aux = inData, inData = outData, outData = aux) {
 			const unsigned maskWidth = maskWidthsDev[iter],
-				maskRadius = maskWidth >> 1;
+						maskRadius = maskWidth >> 1;
 			const fp colTop = inData[threadIdx.x],
-				colBottom = inData[threadIdx.x + (rows-1U) * blockDim.x];
+					colBottom = inData[threadIdx.x + (rows-1U) * blockDim.x];
 
 			/* Perform the box filtering (on each column) with a box of width maskWidth replicating the borders */
 
@@ -101,7 +134,7 @@ void boxBlurCols(const fp* const __restrict__ imgBuf, fp* const __restrict__ blu
 	__syncthreads();
 	if(col < cols) {
 		for(unsigned row = 0U, inIdx = threadIdx.x, outIdx = col; row < rows;
-			++row, inIdx += blockDim.x, outIdx += cols)
+				++row, inIdx += blockDim.x, outIdx += cols)
 			blurredCols[outIdx] = inData[inIdx];
 	}
 }
@@ -122,8 +155,8 @@ void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const u
 			const fp startRow = ioDataGlob[idxStartRow],
 					endRow = ioDataGlob[idxEndRow];
 			const unsigned maskWidth = maskWidthsDev[iter],
-					maskRadius = maskWidth >> 1,
-					min_maskRadius_cols = min(maskRadius, cols);
+						maskRadius = maskWidth >> 1,
+						min_maskRadius_cols = min(maskRadius, cols);
 
 			/* Perform the box filtering (on each row) with a box of width maskWidth replicating the borders */
 
@@ -134,8 +167,8 @@ void boxBlurRows(fp* const __restrict__ ioDataGlob, const unsigned rows, const u
 
 			// Compute columns 0 .. min_maskRadius_cols-1
 			unsigned frontIdx = idxStartRow + (1U + maskRadius),
-				outIdx = idxStartRow,
-				col = 0U;
+					outIdx = idxStartRow,
+					col = 0U;
 			for(; col < min_maskRadius_cols; ++col, ++outIdx, ++frontIdx) {
 				prevVals[threadIdx.x + col * blockDim.x] = ioDataGlob[outIdx];
 				ioDataGlob[outIdx] = rollingSum;
@@ -179,16 +212,16 @@ void boxBlur(const fp *imgBuff, fp *result, fp *toBlurDev, fp *blurredDev,
 // 	CHECK_OP(cudaHostUnregister((void*)imgBuff));
 
 	boxBlurCols<<<(cols + BoxBlurCUDA::BlockDimCols() - 1) / BoxBlurCUDA::BlockDimCols(),
-			BoxBlurCUDA::BlockDimCols(),
-			2U * BoxBlurCUDA::BlockDimCols() * rows * fpSz, // dynamic shared memory for in+out row x blockDim tables of floats
-			streamId>>>
+				BoxBlurCUDA::BlockDimCols(),
+				2U * BoxBlurCUDA::BlockDimCols() * rows * fpSz, // dynamic shared memory for in+out rows x blockDim tables of floats
+				streamId>>>
 		(toBlurDev, blurredDev, rows, cols, maskWidthsDev, iterations);
 	CHECK_OP(cudaGetLastError());
 
 	boxBlurRows<<<(rows + BoxBlurCUDA::BlockDimRows() - 1) / BoxBlurCUDA::BlockDimRows(),
-			BoxBlurCUDA::BlockDimRows(),
-			BoxBlurCUDA::BlockDimRows() * largestMaskRadius * fpSz, // dynamic shared memory for blockDim x largest_mask_radius tables of floats
-			streamId>>>
+				BoxBlurCUDA::BlockDimRows(),
+				BoxBlurCUDA::BlockDimRows() * largestMaskRadius * fpSz, // dynamic shared memory for blockDim x largest_mask_radius tables of floats
+				streamId>>>
 		(blurredDev, rows, cols, maskWidthsDev, iterations, scaler);
 	CHECK_OP(cudaGetLastError());
 

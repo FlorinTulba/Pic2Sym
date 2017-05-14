@@ -44,7 +44,26 @@
 #include <driver_types.h>
 
 /**
+Computes asynchronously on the GPU the starting rolling sum for each row / column.
+
+@param firstColOrRow data of the first column / row of the image
+@param firstColOrRowDataSz the space occupied by firstColOrRow
+@param nextRelevantColsOrRows data of the following columns / rows of the image relevant for initializing the rolling sums
+@param nextRelevantColsOrRowsDataSz the space occupied by nextRelevantColsOrRows
+@param dataDev the start of the data for current stream used for the computation and also for saving the result
+@param rowsOrCols number of rows / columns of the image
+@param providedColsOrRows number of columns / rows of the image provided for initializing the rolling sums
+@param maskRadius the size of the mask applied in this iteration
+@param streamId id of the stream performing this initialization of rolling sums
+*/
+void computeInitialRollingSums(fp *firstColOrRow, size_t firstColOrRowDataSz,
+							   fp *nextRelevantColsOrRows, size_t nextRelevantColsOrRowsDataSz,
+							   fp *dataDev, unsigned rowsOrCols, unsigned providedColsOrRows,
+							   unsigned maskRadius, cudaStream_t streamId);
+
+/**
 Performs box blur using CUDA.
+
 @param imgBuff the image to be blurred
 @param result the blurred image
 @param toBlurDev device buffer for the image to be blurred
@@ -67,6 +86,7 @@ void boxBlur(const fp *imgBuff, fp *result,
 
 /**
 Performs stack blur using CUDA.
+
 @param imgBuff the image to be blurred
 @param result the blurred image
 @param toBlurDev device buffer for the image to be blurred
