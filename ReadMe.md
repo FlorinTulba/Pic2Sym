@@ -1,4 +1,4 @@
-# Pic2Sym v2.0
+# Pic2Sym using CUDA
 
 This application **approximates images** by a **grid of colored symbols with colored backgrounds**.<br>
 It runs on **64\-bit Windows \(at least version 7\)**. 

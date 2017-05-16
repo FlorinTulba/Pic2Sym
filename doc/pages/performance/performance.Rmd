@@ -462,7 +462,14 @@ When the *[Structural Similarity][]* is enabled and the application uses **BoxBl
 
 *OpenCV* provides CUDA implementations for the *Gaussian* (`cv::cuda::createGaussianFilter`) and the *Box* filters (`cv::cuda::createBoxFilter`). Unfortunately, both of them were around 30 times slower than their non-CUDA versions on the [GPU available for testing](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) (which appears to be at least 8 times slower than other newer GPU-s - the execution times of various sample programs reported on various discussion threads are much better for those GPU-s).
 
-Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtain my **Box** and **Stack** blurring solutions from the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch.
+Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtained my **Box** and **Stack** blurring solutions (see the [blurCUDA](../../blurCUDA/) folder).
+
+The **Box** blur comes with 2 CUDA-based implementations:
+
+1. one executing the blur *entirely on the GPU*
+1. the other one using the GPU only for the *initialization of the rolling sums* of next iteration, while the CPU finishes the previous iteration
+
+Despite the fact that the CPU-only box blur appears to be pretty fast, the algorithm (2) is slower than (1), although it runs mostly on CPU and it leaves the GPU performing its share asynchronously.
 
 On modern GPU-s, all these CUDA implementations might still outperform the corresponding CPU-only algorithms after careful parameter tunning.
 

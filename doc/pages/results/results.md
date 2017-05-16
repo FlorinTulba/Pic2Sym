@@ -21,6 +21,7 @@ The rest of the page covers these topics:
 -   [Illustrating the 'Hybrid Results' feature](#HybridModeDemo)
 -   [Effects of the 'Hybrid Results' mode on Problematic Images](#ChallengingCases)
 -   [Handling Large Font Families](#LargeFontFamilies)
+-   [Making use of the GPU with CUDA](#UsingGPU)
 -   [A few Conclusions](#Conclusions)
 
 ------------------------------------------------------------------------
@@ -160,6 +161,20 @@ Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols t
 Both cases show that Clustering the Symbols here couldn't help much during the transformations, because there were so few clusters.
 
 The times would be longer when enabling just the *Strunctural Similarity* Matching Aspect or when applying the transformations on images with a more finely-grained texture. See the [Performance Considerations](../performance/performance.md) about that.
+
+------------------------------------------------------------------------
+
+<a name = "UsingGPU"></a>
+
+### Making use of the GPU with CUDA:
+
+*OpenCV* provides CUDA implementations for the *Gaussian* (`cv::cuda::createGaussianFilter`) and the *Box* filters (`cv::cuda::createBoxFilter`). Unfortunately, both of them were around 30 times slower than their non-CUDA versions on the [GPU available for testing](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) (which appears to be at least 8 times slower than other newer GPU-s - the execution times of several sample programs reported on various discussion threads are much better for those GPU-s).
+
+Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtained my **Box** and **Stack** blurring solutions (see the [blurCUDA](../../blurCUDA/) folder). The quality of the results produced by these versions of the CPU-only algorithms is slightly affected by using single-precision floating point values (supported by all GPU-s), instead of double-precision. Thus, a few patches might get different approximations when comparing the results of the algorithms.
+
+On modern GPU-s, all these CUDA implementations might still outperform the corresponding CPU-only algorithms after careful parameter tunning.
+
+Nevertheless, other parts of the application might benefit even from such older generation GPU-s.
 
 ------------------------------------------------------------------------
 
