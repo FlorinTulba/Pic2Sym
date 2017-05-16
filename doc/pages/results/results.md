@@ -170,7 +170,7 @@ The times would be longer when enabling just the *Strunctural Similarity* Matchi
 
 *OpenCV* provides CUDA implementations for the *Gaussian* (`cv::cuda::createGaussianFilter`) and the *Box* filters (`cv::cuda::createBoxFilter`). Unfortunately, both of them were around 30 times slower than their non-CUDA versions on the [GPU available for testing](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) (which appears to be at least 8 times slower than other newer GPU-s - the execution times of several sample programs reported on various discussion threads are much better for those GPU-s).
 
-Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtained my **Box** and **Stack** blurring solutions (see the [blurCUDA](../../blurCUDA/) folder). The quality of the results produced by these versions of the CPU-only algorithms is slightly affected by using single-precision floating point values (supported by all GPU-s), instead of double-precision. Thus, a few patches might get different approximations when comparing the results of the algorithms.
+Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtained my **Box** and **Stack** blurring solutions (see the [blurCUDA](../../../blurCUDA/) folder). The quality of the results produced by these versions of the CPU-only algorithms is slightly affected by using single-precision floating point values (supported by all GPU-s), instead of double-precision. Thus, a few patches might get different approximations when comparing the results of the algorithms.
 
 On modern GPU-s, all these CUDA implementations might still outperform the corresponding CPU-only algorithms after careful parameter tunning.
 
