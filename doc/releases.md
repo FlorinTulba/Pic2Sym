@@ -1,5 +1,16 @@
 ## Released Versions:
 
+[**Pic2Sym with several CUDA prototype algorithms**](../../prototypesCUDA/ReadMe.md):
+
+- is built on top of version 2.0, but uses *single-precision floating point values*, which are available on all GPU-s. Version 2.0 is using double-precision
+- offers 2 versions of the **Box blur** algorithm:
+	- one executing the blur *entirely on the GPU*
+	- the other one using the GPU only for the *initialization of the rolling sums* of next iteration, while the CPU finishes the previous iteration
+- adapted and improved an existing CUDA version of the **Stack blur**
+
+
+* * *
+
 [**Version 2.0**](../../version_2.0/ReadMe.md):
 
 - provides ***shorter image transformation time*** and ***enhanced quality of the result*** by **pruning the glyphs** and then **regrouping them by similarity**. Several methods of *filtering* and *clustering* are available
