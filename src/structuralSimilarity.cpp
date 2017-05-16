@@ -119,6 +119,13 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 	if(ssim)
 		return;
 
+#ifdef _DEBUG
+	extern const string StructuralSimilarity_BlurType;
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static const bool usingGaussianBlur = (StructuralSimilarity_BlurType.compare("gaussian") == 0);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+#endif
+
 	Mat covariance, ssimMap;
 
 	computeVariancePatch(patch, cachedData);
@@ -136,19 +143,23 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 										symData.masks[SymData::VARIANCE_GR_SYM_IDX];
 
 #ifdef _DEBUG // checking the simplifications mentioned above
-	double minVal, maxVal;
-	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
+	// Since the other blur algorithms have lower quality, it is difficult to set an error threshold that is also valid for them
+	// That's why the simplifications are checked only for the Gaussian blur
+	if(usingGaussianBlur) {
+		double minVal, maxVal;
+		Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
-	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+		StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
+		minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
+		assert(abs(minVal) < EPS);
+		assert(abs(maxVal) < EPS);
 
-	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
-	variancePatchApprox_ -= blurredPatchApproxSq;
-	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS);
-	assert(abs(maxVal) < EPS);
+		StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
+		variancePatchApprox_ -= blurredPatchApproxSq;
+		minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
+		assert(abs(minVal) < EPS);
+		assert(abs(maxVal) < EPS);
+	}
 #endif // checking the simplifications mentioned above
 
 	const Mat productMats = patch.mul(approxPatch),
@@ -164,5 +175,10 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 
 	divide(numerator, denominator, ssimMap);
 	ssim = *mean(ssimMap).val;
-	assert(abs(*ssim) < EPSp1());
+#ifdef _DEBUG // checking that ssim is in -1..1 range
+	// Since the other blur algorithms have lower quality, it is difficult to set an error threshold that is also valid for them
+	// That's why the range check is performed only for the Gaussian blur
+	if(usingGaussianBlur)
+		assert(abs(*ssim) < EPSp1());
+#endif
 }
