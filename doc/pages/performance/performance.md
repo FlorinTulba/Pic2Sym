@@ -335,7 +335,7 @@ The project includes following blur algorithms:
 
 When the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* is enabled and the application uses **BoxBlur** (which is configured to use a single iteration) the image transformation performs around 1.17 times faster compared to the **GaussBlur**. **ExtBoxBlur** with a single iteration is slightly faster than **BoxBlur** under the same assumptions.
 
-*OpenCV* provides CUDA implementations for the *Gaussian* (`cv::cuda::createGaussianFilter`) and the *Box* filters (`cv::cuda::createBoxFilter`). Unfortunately, both of them were around 30 times slower than their non-CUDA versions on the [GPU available for testing](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) (which appears to be at least 8 times slower than other newer GPU-s - the execution times of various sample programs reported on various discussion threads are much better for those GPU-s).
+*OpenCV* provides CUDA implementations for the *Gaussian* (`cv::cuda::createGaussianFilter`) and the *Box* filters (`cv::cuda::createBoxFilter`). Unfortunately, both of them were around 30 times slower than their non-CUDA versions on the [GPU available for testing](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) (which appears to be at least 8 times slower than other newer GPU-s - the execution times of several sample programs reported on various discussion threads are much better for those GPU-s).
 
 Similar poor performance on the same GPU (20 times worse than non-CUDA implementations) obtain my **Box** and **Stack** blurring solutions from the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch.
 

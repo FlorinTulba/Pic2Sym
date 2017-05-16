@@ -40,7 +40,7 @@ Currently, the most complex **MatchAspect** is [***StructuralSimilarity***][Stru
 
 Current version of the project relies only on CPU power. In this context and for the reference window width and standard deviation prescribed for the Gaussian blur within ***StructuralSimilarity***, none of the presented alternatives and neither other investigated blurs were able to beat the Gaussian blur from OpenCV while also aiming for similar blur quality.
 
-The [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch introduced implementations for the *Box* and *Stack* blur algorithms.<br>
+The [prototypesCUDA](../../../../../prototypesCUDA/ReadMe.md) branch introduced implementations for the *Box* and *Stack* blur algorithms.<br>
 
 -------
 [Back to the Appendix](../appendix.md) or jump to the [start page](../../../../ReadMe.md)
