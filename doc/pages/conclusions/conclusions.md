@@ -24,7 +24,9 @@ By now (v2.0), the application:
 - allows multiple *non\-conflicting user commands* running in *parallel*
 - tackles well transformations based on font families with *less than 400 symbols*
 
-Further speed improvements could be obtained by involving *accelerator devices* from one&#39;s machine, e.g. GPU\-s, especially in areas like the *Gaussian blur*.
+Further speed improvements could be obtained by involving __modern__ *accelerator devices* from one&#39;s machine, like GPU\-s. Even older GPU generations might help in some areas of the application, but they appear not suitable for blur algorithms (which were the most expensive parts).
+
+Using [this old GPU](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) for the *Box* and *Stack* blur algorithms (sources available on the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch) showed poor time performance. Newer GPU-s might still outperform the CPU-only versions of these algorithms.
 
 -----
 [Back to start page](../../../ReadMe.md)

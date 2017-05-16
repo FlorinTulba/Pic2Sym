@@ -93,7 +93,7 @@ This scenario shares its times with the case from below. The only differnce betw
 
 ### Using Pic2Sym v1.3 to illustrate 'Hybrid Results' (feature introduced in v1.1):
 
-**Scenario 6b** - using the scenario right from above with Hybrid Result mode enabled:<br> [![](Example1_v1.3.jpg)](../../examples/6_BPmono_Bold_APPLE_ROMAN_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> Notice how the **symbols avoid imposing themselves** and are **more visible only where they are more naturally suited**. Use **Hybrid mode** for such **discrete approximations**.
+**Scenario 6b** - using the scenario right from above with Hybrid Result mode enabled:<br> [![](Example1_v1.3.jpg)](../../examples/6_BPmono_Bold_APPLE_ROMAN_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br> Notice how the **symbols avoid imposing themselves** and are **more visible only where they are more naturally suited**. Use **Hybrid mode** for such **discreet approximations**.
 
 <img src="./Example1_ObtainedTimes-1.png" style="display: block; margin: auto;" />
 
