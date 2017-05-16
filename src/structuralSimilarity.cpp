@@ -140,19 +140,24 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 										symData.masks[SymData::VARIANCE_GR_SYM_IDX];
 
 #ifdef _DEBUG // checking the simplifications mentioned above
-	double minVal, maxVal;
-	Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
+	// Since the other blur algorithms have lower quality, it is difficult to set an error threshold that is also valid for them
+	// That's why the simplifications are checked only for the Gaussian blur
+	extern const string StructuralSimilarity_BlurType;
+	if(StructuralSimilarity_BlurType.compare("gaussian") == 0) {
+		double minVal, maxVal;
+		Mat blurredPatchApprox_, variancePatchApprox_; // computed by brute-force
 
-	StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
-	minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS_larger);
-	assert(abs(maxVal) < EPS_larger);
+		StructuralSimilarity::supportBlur.process(approxPatch, blurredPatchApprox_, cachedData.forTinySyms);
+		minMaxIdx(blurredPatchApprox - blurredPatchApprox_, &minVal, &maxVal); // math vs. brute-force
+		assert(abs(minVal) < EPS_larger);
+		assert(abs(maxVal) < EPS_larger);
 
-	StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
-	variancePatchApprox_ -= blurredPatchApproxSq;
-	minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
-	assert(abs(minVal) < EPS_larger);
-	assert(abs(maxVal) < EPS_larger);
+		StructuralSimilarity::supportBlur.process(approxPatch.mul(approxPatch), variancePatchApprox_, cachedData.forTinySyms);
+		variancePatchApprox_ -= blurredPatchApproxSq;
+		minMaxIdx(variancePatchApprox - variancePatchApprox_, &minVal, &maxVal); // math vs. brute-force
+		assert(abs(minVal) < EPS_larger);
+		assert(abs(maxVal) < EPS_larger);
+	}
 #endif // checking the simplifications mentioned above
 
 	const Mat productMats = patch.mul(approxPatch),
