@@ -57,7 +57,7 @@ Some behavior aspects of the application can be changed without recompiling the 
 	Initially, all filters are enabled and *PreserveRemovableSymbolsForExamination* is FALSE<br><br>
 1. **Setting the Blur algorithm used by the Structural Similarity matching aspect**<br>
 	See &quot;*StructuralSimilarity_BlurType*&quot; from the [configuration file][].<br>
-	Using Box blurring (with a single iteration), by default<br><br>
+	Using Extended Box blurring (with a single iteration), by default<br><br>
 1. **Configuring the heuristic for Skipping Matching Aspects while approximating image patches**<br>
 	See &quot;*UseSkipMatchAspectsHeuristic*&quot; and &quot;*EnableSkipAboveMatchRatio*&quot; from the [configuration file][].<br>
 	Initially, the heuristic is enabled and *EnableSkipAboveMatchRatio* is set to 0.125<br><br>
