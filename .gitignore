@@ -1,25 +1,26 @@
 ## Files to ignore
+*.~ml
 *.aps
-*.suo
-*.user
+*.[bB][aA][kK]
 *.ilk
 *.lastbuildstate
-*.obj
-*.*sdf
 *.*log
-*.[bB][aA][kK]
-*.uml
-*.~ml
-*.Rhistory
+*.obj
+*.pdb
 /*.props
+*.Rhistory
+*.*sdf
+*.suo
+*.uml
+*.user
 
 ## Folders to ignore
 [Dd]ebug/
-[Rr]elease/
-x64/
-include/
-lib/
-scripts/
 doc/cache
 doc/doxy
 doc/pages/watermark.bmp
+include/
+lib/
+[Rr]elease/
+scripts/
+x64/

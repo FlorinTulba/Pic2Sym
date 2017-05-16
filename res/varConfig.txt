@@ -197,7 +197,7 @@ DirSmooth_DesiredBaseForCenterAndCornerMcs	.95
 ;	- ext_box - ExtBoxBlur with a single iteration
 ;	- stack - StackBlur adapted for desired standard deviation
 ;	- gaussian - the reference GaussBlur
-StructuralSimilarity_BlurType	box
+StructuralSimilarity_BlurType	ext_box
 StructuralSimilarity_RecommendedWindowSide	11
 StructuralSimilarity_SIGMA	1.5
 StructuralSimilarity_C1	6.5025

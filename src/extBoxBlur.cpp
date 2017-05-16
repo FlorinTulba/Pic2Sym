@@ -115,7 +115,8 @@ class ExtBoxBlur::Impl {
 
 		// Apply the number of times requested on the transposed original
 		// Temp needs to be processed; blurred holds the outcome
-		Mat temp = toBlur.t();
+		Mat temp;
+		transpose(toBlur, temp);
 		blurred = Mat(origWidth, origHeight, CV_64FC1);
 		int dataRows = temp.rows, dataCols = temp.cols, dataRowsM1 = dataRows - 1, dataColsM1 = dataCols - 1;
 
@@ -172,7 +173,7 @@ class ExtBoxBlur::Impl {
 
 		// Apply the number of times requested on the temporary blurred transposed back
 		// Temp needs to be processed; blurred holds the outcome
-		temp = temp.t();
+		transpose(temp, temp);
 		if(blurred.isContinuous())
 			blurred = blurred.reshape(1, origHeight);
 		else
