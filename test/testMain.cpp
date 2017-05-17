@@ -66,6 +66,10 @@ using namespace boost::filesystem;
 extern const double INV_255();
 
 #pragma warning(disable:4273) // inconsistent DLL linkage
+int __cdecl omp_get_num_procs(void) {
+	return 1;
+}
+
 int __cdecl omp_get_thread_num(void) {
 	return 0;
 }

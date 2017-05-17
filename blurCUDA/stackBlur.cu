@@ -45,7 +45,16 @@
 
 #include <cassert>
 
+#ifndef UNIT_TESTING
+
+// The project uses parallelism
 #include <omp.h>
+
+#else // UNIT_TESTING defined
+// Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
+extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
+
+#endif // UNIT_TESTING
 
 #define THREADS			64U
 #define ROW_CHUNK_SZ	16U

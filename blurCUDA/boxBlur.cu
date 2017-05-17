@@ -43,8 +43,6 @@
 
 #include <cuda_runtime.h>
 
-#include <omp.h>
-
 using namespace std;
 
 /// Computes the initial rolling sums for each row / column

@@ -61,9 +61,23 @@ Credits for this CUDA version to Michael <lioucr@hotmail.com> - http://home.so-n
 
 #include <cuda_runtime.h>
 
+#pragma warning ( pop )
+
+#ifndef UNIT_TESTING
+
+#pragma warning ( push, 0 )
+
+// The project uses parallelism
 #include <omp.h>
 
 #pragma warning ( pop )
+
+#else // UNIT_TESTING defined
+// Unit Tests don't use parallelism, to ensure that at least the sequential code works as expected
+extern int __cdecl omp_get_num_procs(void); // returns 1 - using a single CPU
+extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the unique thread used
+
+#endif // UNIT_TESTING
 
 using namespace std;
 using namespace cv;
