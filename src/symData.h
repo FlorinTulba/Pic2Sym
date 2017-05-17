@@ -41,6 +41,7 @@
 
 #include "matSerialization.h"
 #include "floatType.h"
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 
@@ -59,7 +60,7 @@
 /// Most symbol information
 struct SymData {
 	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 1U; ///< version of SymData class
+	static const unsigned VERSION = 0U; ///< version of SymData class
 
 	/**
 	Computes most information about a symbol based on glyph parameter.
@@ -133,19 +134,44 @@ struct SymData {
 	*/
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned int version) {
+		UNREFERENCED_PARAMETER(version);
 		const bool isSaving = Archive::is_saving::value;
 
 		ar & code & symIdx;
 
-		// SymData version 0 was using double-precision for several fields; Newer versions use single-precision.
-		if(version >= 1U || isSaving) {
-			ar & minVal & diffMinMax & avgPixVal;
-			ar & mc.x & mc.y;
-			ar & negSym;
-			ar & masks;
+		/*
+		The branch 'prototypesCUDA' uses single-precision data, unlike any other branches.
+		Since the serialized files are shared among branches, 'prototypesCUDA' should:
+		- load double-precision values and convert them to single-precision to be suitable for this branch
+		- save double-precision values
+		*/
+		if(isSaving) {
+			double minValD = (double)minVal, diffMinMaxD = (double)diffMinMax, avgPixValD = (double)avgPixVal;
+			ar & minValD & diffMinMaxD & avgPixValD;
 
-		} else { // loading in version 0
-			// SymData version 0 was using double-precision for several fields; Newer versions use single-precision.
+			double mcXD = (double)mc.x, mcYD = (double)mc.y;
+			ar & mcXD & mcYD;
+			
+			if(negSym.type() == CV_32FC1) { // tiny symbols keep data in floating point
+				cv::Mat negSymD; // matrix of double values
+				negSym.convertTo(negSymD, CV_64FC1);
+				ar & negSymD;
+			
+			} else { // either byte or already double values
+				ar & negSym;
+			}
+
+			// matrices of double values
+			cv::Mat groundedGlyphD, blurOfGroundedGlyphD, varianceOfGroundedGlyphD;
+			masks[GROUNDED_SYM_IDX].convertTo(groundedGlyphD, CV_64FC1);
+			masks[BLURRED_GR_SYM_IDX].convertTo(blurOfGroundedGlyphD, CV_64FC1);
+			masks[VARIANCE_GR_SYM_IDX].convertTo(varianceOfGroundedGlyphD, CV_64FC1);
+			MatArray masks_ { {
+					masks[FG_MASK_IDX], masks[BG_MASK_IDX], masks[EDGE_MASK_IDX], // matrices of byte values
+					groundedGlyphD, blurOfGroundedGlyphD, varianceOfGroundedGlyphD } };
+			ar & masks_;
+
+		} else { // loading
 			double minValD, diffMinMaxD, avgPixValD;
 			ar & minValD & diffMinMaxD & avgPixValD;
 			minVal = (fp)minValD; diffMinMax = (fp)diffMinMaxD; avgPixVal = (fp)avgPixValD;
@@ -154,8 +180,8 @@ struct SymData {
 			ar & mcXD & mcYD;
 			mc.x = (fp)mcXD; mc.y = (fp)mcYD;
 
-			ar & negSym;
-			if(negSym.type() == CV_64FC1) // this happens for tiny symbols from version 0
+			ar & negSym; // byte for normal symbols; floating point for tiny symbols
+			if(negSym.type() == CV_64FC1) // this happens for tiny symbols
 				negSym.convertTo(negSym, CV_FC1);
 
 			ar & masks;
