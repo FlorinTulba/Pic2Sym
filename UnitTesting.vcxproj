@@ -62,7 +62,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -73,13 +73,15 @@
       <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
     <CudaCompile>
-      <Include>$(SolutionDir)blurCUDA\</Include>
+      <Include>$(SolutionDir)blurCUDA\;$(SolutionDir)src</Include>
       <CudaRuntime>Shared</CudaRuntime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_11,sm_11</CodeGeneration>
+      <AdditionalOptions>--Wno-deprecated-gpu-targets  -Xptxas="-v" %(AdditionalOptions)</AdditionalOptions>
+      <MaxRegCount>0</MaxRegCount>
     </CudaCompile>
     <CudaLink>
-      <GPUDebugInfo />
+      <GPUDebugInfo>true</GPUDebugInfo>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -98,7 +100,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;blurCUDA.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);$(CudaToolkitLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -109,10 +111,13 @@
       <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
     <CudaCompile>
-      <Include>$(SolutionDir)blurCUDA\</Include>
+      <Include>$(SolutionDir)blurCUDA\;$(SolutionDir)src</Include>
       <CudaRuntime>Shared</CudaRuntime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_11,sm_11</CodeGeneration>
+      <AdditionalOptions>--Wno-deprecated-gpu-targets  -Xptxas="-v" %(AdditionalOptions)</AdditionalOptions>
+      <MaxRegCount>0</MaxRegCount>
+      <Optimization>O3</Optimization>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo />
@@ -121,6 +126,7 @@
   <ItemGroup>
     <ClCompile Include="blurCUDA\boxBlurCUDA.cpp" />
     <ClCompile Include="blurCUDA\stackBlurCUDA.cpp" />
+    <ClCompile Include="blurCUDA\streamsManager.cpp" />
     <ClCompile Include="blurCUDA\util.cpp" />
     <ClCompile Include="src\blur.cpp" />
     <ClCompile Include="src\boxBlur.cpp" />
@@ -187,8 +193,10 @@
     <ClCompile Include="test\testSymFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="blurCUDA\boxBlur.cu" />
-    <None Include="blurCUDA\stackBlur.cu" />
+    <CudaCompile Include="blurCUDA\boxBlur.cu" />
+    <CudaCompile Include="blurCUDA\stackBlur.cu" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
     <None Include="res\vga855.fon" />
   </ItemGroup>
@@ -196,6 +204,7 @@
     <ClInclude Include="blurCUDA\blurCUDA.h" />
     <ClInclude Include="blurCUDA\boxBlurCUDA.h" />
     <ClInclude Include="blurCUDA\stackBlurCUDA.h" />
+    <ClInclude Include="blurCUDA\streamsManager.h" />
     <ClInclude Include="blurCUDA\util.h" />
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\blur.h" />

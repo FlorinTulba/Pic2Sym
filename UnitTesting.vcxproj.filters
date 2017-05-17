@@ -228,17 +228,14 @@
     <ClCompile Include="src\stackBlurBase.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
+    <ClCompile Include="blurCUDA\streamsManager.cpp">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
     <None Include="res\vga855.fon">
       <Filter>Resource Files</Filter>
-    </None>
-    <None Include="blurCUDA\boxBlur.cu">
-      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
-    </None>
-    <None Include="blurCUDA\stackBlur.cu">
-      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -506,6 +503,9 @@
     <ClInclude Include="blurCUDA\blurCUDA.h">
       <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
     </ClInclude>
+    <ClInclude Include="blurCUDA\streamsManager.h">
+      <Filter>Header Files\Pic2Sym\blurCUDA</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\BPmonoBold.ttf">
@@ -543,5 +543,13 @@
     <Text Include="res\TestSymFilters\unreadablePositives.txt">
       <Filter>Resource Files\SymFilters</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="blurCUDA\boxBlur.cu">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="blurCUDA\stackBlur.cu">
+      <Filter>Source Files\Pic2Sym\blurCUDA</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
