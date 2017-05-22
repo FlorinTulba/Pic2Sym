@@ -99,6 +99,7 @@ Following *open\-source* and *platform\-independent* libraries were employed in 
 However, it *runs only under Windows*, as it uses Windows\-specific:
 
 - **[OpenMP](https://msdn.microsoft.com/en-us/library/tt15eb9t.aspx)** (*its Visual C++ implementation*) for simple *multi\-threading support*
+- **[CUDA](https://en.wikipedia.org/wiki/CUDA)** for implementing versions of some algorithms using the GPU
 - *Open / Save Dialog*
 - *Select Font Dialog* and also *reads the registries* to find the *font file for the chosen font* (**FreeType** needs that file).
 
