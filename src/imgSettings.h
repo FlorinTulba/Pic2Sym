@@ -43,10 +43,12 @@
 
 #pragma warning ( push, 0 )
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
@@ -74,7 +76,9 @@ protected:
 		ImgSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
+#ifndef AI_REVIEWER_CHECK
 		ar >> defSettings.hMaxSyms >> defSettings.vMaxSyms;
+#endif // AI_REVIEWER_CHECK not defined
 
 		// these show message when there are changes
 		setMaxHSyms(defSettings.hMaxSyms);
@@ -84,10 +88,14 @@ protected:
 	/// Saves *this to ar
 	template<class Archive>
 	void save(Archive &ar, const unsigned) const {
+#ifndef AI_REVIEWER_CHECK
 		ar << hMaxSyms << vMaxSyms;
+#endif // AI_REVIEWER_CHECK not defined
 	}
+#ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
+#endif // AI_REVIEWER_CHECK not defined
 
 public:
 	/// Constructor takes initial values just to present valid sliders positions in Control Panel
@@ -103,6 +111,8 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const ImgSettings &is);
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(ImgSettings, 0)
+#endif // AI_REVIEWER_CHECK not defined
 
-#endif
+#endif // H_IMG_SETTINGS

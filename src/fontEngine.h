@@ -47,8 +47,8 @@
 #include <string>
 #include <set>
 
-#include <boost/filesystem/path.hpp>
-#include <boost/bimap/bimap.hpp>
+#include "boost_filesystem_path.h"
+#include "boost_bimap_bimap.h"
 
 #pragma warning ( pop )
 

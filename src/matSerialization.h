@@ -49,13 +49,16 @@
 #pragma warning ( push, 0 )
 
 #include <opencv2/core/core.hpp>
+#ifndef AI_REVIEWER_CHECK
+#include <boost/serialization/array.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
 namespace boost {
 	namespace serialization {
 		template<class Archive>
-		void serialize(Archive &ar, cv::Mat& mat, const unsigned int) {
+		void serialize(Archive &ar, cv::Mat& mat, const unsigned) {
 			ar & mat.rows & mat.cols;
 
 			ar & mat.flags; // provides the matrix type and continuity flag
@@ -67,6 +70,7 @@ namespace boost {
 #pragma warning( default : WARN_CONST_COND_EXPR )
 				mat.create(mat.rows, mat.cols, mat.type());
 
+#ifndef AI_REVIEWER_CHECK
 			if(continuous) {
 				const auto data_size = mat.total() * mat.elemSize();
 				ar & boost::serialization::make_array(mat.ptr(), data_size);
@@ -75,6 +79,7 @@ namespace boost {
 				for(int i = 0; i < mat.rows; i++)
 					ar & boost::serialization::make_array(mat.ptr(i), row_size);
 			}
+#endif // AI_REVIEWER_CHECK not defined
 		}
 	}
 }

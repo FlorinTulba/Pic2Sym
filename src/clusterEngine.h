@@ -46,7 +46,7 @@
 
 #include <set>
 
-#include <boost/filesystem/path.hpp>
+#include "boost_filesystem_path.h"
 
 #pragma warning ( pop )
 

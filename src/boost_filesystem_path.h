@@ -36,61 +36,49 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
+#ifndef H_BOOST_FILESYSTEM_PATH
+#define H_BOOST_FILESYSTEM_PATH
 
-#else // UNIT_TESTING not defined
+// Avoid using boost preprocessor when checking design of the project with AI Reviewer
+#ifdef AI_REVIEWER_CHECK
 
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+#include <string>
+#include <iostream>
 
-#pragma warning ( push, 0 )
+namespace boost {
+	namespace filesystem {
+		class path {
+		public:
+			path(...) {}
 
-#include <vector>
+			path& operator=(const char*) { return *this; }
+			path& operator=(const std::string&) { return *this; }
+			path& operator=(const path&) { return *this; }
 
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+			const std::string string() const { return ""; }
+			const std::wstring  wstring() const { return L""; }
+			const char* c_str() const { return nullptr; }
 
-#pragma warning ( pop )
+			path stem() const { return *this; }
 
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
+			path& append(...) { return *this; }
+			path& concat(...) { return *this; }
+			path& operator/=(const path&) { return *this; }
 
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
+			bool empty() const { return true; }
+			bool has_parent_path() const { return true; }
+			path& remove_filename() { return *this; }
+			path& replace_extension(...) { return *this; }
 
-	unsigned clustersCount = 0U;		///< total number of clusters
-
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned int /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
+			int compare(...) const { return 0; }
+		};
 	}
+}
 
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
+std::ostream& operator<<(std::ostream &os, const boost::filesystem::path&) { return os; }
 
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
+#else // AI_REVIEWER_CHECK was not defined
+#include <boost/filesystem/path.hpp>
+#endif // AI_REVIEWER_CHECK
 
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
-};
-
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // H_BOOST_FILESYSTEM_PATH

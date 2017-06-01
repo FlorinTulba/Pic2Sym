@@ -43,10 +43,11 @@
 
 #pragma warning ( push, 0 )
 
+#include <cassert>
 #include <map>
 #include <regex>
 
-#include <boost/filesystem.hpp>
+#include "boost_filesystem_operations.h"
 
 #pragma warning ( pop )
 

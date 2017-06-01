@@ -44,13 +44,15 @@
 #pragma warning ( push, 0 )
 
 #include <array>
+#ifndef AI_REVIEWER_CHECK
 #include <boost/serialization/array.hpp>
+#include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #ifdef UNIT_TESTING
 #	include <map>
 #endif // UNIT_TESTING defined
 
-#include <boost/serialization/version.hpp>
 #include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
@@ -142,7 +144,9 @@ struct SymData {
 #pragma warning( default : WARN_CONST_COND_EXPR )
 			removable = false;
 
+#ifndef AI_REVIEWER_CHECK
 		ar & masks;
+#endif // AI_REVIEWER_CHECK not defined
 	}
 
 #ifdef UNIT_TESTING
@@ -167,7 +171,9 @@ protected:
 	SymData(const cv::Point2d &mc_, double avgPixVal_);
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(SymData, SymData::VERSION);
+#endif // AI_REVIEWER_CHECK not defined
 
 /// VSymData - vector with most information about each symbol
 typedef std::vector<const SymData> VSymData;

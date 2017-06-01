@@ -49,7 +49,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 
 #pragma warning ( pop )
 

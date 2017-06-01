@@ -39,6 +39,9 @@
 #ifndef H_COMPRESS_OPTION
 #define H_COMPRESS_OPTION
 
+// Avoid using boost preprocessor when checking design of the project with AI Reviewer
+#ifndef AI_REVIEWER_CHECK
+
 /**
 USE_ZLIB_COMPRESSION should be defined when (de)compression of generated files is desired.
 Comment the define when the mentioned feature is not desired.
@@ -47,5 +50,7 @@ Comment the define when the mentioned feature is not desired.
 #ifdef USE_ZLIB_COMPRESSION
 #	define BOOST_IOSTREAMS_NO_LIB
 #endif // USE_ZLIB_COMPRESSION
+
+#endif // AI_REVIEWER_CHECK
 
 #endif // H_COMPRESS_OPTION

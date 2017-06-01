@@ -41,9 +41,13 @@
 
 #pragma warning ( push, 0 )
 
-#include <boost/filesystem/path.hpp>
+#include "boost_filesystem_path.h"
+
+// Avoid using boost preprocessor when checking design of the project with AI Reviewer
+#ifndef AI_REVIEWER_CHECK
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )
 
@@ -57,7 +61,9 @@ class PropsReader {
 
 protected:
 	const boost::filesystem::path propsFile;	///< path to the configuration file
+#ifndef AI_REVIEWER_CHECK
 	boost::property_tree::ptree props;			///< the property tree built from the configuration
+#endif // AI_REVIEWER_CHECK
 
 public:
 	/**
@@ -79,6 +85,7 @@ public:
 	*/
 	template<typename T>
 	T read(const std::string &prop) const {
+#ifndef AI_REVIEWER_CHECK
 		try {
 			return std::move(props.get<T>(prop));
 		} catch(boost::property_tree::ptree_bad_path&) {
@@ -86,6 +93,7 @@ public:
 		} catch(boost::property_tree::ptree_bad_data&) {
 			cerr<<"Property '"<<prop<<"' cannot be converted to its required type!"<<endl;
 		}
+#endif // AI_REVIEWER_CHECK
 		throw;
 	}
 };

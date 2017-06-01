@@ -54,6 +54,7 @@
 #pragma warning ( push, 0 )
 
 #include <atomic>
+#include <list>
 
 #pragma warning ( pop )
 

@@ -56,7 +56,7 @@
 #include <set>
 #include <algorithm>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 #include FT_TRUETYPE_IDS_H
 
 #pragma warning ( pop )

@@ -38,13 +38,12 @@
 
 #include "img.h"
 #include "imgSettings.h"
-#include "misc.h"
 
 #pragma warning ( push, 0 )
 
 #include <iostream>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 #include <opencv2/imgcodecs.hpp>
 
 #pragma warning ( pop )

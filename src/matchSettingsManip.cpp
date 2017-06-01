@@ -49,14 +49,20 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
+
+#ifndef AI_REVIEWER_CHECK
 #include <boost/scope_exit.hpp>
+#endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )
 
 using namespace std;
 using namespace boost::filesystem;
+
+#ifndef AI_REVIEWER_CHECK
 using namespace boost::archive;
+#endif // AI_REVIEWER_CHECK
 
 MatchSettingsManip& MatchSettingsManip::instance() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
@@ -67,6 +73,7 @@ MatchSettingsManip& MatchSettingsManip::instance() {
 }
 
 void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
+#ifndef AI_REVIEWER_CHECK
 	// Ensure ms.initialized is true when leaving the method
 #pragma warning ( disable : WARN_CANNOT_GENERATE_ASSIGN_OP )
 	BOOST_SCOPE_EXIT(&ms) {
@@ -74,6 +81,7 @@ void MatchSettingsManip::initMatchSettings(MatchSettings &ms) {
 			ms.initialized = true;
 	} BOOST_SCOPE_EXIT_END;
 #pragma warning ( default : WARN_CANNOT_GENERATE_ASSIGN_OP )
+#endif // AI_REVIEWER_CHECK
 
 	if(exists(cfgPath.append("initMatchSettings.cfg"))) {
 		if(last_write_time(cfgPath) > last_write_time(defCfgPath)) { // newer
@@ -110,14 +118,18 @@ void MatchSettingsManip::createUserDefaults(MatchSettings &ms) {
 
 void MatchSettingsManip::loadUserDefaults(MatchSettings &ms) {
 	ifstream ifs(cfgPath.string(), ios::binary);
+#ifndef AI_REVIEWER_CHECK
 	binary_iarchive ia(ifs);
 	ia>>ms; // when ms.initialized==false, throws invalid_argument for obsolete 'initMatchSettings.cfg'
+#endif // AI_REVIEWER_CHECK
 }
 
 void MatchSettingsManip::saveUserDefaults(const MatchSettings &ms) const {
 	ofstream ofs(cfgPath.string(), ios::binary);
+#ifndef AI_REVIEWER_CHECK
 	binary_oarchive oa(ofs);
 	oa<<ms;
+#endif // AI_REVIEWER_CHECK
 }
 
 bool MatchSettingsManip::parseCfg(MatchSettings &ms, const boost::filesystem::path &cfgFile) {

@@ -41,10 +41,12 @@
 
 #pragma warning ( push, 0 )
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
@@ -131,8 +133,11 @@ protected:
 			<< kSymDensity
 			<< threshold4Blank;
 	}
+
+#ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
+#endif // AI_REVIEWER_CHECK not defined
 
 public:
 	/**
@@ -176,6 +181,8 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
+#endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_MATCH_SETTINGS

@@ -57,7 +57,7 @@
 #include <functional>
 #include <thread>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 #include <opencv2/highgui/highgui.hpp>
 
 #pragma warning ( pop )

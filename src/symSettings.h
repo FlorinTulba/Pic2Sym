@@ -43,10 +43,12 @@
 
 #include <string>
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
@@ -84,8 +86,11 @@ protected:
 	void save(Archive &ar, const unsigned) const {
 		ar << fontFile << encoding << fontSz;
 	}
+
+#ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
+#endif // AI_REVIEWER_CHECK not defined
 
 public:
 	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
@@ -107,6 +112,8 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(SymSettings, 0)
+#endif // AI_REVIEWER_CHECK not defined
 
-#endif
+#endif // H_SYM_SETTINGS

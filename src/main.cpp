@@ -49,8 +49,9 @@
 #include <Windows.h>
 
 #include <omp.h>
+#include <fstream>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 #include <boost/optional/optional.hpp>
 
 #include <opencv2/imgcodecs/imgcodecs.hpp>

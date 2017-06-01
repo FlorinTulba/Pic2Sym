@@ -71,7 +71,7 @@ extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the uni
 #include <sstream>
 #include <numeric>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 
 #pragma warning ( pop )
 

@@ -46,8 +46,10 @@
 #include <fstream>
 #include <iostream>
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )
 
@@ -63,11 +65,13 @@ bool VTinySymsIO::loadFrom(const string &path) {
 		return false;
 	}
 
+#ifndef AI_REVIEWER_CHECK
 	if(false == load<binary_iarchive>(ifs, path, *this)) {
 		tinySyms.clear(); // leaves *this in a consistent state
 		return false;
 	}
-	
+#endif // AI_REVIEWER_CHECK
+
 	return true;
 }
 
@@ -78,7 +82,11 @@ bool VTinySymsIO::saveTo(const string &path) const {
 		return false;
 	}
 
+#ifndef AI_REVIEWER_CHECK
 	return save<binary_oarchive>(ofs, path, *this);;
+#else // AI_REVIEWER_CHECK defined
+	return true;
+#endif // AI_REVIEWER_CHECK
 }
 
 #endif // UNIT_TESTING

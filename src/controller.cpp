@@ -51,8 +51,9 @@
 
 #include <Windows.h>
 #include <sstream>
+#include <fstream>
 
-#include <boost/filesystem/operations.hpp>
+#include "boost_filesystem_operations.h"
 
 #pragma warning ( pop )
 

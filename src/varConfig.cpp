@@ -48,7 +48,10 @@
 
 #include <set>
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/algorithm/string/replace.hpp>
+#endif // AI_REVIEWER_CHECK
+
 #include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
@@ -64,7 +67,9 @@ namespace {
 							  const string &replacement = PIC2SYM_VERSION	///< replacement string
 							  ) {
 		string text_(text);
+#ifndef AI_REVIEWER_CHECK
 		replace_all(text_, placeholder, replacement);
+#endif // AI_REVIEWER_CHECK
 		return text_; // NRVO
 	}
 

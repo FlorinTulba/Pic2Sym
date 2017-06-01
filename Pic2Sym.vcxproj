@@ -22,6 +22,9 @@
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
+    <ClInclude Include="src\boost_bimap_bimap.h" />
+    <ClInclude Include="src\boost_filesystem_operations.h" />
+    <ClInclude Include="src\boost_filesystem_path.h" />
     <ClInclude Include="src\boxBlur.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\clusterAlg.h" />

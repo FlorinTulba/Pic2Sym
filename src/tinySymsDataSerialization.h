@@ -48,7 +48,9 @@
 
 #pragma warning ( push, 0 )
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/serialization/vector.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
@@ -66,7 +68,9 @@ struct VTinySymsIO {
 	/// Serializes this VTinySymsIO object to ar
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned int /*version*/) {
+#ifndef AI_REVIEWER_CHECK
 		ar & tinySyms;
+#endif // AI_REVIEWER_CHECK not defined
 	}
 
 	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
@@ -76,7 +80,9 @@ struct VTinySymsIO {
 	bool saveTo(const std::string &path) const;
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(VTinySymsIO, VTinySymsIO::VERSION);
+#endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_TINY_SYMS_DATA_SERIALIZATION
 

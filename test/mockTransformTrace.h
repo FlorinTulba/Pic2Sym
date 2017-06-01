@@ -40,7 +40,7 @@
 #define H_MOCK_TRANSFORM_TRACE
 
 #if defined _DEBUG && !defined UNIT_TESTING
-#	error Shouldn't include this header unless in Release or Unit Testing mode
+#	error Should not include this header unless in Release or Unit Testing mode
 #endif // Debug mode and UNIT_TESTING not defined
 
 /// Mock class when tracing isn't actually performed 

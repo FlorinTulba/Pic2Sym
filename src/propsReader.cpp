@@ -45,13 +45,18 @@
 #pragma warning ( pop )
 
 using namespace std;
+
+#ifndef AI_REVIEWER_CHECK
 using namespace boost::property_tree;
+#endif // AI_REVIEWER_CHECK
 
 PropsReader::PropsReader(const boost::filesystem::path &propsFile_) : propsFile(propsFile_) {
+#ifndef AI_REVIEWER_CHECK
 	try {
 		read_info(propsFile.string(), props);
 	} catch(info_parser_error&) {
 		cerr<<"Couldn't read '"<<propsFile<<'\''<<endl;
 		throw;
 	}
+#endif // AI_REVIEWER_CHECK
 }

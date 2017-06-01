@@ -43,7 +43,7 @@
 
 #include <string>
 
-#include <boost/filesystem/path.hpp>
+#include "boost_filesystem_path.h"
 #include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )

@@ -41,7 +41,19 @@
 
 #pragma warning ( push, 0 )
 
+// Avoid using boost preprocessor when checking design of the project with AI Reviewer
+#ifndef AI_REVIEWER_CHECK
+
 #include <boost/lockfree/queue.hpp>
+
+#else // AI_REVIEWER_CHECK defined
+
+struct LockFreeQueue {
+	void push(...) {}
+	bool pop(...) { return true; }
+};
+
+#endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )
 
@@ -52,7 +64,10 @@ struct IUpdateSymsAction /*abstract*/ {
 	virtual ~IUpdateSymsAction() = 0 {}
 };
 
+
+#ifndef AI_REVIEWER_CHECK
 /// Lock-free queue of size 103 (maximum 100 progress notifications + 2 cmap update actions + 1 exception)
 typedef boost::lockfree::queue<IUpdateSymsAction*, boost::lockfree::capacity<103>> LockFreeQueue;
+#endif // AI_REVIEWER_CHECK
 
 #endif // H_UPDATE_SYMS_ACTIONS

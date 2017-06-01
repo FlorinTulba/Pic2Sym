@@ -59,8 +59,10 @@ To disable it, just comment its definition in 'compressOption.h' file
 
 #include <string>
 
+#ifndef AI_REVIEWER_CHECK
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+#endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )
 
@@ -81,6 +83,7 @@ copy/move draft's content onto the target object.
 */
 template<class Archive, class Source, class T>
 bool load(Source &src, const std::string &srcName, T &obj) {
+#ifndef AI_REVIEWER_CHECK
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 #ifdef USE_ZLIB_COMPRESSION
@@ -105,6 +108,7 @@ bool load(Source &src, const std::string &srcName, T &obj) {
 		return false;
 	}
 #pragma warning ( default : WARN_SEH_NOT_CAUGHT )
+#endif // AI_REVIEWER_CHECK
 }
 
 /**
@@ -115,6 +119,7 @@ When USE_ZLIB_COMPRESSION is defined, it assumes obj should be compressed before
 */
 template<class Archive, class Sink, class T>
 bool save(Sink &sink, const std::string &sinkName, const T &obj) {
+#ifndef AI_REVIEWER_CHECK
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 #ifdef USE_ZLIB_COMPRESSION
@@ -152,6 +157,7 @@ bool save(Sink &sink, const std::string &sinkName, const T &obj) {
 		return false;
 	}
 #pragma warning ( default : WARN_SEH_NOT_CAUGHT )
+#endif // AI_REVIEWER_CHECK
 }
 
 #endif // H_SERIALIZER
