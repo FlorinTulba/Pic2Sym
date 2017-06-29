@@ -51,8 +51,10 @@ struct PixMapSym; // Forward declaration
 
 /// Data for tiny symbols
 struct TinySym : SymData {
+#ifndef AI_REVIEWER_CHECK
 	// BUILD CLEAN WHEN THIS CHANGES!
 	static const unsigned VERSION = 0U; ///< version of TinySym class
+#endif // AI_REVIEWER_CHECK not defined
 
 	/// Ratio between reference symbols and the shrunken symbol
 	enum { RatioRefTiny = 8 };
@@ -104,7 +106,9 @@ struct TinySym : SymData {
 #endif // UNIT_TESTING defined
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(TinySym, TinySym::VERSION);
+#endif // AI_REVIEWER_CHECK not defined
 
 /// container with TinySym-s
 typedef std::vector<const TinySym> VTinySyms;

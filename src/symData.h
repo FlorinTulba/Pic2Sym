@@ -59,8 +59,10 @@
 
 /// Most symbol information
 struct SymData {
+#ifndef AI_REVIEWER_CHECK
 	// BUILD CLEAN WHEN THIS CHANGES!
 	static const unsigned VERSION = 0U; ///< version of SymData class
+#endif // AI_REVIEWER_CHECK not defined
 
 	/**
 	Computes most information about a symbol based on glyph parameter.

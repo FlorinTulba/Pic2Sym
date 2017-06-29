@@ -45,6 +45,8 @@ struct FtError {
 	int code;			///< error code
 };
 
+#ifndef AI_REVIEWER_CHECK
+
 #pragma warning ( push, 0 )
 
 #include <ft2build.h>
@@ -58,7 +60,10 @@ struct FtError {
 #define FT_ERROR_START_LIST     {
 #define FT_ERROR_END_LIST       { 0, NULL } };
 
+#endif // AI_REVIEWER_CHECK not defined
+
 static std::vector<const std::string>&& initFtErrors() {
+#ifndef AI_REVIEWER_CHECK
 	const FtError ft_errors[] =
 #pragma warning ( push, 0 )
 #include FT_ERRORS_H
@@ -87,6 +92,10 @@ static std::vector<const std::string>&& initFtErrors() {
 	}
 
 	return std::move(_FtErrors);
+
+#else // AI_REVIEWER_CHECK defined
+	return std::move(std::vector<const std::string>());
+#endif // AI_REVIEWER_CHECK
 }
 
 using namespace std;

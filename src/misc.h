@@ -77,6 +77,7 @@ void warnMsg(const std::string &text, const std::string &title = "");
 void errMsg(const std::string &text, const std::string &title = "");
 
 // Throwing exceptions while displaying the exception message to the console
+#ifndef AI_REVIEWER_CHECK
 /*
 First version should be used when the exception message is constant.
 Declaring a method-static variable makes sense only when the exception is caught,
@@ -100,5 +101,12 @@ Second version should be used when the exception message is variable (reports sp
 		std::cerr<<varErrMsgForConsoleAndThrow<<std::endl; \
 		throw excType(varErrMsgForConsoleAndThrow); \
 	}
+
+#else // AI_REVIEWER_CHECK defined
+
+#define THROW_WITH_CONST_MSG(excMsg, excType) throw excType("")
+#define THROW_WITH_VAR_MSG(msg, excType) throw excType("")
+
+#endif // AI_REVIEWER_CHECK
 
 #endif // H_MISC
