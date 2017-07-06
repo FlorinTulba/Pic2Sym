@@ -88,6 +88,8 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const Settings &s);
 };
 
+#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(Settings, 0)
+#endif // AI_REVIEWER_CHECK not defined
 
-#endif
+#endif // H_SETTINGS
