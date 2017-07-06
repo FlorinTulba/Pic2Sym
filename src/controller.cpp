@@ -645,6 +645,8 @@ void Controller::saveSettings() const {
 // Methods from below have different definitions for UnitTesting project
 #ifndef UNIT_TESTING
 
+#ifndef AI_REVIEWER_CHECK
+
 #define GET_FIELD_NO_ARGS(FieldType) \
 	__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
 	static FieldType field; \
@@ -656,6 +658,17 @@ void Controller::saveSettings() const {
 	static FieldType field(__VA_ARGS__); \
 	__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 	return field
+
+#else // AI_REVIEWER_CHECK defined
+
+#define GET_FIELD_NO_ARGS(FieldType) \
+	static FieldType field; \
+	return field
+
+#define GET_FIELD(FieldType, ...) \
+	static FieldType field(__VA_ARGS__); \
+	return field
+#endif // AI_REVIEWER_CHECK
 
 Img& Controller::getImg() {
 	GET_FIELD_NO_ARGS(Img);

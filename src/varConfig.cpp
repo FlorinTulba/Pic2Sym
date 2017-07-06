@@ -228,8 +228,21 @@ namespace {
 #define READ_PROP_COND(prop, type, cond, defaultVal) \
 	const type prop = (cond) ? varConfigRef().read<type>(#prop) : (defaultVal)
 
+#ifndef AI_REVIEWER_CHECK
 #define READ_BOOL_PROP(prop) \
 	READ_PROP(prop, bool)
+
+#define READ_STR_PROP(prop, ...) \
+	READ_PROP(prop, string, __VA_ARGS__)
+
+#else // AI_REVIEWER_CHECK defined
+#define READ_BOOL_PROP(prop) \
+	const bool prop = false;
+
+#define READ_STR_PROP(prop, ...) \
+	const string prop;
+
+#endif // AI_REVIEWER_CHECK
 
 #define READ_BOOL_PROP_COND(prop, cond) \
 	READ_PROP_COND(prop, bool, cond, false)
@@ -246,9 +259,6 @@ namespace {
 #define READ_DOUBLE_PROP(prop, ...) \
 	READ_PROP(prop, double, __VA_ARGS__)
 
-#define READ_STR_PROP(prop, ...) \
-	READ_PROP(prop, string, __VA_ARGS__)
-
 #define READ_STR_PROP_CONVERT(prop, destStringType) \
 	const destStringType prop = varConfigRef().read<string>(#prop)
 
@@ -256,6 +266,7 @@ namespace {
 	const wstring prop = str2wstr(varConfigRef().read<string>(#prop))
 
 // Limits for read data
+#ifndef AI_REVIEWER_CHECK
 #define VALIDATOR_NO_ARGS(Name, Kind, Type) \
 	const Kind<Type>& Name() { \
 		__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
@@ -271,6 +282,21 @@ namespace {
 		__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 		return validator; \
 	} 
+
+#else // AI_REVIEWER_CHECK defined
+#define VALIDATOR_NO_ARGS(Name, Kind, Type) \
+	const Kind<Type>& Name() { \
+		static const Kind<Type> validator; \
+		return validator; \
+	} 
+
+#define VALIDATOR(Name, Kind, Type, ...) \
+	const Kind<Type>& Name() { \
+		static const Kind<Type> validator(__VA_ARGS__); \
+		return validator; \
+	} 
+
+#endif // AI_REVIEWER_CHECK
 
 static VALIDATOR_NO_ARGS(oddI, IsOdd, int);
 static VALIDATOR_NO_ARGS(oddU, IsOdd, unsigned);

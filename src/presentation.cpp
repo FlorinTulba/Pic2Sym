@@ -817,6 +817,12 @@ namespace {
 			offsetNewCluster += curClustSz;
 		}
 	}
+
+#ifdef AI_REVIEWER_CHECK
+	template<class It>
+	const Mat fnNegSymExtractor(const typename It &) { return Mat(); }
+#endif // AI_REVIEWER_CHECK defined
+
 } // anonymous namespace
 
 void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
@@ -824,12 +830,16 @@ void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 							   unsigned idxOfFirstSymFromPage) {
 	CmapPerspective::VPSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
+#ifndef AI_REVIEWER_CHECK
 				   (NegSymExtractor<CmapPerspective::VPSymDataCIt>) // conversion
 				   [](const CmapPerspective::VPSymDataCIt &iter) -> Mat {
 						if((*iter)->removable)
 							return 255U - (*iter)->negSym;
 						return (*iter)->negSym;
 					},
+#else // AI_REVIEWER_CHECK defined
+				   fnNegSymExtractor,
+#endif // AI_REVIEWER_CHECK
 				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
 }
 
@@ -838,8 +848,12 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 										LockFreeQueue &updateSymsActionsQueue) {
 	std::shared_ptr<Mat> unofficial = std::make_shared<Mat>();
 	::populateGrid(CBOUNDS(symsOn1stPage),
+#ifndef AI_REVIEWER_CHECK
 				   (NegSymExtractor<vector<const Mat>::const_iterator>) // conversion
 				   [](const vector<const Mat>::const_iterator &iter) { return *iter; },
+#else // AI_REVIEWER_CHECK defined
+				   fnNegSymExtractor,
+#endif // AI_REVIEWER_CHECK
 				   *unofficial, grid, cmapPresenter);
 
 	symsOn1stPage.clear(); // discard values now
