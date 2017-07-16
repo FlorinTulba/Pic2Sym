@@ -50,6 +50,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 // Common part until #else (included just once)
 #include "testMain.h"
 #include "selectBranch.h"
+#include "tinySymsProvider.h"
 #include "preselectionHelper.h"
 #include "symbolsSupportWithPreselection.h"
 #include "clusterSupportWithPreselection.h"
@@ -62,7 +63,6 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "tinySym.h"
 #include "jobMonitor.h"
 #include "controller.h"
-#include "settings.h"
 #include "misc.h"
 
 using namespace std;

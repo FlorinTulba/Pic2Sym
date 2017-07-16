@@ -36,61 +36,35 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
+#ifndef H_PIC_TRANSFORM_PROGRESS_TRACKER_BASE
+#define H_PIC_TRANSFORM_PROGRESS_TRACKER_BASE
 
-#else // UNIT_TESTING not defined
+#include "timing.h"
 
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+/// Interface to monitor the progress of transforming an image.
+struct IPicTransformProgressTracker /*abstract*/ {
+	/// Called when unable to load the symbols right when attempting to transform an image
+	virtual void transformFailedToStart() = 0;
 
-#pragma warning ( push, 0 )
+	/**
+	An hourglass window displays the progress [0..1] of the transformation in %.
+	If showDraft is true, and a draft is available, it will be presented within Comparator window.
+	*/
+	virtual void reportTransformationProgress(double progress, bool showDraft = false) const = 0;
 
-#include <vector>
+	/**
+	Present the partial / final result after the transformation has been canceled / has finished.
+	When the transformation completes, there'll be a report about the duration of the process.
+	Otherwise, completionDurationS will have its default negative value and no duration report will be issued.
 
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+	@param completionDurationS the duration of the transformation in seconds or a negative value for aborted transformations
+	*/
+	virtual void presentTransformationResults(double completionDurationS = -1.) const = 0;
 
-#pragma warning ( pop )
+	/// Creates the monitor to time the picture approximation process
+	virtual Timer createTimerForImgTransform() const = 0;
 
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
-
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
-
-	unsigned clustersCount = 0U;		///< total number of clusters
-
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
-
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
-
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
-
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
+	virtual ~IPicTransformProgressTracker() = 0 {}
 };
 
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // H_PIC_TRANSFORM_PROGRESS_TRACKER_BASE

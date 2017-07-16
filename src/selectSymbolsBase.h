@@ -36,61 +36,26 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
+#ifndef H_SELECT_SYMBOLS_BASE
+#define H_SELECT_SYMBOLS_BASE
 
-#else // UNIT_TESTING not defined
+struct SymData; // Forward declaration
 
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+/// Allows saving a selection of symbols pointed within the charmap viewer
+struct ISelectSymbols /*abstract*/ {
+	/// Provides details about the symbol under the mouse
+	virtual const SymData* pointedSymbol(int x, int y) const = 0;
 
-#pragma warning ( push, 0 )
+	/// Appends the code of the symbol under the mouse to the status bar
+	virtual void displaySymCode(unsigned long symCode) const = 0;
 
-#include <vector>
+	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
+	virtual void enlistSymbolForInvestigation(const SymData &sd) const = 0;
 
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
+	virtual void symbolsReadyToInvestigate() const = 0;
 
-#pragma warning ( pop )
-
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
-
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
-
-	unsigned clustersCount = 0U;		///< total number of clusters
-
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
-
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
-
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
-
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
+	virtual ~ISelectSymbols() = 0 {}
 };
 
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // H_SELECT_SYMBOLS_BASE

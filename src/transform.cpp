@@ -37,8 +37,10 @@
  ***********************************************************************************************/
 
 #include "transform.h"
+#include "controllerBase.h"
 #include "matchAssessment.h"
-#include "settings.h"
+#include "settingsBase.h"
+#include "symSettings.h"
 #include "matchParams.h"
 #include "patch.h"
 #include "preselectManager.h"
@@ -212,9 +214,10 @@ extern const Size BlurWinSize;
 extern const double BlurStandardDeviation;
 extern const bool ParallelizeTr_PatchRowLoops;
 
-Transformer::Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
-						 MatchEngine &me_, Img &img_) :
-		ctrler(ctrler_), cfg(cfg_), me(me_), img(img_) {}
+Transformer::Transformer(IController &ctrler_,
+						 const ISettings &cfg_, MatchEngine &me_, Img &img_) :
+	ctrler(ctrler_), ptpt(ctrler_.getPicTransformProgressTracker()),
+	cfg(cfg_), me(me_), img(img_) {}
 
 void Transformer::run() {
 	isCanceled = false;
@@ -224,24 +227,23 @@ void Transformer::run() {
 	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	Timer timer = ctrler.createTimerForImgTransform();
+	Timer timer = ptpt->createTimerForImgTransform();
 
 	try {
 		me.updateSymbols(); // throws for invalid cmap/size
 	} catch(TinySymsLoadingFailure &tslf) {
 		timer.invalidate();
-		const_cast<IPicTransformProgressTracker&>(ctrler).transformFailedToStart();
+		ptpt->transformFailedToStart();
 		tslf.informUser("Couldn't load the tiny versions of the selected font, "
 						"thus the transformation was aborted!");
 		return;
 	}
 
-	sz = cfg.symSettings().getFontSz();
+	sz = cfg.getSS().getFontSz();
 	
 	std::shared_ptr<const ResizedImg> resizedImg =
-		std::make_shared<const ResizedImg>(img, cfg.imgSettings(), sz); // throws when no image
-	const bool newResizedImg =
-		const_cast<IPicTransformProgressTracker&>(ctrler).updateResizedImg(resizedImg);
+		std::make_shared<const ResizedImg>(img, cfg.getIS(), sz); // throws when no image
+	const bool newResizedImg = ctrler.updateResizedImg(resizedImg);
 	const Mat &resizedVersion = resizedImg->get();
 	h = resizedVersion.rows; w = resizedVersion.cols;
 	updateStudiedCase(h, w);
@@ -257,7 +259,7 @@ void Transformer::run() {
 	symsCount = me.getSymsCount();
 
 	result = resizedBlurred.clone(); // initialize the result with a simple blur. Mandatory clone!
-	ctrler.presentTransformationResults(); // show the blur as draft result
+	ptpt->presentTransformationResults(); // show the blur as draft result
 
 	const double preparationsDuration = timer.elapsed(),
 
@@ -368,7 +370,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	// will display the result (final draft) and it will also report
 	// either the transformation duration or the fact that the transformation was canceled.
 	if(upperIdx < symsCount)
-		ctrler.presentTransformationResults();
+		ptpt->presentTransformationResults();
 }
 
 void Transformer::setSymsBatchSize(int symsBatchSz_) {

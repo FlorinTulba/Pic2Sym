@@ -40,6 +40,7 @@
 #include "selectBranch.h"
 #include "settings.h"
 #include "controller.h"
+#include "controlPanelActionsBase.h"
 
 using namespace cv;
 using namespace std;
@@ -52,18 +53,20 @@ namespace ut {
 
 	protected:
 		::Controller c; ///< the controller provided to the tests
+		std::shared_ptr<IControlPanelActions> cpa;
 
 	public:
 		ControllerFixt() : Fixt(),
 			s(),
-			c(s) {}
+			c(s),
+			cpa(c.getControlPanelActions()) {}
 	};
 
 	/// Provides a font to the tests using this specialized fixture
 	struct ControllerFixtUsingACertainFont : ControllerFixt {
 		ControllerFixtUsingACertainFont(const string &fontPath = "res\\BPmonoBold.ttf") : ControllerFixt() {
 			try {
-				c.newFontFamily(fontPath);
+				cpa->newFontFamily(fontPath);
 			} catch(...) {
 				cerr<<"Couldn't set '"<<fontPath<<"' font"<<endl;
 			}
@@ -74,60 +77,60 @@ namespace ut {
 // Main Controller test suite
 BOOST_FIXTURE_TEST_SUITE(Controller_Tests, ut::ControllerFixt)
 	AutoTestCase(AttemptTransformation_NoSettings_NoTransformationPossible);
-		BOOST_REQUIRE(!c.performTransformation()); // no font, no image
+		BOOST_REQUIRE(!cpa->performTransformation()); // no font, no image
 	}
 
 	AutoTestCase(ProvidingAnImageToController_SetWrongImage_FailToSetImage);
-		BOOST_REQUIRE(!c.newImage(Mat()));
+		BOOST_REQUIRE(!cpa->newImage(Mat()));
 	}
 
 	AutoTestCase(ProvidingAnImageToController_SetGrayImage_OkToSetImage);
 		Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127));
-		BOOST_REQUIRE(c.newImage(testPatch));
+		BOOST_REQUIRE(cpa->newImage(testPatch));
 	}
 
 	AutoTestCase(ProvidingAnImageToController_SetColorImage_OkToSetImage);
 		Mat testColorPatch(c.getFontSize(), c.getFontSize(), CV_8UC3, Scalar::all(127));
-		BOOST_REQUIRE(c.newImage(testColorPatch));
+		BOOST_REQUIRE(cpa->newImage(testColorPatch));
 	}
 
 	AutoTestCase(ProvidingAFontToController_UseBPmonoBold_NoThrow);
-		BOOST_REQUIRE_NO_THROW(c.newFontFamily("res\\BPmonoBold.ttf"));
+		BOOST_REQUIRE_NO_THROW(cpa->newFontFamily("res\\BPmonoBold.ttf"));
 	}
 
 	// Child Controller test suite whose tests use all BpMonoBold font
 	BOOST_FIXTURE_TEST_SUITE(Controller_Tests_Using_BpMonoBoldFont, ut::ControllerFixtUsingACertainFont)
 		AutoTestCase(CheckNewEncoding_UseAppleRomanFromBPmonoBold_NoThrow);
-			BOOST_REQUIRE_NO_THROW(c.newFontEncoding("APPLE_ROMAN"));
+			BOOST_REQUIRE_NO_THROW(cpa->newFontEncoding("APPLE_ROMAN"));
 		}
 
 		AutoTestCase(CheckNewSize_UseSize10FromAppleRomanOfBPmonoBold_NoThrow);
-			c.newFontEncoding("APPLE_ROMAN");
-			BOOST_REQUIRE_NO_THROW(c.newFontSize(10U));
+			cpa->newFontEncoding("APPLE_ROMAN");
+			BOOST_REQUIRE_NO_THROW(cpa->newFontSize(10U));
 		}
 
 		AutoTestCase(AttemptTransformation_NoImageSet_NoTransformationPossible);
-			BOOST_REQUIRE(!c.performTransformation()); // no image yet
+			BOOST_REQUIRE(!cpa->performTransformation()); // no image yet
 		}
 
 		AutoTestCase(AttemptTransformation_SetGrayImage_OkToTransformImage);
 			Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127));
-			c.newImage(testPatch);
-			c.newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
-			BOOST_REQUIRE(c.performTransformation());
+			cpa->newImage(testPatch);
+			cpa->newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
+			BOOST_REQUIRE(cpa->performTransformation());
 		}
 
 		AutoTestCase(AttemptTransformation_NoEnabledAspects_NoTransformationPossible);
 			Mat testPatch(c.getFontSize(), c.getFontSize(), CV_8UC1, Scalar(127));
-			c.newImage(testPatch);
-			BOOST_REQUIRE(!c.performTransformation());
+			cpa->newImage(testPatch);
+			BOOST_REQUIRE(!cpa->performTransformation());
 		}
 
 		AutoTestCase(AttemptTransformation_SetColorImage_OkToTransformImage);
 			Mat testColorPatch(c.getFontSize(), c.getFontSize(), CV_8UC3, Scalar::all(127));
-			c.newImage(testColorPatch);
-			c.newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
-			BOOST_REQUIRE(c.performTransformation());
+			cpa->newImage(testColorPatch);
+			cpa->newUnderGlyphCorrectnessFactor(1.); // enable just one random aspect, to avoid missing enabled aspects
+			BOOST_REQUIRE(cpa->performTransformation());
 		}
 	BOOST_AUTO_TEST_SUITE_END() // Controller_Tests_Using_BpMonoBoldFont
 

@@ -51,7 +51,7 @@
 
 // Forward declarations
 struct BestMatch;
-class Settings;
+struct ISettings;
 class MatchAspect;
 class MatchAssessor;
 class MatchProgress;
@@ -60,11 +60,10 @@ class CmapPerspective;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine {
-	friend class Controller;
 	friend class PreselManager;
 
 protected:
-	const Settings &cfg;		///< settings for the engine
+	const ISettings &cfg;		///< settings for the engine
 	FontEngine &fe;				///< symbols set manager
 	CmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
 
@@ -86,7 +85,7 @@ protected:
 	PreselManager *preselManager = nullptr;	///< preselection manager
 
 public:
-	MatchEngine(const Settings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
+	MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
 	void operator=(const MatchEngine&) = delete;
 
 	std::string getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
@@ -105,7 +104,9 @@ public:
 							  MatchProgress &matchProgress	///< observer notified for each new improved match
 							  ) const;
 
-	bool usesUnicode() const; /// Unicode glyphs are logged as symbols, the rest as their code
+	bool usesUnicode() const; ///< Unicode glyphs are logged as symbols, the rest as their code
+
+	const bool& isClusteringUseful() const; ///< Clustering should be avoided when the obtained clusters are really small
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_);		///< setting the symbols monitor
 	MatchEngine& usePreselManager(PreselManager &preselManager_);	///< setting the preselection manager

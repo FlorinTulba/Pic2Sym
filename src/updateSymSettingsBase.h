@@ -36,61 +36,24 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
-
-#else // UNIT_TESTING not defined
-
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+#ifndef H_UPDATE_SYM_SETTINGS_BASE
+#define H_UPDATE_SYM_SETTINGS_BASE
 
 #pragma warning ( push, 0 )
 
-#include <vector>
-
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+#include <string>
 
 #pragma warning ( pop )
 
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
+/// Interface that allows changing settings for the symbols.
+struct IUpdateSymSettings /*abstract*/ {
+	/// called by FontEngine::newFont after installing a new font to update SymSettings
+	virtual void newFontFile(const std::string &fName) const = 0;
 
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
+	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
+	virtual void newFontEncoding(const std::string &encName) const = 0;
 
-	unsigned clustersCount = 0U;		///< total number of clusters
-
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
-
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
-
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
-
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
+	virtual ~IUpdateSymSettings() = 0 {}
 };
 
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // H_UPDATE_SYM_SETTINGS_BASE

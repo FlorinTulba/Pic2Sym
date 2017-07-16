@@ -56,6 +56,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "misc.h"
 #include "settings.h"
 #include "matchParams.h"
+#include "matchEngine.h"
 #include "patch.h"
 #include "controller.h"
 #include "matchAspects.h"
@@ -63,6 +64,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "matchSupportWithPreselection.h"
 #include "structuralSimilarity.h"
 #include "blur.h"
+#include "controlPanelActionsBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -75,6 +77,8 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include <boost/optional/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/test/data/test_case.hpp>
+
+#include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
@@ -511,10 +515,11 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 
 	Settings s(ms);
 	::Controller c(s);
+	std::shared_ptr<IControlPanelActions> cpa = c.getControlPanelActions();
 	::MatchEngine &me = c.getMatchEngine(s);
 
-	c.newFontFamily(fontFamily);
-	c.newFontEncoding(encoding);
+	cpa->newFontFamily(fontFamily);
+	cpa->newFontEncoding(encoding);
 
 	// default font size is 10 - normally at most 10% errors
 	//c.newFontSize(40U); // apparently larger fonts produce less errors (for 40 rarely any)

@@ -94,7 +94,7 @@ struct TinySym : SymData {
 
 	/// Serializes this TinySym object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version) {
+	void serialize(Archive &ar, const unsigned version) {
 		SymData::serialize(ar, version);
 		ar & mat & 
 			hAvgProj & vAvgProj & 

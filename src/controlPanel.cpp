@@ -40,7 +40,10 @@
 
 #include "controlPanel.h"
 #include "controlPanelActions.h"
-#include "settings.h"
+#include "settingsBase.h"
+#include "symSettings.h"
+#include "imgSettings.h"
+#include "matchSettings.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -226,35 +229,35 @@ void ControlPanel::restoreSliderValue(const String &trName, const string &errTex
 	// Determine previous value
 	int prevVal = 0;
 	if(&trName == &ControlPanel_outWTrName) {
-		prevVal = (int)cfg.imgSettings().getMaxHSyms();
+		prevVal = (int)cfg.getIS().getMaxHSyms();
 	} else if(&trName == &ControlPanel_outHTrName) {
-		prevVal = (int)cfg.imgSettings().getMaxVSyms();
+		prevVal = (int)cfg.getIS().getMaxVSyms();
 	} else if(&trName == &ControlPanel_encodingTrName) {
 		prevVal = (int)performer.getFontEncodingIdx();
 	} else if(&trName == &ControlPanel_fontSzTrName) {
-		prevVal = (int)cfg.symSettings().getFontSz();
+		prevVal = (int)cfg.getSS().getFontSz();
 	} else if(&trName == &ControlPanel_symsBatchSzTrName) {
 		prevVal = symsBatchSz; // no change needed for Symbols Batch Size!
 	} else if(&trName == &ControlPanel_hybridResultTrName) {
-		prevVal = cfg.matchSettings().isHybridResult() ? 1 : 0;
+		prevVal = cfg.getMS().isHybridResult() ? 1 : 0;
 	} else if(&trName == &ControlPanel_structuralSimTrName) {
-		prevVal = Converter::StructuralSim::toSlider(cfg.matchSettings().get_kSsim());
+		prevVal = Converter::StructuralSim::toSlider(cfg.getMS().get_kSsim());
 	} else if(&trName == &ControlPanel_underGlyphCorrectnessTrName) {
-		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevFg());
+		prevVal = Converter::Correctness::toSlider(cfg.getMS().get_kSdevFg());
 	} else if(&trName == &ControlPanel_glyphEdgeCorrectnessTrName) {
-		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevEdge());
+		prevVal = Converter::Correctness::toSlider(cfg.getMS().get_kSdevEdge());
 	} else if(&trName == &ControlPanel_asideGlyphCorrectnessTrName) {
-		prevVal = Converter::Correctness::toSlider(cfg.matchSettings().get_kSdevBg());
+		prevVal = Converter::Correctness::toSlider(cfg.getMS().get_kSdevBg());
 	} else if(&trName == &ControlPanel_moreContrastTrName) {
-		prevVal = Converter::Contrast::toSlider(cfg.matchSettings().get_kContrast());
+		prevVal = Converter::Contrast::toSlider(cfg.getMS().get_kContrast());
 	} else if(&trName == &ControlPanel_gravityTrName) {
-		prevVal = Converter::Gravity::toSlider(cfg.matchSettings().get_kMCsOffset());
+		prevVal = Converter::Gravity::toSlider(cfg.getMS().get_kMCsOffset());
 	} else if(&trName == &ControlPanel_directionTrName) {
-		prevVal = Converter::Direction::toSlider(cfg.matchSettings().get_kCosAngleMCs());
+		prevVal = Converter::Direction::toSlider(cfg.getMS().get_kCosAngleMCs());
 	} else if(&trName == &ControlPanel_largerSymTrName) {
-		prevVal = Converter::LargerSym::toSlider(cfg.matchSettings().get_kSymDensity());
+		prevVal = Converter::LargerSym::toSlider(cfg.getMS().get_kSymDensity());
 	} else if(&trName == &ControlPanel_thresh4BlanksTrName) {
-		prevVal = (int)cfg.matchSettings().getBlankThreshold();
+		prevVal = (int)cfg.getMS().getBlankThreshold();
 	} else THROW_WITH_VAR_MSG("Code for " + trName + " must be added within " __FUNCTION__, domain_error);
 
 	// Deals with the case when the value was already restored / not modified at all

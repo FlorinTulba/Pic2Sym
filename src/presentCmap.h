@@ -39,50 +39,38 @@
 #ifndef H_PRESENT_CMAP
 #define H_PRESENT_CMAP
 
+#include "presentCmapBase.h"
 #include "cmapPerspective.h"
-#include "controllerBase.h"
 
-#pragma warning ( push, 0 )
+// Forward declarations
+struct IController;
 
-#include <set>
+/// Implementation providing read-only access to Cmap data.
+class PresentCmap : public IPresentCmap {
+protected:
+	const IController &ctrler;
+	const CmapPerspective &cmP;
+	const bool *clustersNotIgnored = nullptr; /// pointer to the boolean ClusterEngine::worthy
 
-#pragma warning ( pop )
-
-/**
-Provides read-only access to Cmap data.
-*/
-struct IPresentCmap /*abstract*/ : virtual IController {
-	virtual unsigned getFontSize() const = 0; ///< font size determines grid size
-
-	/// Provides details about the symbol under the mouse
-	virtual const SymData* pointedSymbol(int x, int y) const = 0;
-
-	/// Appends the code of the symbol under the mouse to the status bar
-	virtual void displaySymCode(unsigned long symCode) const = 0; 
-
-	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
-	virtual void enlistSymbolForInvestigation(const SymData &sd) const = 0;
-
-	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
-	virtual void symbolsReadyToInvestigate() const = 0;
+public:
+	PresentCmap(const IController &ctrler_,
+				const CmapPerspective &cmP_);
 
 	/// Getting the fonts to fill currently displayed page
-	virtual CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
+	CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 
 	/// Allows visualizing the symbol clusters within the Cmap View
-	virtual const std::set<unsigned>& getClusterOffsets() const = 0;
+	const std::set<unsigned>& getClusterOffsets() const override;
 
-	/// The viewer presents the identified clusters even when they're not used during the image transformation.
-	/// In that case, the splits between the clusters use dashed line instead of a filled line.
-	virtual bool markClustersAsNotUsed() const = 0;
-
-	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
-	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;
+	/**
+	The viewer presents the identified clusters even when they're not used during the image transformation.
+	In that case, the splits between the clusters use dashed line instead of a filled line.
+	When the parameter is not nullptr, the method is a setter; Otherwise it is a getter.
+	*/
+	bool markClustersAsUsed(const bool *clustersNotIgnored_ = nullptr) override;
 
 	/// Updates the Cmap View status bar with the details about the symbols
-	virtual void showUnofficialSymDetails(unsigned symsCount) const = 0;
-
-	virtual ~IPresentCmap() = 0 {}
+	void showUnofficialSymDetails(unsigned symsCount) const override;
 };
 
-#endif
+#endif // H_PRESENT_CMAP

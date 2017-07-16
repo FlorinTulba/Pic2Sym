@@ -39,12 +39,16 @@
 #ifndef H_UPDATE_SYMS_ACTIONS
 #define H_UPDATE_SYMS_ACTIONS
 
-#pragma warning ( push, 0 )
-
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifndef AI_REVIEWER_CHECK
 
+#pragma warning ( push, 0 )
+
+#include <functional>
+
 #include <boost/lockfree/queue.hpp>
+
+#pragma warning ( pop )
 
 #else // AI_REVIEWER_CHECK defined
 
@@ -55,8 +59,6 @@ struct LockFreeQueue {
 
 #endif // AI_REVIEWER_CHECK
 
-#pragma warning ( pop )
-
 /// Allows separating the GUI actions related to updating the symbols
 struct IUpdateSymsAction /*abstract*/ {
 	virtual void perform() = 0; ///< executes the action
@@ -64,6 +66,19 @@ struct IUpdateSymsAction /*abstract*/ {
 	virtual ~IUpdateSymsAction() = 0 {}
 };
 
+/// Common realization of IUpdateSymsAction
+struct BasicUpdateSymsAction : IUpdateSymsAction {
+protected:
+	std::function<void()> fn; ///< the function to be called by perform, that has access to private fields & methods
+
+public:
+	/// Creating an action object that performs the tasks described in fn_
+	BasicUpdateSymsAction(std::function<void()> fn_) : fn(fn_) {}
+
+	void perform() override {
+		fn();
+	}
+};
 
 #ifndef AI_REVIEWER_CHECK
 /// Lock-free queue of size 103 (maximum 100 progress notifications + 2 cmap update actions + 1 exception)

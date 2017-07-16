@@ -44,6 +44,7 @@
 #include "sievesSymsFilter.h"
 #include "symFilterCache.h"
 #include "presentCmap.h"
+#include "controllerBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -274,8 +275,8 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 	mc = Point2d(sumX, sumY) / (glyphSum * szM1);
 }
 
-PmsCont::PmsCont(const IPresentCmap &cmapViewUpdater_) :
-		cmapViewUpdater(cmapViewUpdater_),
+PmsCont::PmsCont(IController &ctrler_) :
+		ctrler(ctrler_),
 		
 		// Add any additional filters as 'make_unique<NewFilter>()' in the last set of unfilled '()'
 		symFilter(make_unique<FilledRectanglesFilter>
@@ -391,7 +392,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	syms.push_back(move(const_cast<PixMapSym&>(pms)));
 
-	const_cast<IPresentCmap&>(cmapViewUpdater).display1stPageIfFull(syms);
+	ctrler.display1stPageIfFull(syms);
 }
 
 void PmsCont::setAsReady() {

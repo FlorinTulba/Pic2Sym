@@ -36,61 +36,58 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
+#ifndef H_SELECT_SYMBOLS
+#define H_SELECT_SYMBOLS
 
-#else // UNIT_TESTING not defined
-
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+#include "selectSymbolsBase.h"
 
 #pragma warning ( push, 0 )
 
-#include <vector>
+#include <list>
+#include <memory>
 
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+#include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
 
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
+// Forward declarations
+struct IController;
+class MatchEngine;
+class CmapPerspective;
+class CmapInspect;
 
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
+/// Allows saving a selection of symbols pointed within the charmap viewer
+class SelectSymbols : public ISelectSymbols {
+protected:
+	const IController &ctrler;
 
-	unsigned clustersCount = 0U;		///< total number of clusters
+	/// A list of selected symbols to investigate separately.
+	/// Useful while exploring ways to filter-out various symbols from charmaps.
+	mutable std::list<const cv::Mat> symsToInvestigate;
 
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
+	const MatchEngine &me;
 
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
+	const CmapPerspective &cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
+	const std::shared_ptr<CmapInspect> &pCmi;
 
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
+public:
+	SelectSymbols(const IController &ctrler_,
+				  const MatchEngine &me_,
+				  const CmapPerspective &cmP_,
+				  const std::shared_ptr<CmapInspect> &pCmi_);
+
+	/// Provides details about the symbol under the mouse
+	const SymData* pointedSymbol(int x, int y) const override;
+
+	/// Appends the code of the symbol under the mouse to the status bar
+	void displaySymCode(unsigned long symCode) const override;
+
+	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
+	void enlistSymbolForInvestigation(const SymData &sd) const override;
+
+	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
+	void symbolsReadyToInvestigate() const override;
 };
 
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // H_SELECT_SYMBOLS

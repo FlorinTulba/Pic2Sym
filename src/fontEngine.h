@@ -54,7 +54,6 @@
 
 // Forward declarations
 struct IController;
-struct IGlyphsProgressTracker;
 struct IUpdateSymSettings;
 struct IPresentCmap;
 class SymSettings;
@@ -63,10 +62,8 @@ class AbsJobMonitor;
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine : public ITinySymsProvider {
 protected:
-	const IController &ctrler;	///< cmap presenting, font validation and glyph preprocessing monitor aspects of the Controller
-	const IUpdateSymSettings &symSettingsUpdater;		///< symbol settings updating aspect of the Controller
-	const IGlyphsProgressTracker &glyphsProgress;		///< glyph preprocessing monitor  aspect of the Controller
-	const IPresentCmap &cmapPresenter;					///< cmap presenting aspect of the Controller
+	std::shared_ptr<const IUpdateSymSettings> symSettingsUpdater;		///< symbol settings updating aspect of the Controller
+	std::shared_ptr<const IPresentCmap> cmapPresenter;					///< cmap presenting aspect of the Controller
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;

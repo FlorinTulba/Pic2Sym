@@ -169,8 +169,8 @@ void CmapInspect::showPage(unsigned pageIdx) {
 		setTrackbarPos(CmapInspect_pageTrackName, winName, (int)pageIdx); // => page = pageIdx
 
 	const unsigned idxOfFirstSymFromPage = symsPerPage*pageIdx;
-	populateGrid(cmapPresenter.getFontFaces(idxOfFirstSymFromPage, symsPerPage),
-				 cmapPresenter.getClusterOffsets(), idxOfFirstSymFromPage);
+	populateGrid(cmapPresenter->getFontFaces(idxOfFirstSymFromPage, symsPerPage),
+				 cmapPresenter->getClusterOffsets(), idxOfFirstSymFromPage);
 	imshow(winName, content);
 }
 

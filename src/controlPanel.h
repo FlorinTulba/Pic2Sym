@@ -54,7 +54,7 @@
 #pragma warning ( pop )
 
 // Forward declarations
-class Settings;
+struct ISettings;
 struct IControlPanelActions;
 class ImgSettings;
 class MatchSettings;
@@ -124,7 +124,7 @@ protected:
 	};
 
 	IControlPanelActions &performer;	///< the delegate responsible to perform selected actions
-	const Settings &cfg;				///< the settings, required to (re)initialize the sliders
+	const ISettings &cfg;				///< the settings, required to (re)initialize the sliders
 
 	/// pointers to the names of the sliders that are undergoing value restoration
 	std::set<const cv::String> slidersRestoringValue;
@@ -161,7 +161,7 @@ protected:
 	bool updatingEncMax = false;
 
 public:
-	ControlPanel(IControlPanelActions &performer_, const Settings &cfg_);
+	ControlPanel(IControlPanelActions &performer_, const ISettings &cfg_);
 	ControlPanel(const ControlPanel&) = delete;
 	ControlPanel(ControlPanel&&) = delete;
 	void operator=(const ControlPanel&) = delete;

@@ -39,23 +39,26 @@
 #ifndef H_PIC_TRANSFORM_PROGRESS_TRACKER
 #define H_PIC_TRANSFORM_PROGRESS_TRACKER
 
-#include "img.h"
-#include "controllerBase.h"
-#include "timing.h"
+#include "picTransformProgressTrackerBase.h"
 
-/// Interface to monitor the progress of transforming an image.
-struct IPicTransformProgressTracker /*abstract*/ : virtual IController {
+struct IController; // forward declaration
+
+/// Implementation of the interface monitoring the progress of transforming an image.
+class PicTransformProgressTracker : public IPicTransformProgressTracker {
+protected:
+	IController &ctrler;
+
+public:
+	PicTransformProgressTracker(IController &ctrler_);
+
 	/// Called when unable to load the symbols right when attempting to transform an image
-	virtual void transformFailedToStart() = 0;
-
-	/// Returns true if transforming a new image or the last one, but under other image parameters
-	virtual bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) = 0;
+	void transformFailedToStart() override;
 
 	/**
 	An hourglass window displays the progress [0..1] of the transformation in %.
 	If showDraft is true, and a draft is available, it will be presented within Comparator window.
 	*/
-	virtual void reportTransformationProgress(double progress, bool showDraft = false) const = 0;
+	void reportTransformationProgress(double progress, bool showDraft = false) const override;
 
 	/**
 	Present the partial / final result after the transformation has been canceled / has finished.
@@ -64,12 +67,10 @@ struct IPicTransformProgressTracker /*abstract*/ : virtual IController {
 
 	@param completionDurationS the duration of the transformation in seconds or a negative value for aborted transformations
 	*/
-	virtual void presentTransformationResults(double completionDurationS = -1.) const = 0;
+	void presentTransformationResults(double completionDurationS = -1.) const override;
 
 	/// Creates the monitor to time the picture approximation process
-	virtual Timer createTimerForImgTransform() const = 0;
-
-	virtual ~IPicTransformProgressTracker() = 0 {}
+	Timer createTimerForImgTransform() const override;
 };
 
-#endif
+#endif // H_PIC_TRANSFORM_PROGRESS_TRACKER

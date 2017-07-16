@@ -40,7 +40,7 @@
 
 #include "matchSettingsManip.h"
 #include "appStart.h"
-#include "settings.h"
+#include "settingsBase.h"
 #include "propsReader.h"
 #include "misc.h"
 
@@ -149,7 +149,7 @@ bool MatchSettingsManip::parseCfg(MatchSettings &ms, const boost::filesystem::pa
 				new_kSymDensity = parser.read<double>("LARGER_SYM_PREF");
 	const unsigned newThreshold4Blank = parser.read<unsigned>("THRESHOLD_FOR_BLANK");
 
-	if(!Settings::isBlanksThresholdOk(newThreshold4Blank) ||
+	if(!ISettings::isBlanksThresholdOk(newThreshold4Blank) ||
 	   new_kSsim < 0. || new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
 	   new_kContrast < 0. || new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
 	   new_kSymDensity < 0.)

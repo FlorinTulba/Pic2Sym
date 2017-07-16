@@ -36,20 +36,21 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_UPDATE_SYM_SETTINGS
-#define H_UPDATE_SYM_SETTINGS
+#include "updateSymSettingsBase.h"
 
-#include "controllerBase.h"
+class SymSettings; // forward declaration
 
-/// Interface that allows changing settings for the symbols.
-struct IUpdateSymSettings /*abstract*/ : virtual IController {
+/// Implementation of IUpdateSymSettings
+class UpdateSymSettings : public IUpdateSymSettings {
+protected:
+	SymSettings &ss;	///< symbol settings
+
+public:
+	UpdateSymSettings(SymSettings &ss_);
+
 	/// called by FontEngine::newFont after installing a new font to update SymSettings
-	virtual void selectedFontFile(const std::string &fName) const = 0;
+	void newFontFile(const std::string &fName) const override;
 
 	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
-	virtual void selectedEncoding(const std::string &encName) const = 0;
-
-	virtual ~IUpdateSymSettings() = 0 {}
+	void newFontEncoding(const std::string &encName) const override;
 };
-
-#endif // H_UPDATE_SYM_SETTINGS

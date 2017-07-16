@@ -37,27 +37,32 @@
  ***********************************************************************************************/
 
 #include "controller.h"
-#include "settings.h"
+#include "fontEngine.h"
+#include "transform.h"
+#include "updateSymSettings.h"
+#include "glyphsProgressTracker.h"
+#include "picTransformProgressTracker.h"
+#include "selectSymbols.h"
+#include "controlPanelActions.h"
+#include "settingsBase.h"
+#include "symSettings.h"
+#include "imgSettings.h"
 #include "jobMonitor.h"
 #include "progressNotifier.h"
 #include "matchParams.h"
 #include "matchAssessment.h"
 #include "structuralSimilarity.h"
-#include "appStart.h"
 #include "controlPanel.h"
+#include "controlPanelActionsBase.h"
 #include "updateSymsActions.h"
-#include "symsSerialization.h"
 #include "views.h"
+#include "presentCmap.h"
 #include "dlgs.h"
 
 #pragma warning ( push, 0 )
 
-#include <Windows.h>
-
-#include <functional>
 #include <thread>
 
-#include "boost_filesystem_operations.h"
 #include <opencv2/highgui/highgui.hpp>
 
 #pragma warning ( pop )
@@ -76,8 +81,6 @@
 
 using namespace std;
 using namespace std::chrono;
-using namespace boost;
-using namespace boost::filesystem;
 using namespace boost::lockfree;
 using namespace cv;
 
@@ -143,84 +146,30 @@ void showUsage() {
 	pauseAfterError();
 }
 
-ostream& operator<<(ostream &os, const Settings &s) {
-	os<<s.ss<<s.is<<s.ms<<endl;
-	return os;
-}
-
-ostream& operator<<(ostream &os, const ImgSettings &is) {
-	os<<"hMaxSyms"<<" : "<<is.hMaxSyms<<endl;
-	os<<"vMaxSyms"<<" : "<<is.vMaxSyms<<endl;
-	return os;
-}
-
-ostream& operator<<(ostream &os, const SymSettings &ss) {
-	os<<"fontFile"<<" : "<<ss.fontFile<<endl;
-	os<<"encoding"<<" : "<<ss.encoding<<endl;
-	os<<"fontSz"<<" : "<<ss.fontSz<<endl;
-	return os;
-}
-
-ostream& operator<<(ostream &os, const MatchSettings &c) {
-	if(c.hybridResultMode)
-		os<<"hybridResultMode"<<" : "<<boolalpha<<c.hybridResultMode<<endl;
-	if(c.kSsim > 0.)
-		os<<"kSsim"<<" : "<<c.kSsim<<endl;
-	if(c.kSdevFg > 0.)
-		os<<"kSdevFg"<<" : "<<c.kSdevFg<<endl;
-	if(c.kSdevEdge > 0.)
-		os<<"kSdevEdge"<<" : "<<c.kSdevEdge<<endl;
-	if(c.kSdevBg > 0.)
-		os<<"kSdevBg"<<" : "<<c.kSdevBg<<endl;
-	if(c.kContrast > 0.)
-		os<<"kContrast"<<" : "<<c.kContrast<<endl;
-	if(c.kMCsOffset > 0.)
-		os<<"kMCsOffset"<<" : "<<c.kMCsOffset<<endl;
-	if(c.kCosAngleMCs > 0.)
-		os<<"kCosAngleMCs"<<" : "<<c.kCosAngleMCs<<endl;
-	if(c.kSymDensity > 0.)
-		os<<"kSymDensity"<<" : "<<c.kSymDensity<<endl;
-	if(c.threshold4Blank > 0.)
-		os<<"threshold4Blank"<<" : "<<c.threshold4Blank<<endl;
-	return os;
-}
+extern const string Controller_PREFIX_GLYPH_PROGRESS;
 
 namespace {
 	/// Adapter from IProgressNotifier to IGlyphsProgressTracker
 	struct SymsUpdateProgressNotifier : IProgressNotifier {
-		IGlyphsProgressTracker &performer;
+		const IController &performer;
 
-		SymsUpdateProgressNotifier(IGlyphsProgressTracker &performer_) : performer(performer_) {}
+		SymsUpdateProgressNotifier(const IController &performer_) : performer(performer_) {}
 		void operator=(const SymsUpdateProgressNotifier&) = delete;
 
 		void notifyUser(const std::string&, double progress) override {
-			performer.reportGlyphProgress(progress);
+			performer.hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS, true); // async call
 		}
 	};
 
 	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
 	struct PicTransformProgressNotifier : IProgressNotifier {
-		IPicTransformProgressTracker &performer;
+		std::shared_ptr<const IPicTransformProgressTracker> performer;
 
-		PicTransformProgressNotifier(IPicTransformProgressTracker &performer_) : performer(performer_) {}
+		PicTransformProgressNotifier(std::shared_ptr<const IPicTransformProgressTracker>performer_) : performer(performer_) {}
 		void operator=(const PicTransformProgressNotifier&) = delete;
 
 		void notifyUser(const std::string&, double progress) override {
-			performer.reportTransformationProgress(progress);
-		}
-	};
-
-	/// Common realization of IUpdateSymsAction
-	struct UpdateSymsAction : IUpdateSymsAction {
-	protected:
-		std::function<void()> fn; ///< the function to be called by perform, that has access to private fields & methods
-
-	public:
-		/// Creating an action object that performs the tasks described in fn_
-		UpdateSymsAction(std::function<void()> fn_) : fn(fn_) {}
-
-		void perform() override {
-			fn();
+			performer->reportTransformationProgress(progress);
 		}
 	};
 
@@ -265,8 +214,8 @@ string FontEngine::getFontType() {
 }
 
 string MatchEngine::getIdForSymsToUse() {
-	const unsigned sz = cfg.symSettings().getFontSz();
-	assert(Settings::isFontSizeOk(sz));
+	const unsigned sz = cfg.getSS().getFontSz();
+	assert(ISettings::isFontSizeOk(sz));
 
 	ostringstream oss;
 	oss<<fe.getFontType()<<'_'<<sz;
@@ -275,7 +224,7 @@ string MatchEngine::getIdForSymsToUse() {
 }
 
 void Transformer::updateStudiedCase(int rows, int cols) {
-	const auto &ss = cfg.matchSettings();
+	const auto &ss = cfg.getMS();
 	ostringstream oss;
 	oss<<img.name()<<'_'
 		<<me.getIdForSymsToUse()<<'_'
@@ -310,27 +259,36 @@ void MatchAssessorSkip::reportSkippedAspects() const {
 
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
 
-extern const string Controller_PREFIX_GLYPH_PROGRESS;
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
 extern const double Transform_ProgressReportsIncrement;
 extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 #pragma warning( disable : WARN_BASE_INIT_USING_THIS )
-Controller::Controller(Settings &s) :
+Controller::Controller(ISettingsRW &s) :
+		updateSymSettings(std::make_shared<const UpdateSymSettings>(s.SS())),
+		glyphsProgressTracker(std::make_shared<const GlyphsProgressTracker>(*this)),
+		picTransformProgressTracker(std::make_shared<PicTransformProgressTracker>(*this)),
 		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs",
 			std::make_shared<SymsUpdateProgressNotifier>(*this),
 			SymbolsProcessing_ProgressReportsIncrement)),
 		imgTransformMonitor(std::make_shared<JobMonitor>("Transforming image",
-			std::make_shared<PicTransformProgressNotifier>(*this),
+			std::make_shared<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
 			Transform_ProgressReportsIncrement)),
-		img(getImg()), fe(getFontEngine(s.ss).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
+		cmP(),
+		presentCmap(std::make_shared<const PresentCmap>(*this, cmP)),
+		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
 		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		pm(getPreselManager(s)),
-		comp(getComparator()), cp(getControlPanel(s)) {
+		comp(getComparator()),
+		pCmi(),
+		selectSymbols(std::make_shared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
+		controlPanelActions(std::make_shared<ControlPanelActions>(*this, s,
+			getFontEngine(s.getSS()), getMatchEngine(s).assessor(), getTransformer(s), getComparator(), pCmi)) {
 	me.usePreselManager(pm);
 	t.usePreselManager(pm);
+	const_cast<IPresentCmap*>(presentCmap.get())->markClustersAsUsed(&me.isClusteringUseful());
 
 	comp.setPos(0, 0);
 	comp.permitResize(false);
@@ -341,43 +299,13 @@ Controller::Controller(Settings &s) :
 }
 #pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
-void Controller::showAboutDlg(const string &title, const wstring &content) {
-	const auto permit = cp.actionDemand(ControlPanel_aboutLabel);
-	if(nullptr == permit)
-		return;
-
-	MessageBox(nullptr, content.c_str(),
-			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-}
-
-void Controller::showInstructionsDlg(const string &title, const wstring &content) {
-	const auto permit = cp.actionDemand(ControlPanel_instructionsLabel);
-	if(nullptr == permit)
-		return;
-
-	MessageBox(nullptr, content.c_str(),
-			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-}
-
-const string Controller::textForCmapOverlay(double elapsed) const {
-	ostringstream oss;
-	oss<<"The update of the symbols set took "<<elapsed<<" s!";
-	return oss.str();
-}
-
-const string Controller::textForComparatorOverlay(double elapsed) const {
-	ostringstream oss;
-	oss<<"The transformation took "<<elapsed<<" s!";
-	return oss.str();
-}
-
 const string Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) const {
 	assert(nullptr != fe.getFamily() && 0ULL < strlen(fe.getFamily()));
 	assert(nullptr != fe.getStyle() && 0ULL < strlen(fe.getStyle()));
 	assert(!fe.getEncoding().empty());
 	ostringstream oss;
 	oss<<"Font type '"<<fe.getFamily()<<' '<<fe.getStyle()
-		<<"', size "<<cfg.ss.getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
+		<<"', size "<<cfg.getSS().getFontSz()<<", encoding '"<<fe.getEncoding()<<'\''
 		<<" : "<<((upperSymsCount != 0U) ? upperSymsCount : (unsigned)fe.symsSet().size())<<" symbols";
 	return oss.str();
 }
@@ -388,31 +316,12 @@ const string Controller::textHourGlass(const std::string &prefix, double progres
 	return oss.str();
 }
 
-bool Controller::markClustersAsNotUsed() const {
-	return !me.ce.worthGrouping();
-}
-
-void Controller::showUnofficialSymDetails(unsigned symsCount) const {
-	cout<<endl<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
-
-	// placing a task in the queue for the GUI updating thread
-	updateSymsActionsQueue.push(new UpdateSymsAction([&, symsCount] {
-		pCmi->setStatus(textForCmapStatusBar(symsCount));
-	}));
-}
-
-void Controller::reportSymsUpdateDuration(double elapsed) const {
-	const string cmapOverlayText = textForCmapOverlay(elapsed);
-	cout<<endl<<cmapOverlayText<<endl<<endl;
-	pCmi->setOverlay(cmapOverlayText, 3000);
-}
-
 void Controller::symbolsChanged() {
 	// Timing the update.
 	// timer's destructor will report duration and will close the hourglass window.
 	// These actions will be launched in this GUI updating thread,
 	// after processing all previously registered actions.
-	Timer timer = createTimerForGlyphs();
+	Timer timer = glyphsProgressTracker->createTimerForGlyphs();
 
 	updatingSymbols.test_and_set();
 	updating1stCmapPage.clear();
@@ -432,13 +341,13 @@ void Controller::symbolsChanged() {
 		}, timer);
 
 		try {
-			fe.setFontSz(cfg.ss.getFontSz());
+			fe.setFontSz(cfg.getSS().getFontSz());
 			me.updateSymbols();
 
 		} catch(NormalSymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
 			const string errText(excObj.what());
 			// An exception with the same errText will be thrown in the main thread when executing next action
-			updateSymsActionsQueue.push(new UpdateSymsAction([errText] {
+			updateSymsActionsQueue.push(new BasicUpdateSymsAction([errText] {
 				throw NormalSymsLoadingFailure(errText);
 			}));
 
@@ -448,7 +357,7 @@ void Controller::symbolsChanged() {
 		} catch(TinySymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
 			const string errText(excObj.what());
 			// An exception with the same errText will be thrown in the main thread when executing next action
-			updateSymsActionsQueue.push(new UpdateSymsAction([errText] {
+			updateSymsActionsQueue.push(new BasicUpdateSymsAction([errText] {
 				throw TinySymsLoadingFailure(errText);
 			}));
 
@@ -514,51 +423,11 @@ void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
 		const auto fontSz = getFontSize();
 		for(const auto &pms : syms)
 			matSyms.emplace_back(pms.toMat(fontSz, true));
-		
+
 		const_cast<vector<const PixMapSym>&>(syms).clear(); // discard local copy of the vector
 
 		pCmi->showUnofficial1stPage(matSyms, updating1stCmapPage, updateSymsActionsQueue);
 	}).detach(); // termination doesn't matter
-}
-
-Timer Controller::createTimerForGlyphs() const {
-	return Timer(std::make_shared<Controller::TimerActions_SymSetUpdate>(*this)); // RVO
-}
-
-Timer Controller::createTimerForImgTransform() const {
-	return Timer(std::make_shared<Controller::TimerActions_ImgTransform>(*this)); // RVO
-}
-
-Controller::TimerActions_Controller::TimerActions_Controller(const Controller &ctrler_) :
-		ctrler(ctrler_) {}
-
-Controller::TimerActions_SymSetUpdate::TimerActions_SymSetUpdate(const Controller &ctrler_) :
-		TimerActions_Controller(ctrler_) {}
-
-void Controller::TimerActions_SymSetUpdate::onStart() {
-	ctrler.reportGlyphProgress(0.);
-}
-
-void Controller::TimerActions_SymSetUpdate::onRelease(double elapsedS) {
-	ctrler.updateSymsDone(elapsedS);
-}
-
-Controller::TimerActions_ImgTransform::TimerActions_ImgTransform(const Controller &ctrler_) :
-		TimerActions_Controller(ctrler_) {}
-
-void Controller::TimerActions_ImgTransform::onStart() {
-	ctrler.reportTransformationProgress(0.);
-}
-
-void Controller::TimerActions_ImgTransform::onRelease(double elapsedS) {
-	ctrler.reportTransformationProgress(1.);
-	ctrler.presentTransformationResults(elapsedS);
-	ctrler.t.durationS = elapsedS;
-}
-
-void Controller::TimerActions_ImgTransform::onCancel(const string &reason/* = ""*/) {
-	ctrler.reportTransformationProgress(1., true);
-	infoMsg(reason);
 }
 
 #ifndef UNIT_TESTING
@@ -577,105 +446,78 @@ void Controller::handleRequests() {
 	}
 }
 
-void Controller::hourGlass(double progress, const string &title/* = ""*/) const {
+void Controller::hourGlass(double progress, const string &title/* = ""*/, bool async/* = false*/) const {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const String waitWin = "Please Wait!";
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	if(progress == 0.) {
-		namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
-		moveWindow(waitWin, 0, 400);
+	if(async) { // enqueue the call
+		updateSymsActionsQueue.push(new BasicUpdateSymsAction([&, progress] {
+			hourGlass(progress, title);
+		}));
+
+	} else { // direct call or one async call due now
+		if(progress == 0.) {
+			namedWindow(waitWin, CV_GUI_NORMAL); // no status bar, nor toolbar
+			moveWindow(waitWin, 0, 400);
 #ifndef _DEBUG // destroyWindow in Debug mode triggers deallocation of invalid block
-	} else if(progress == 1.) {
-		destroyWindow(waitWin);
+		} else if(progress == 1.) {
+			destroyWindow(waitWin);
 #endif // in Debug mode, leaving the hourGlass window visible, but with 100% as title
-	} else {
-		ostringstream oss;
-		if(title.empty())
-			oss<<waitWin;
-		else
-			oss<<title;
-		const string hourGlassText = textHourGlass(oss.str(), progress);
-		setWindowTitle(waitWin, hourGlassText);
+		} else {
+			ostringstream oss;
+			if(title.empty())
+				oss<<waitWin;
+			else
+				oss<<title;
+			const string hourGlassText = textHourGlass(oss.str(), progress);
+			setWindowTitle(waitWin, hourGlassText);
+		}
 	}
 }
 
-void Controller::reportGlyphProgress(double progress) const {
-	updateSymsActionsQueue.push(new UpdateSymsAction([&, progress] {
-		hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS);
-	}));
+void Controller::updateStatusBarCmapInspect(unsigned upperSymsCount/* = 0U*/,
+											const string &suffix/* = ""*/,
+											bool async/* = false*/) const {
+	const string newStatusBarText(textForCmapStatusBar(upperSymsCount) + suffix);
+	if(async) { // placing a task in the queue for the GUI updating thread
+		updateSymsActionsQueue.push(new BasicUpdateSymsAction([&, newStatusBarText] {
+			pCmi->setStatus(newStatusBarText);
+		}));
+	} else { // direct call or one async call due now
+		pCmi->setStatus(newStatusBarText);
+	}
 }
 
-void Controller::updateSymsDone(double durationS) const {
-	hourGlass(1., Controller_PREFIX_GLYPH_PROGRESS);
-	reportSymsUpdateDuration(durationS);
+void Controller::reportDuration(const std::string &text, double durationS) const {
+	ostringstream oss;
+	oss<<text<<' '<<durationS<<" s!";
+	const string cmapOverlayText(oss.str());
+	cout<<endl<<cmapOverlayText<<endl<<endl;
+	pCmi->setOverlay(cmapOverlayText, 3000);
 }
 
-void Controller::reportTransformationProgress(double progress, bool showDraft/* = false*/) const {
-	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
-	hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
+bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
+	if(!resizedImg_)
+		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
 
-	if(showDraft)
-		presentTransformationResults();
+	const bool result = !resizedImg || (*resizedImg != *resizedImg_);
+
+	if(result)
+		resizedImg = resizedImg_;
+	comp.setReference(resizedImg->get());
+	if(result)
+		comp.resize();
+
+	return result;
 }
 
-void Controller::presentTransformationResults(double completionDurationS/* = -1.*/) const {
+void Controller::showResultedImage(double completionDurationS) {
 	comp.setResult(t.getResult()); // display the result at the end of the transformation
 	if(completionDurationS > 0.) {
-		const string comparatorOverlayText = textForComparatorOverlay(completionDurationS);
-		cout<<endl<<comparatorOverlayText <<endl<<endl;
-		comp.setOverlay(comparatorOverlayText, 3000);
+		reportDuration("The transformation took", completionDurationS);
+		t.setDuration(completionDurationS);
 	}
-}
-
-const SymData* Controller::pointedSymbol(int x, int y) const {
-	if(!pCmi->isBrowsable())
-		return nullptr;
-
-	const unsigned cellSide = pCmi->getCellSide(),
-		r = (unsigned)y / cellSide, c = (unsigned)x / cellSide,
-		symIdx = pCmi->getPageIdx()*pCmi->getSymsPerPage() + r*pCmi->getSymsPerRow() + c;
-
-	if(symIdx >= me.getSymsCount())
-		return nullptr;
-
-	return *cmP.getSymsRange(symIdx, 1U).first;
-}
-
-void Controller::displaySymCode(unsigned long symCode) const {
-	ostringstream oss;
-	oss<<textForCmapStatusBar()<<" [symbol "<<symCode<<']';
-	pCmi->setStatus(oss.str());
-}
-
-void Controller::enlistSymbolForInvestigation(const SymData &sd) const {
-	cout<<"Appending symbol "<<sd.code<<" to the list needed for further investigations"<<endl;
-	symsToInvestigate.push_back(255U - sd.negSym); // enlist actual symbol, not its negative
-}
-
-void Controller::symbolsReadyToInvestigate() const {
-	if(symsToInvestigate.empty()) {
-		cout<<"The list of symbols for further investigations was empty, so there's nothing to save."<<endl;
-		return;
-	}
-
-	path destFile = AppStart::dir();
-	if(!exists(destFile.append("SymsSelections")))
-		create_directory(destFile);
-	destFile.append(to_string(time(nullptr))).concat(".txt");
-	cout<<"The list of "<<symsToInvestigate.size()<<" symbols for further investigations will be saved to file "
-		<<destFile<<" and then cleared."<<endl;
-
-	ut::saveSymsSelection(destFile.string(), symsToInvestigate);
-	symsToInvestigate.clear();
-}
-
-CmapPerspective::VPSymDataCItPair Controller::getFontFaces(unsigned from, unsigned maxCount) const {
-	return cmP.getSymsRange(from, maxCount);
-}
-
-const set<unsigned>& Controller::getClusterOffsets() const {
-	return cmP.getClusterOffsets();
 }
 
 Comparator::Comparator() : CvWin("Pic2Sym") {
@@ -726,7 +568,8 @@ namespace {
 	@param negSymExtractor function extracting the negative mask from each iterator
 	@param content the resulted page as a matrix (image)
 	@param grid the 'hive' for the glyphs to be displayed
-	@param cmapPresenter provides the font size
+	@param fontSz provides the font size
+	@param areClustersIgnored adapts the display of clusters depending on their importance
 	@param clusterOffsets where does each cluster start
 	@param idxOfFirstSymFromPage index of the first symbol to be displayed on the page
 	*/
@@ -734,13 +577,12 @@ namespace {
 	void populateGrid(Iterator it, Iterator itEnd,
 					  NegSymExtractor<Iterator> negSymExtractor,
 					  Mat &content, const Mat &grid,
-					  const IPresentCmap &cmapPresenter,
+					  int fontSz, bool areClustersIgnored,
 					  const set<unsigned> &clusterOffsets = {},
 					  unsigned idxOfFirstSymFromPage = UINT_MAX) {
 		content = grid.clone();
 		const unsigned symsToShow = (unsigned)distance(it, itEnd);
-		const int fontSz = (int)cmapPresenter.getFontSize(),
-				cellSide = 1 + fontSz,
+		const int cellSide = 1 + fontSz,
 				height = CmapInspect_pageSz.height,
 				width = CmapInspect_pageSz.width;
 
@@ -770,7 +612,7 @@ namespace {
 			const int r = pos.quot * cellSide + 1,
 						c = pos.rem * cellSide;
 			const Vec3b splitColor = endMark ? ClustersEndMarkColor : ClusterMarkColor;
-			if(cmapPresenter.markClustersAsNotUsed()) { // use dashed lines as splits
+			if(areClustersIgnored) { // use dashed lines as splits
 				const Point up(c, r), down(c, r + fontSz - 1);
 				const int dashLen = (fontSz + 4) / 5; // ceiling(fontSz/5) - at most 3 dashes with 2 breaks in between
 				LineIterator lit(content, up, down, 4);
@@ -840,7 +682,9 @@ void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 #else // AI_REVIEWER_CHECK defined
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
-				   content, grid, cmapPresenter, clusterOffsets, idxOfFirstSymFromPage);
+				   content, grid, (int)fontSz,
+				   !const_cast<IPresentCmap*>(cmapPresenter.get())->markClustersAsUsed(),
+				   clusterOffsets, idxOfFirstSymFromPage);
 }
 
 void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
@@ -854,7 +698,8 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 #else // AI_REVIEWER_CHECK defined
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
-				   *unofficial, grid, cmapPresenter);
+				   *unofficial, grid, (int)fontSz,
+				   !const_cast<IPresentCmap*>(cmapPresenter.get())->markClustersAsUsed());
 
 	symsOn1stPage.clear(); // discard values now
 
@@ -866,7 +711,7 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 		auto *pUpdating1stCmapPage = &updating1stCmapPage;
 		const auto winNameCopy = winName;
 
-		updateSymsActionsQueue.push(new UpdateSymsAction([pUpdating1stCmapPage, winNameCopy, unofficial] {
+		updateSymsActionsQueue.push(new BasicUpdateSymsAction([pUpdating1stCmapPage, winNameCopy, unofficial] {
 			imshow(winNameCopy, *unofficial);
 
 			pUpdating1stCmapPage->clear(); // puts its value on false, to be acquired by the official version publisher
@@ -874,8 +719,11 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 	}
 }
 
-CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
-		CvWin(CmapInspectWinName), cmapPresenter(cmapPresenter_) {
+CmapInspect::CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
+						 std::shared_ptr<const ISelectSymbols> symsSelector_,
+						 const unsigned &fontSz_) :
+		CvWin(CmapInspectWinName),
+		cmapPresenter(cmapPresenter_), symsSelector(symsSelector_), fontSz(fontSz_) {
 	content = grid = createGrid();
 	extern const String CmapInspect_pageTrackName;
 	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
@@ -890,19 +738,19 @@ CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_) :
 	// - Ctrl + left mouse click will append the pointed symbol to the current list
 	// - left mouse double-click will save the current list and then it will clear it
 	setMouseCallback(CmapInspectWinName, [] (int event, int x, int y, int flags, void* userdata) {
-		const IPresentCmap *ppc = reinterpret_cast<IPresentCmap*>(userdata);
+		const ISelectSymbols *pss = reinterpret_cast<ISelectSymbols*>(userdata);
 		if(event == EVENT_MOUSEMOVE) { // Mouse move
-			const SymData *psd = ppc->pointedSymbol(x, y);
+			const SymData *psd = pss->pointedSymbol(x, y);
 			if(nullptr != psd)
-				ppc->displaySymCode(psd->code);
+				pss->displaySymCode(psd->code);
 		} else if((event == EVENT_LBUTTONDBLCLK) && ((flags & EVENT_FLAG_CTRLKEY) == 0)) { // Ctrl key not pressed and left mouse double-click
-			ppc->symbolsReadyToInvestigate();
+			pss->symbolsReadyToInvestigate();
 		} else if((event == EVENT_LBUTTONUP) && ((flags & EVENT_FLAG_CTRLKEY) != 0)) { // Ctrl key pressed and left mouse click
-			const SymData *psd = ppc->pointedSymbol(x, y);
+			const SymData *psd = pss->pointedSymbol(x, y);
 			if(nullptr != psd)
-				ppc->enlistSymbolForInvestigation(*psd);
+				pss->enlistSymbolForInvestigation(*psd);
 		}
-	}, reinterpret_cast<void*>(const_cast<IPresentCmap*>(&cmapPresenter)));
+	}, reinterpret_cast<void*>(const_cast<ISelectSymbols*>(symsSelector.get())));
 }
 
 Mat CmapInspect::createGrid() {
@@ -912,7 +760,7 @@ Mat CmapInspect::createGrid() {
 
 	Mat emptyGrid(CmapInspect_pageSz, CV_8UC3, Scalar::all(255U));
 
-	cellSide = 1U + cmapPresenter.getFontSize();
+	cellSide = 1U + fontSz;
 	symsPerRow = (((unsigned)CmapInspect_pageSz.width - 1U) / cellSide);
 	symsPerPage = symsPerRow * (((unsigned)CmapInspect_pageSz.height - 1U) / cellSide);
 
@@ -993,21 +841,21 @@ extern const wstring ControlPanel_aboutText;
 extern const wstring ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
-ControlPanel::ControlPanel(IControlPanelActions &performer_, const Settings &cfg_) :
+ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cfg_) :
 		performer(performer_), cfg(cfg_),
-		maxHSyms((int)cfg_.imgSettings().getMaxHSyms()), maxVSyms((int)cfg_.imgSettings().getMaxVSyms()),
-		encoding(0), fontSz((int)cfg_.symSettings().getFontSz()),
+		maxHSyms((int)cfg_.getIS().getMaxHSyms()), maxVSyms((int)cfg_.getIS().getMaxVSyms()),
+		encoding(0), fontSz((int)cfg_.getSS().getFontSz()),
 		symsBatchSz((int)SymsBatch_defaultSz),
-		hybridResult(cfg_.matchSettings().isHybridResult() ? 1 : 0),
-		structuralSim(Converter::StructuralSim::toSlider(cfg_.matchSettings().get_kSsim())),
-		underGlyphCorrectness(Converter::Correctness::toSlider(cfg_.matchSettings().get_kSdevFg())),
-		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg_.matchSettings().get_kSdevEdge())),
-		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg_.matchSettings().get_kSdevBg())),
-		moreContrast(Converter::Contrast::toSlider(cfg_.matchSettings().get_kContrast())),
-		gravity(Converter::Gravity::toSlider(cfg_.matchSettings().get_kMCsOffset())),
-		direction(Converter::Direction::toSlider(cfg_.matchSettings().get_kCosAngleMCs())),
-		largerSym(Converter::LargerSym::toSlider(cfg_.matchSettings().get_kSymDensity())),
-		thresh4Blanks((int)cfg_.matchSettings().getBlankThreshold()) {
+		hybridResult(cfg_.getMS().isHybridResult() ? 1 : 0),
+		structuralSim(Converter::StructuralSim::toSlider(cfg_.getMS().get_kSsim())),
+		underGlyphCorrectness(Converter::Correctness::toSlider(cfg_.getMS().get_kSdevFg())),
+		glyphEdgeCorrectness(Converter::Correctness::toSlider(cfg_.getMS().get_kSdevEdge())),
+		asideGlyphCorrectness(Converter::Correctness::toSlider(cfg_.getMS().get_kSdevBg())),
+		moreContrast(Converter::Contrast::toSlider(cfg_.getMS().get_kContrast())),
+		gravity(Converter::Gravity::toSlider(cfg_.getMS().get_kMCsOffset())),
+		direction(Converter::Direction::toSlider(cfg_.getMS().get_kCosAngleMCs())),
+		largerSym(Converter::LargerSym::toSlider(cfg_.getMS().get_kSymDensity())),
+		thresh4Blanks((int)cfg_.getMS().getBlankThreshold()) {
 	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
 	extern const unsigned Settings_MAX_H_SYMS;
 	extern const unsigned Settings_MAX_V_SYMS;

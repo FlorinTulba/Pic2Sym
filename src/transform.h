@@ -58,7 +58,7 @@ extern const unsigned SymsBatch_defaultSz;
 #endif // UNIT_TESTING not defined
 
 // Forward declarations
-class Settings;		// global settings
+struct ISettings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
 class TaskMonitor;
@@ -68,13 +68,13 @@ struct BestMatch;
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
 	friend class PreselManager;
-	friend class Controller;
 
 protected:
-	const IPicTransformProgressTracker &ctrler;	///< data & views manager
+	IController &ctrler;	///< controller
+	std::shared_ptr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
 	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
 
-	const Settings &cfg;		///< general configuration
+	const ISettings &cfg;		///< general configuration
 	MatchEngine &me;			///< approximating patches
 	Img &img;					///< current image to process
 
@@ -116,7 +116,7 @@ protected:
 	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor);
 
 public:
-	Transformer(const IPicTransformProgressTracker &ctrler_, const Settings &cfg_,
+	Transformer(IController &ctrler_, const ISettings &cfg_,
 				MatchEngine &me_, Img &img_);
 	void operator=(const Transformer&) = delete;
 
@@ -124,6 +124,7 @@ public:
 
 	inline const cv::Mat& getResult() const { return result; }
 	inline double duration() const { return durationS; }
+	inline void setDuration(double durationS_) { durationS = durationS_; }
 
 	/**
 	Updates symsBatchSz.

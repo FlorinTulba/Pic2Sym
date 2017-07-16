@@ -146,7 +146,7 @@ struct PixMapSym {
 #endif // UNIT_TESTING defined
 };
 
-struct IPresentCmap; // forward declaration
+struct IController; // forward declaration
 
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont {
@@ -157,7 +157,7 @@ protected:
 	cv::Mat consec;					///< vector of consecutive values 0..fontSz-1
 	cv::Mat revConsec;				///< consec reversed
 
-	const IPresentCmap &cmapViewUpdater;	///< updates Cmap View as soon as there are enough symbols for 1 page
+	IController &ctrler;	///< updates Cmap View as soon as there are enough symbols for 1 page
 
 	/**
 	Member that allows setting filters to detect symbols with undesired features.
@@ -178,7 +178,7 @@ protected:
 	bool ready = false;				///< is container ready to provide useful data?
 
 public:
-	PmsCont(const IPresentCmap &cmapViewUpdater_);
+	PmsCont(IController &ctrler_);
 	PmsCont(const PmsCont&) = delete;
 	void operator=(const PmsCont&) = delete;
 

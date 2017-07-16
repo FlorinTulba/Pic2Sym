@@ -46,6 +46,7 @@
 #pragma warning ( push, 0 )
 
 #include <vector>
+#include <set>
 
 #pragma warning ( pop )
 
@@ -67,6 +68,8 @@ public:
 	void operator=(CmapPerspective&&) = delete;
 
 	void reset(...);
+	VPSymDataCItPair getSymsRange(...) const;
+	const std::set<unsigned>& getClusterOffsets() const;
 };
 
 #endif // H_MOCK_CMAP_PERSPECTIVE

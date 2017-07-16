@@ -36,84 +36,114 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_SYM_SETTINGS
-#define H_SYM_SETTINGS
+#ifndef H_SETTINGS_BASE
+#define H_SETTINGS_BASE
+
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include <iostream>
 
 #ifndef AI_REVIEWER_CHECK
+
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
-/// Parameters concerning the symbols set used for approximating patches.
-class SymSettings {
+// Forward declarations
+class SymSettings;
+class ImgSettings;
+class MatchSettings;
+
+/**
+Interface providing read-only access to all parameters required for transforming images.
+Allows serialization and feeding such objects to output streams.
+*/
+struct ISettings /*abstract*/ {
+	// Static validator methods
+	static bool isBlanksThresholdOk(unsigned t);
+	static bool isHmaxSymsOk(unsigned syms);
+	static bool isVmaxSymsOk(unsigned syms);
+	static bool isFontSizeOk(unsigned fs);
+
+	virtual const SymSettings& getSS() const = 0;	///< returns existing symbols settings
+	virtual const ImgSettings& getIS() const = 0;	///< returns existing image settings
+	virtual const MatchSettings& getMS() const = 0;	///< returns existing match settings
+
+	friend std::ostream& operator<<(std::ostream &os, const ISettings &s);
+
+	virtual ~ISettings() = 0 {}
+
 protected:
-	std::string fontFile;	///< the file containing the used font family with the desired style
-	std::string encoding;	///< the particular encoding of the used cmap
-	unsigned fontSz;		///< size of the symbols
-
-	/**
-	Loads a SymSettings object from ar overwriting *this and reporting the changes.
-
-	@param ar source of the SymSettings to load
-	@param version the version of the loaded object
-	*/
+	/// Overwriting the read-only version not allowed, so it throws logic_error
 	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
-		UNREFERENCED_PARAMETER(version);
-
-		// It is useful to see which settings changed when loading
-		SymSettings defSettings(*this); // create as copy of previous values
-
-		// read user default match settings
-		ar >> defSettings.fontFile >> defSettings.encoding >> defSettings.fontSz;
-
-		// these show message when there are changes
-		setFontFile(defSettings.fontFile);
-		setEncoding(defSettings.encoding);
-		setFontSz(defSettings.fontSz);
+	void load(Archive&, const unsigned) {
+		THROW_WITH_CONST_MSG("Don't use the read-only ISettings interface when loading new Settings!",
+							 std::logic_error)
 	}
 
 	/// Saves *this to ar
 	template<class Archive>
 	void save(Archive &ar, const unsigned) const {
-		ar << fontFile << encoding << fontSz;
+#ifndef AI_REVIEWER_CHECK
+		ar << getSS() << getIS() << getMS();
+#endif // AI_REVIEWER_CHECK not defined
 	}
-
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
-
-public:
-	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
-	SymSettings(unsigned fontSz_) : fontSz(fontSz_) {}
-
-	bool ready() const { return !fontFile.empty(); }
-
-	inline const std::string& getFontFile() const { return fontFile; }
-	void setFontFile(const std::string &fontFile_);
-
-	inline const std::string& getEncoding() const { return encoding; }
-	void setEncoding(const std::string &encoding_);
-
-	inline const unsigned& getFontSz() const { return fontSz; }
-	void setFontSz(unsigned fontSz_);
-
-	bool operator==(const SymSettings &other) const;
-	bool operator!=(const SymSettings &other) const;
-	friend std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
 };
 
 #ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(SymSettings, 0)
+BOOST_CLASS_VERSION(ISettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
 
-#endif // H_SYM_SETTINGS
+
+/// The ISettings interface plus accessors for settings modification
+struct ISettingsRW /*abstract*/ : ISettings {
+	virtual SymSettings& SS() = 0;		///< allows current symbols settings to be changed
+	virtual ImgSettings& IS() = 0;		///< allows current image settings to be changed
+	virtual MatchSettings& MS() = 0;	///< allows current match settings to be changed
+
+	virtual ~ISettingsRW() = 0 {}
+
+protected:
+	/**
+	Overwrites *this with the ISettingsRW object read from ar.
+
+	@param ar source of the object to load
+	@param version the version of the loaded ISettingsRW
+	*/
+	template<class Archive>
+	void load(Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(version);
+
+		// read user default match settings
+#ifndef AI_REVIEWER_CHECK
+		ar >> SS() >> IS() >> MS();
+#endif // AI_REVIEWER_CHECK not defined
+	}
+
+	/// Saves *this to ar
+	template<class Archive>
+	void save(Archive &ar, const unsigned version) const {
+		ISettings::save(ar, version);
+	}
+#ifndef AI_REVIEWER_CHECK
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+	friend class boost::serialization::access;
+#endif // AI_REVIEWER_CHECK not defined
+};
+
+#ifndef AI_REVIEWER_CHECK
+BOOST_CLASS_VERSION(ISettingsRW, 0)
+#endif // AI_REVIEWER_CHECK not defined
+
+#endif // H_SETTINGS_BASE

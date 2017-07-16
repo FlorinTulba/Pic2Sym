@@ -43,8 +43,18 @@
 #include "controller.h"
 #include "matchEngine.h"
 #include "fontEngine.h"
-#include "settings.h"
+#include "transform.h"
+#include "settingsBase.h"
+#include "symSettings.h"
+#include "imgSettings.h"
+#include "img.h"
 #include "preselectManager.h"
+#include "picTransformProgressTracker.h"
+#include "glyphsProgressTracker.h"
+#include "selectSymbols.h"
+#include "cmapPerspective.h"
+#include "controlPanelActions.h"
+#include "views.h"
 
 #pragma warning ( push, 0 )
 
@@ -55,6 +65,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <opencv2/imgcodecs/imgcodecs.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
@@ -308,8 +319,33 @@ MatchSettings::MatchSettings() {}
 	} \
 	return *pField
 
-Img& Controller::getImg() {
+Img& ControlPanelActions::getImg() {
 	GET_FIELD(Img);
+}
+
+ControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
+	GET_FIELD(ControlPanel, *this, cfg_);
+}
+
+bool ControlPanelActions::newImage(const Mat &imgMat) {
+	bool result = img.reset(imgMat);
+
+	if(result) {
+		cout<<"Using Matrix instead of a "<<(img.isColor() ? "color" : "grayscale")<<" image"<<endl;
+		if(!imageOk)
+			imageOk = true;
+
+		// For valid matrices of size sz x sz, ignore MIN_H_SYMS & MIN_V_SYMS =>
+		// Testing an image containing a single patch
+		if(imgMat.cols == cfg.getSS().getFontSz() && imgMat.rows == cfg.getSS().getFontSz()) {
+			if(1U != cfg.getIS().getMaxHSyms())
+				cfg.IS().setMaxHSyms(1U);
+			if(1U != cfg.getIS().getMaxVSyms())
+				cfg.IS().setMaxVSyms(1U);
+		}
+	}
+
+	return result;
 }
 
 Comparator& Controller::getComparator() {
@@ -320,20 +356,16 @@ FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Settings &cfg_) {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss), cmP);
+MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
 }
 
-Transformer& Controller::getTransformer(const Settings &cfg_) {
-	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
+Transformer& Controller::getTransformer(const ISettings &cfg_) {
+	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
 }
 
-PreselManager& Controller::getPreselManager(const Settings &cfg_) {
+PreselManager& Controller::getPreselManager(const ISettings &cfg_) {
 	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
-}
-
-ControlPanel& Controller::getControlPanel(Settings &cfg_) {
-	GET_FIELD(ControlPanel, *this, cfg_);
 }
 
 #undef GET_FIELD
@@ -342,46 +374,33 @@ Controller::~Controller() {}
 
 void Controller::handleRequests() {}
 
-void Controller::hourGlass(double, const string&) const {}
+void Controller::hourGlass(double, const string&, bool) const {}
 
-void Controller::reportGlyphProgress(double) const {}
+void PicTransformProgressTracker::transformFailedToStart() {}
 
-void Controller::transformFailedToStart() {}
+void PicTransformProgressTracker::reportTransformationProgress(double, bool) const {}
 
-void Controller::updateSymsDone(double) const {}
+void PicTransformProgressTracker::presentTransformationResults(double) const {}
 
-void Controller::reportTransformationProgress(double, bool) const {}
+void GlyphsProgressTracker::updateSymsDone(double) const {}
 
-void Controller::presentTransformationResults(double) const {}
+void Controller::updateStatusBarCmapInspect(unsigned, const string&, bool) const {}
 
-bool Controller::newImage(const Mat &imgMat) {
-	bool result = img.reset(imgMat);
+void Controller::reportDuration(const string&, double) const {}
 
-	if(result) {
-		cout<<"Using Matrix instead of a "<<(img.isColor()?"color":"grayscale")<<" image"<<endl;
-		if(!imageOk)
-			imageOk = true;
-
-		// For valid matrices of size sz x sz, ignore MIN_H_SYMS & MIN_V_SYMS =>
-		// Testing an image containing a single patch
-		if(imgMat.cols == cfg.ss.getFontSz() && imgMat.rows == cfg.ss.getFontSz()) {
-			if(1U != cfg.is.getMaxHSyms())
-				cfg.is.setMaxHSyms(1U);
-			if(1U != cfg.is.getMaxVSyms())
-				cfg.is.setMaxVSyms(1U);
-		}
-	}
-
-	return result;
+bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg>) {
+	return true;
 }
 
-const SymData* Controller::pointedSymbol(int x, int y) const { return nullptr; }
+void Controller::showResultedImage(double) {}
 
-void Controller::displaySymCode(unsigned long symCode) const {}
+const SymData* SelectSymbols::pointedSymbol(int, int) const { return nullptr; }
 
-void Controller::enlistSymbolForInvestigation(const SymData &sd) const {}
+void SelectSymbols::displaySymCode(unsigned long) const {}
 
-void Controller::symbolsReadyToInvestigate() const {}
+void SelectSymbols::enlistSymbolForInvestigation(const SymData&) const {}
+
+void SelectSymbols::symbolsReadyToInvestigate() const {}
 
 namespace {
 	CmapPerspective::VPSymDataCIt dummyIt;
@@ -389,11 +408,11 @@ namespace {
 	set<unsigned> dummyClusterOffsets;
 } // anonymous namespace
 
-CmapPerspective::VPSymDataCItPair Controller::getFontFaces(unsigned, unsigned) const {
+CmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(...) const {
 	return dummyFontFaces;
 }
 
-const set<unsigned>& Controller::getClusterOffsets() const {
+const set<unsigned>& CmapPerspective::getClusterOffsets() const {
 	return dummyClusterOffsets;
 }
 

@@ -39,11 +39,71 @@
 #ifndef H_CONTROLLER_BASE
 #define H_CONTROLLER_BASE
 
-/**
-Base interface for the rest of the Controller interfaces
-*/
+#pragma warning ( push, 0 )
+
+#include <memory>
+#include <vector>
+#include <string>
+
+#pragma warning ( pop )
+
+// Forward declarations
+struct IUpdateSymSettings;
+struct IGlyphsProgressTracker;
+struct IPicTransformProgressTracker;
+struct IPresentCmap;
+struct ISelectSymbols;
+struct IControlPanelActions;
+class ResizedImg;
+struct PixMapSym;
+
+/// Base interface for the Controller
 struct IController /*abstract*/ {
 	virtual ~IController() = 0 {}
+
+	virtual std::shared_ptr<const IUpdateSymSettings> getUpdateSymSettings() const = 0;
+	virtual std::shared_ptr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const = 0;
+	virtual std::shared_ptr<IPicTransformProgressTracker> getPicTransformProgressTracker() = 0;
+	virtual std::shared_ptr<const IPresentCmap> getPresentCmap() const = 0;
+	virtual std::shared_ptr<const ISelectSymbols> getSelectSymbols() const = 0;
+	virtual std::shared_ptr<IControlPanelActions> getControlPanelActions() = 0;
+
+	virtual const unsigned& getFontSize() const = 0; ///< font size determines grid size
+
+	/// Triggered by new font family / encoding / size
+	virtual void symbolsChanged() = 0;
+
+	/// Returns true if transforming a new image or the last one, but under other image parameters
+	virtual bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) = 0;
+
+	/**
+	Shows a 'Please wait' window and reports progress.
+
+	@param progress the progress (0..1) as %
+	@param title details about the ongoing operation
+	@param async allows showing the window asynchronously
+	*/
+	virtual void hourGlass(double progress, const std::string &title = "", bool async = false) const = 0;
+
+	/**
+	Updates the status bar from the charmap inspector window.
+
+	@param upperSymsCount an overestimated number of symbols from the unfiltered set
+		or 0 when considering the exact number of symbols from the filtered set
+	@param suffix an optional status bar message suffix
+	@param async allows showing the new status bar message asynchronously
+	*/
+	virtual void updateStatusBarCmapInspect(unsigned upperSymsCount = 0U,
+											const std::string &suffix = "",
+											bool async = false) const = 0;
+
+	/// Reports the duration of loading symbols / transforming images
+	virtual void reportDuration(const std::string &text, double durationS) const = 0;
+
+	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
+	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;
+
+	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
 };
 
-#endif
+#endif // H_CONTROLLER_BASE

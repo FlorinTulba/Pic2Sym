@@ -135,7 +135,7 @@ struct SymData {
 	as filtering options might be different for distinct run sessions.
 	*/
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int /*version*/) {
+	void serialize(Archive &ar, const unsigned /*version*/) {
 		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
 		ar & mc.x & mc.y;
 		ar & negSym;

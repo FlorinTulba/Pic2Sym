@@ -36,61 +36,48 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifdef UNIT_TESTING
-#	include "../test/mockClusterSerialization.h"
+#include "glyphsProgressTracker.h"
+#include "controllerBase.h"
+#include "updateSymsActions.h"
 
-#else // UNIT_TESTING not defined
+using namespace std;
 
-#ifndef H_CLUSTER_SERIALIZATION
-#define H_CLUSTER_SERIALIZATION
+extern const string Controller_PREFIX_GLYPH_PROGRESS;
 
-#pragma warning ( push, 0 )
+namespace { // Anonymous namespace
+	/// Actions for start & stop chronometer while timing glyphs loading & preprocessing
+	class TimerActions : public ITimerActions {
+	protected:
+		const IController &ctrler;
 
-#include <vector>
+	public:
+		TimerActions(const IController &ctrler_) : ctrler(ctrler_) {}
+		void operator=(const TimerActions&) = delete;
 
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+		/// Action to be performed when the timer is started
+		void onStart() override {
+			ctrler.hourGlass(0., Controller_PREFIX_GLYPH_PROGRESS, true); // async call
+		}
 
-#pragma warning ( pop )
+		/// Action to be performed when the timer is released/deleted
+		/// @param elapsedS total elapsed time in seconds
+		void onRelease(double elapsedS) override {
+			ctrler.getGlyphsProgressTracker()->updateSymsDone(elapsedS);
+		}
+	};
+} // Anonymous namespace
 
-/// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
+GlyphsProgressTracker::GlyphsProgressTracker(const IController &ctrler_) : ctrler(ctrler_) {}
 
-	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
-	std::vector<int> clusterLabels;	
+Timer GlyphsProgressTracker::createTimerForGlyphs() const {
+	return Timer(std::make_shared<TimerActions>(ctrler)); // RVO
+}
 
-	unsigned clustersCount = 0U;		///< total number of clusters
+#ifndef UNIT_TESTING
 
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
+void GlyphsProgressTracker::updateSymsDone(double durationS) const {
+	ctrler.hourGlass(1., Controller_PREFIX_GLYPH_PROGRESS); // sync call
+	ctrler.reportDuration("The update of the symbols set took", durationS);
+}
 
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
-
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
-
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
-};
-
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
-#endif // AI_REVIEWER_CHECK not defined
-
-#endif // H_CLUSTER_SERIALIZATION
-
-#endif // UNIT_TESTING not defined
+#endif // UNIT_TESTING

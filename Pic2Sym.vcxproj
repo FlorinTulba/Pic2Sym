@@ -37,17 +37,23 @@
     <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
+    <ClInclude Include="src\controlPanelActionsBase.h" />
     <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
+    <ClInclude Include="src\glyphsProgressTrackerBase.h" />
     <ClInclude Include="src\matchAssessment.h" />
     <ClInclude Include="src\matchSupport.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
+    <ClInclude Include="src\picTransformProgressTrackerBase.h" />
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
+    <ClInclude Include="src\presentCmapBase.h" />
+    <ClInclude Include="src\selectSymbols.h" />
+    <ClInclude Include="src\selectSymbolsBase.h" />
     <ClInclude Include="src\serializer.h" />
     <ClInclude Include="src\gaussBlur.h" />
     <ClInclude Include="src\glyphsProgressTracker.h" />
@@ -79,6 +85,7 @@
     <ClInclude Include="src\progressNotifier.h" />
     <ClInclude Include="src\propsReader.h" />
     <ClInclude Include="src\settings.h" />
+    <ClInclude Include="src\settingsBase.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\stackBlur.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
@@ -105,6 +112,7 @@
     <ClInclude Include="src\unreadableSymsFilter.h" />
     <ClInclude Include="src\updateSymsActions.h" />
     <ClInclude Include="src\updateSymSettings.h" />
+    <ClInclude Include="src\updateSymSettingsBase.h" />
     <ClInclude Include="src\views.h" />
     <ClInclude Include="src\warnings.h" />
   </ItemGroup>
@@ -123,11 +131,13 @@
     <ClCompile Include="src\constants.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
+    <ClCompile Include="src\controlPanelActions.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
     <ClCompile Include="src\extBoxBlur.cpp" />
     <ClCompile Include="src\filledRectanglesFilter.cpp" />
     <ClCompile Include="src\fontEngine.cpp" />
     <ClCompile Include="src\gaussBlur.cpp" />
+    <ClCompile Include="src\glyphsProgressTracker.cpp" />
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\matchAssessment.cpp" />
@@ -136,6 +146,7 @@
     <ClCompile Include="src\noClustering.cpp" />
     <ClCompile Include="src\partitionClustering.cpp" />
     <ClCompile Include="src\patch.cpp" />
+    <ClCompile Include="src\picTransformProgressTracker.cpp" />
     <ClCompile Include="src\preselectManager.cpp" />
     <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
@@ -149,7 +160,10 @@
     <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
     <ClCompile Include="src\jobMonitor.cpp" />
+    <ClCompile Include="src\presentCmap.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
+    <ClCompile Include="src\selectSymbols.cpp" />
+    <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\stackBlur.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
@@ -171,6 +185,7 @@
     <ClCompile Include="src\transformTrace.cpp" />
     <ClCompile Include="src\ttsasClustering.cpp" />
     <ClCompile Include="src\unreadableSymsFilter.cpp" />
+    <ClCompile Include="src\updateSymSettings.cpp" />
     <ClCompile Include="src\varConfig.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\views.cpp" />

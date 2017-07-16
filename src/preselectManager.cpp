@@ -44,7 +44,7 @@
 #include "clusterSupportWithPreselection.h"
 #include "matchSupportWithPreselection.h"
 #include "transformSupportWithPreselection.h"
-#include "settings.h"
+#include "settingsBase.h"
 
 using namespace std;
 
@@ -59,13 +59,13 @@ PreselManager::PreselManager(MatchEngine &me, Transformer &tr) :
 			new ClustersSupport(me.ce, *symsSupport_, me.symsSet)),
 		matchSupport_(PreselectionByTinySyms ?
 			new MatchSupportWithPreselection(me.cachedData, me.symsSet,
-											me.matchAssessor, me.cfg.matchSettings()) :
+											me.matchAssessor, me.cfg.getMS()) :
 			new MatchSupport(me.cachedData)),
 		transfSupport(PreselectionByTinySyms ?
-			new TransformSupportWithPreselection(me, me.cfg.matchSettings(),
+			new TransformSupportWithPreselection(me, me.cfg.getMS(),
 												tr.resized, tr.resizedBlurred,
 												tr.draftMatches, *matchSupport_) :
-			new TransformSupport(me, me.cfg.matchSettings(),
+			new TransformSupport(me, me.cfg.getMS(),
 								tr.resized, tr.resizedBlurred,
 								tr.draftMatches)) {
 	me.ce.supportedBy(*clustersSupport_);

@@ -39,26 +39,23 @@
 #ifndef H_GLYPHS_PROGRESS_TRACKER
 #define H_GLYPHS_PROGRESS_TRACKER
 
-#include "controllerBase.h"
-#include "timing.h"
+#include "glyphsProgressTrackerBase.h"
 
-/**
-Interface to monitor the progress of loading and preprocessing a charmap.
-*/
-struct IGlyphsProgressTracker /*abstract*/ : virtual IController {
-	/// Report progress about loading, adapting glyphs
-	virtual void reportGlyphProgress(double progress) const = 0;
+struct IController; // forward declaration
+
+/// Realization of interface monitoring the progress of loading and preprocessing a charmap.
+class GlyphsProgressTracker : public IGlyphsProgressTracker {
+protected:
+	const IController &ctrler;
+
+public:
+	GlyphsProgressTracker(const IController &ctrler_);
 
 	/// Report duration of the update of the symbols and close the hourglass
-	virtual void updateSymsDone(double durationS) const = 0;
+	void updateSymsDone(double durationS) const override;
 
 	/// Creates the monitor to time the glyph loading and preprocessing
-	virtual Timer createTimerForGlyphs() const = 0;
-
-	/// Reports the duration of the update of the symbols. elapsed is in seconds
-	virtual void reportSymsUpdateDuration(double elapsed) const = 0;
-
-	virtual ~IGlyphsProgressTracker() = 0 {}
+	Timer createTimerForGlyphs() const override;
 };
 
-#endif
+#endif // H_GLYPHS_PROGRESS_TRACKER

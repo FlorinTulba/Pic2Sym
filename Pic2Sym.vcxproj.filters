@@ -360,9 +360,6 @@
     <ClInclude Include="src\ompTraceSwitch.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
-    <ClInclude Include="src\updateSymSettings.h">
-      <Filter>Header Files\Controller</Filter>
-    </ClInclude>
     <ClInclude Include="src\fontErrorsHelper.h">
       <Filter>Header Files\Charmap</Filter>
     </ClInclude>
@@ -410,6 +407,33 @@
     </ClInclude>
     <ClInclude Include="src\boost_bimap_bimap.h">
       <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\updateSymSettingsBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\updateSymSettings.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\glyphsProgressTrackerBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\picTransformProgressTrackerBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\presentCmapBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\selectSymbolsBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\selectSymbols.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\controlPanelActionsBase.h">
+      <Filter>Header Files\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="src\settingsBase.h">
+      <Filter>Header Files\Settings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -610,6 +634,27 @@
     </ClCompile>
     <ClCompile Include="src\transformSupportWithPreselection.cpp">
       <Filter>Source Files\Controller\TransformEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\updateSymSettings.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glyphsProgressTracker.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\picTransformProgressTracker.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\presentCmap.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\selectSymbols.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\controlPanelActions.cpp">
+      <Filter>Source Files\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="src\settings.cpp">
+      <Filter>Source Files\Settings</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

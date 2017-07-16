@@ -207,6 +207,27 @@
     <ClCompile Include="test\selectBranch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\updateSymSettings.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glyphsProgressTracker.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\picTransformProgressTracker.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\presentCmap.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\selectSymbols.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\controlPanelActions.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\settings.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -380,10 +401,10 @@
     <ClInclude Include="src\structuralSimilarity.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-        <ClInclude Include="src\study.h">
+    <ClInclude Include="src\study.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-	<ClInclude Include="src\symbolsSupport.h">
+    <ClInclude Include="src\symbolsSupport.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\symbolsSupportWithPreselection.h">
@@ -463,6 +484,39 @@
     </ClInclude>
     <ClInclude Include="test\selectBranch.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\updateSymSettingsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\boost_bimap_bimap.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\boost_filesystem_operations.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\boost_filesystem_path.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\glyphsProgressTrackerBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\picTransformProgressTrackerBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\presentCmapBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\selectSymbols.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\selectSymbolsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\controlPanelActionsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\settingsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

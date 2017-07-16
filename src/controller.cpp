@@ -37,609 +37,53 @@
  ***********************************************************************************************/
 
 #include "controller.h"
-#include "preselectManager.h"
-#include "matchAssessment.h"
+#include "settingsBase.h"
+#include "symSettings.h"
+#include "matchEngine.h"
 #include "matchParams.h"
-#include "misc.h"
-#include "dlgs.h"
-#include "settings.h"
+#include "matchAssessment.h"
+#include "views.h"
+#include "img.h"
+#include "transform.h"
+#include "preselectManager.h"
 #include "controlPanel.h"
-#include "matchSettingsManip.h"
-#include "match.h"
+#include "controlPanelActions.h"
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 
-#include <Windows.h>
 #include <sstream>
-#include <fstream>
-
-#include "boost_filesystem_operations.h"
 
 #pragma warning ( pop )
 
 using namespace std;
-using namespace boost::filesystem;
-using namespace boost::archive;
 
-extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
-extern const unsigned Settings_MIN_H_SYMS;
-extern const unsigned Settings_MAX_H_SYMS;
-extern const unsigned Settings_MIN_V_SYMS;
-extern const unsigned Settings_MAX_V_SYMS;
-extern const unsigned Settings_MIN_FONT_SIZE;
-extern const unsigned Settings_MAX_FONT_SIZE;
-extern const unsigned Settings_DEF_FONT_SIZE;
-extern const string CannotLoadFontErrSuffix;
-
-bool Settings::isBlanksThresholdOk(unsigned t) {
-	return t < Settings_MAX_THRESHOLD_FOR_BLANKS;
+std::shared_ptr<const IUpdateSymSettings> Controller::getUpdateSymSettings() const {
+	return updateSymSettings;
 }
 
-bool Settings::isHmaxSymsOk(unsigned syms) {
-	return syms>=Settings_MIN_H_SYMS && syms<=Settings_MAX_H_SYMS;
+std::shared_ptr<const IGlyphsProgressTracker> Controller::getGlyphsProgressTracker() const {
+	return glyphsProgressTracker;
 }
 
-bool Settings::isVmaxSymsOk(unsigned syms) {
-	return syms>=Settings_MIN_V_SYMS && syms<=Settings_MAX_V_SYMS;
+std::shared_ptr<IPicTransformProgressTracker> Controller::getPicTransformProgressTracker() {
+	return picTransformProgressTracker;
 }
 
-bool Settings::isFontSizeOk(unsigned fs) {
-	return fs>=Settings_MIN_FONT_SIZE && fs<=Settings_MAX_FONT_SIZE;
+std::shared_ptr<const IPresentCmap> Controller::getPresentCmap() const {
+	return presentCmap;
 }
 
-Settings::Settings(const MatchSettings &ms_) :
-	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms(ms_) {}
-
-Settings::Settings() :
-	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
-
-bool Controller::validState(bool imageRequired/* = true*/) const {
-	const bool noEnabledMatchAspects = (me.assessor().enabledMatchAspectsCount() == 0ULL);
-	if((imageOk || !imageRequired) && fontFamilyOk && !noEnabledMatchAspects)
-		return true;
-
-	ostringstream oss;
-	oss<<"The problems are:"<<endl<<endl;
-	if(imageRequired && !imageOk)
-		oss<<"- no image to transform"<<endl;
-	if(!fontFamilyOk)
-		oss<<"- no font family to use during transformation"<<endl;
-	if(noEnabledMatchAspects)
-		oss<<"- no enabled matching aspects to consider"<<endl;
-	errMsg(oss.str(), "Please Correct these errors first!");
-	return false;
+std::shared_ptr<const ISelectSymbols> Controller::getSelectSymbols() const {
+	return selectSymbols;
 }
 
-bool Controller::newImage(const string &imgPath, bool silent/* = false*/) {
-	extern const cv::String ControlPanel_selectImgLabel;
-	const auto permit = cp.actionDemand(ControlPanel_selectImgLabel);
-	if(nullptr == permit)
-		return false;
-
-	if(img.absPath().compare(absolute(imgPath)) == 0)
-		return true; // same image
-
-	if(!img.reset(imgPath)) {
-		if(!silent) {
-			ostringstream oss;
-			oss<<"Invalid image file: '"<<imgPath<<'\'';
-			errMsg(oss.str());
-		}
-		return false;
-	}
-
-	ostringstream oss;
-	oss<<"Pic2Sym on image: "<<img.absPath();
-	comp.setTitle(oss.str());
-
-	if(!imageOk) { // 1st image loaded
-		comp.permitResize();
-		imageOk = true;
-	}
-
-	const cv::Mat &orig = img.original();
-	comp.setReference(orig); // displays the image
-	comp.resize();
-	return true;
+std::shared_ptr<IControlPanelActions> Controller::getControlPanelActions() {
+	return controlPanelActions;
 }
 
-void Controller::invalidateFont() {
-	fontFamilyOk = false;
-
-	cp.updateEncodingsCount(1U);
-	if(pCmi)
-		pCmi->clear();
-
-	cfg.ss.setFontFile("");
-	cfg.ss.setEncoding("");
-	fe.invalidateFont();
-}
-
-bool Controller::_newFontFamily(const string &fontFile, bool forceUpdate/* = false*/) {
-	if(fe.fontFileName().compare(fontFile) == 0 && !forceUpdate)
-		return false; // same font
-
-	if(!fe.newFont(fontFile)) {
-		ostringstream oss;
-		oss<<"Invalid font file: '"<<fontFile<<'\'';
-		errMsg(oss.str());
-		return false;
-	}
-
-	cp.updateEncodingsCount(fe.uniqueEncodings());
-
-	if(!fontFamilyOk) {
-		fontFamilyOk = true;
-		if(!pCmi)
-			pCmi = std::make_shared<CmapInspect>(*this);
-	}
-
-	return true;
-}
-
-void Controller::newFontFamily(const string &fontFile) {
-	extern const cv::String ControlPanel_selectFontLabel;
-	const auto permit = cp.actionDemand(ControlPanel_selectFontLabel);
-	if(nullptr == permit)
-		return;
-
-	if(!_newFontFamily(fontFile))
-		return;
-
-	try {
-		symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
-		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the newly selected font family!");
-	} catch(NormalSymsLoadingFailure &nslf) {
-		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the newly selected font family!");
-	}
-}
-
-void Controller::selectedFontFile(const string &fName) const {
-	cfg.ss.setFontFile(fName);
-}
-
-unsigned Controller::getFontEncodingIdx() const {
-	if(fontFamilyOk) {
-		unsigned currEncIdx;
-		fe.getEncoding(&currEncIdx);
-
-		return currEncIdx;
-	}
-	
-	// This method must NOT throw when fontFamilyOk is false,
-	// since the requested index appears on the Control Panel, and must exist if:
-	// - no font was loaded yet
-	// - a font has been loaded
-	// - a requested font couldn't be loaded and was discarded
-	return 0U;
-}
-
-void Controller::newFontEncoding(int encodingIdx) {
-	// Ignore call if no font yet, or just 1 encoding,
-	// or if the required hack (mentioned in 'ui.h') provoked this call
-	if(!fontFamilyOk || fe.uniqueEncodings() <= 1U || cp.encMaxHack())
-		return;
-
-	unsigned currEncIdx;
-	fe.getEncoding(&currEncIdx);
-	if(currEncIdx == (unsigned)encodingIdx)
-		return;
-
-	extern const cv::String ControlPanel_encodingTrName;
-	const auto permit = cp.actionDemand(ControlPanel_encodingTrName);
-	if(nullptr == permit)
-		return;
-
-	fe.setNthUniqueEncoding((unsigned)encodingIdx);
-
-	try {
-		symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
-		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
-	} catch(NormalSymsLoadingFailure &nslf) {
-		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
-	}
-}
-
-bool Controller::_newFontEncoding(const string &encName, bool forceUpdate/* = false*/) {
-	return fe.setEncoding(encName, forceUpdate);
-}
-
-bool Controller::newFontEncoding(const string &encName) {
-	bool result = _newFontEncoding(encName);
-	if(result) {
-		try {
-			symbolsChanged();
-		} catch(TinySymsLoadingFailure &tslf) {
-			invalidateFont();
-			tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
-			return false;
-		} catch(NormalSymsLoadingFailure &nslf) {
-			invalidateFont();
-			nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
-			return false;
-		}
-	}
-
-	return result;
-}
-
-void Controller::selectedEncoding(const string &encName) const {
-	cfg.ss.setEncoding(encName);
-}
-
-bool Controller::_newFontSize(int fontSz, bool forceUpdate/* = false*/) {
-	extern const cv::String ControlPanel_fontSzTrName;
-	if(!Settings::isFontSizeOk((unsigned)fontSz)) {
-		ostringstream oss;
-		oss<<"Invalid font size. Please set at least "<<Settings_MIN_FONT_SIZE<<'.';
-		cp.restoreSliderValue(ControlPanel_fontSzTrName, oss.str());
-		return false;
-	}
-
-	if((unsigned)fontSz == cfg.ss.getFontSz() && !forceUpdate)
-		return false;
-
-	cfg.ss.setFontSz((unsigned)fontSz);
-
-	if(!fontFamilyOk) {
-		if(pCmi)
-			pCmi->clear();
-		return false;
-	}
-		
-	pCmi->updateGrid();
-
-	return true;
-}
-
-void Controller::newFontSize(int fontSz) {
-	extern const cv::String ControlPanel_fontSzTrName;
-	const auto permit = cp.actionDemand(ControlPanel_fontSzTrName);
-	if(nullptr == permit)
-		return;
-
-	if(!_newFontSize(fontSz))
-		return;
-
-	try {
-		symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
-		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font whose size has been updated!");
-	} catch(NormalSymsLoadingFailure &nslf) {
-		invalidateFont();
-		nslf.informUser("Couldn't load the requested size versions of the fonts!");
-	}
-}
-
-void Controller::newSymsBatchSize(int symsBatchSz) {
-	extern const cv::String ControlPanel_symsBatchSzTrName;
-	const auto permit = cp.actionDemand(ControlPanel_symsBatchSzTrName);
-	if(nullptr == permit)
-		return;
-
-	t.setSymsBatchSize(symsBatchSz);
-}
-
-void Controller::newHmaxSyms(int maxSymbols) {
-	extern const cv::String ControlPanel_outWTrName;
-	const auto permit = cp.actionDemand(ControlPanel_outWTrName);
-	if(nullptr == permit)
-		return;
-
-	if((unsigned)maxSymbols == cfg.is.getMaxHSyms()) // it's possible if the previous value was invalid
-		return;
-
-	if(!Settings::isHmaxSymsOk((unsigned)maxSymbols)) {
-		ostringstream oss;
-		oss<<"Invalid max number of horizontal symbols. Please set at least "<<Settings_MIN_H_SYMS<<'.';
-		cp.restoreSliderValue(ControlPanel_outWTrName, oss.str());
-		return;
-	}
-
-	cfg.is.setMaxHSyms((unsigned)maxSymbols);
-}
-
-void Controller::newVmaxSyms(int maxSymbols) {
-	extern const cv::String ControlPanel_outHTrName;
-	const auto permit = cp.actionDemand(ControlPanel_outHTrName);
-	if(nullptr == permit)
-		return;
-
-	if((unsigned)maxSymbols == cfg.is.getMaxVSyms()) // it's possible if the previous value was invalid
-		return;
-
-	if(!Settings::isVmaxSymsOk((unsigned)maxSymbols)) {
-		ostringstream oss;
-		oss<<"Invalid max number of vertical symbols. Please set at least "<<Settings_MIN_V_SYMS<<'.';
-		cp.restoreSliderValue(ControlPanel_outHTrName, oss.str());
-		return;
-	}
-
-	cfg.is.setMaxVSyms((unsigned)maxSymbols);
-}
-
-void Controller::setResultMode(bool hybrid) {
-	extern const cv::String ControlPanel_hybridResultTrName;
-	const auto permit = cp.actionDemand(ControlPanel_hybridResultTrName);
-	if(nullptr == permit)
-		return;
-
-	cfg.ms.setResultMode(hybrid);
-}
-
-unsigned Controller::getFontSize() const {
-	return cfg.ss.getFontSz();
-}
-
-void Controller::newThreshold4BlanksFactor(unsigned threshold) {
-	extern const cv::String ControlPanel_thresh4BlanksTrName;
-	const auto permit = cp.actionDemand(ControlPanel_thresh4BlanksTrName);
-	if(nullptr == permit)
-		return;
-
-	cfg.ms.setBlankThreshold(threshold);
-}
-
-#define UPDATE_MATCH_ASPECT_VALUE(AspectName, NewValue) \
-	const double PrevVal = cfg.ms.get_k##AspectName(); \
-	if(NewValue != PrevVal) { \
-		cfg.ms.set_k##AspectName(NewValue); \
-		if(PrevVal == 0.) { /* just enabled this aspect */ \
-			me.matchAssessor.newlyEnabledMatchAspect(); \
-		} else if(NewValue == 0.) { /* just disabled this aspect */ \
-			me.matchAssessor.newlyDisabledMatchAspect(); \
-		} \
-	}
-
-void Controller::newContrastFactor(double k) {
-	extern const cv::String ControlPanel_moreContrastTrName;
-	const auto permit = cp.actionDemand(ControlPanel_moreContrastTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(Contrast, k);
-}
-
-void Controller::newStructuralSimilarityFactor(double k) {
-	extern const cv::String ControlPanel_structuralSimTrName;
-	const auto permit = cp.actionDemand(ControlPanel_structuralSimTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(Ssim, k);
-}
-
-void Controller::newUnderGlyphCorrectnessFactor(double k) {
-	extern const cv::String ControlPanel_underGlyphCorrectnessTrName;
-	const auto permit = cp.actionDemand(ControlPanel_underGlyphCorrectnessTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(SdevFg, k);
-}
-
-void Controller::newAsideGlyphCorrectnessFactor(double k) {
-	extern const cv::String ControlPanel_asideGlyphCorrectnessTrName;
-	const auto permit = cp.actionDemand(ControlPanel_asideGlyphCorrectnessTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(SdevBg, k);
-}
-
-void Controller::newGlyphEdgeCorrectnessFactor(double k) {
-	extern const cv::String ControlPanel_glyphEdgeCorrectnessTrName;
-	const auto permit = cp.actionDemand(ControlPanel_glyphEdgeCorrectnessTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(SdevEdge, k);
-}
-
-void Controller::newDirectionalSmoothnessFactor(double k) {
-	extern const cv::String ControlPanel_directionTrName;
-	const auto permit = cp.actionDemand(ControlPanel_directionTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(CosAngleMCs, k);
-}
-
-void Controller::newGravitationalSmoothnessFactor(double k) {
-	extern const cv::String ControlPanel_gravityTrName;
-	const auto permit = cp.actionDemand(ControlPanel_gravityTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(MCsOffset, k);
-}
-
-void Controller::newGlyphWeightFactor(double k) {
-	extern const cv::String ControlPanel_largerSymTrName;
-	const auto permit = cp.actionDemand(ControlPanel_largerSymTrName);
-	if(nullptr == permit)
-		return;
-
-	UPDATE_MATCH_ASPECT_VALUE(SymDensity, k);
-}
-
-#undef UPDATE_MATCH_ASPECT_VALUE
-
-bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
-	if(!resizedImg_)
-		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
-
-	const bool result = !resizedImg || (*resizedImg != *resizedImg_);
-
-	if(result)
-		resizedImg = resizedImg_;
-	comp.setReference(resizedImg->get());
-	if(result)
-		comp.resize();
-
-	return result;
-}
-
-bool Controller::performTransformation(double *durationS/* = nullptr*/) {
-	extern const cv::String ControlPanel_transformImgLabel;
-	const auto permit = cp.actionDemand(ControlPanel_transformImgLabel);
-	if(nullptr == permit)
-		return false;
-
-	if(!validState())
-		return false;
-
-	t.run();
-
-	if(nullptr != durationS)
-		*durationS = t.duration();
-
-	return true;
-}
-
-void Controller::restoreUserDefaultMatchSettings() {
-	extern const cv::String ControlPanel_restoreDefaultsLabel;
-	const auto permit = cp.actionDemand(ControlPanel_restoreDefaultsLabel);
-	if(nullptr == permit)
-		return;
-
-#ifndef UNIT_TESTING
-	MatchSettingsManip::instance().loadUserDefaults(cfg.ms);
-#endif // UNIT_TESTING not defined
-
-	cp.updateMatchSettings(cfg.ms);
-	me.matchAssessor.updateEnabledMatchAspectsCount();
-}
-
-void Controller::setUserDefaultMatchSettings() const {
-	extern const cv::String ControlPanel_saveAsDefaultsLabel;
-	const auto permit = cp.actionDemand(ControlPanel_saveAsDefaultsLabel);
-	if(nullptr == permit)
-		return;
-
-#ifndef UNIT_TESTING
-	MatchSettingsManip::instance().saveUserDefaults(cfg.ms);
-#endif // UNIT_TESTING not defined
-}
-
-bool Controller::loadSettings(const string &from/* = ""*/) {
-	extern const cv::String ControlPanel_loadSettingsLabel;
-	const auto permit = cp.actionDemand(ControlPanel_loadSettingsLabel);
-	if(nullptr == permit)
-		return false;
-
-	string sourceFile;
-	if(!from.empty()) {
-		sourceFile = from;
-	
-	} else { // prompting the user for the file to be loaded
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static SettingsSelector ss; // loader
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		if(!ss.promptForUserChoice())
-			return false;
-
-		sourceFile = ss.selection();
-	}
-
-	const SymSettings prevSymSettings(cfg.ss); // keep a copy of old SymSettings
-	cout<<"Loading settings from '"<<sourceFile<<'\''<<endl;
-
-#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
-	try {
-		ifstream ifs(sourceFile, ios::binary);
-		binary_iarchive ia(ifs);
-		ia>>cfg;
-	} catch(...) {
-		cerr<<"Couldn't load these settings"<<endl;
-		return false;
-	}
-#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
-
-	cp.updateMatchSettings(cfg.ms);
-	me.matchAssessor.updateEnabledMatchAspectsCount();
-	cp.updateImgSettings(cfg.is);
-
-	if(prevSymSettings==cfg.ss)
-		return true;
-
-	bool fontFileChanged = false, encodingChanged = false;
-	const auto newEncName = cfg.ss.getEncoding();
-	if(prevSymSettings.getFontFile().compare(cfg.ss.getFontFile()) != 0) {
-		_newFontFamily(cfg.ss.getFontFile(), true);
-		fontFileChanged = true;
-	}
-	if((!fontFileChanged && prevSymSettings.getEncoding().compare(newEncName) != 0) ||
-			(fontFileChanged && cfg.ss.getEncoding().compare(newEncName) != 0)) {
-		_newFontEncoding(newEncName, true);
-		encodingChanged = true;
-	}
-
-	if(prevSymSettings.getFontSz() != cfg.ss.getFontSz()) {
-		if(fontFileChanged || encodingChanged) {
-			pCmi->updateGrid();
-		} else {
-			_newFontSize((int)cfg.ss.getFontSz(), true);
-		}
-	}
-
-	unsigned currEncIdx;
-	fe.getEncoding(&currEncIdx);
-	cp.updateSymSettings(currEncIdx, cfg.ss.getFontSz());
-	
-	try {
-		symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
-		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font pointed by this settings file!");
-		return false;
-	} catch(NormalSymsLoadingFailure &nslf) {
-		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the font pointed by this settings file!");
-		return false;
-	}
-
-	return true;
-}
-
-void Controller::saveSettings() const {
-	extern const cv::String ControlPanel_saveSettingsLabel;
-	const auto permit = cp.actionDemand(ControlPanel_saveSettingsLabel);
-	if(nullptr == permit)
-		return;
-
-	if(!cfg.ss.ready()) {
-		warnMsg("There's no Font yet.\nSave settings only after selecting a font !");
-		return;
-	}
-
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static SettingsSelector ss(false); // saver
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-	if(!ss.promptForUserChoice())
-		return;
-
-	cout<<"Saving settings to '"<<ss.selection()<<'\''<<endl;
-	
-#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
-	try {
-		ofstream ofs(ss.selection(), ios::binary);
-		binary_oarchive oa(ofs);
-		oa<<cfg;
-	} catch(...) {
-		cerr<<"Couldn't save current settings"<<endl;
-		return;
-	}
-#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
+const unsigned& Controller::getFontSize() const {
+	return cfg.getSS().getFontSz();
 }
 
 // Methods from below have different definitions for UnitTesting project
@@ -670,10 +114,6 @@ void Controller::saveSettings() const {
 	return field
 #endif // AI_REVIEWER_CHECK
 
-Img& Controller::getImg() {
-	GET_FIELD_NO_ARGS(Img);
-}
-
 Comparator& Controller::getComparator() {
 	GET_FIELD_NO_ARGS(Comparator);
 }
@@ -682,24 +122,16 @@ FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const Settings &cfg_) {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.ss), cmP);
+MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
 }
 
-Transformer& Controller::getTransformer(const Settings &cfg_) {
-	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), getImg());
+Transformer& Controller::getTransformer(const ISettings &cfg_) {
+	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
 }
 
-PreselManager& Controller::getPreselManager(const Settings &cfg_) {
+PreselManager& Controller::getPreselManager(const ISettings &cfg_) {
 	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
-}
-
-ControlPanel& Controller::getControlPanel(Settings &cfg_) {
-	GET_FIELD(ControlPanel, *this, cfg_);
-}
-
-void Controller::transformFailedToStart() {
-	invalidateFont();
 }
 
 #undef GET_FIELD_NO_ARGS

@@ -39,48 +39,61 @@
 #ifndef H_CONTROLLER
 #define H_CONTROLLER
 
-#include "imgSettings.h"
-#include "views.h"
-#include "transform.h"
-#include "controlPanelActions.h"
-#include "presentCmap.h"
-#include "updateSymSettings.h"
-#include "glyphsProgressTracker.h"
-#include "picTransformProgressTracker.h"
+#include "controllerBase.h"
+#include "cmapPerspective.h"
 #include "updateSymsActions.h"
-#include "misc.h"
-#include "timing.h"
 
 #pragma warning ( push, 0 )
 
 #include <atomic>
-#include <list>
 
 #pragma warning ( pop )
 
 // Forward declarations
+class FontEngine;
+class MatchEngine;
+struct ISettings;
+struct ISettingsRW;
+class SymSettings;
+class Img;
 class ControlPanel;
 class AbsJobMonitor;
 class PreselManager;
+class Transformer;
+class Comparator;
+class CmapInspect;
 
 /// Manager of the views and data.
-class Controller :
-	public IControlPanelActions, public IPresentCmap, public IUpdateSymSettings,
-	public IGlyphsProgressTracker, public IPicTransformProgressTracker {
+class Controller : public IController {
 protected:
+	/// Responsible of updating symbol settings
+	std::shared_ptr<const IUpdateSymSettings> updateSymSettings;
+	
+	/// Responsible for keeping track of the symbols loading process
+	std::shared_ptr<const IGlyphsProgressTracker> glyphsProgressTracker;
+
+	/// Responsible for monitoring the progress during an image transformation
+	std::shared_ptr<IPicTransformProgressTracker> picTransformProgressTracker;
+
+
 	// Control of displayed progress
 	std::shared_ptr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
 	std::shared_ptr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
 
 	CmapPerspective cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
-	// Data
-	Img &img;			///< original image to process after resizing
+	/**
+	Provides read-only access to Cmap data.
+	Needed by 'fe' from below.
+	Uses 'me' from below and 'cmP' from above
+	*/
+	std::shared_ptr<const IPresentCmap> presentCmap;
 
+	// Data
 	/// pointer to the resized version of most recent image that had to be transformed
 	std::shared_ptr<const ResizedImg> resizedImg;
 	FontEngine &fe;		///< font engine
-	Settings &cfg;		///< the settings for the transformations
+	ISettingsRW &cfg;	///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
 	Transformer &t;		///< transforming engine
 	PreselManager &pm;	///< preselection manager
@@ -88,7 +101,12 @@ protected:
 	// Views
 	Comparator &comp;					///< view for comparing original & result
 	std::shared_ptr<CmapInspect> pCmi;	///< view for inspecting the used cmap
-	ControlPanel &cp;					///< the configuration view
+
+	/// Allows saving a selection of symbols pointed within the charmap viewer
+	std::shared_ptr<const ISelectSymbols> selectSymbols;
+
+	/// Responsible for the actions triggered by the controls from Control Panel
+	std::shared_ptr<IControlPanelActions> controlPanelActions;
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;
@@ -98,178 +116,69 @@ protected:
 	/// queue requires template param with trivial destructor and assign operator,
 	/// so shared_ptr isn't useful here
 
-	/// A list of selected symbols to investigate separately.
-	/// Useful while exploring ways to filter-out various symbols from charmaps.
-	mutable std::list<const cv::Mat> symsToInvestigate;
-
-	// Validation flags
-	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
-	bool fontFamilyOk = false;	///< is there a symbol set available (not set yet, so false)
-
-	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
-	/// Cmap visualization can ignore image-related errors by setting 'imageRequired' to false.
-	bool validState(bool imageRequired = true) const;
-
 	const std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
-	const std::string textForCmapOverlay(double elapsed) const; ///< Glyph loading duration
-	const std::string textForComparatorOverlay(double elapsed) const; ///< Transformation duration
 	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress
 
-	void symbolsChanged();				///< triggered by new font family / encoding / size
+#ifdef UNIT_TESTING
+public: // Providing get<field> as public for Unit Testing
+#endif // UNIT_TESTING defined
+	// Methods for initialization
+	static Comparator& getComparator();
+	FontEngine& getFontEngine(const SymSettings &ss_) const;
+	MatchEngine& getMatchEngine(const ISettings &cfg_);
+	Transformer& getTransformer(const ISettings &cfg_);
+	PreselManager& getPreselManager(const ISettings &cfg_);
+
+public:
+	Controller(ISettingsRW &s);	///< Initializes controller with ISettingsRW object s
+	Controller(const Controller&) = delete;
+	void operator=(const Controller&) = delete;
+	~Controller();				///< destroys the windows
+
+	std::shared_ptr<const IUpdateSymSettings> getUpdateSymSettings() const override;
+	std::shared_ptr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
+	std::shared_ptr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
+	std::shared_ptr<const IPresentCmap> getPresentCmap() const override;
+	std::shared_ptr<const ISelectSymbols> getSelectSymbols() const override;
+	std::shared_ptr<IControlPanelActions> getControlPanelActions() override;
+
+	/// Waits for the user to press ESC and confirm he wants to leave
+	static void handleRequests();
+
+	const unsigned& getFontSize() const override; ///< font size determines grid size
+
+	void symbolsChanged() override;	///< triggered by new font family / encoding / size
+
+	/// Returns true if transforming a new image or the last one, but under other image parameters
+	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
 
 	/**
 	Shows a 'Please wait' window and reports progress.
 
 	@param progress the progress (0..1) as %
 	@param title details about the ongoing operation
+	@param async allows showing the window asynchronously
 	*/
-	void hourGlass(double progress, const std::string &title = "") const;
+	void hourGlass(double progress, const std::string &title = "", bool async = false) const override;
 
-	// Next 3 private methods do the ground work for their public correspondent methods
-	bool _newFontFamily(const std::string &fontFile, bool forceUpdate = false);
-	bool _newFontEncoding(const std::string &encName, bool forceUpdate = false);
-	bool _newFontSize(int fontSz, bool forceUpdate = false);
-
-#ifdef UNIT_TESTING
-public: // Providing get<field> as public for Unit Testing
-#endif // UNIT_TESTING defined
-	// Methods for initialization
-	static Img& getImg();
-	static Comparator& getComparator();
-	FontEngine& getFontEngine(const SymSettings &ss_) const;
-	MatchEngine& getMatchEngine(const Settings &cfg_);
-	Transformer& getTransformer(const Settings &cfg_);
-	PreselManager& getPreselManager(const Settings &cfg_);
-	ControlPanel& getControlPanel(Settings &cfg_);
-
-public:
-	Controller(Settings &s);	///< Initializes controller with Settings object s
-	Controller(const Controller&) = delete;
-	void operator=(const Controller&) = delete;
-	~Controller();				///< destroys the windows
-
-	/// Waits for the user to press ESC and confirm he wants to leave
-	static void handleRequests();
-
-	// IControlPanelActions implementation below
-	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
-	void restoreUserDefaultMatchSettings() override;
-	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
-	bool loadSettings(const std::string &from = "") override;	///< updating the Settings object
-	void saveSettings() const override;	///< saving the Settings object
-	unsigned getFontEncodingIdx() const override;
-	
 	/**
-	Sets an image to be transformed.
-	@param imgPath the image to be set
-	@param silent when true, it doesn't show popup windows if the image is not valid
+	Updates the status bar from the charmap inspector window.
 
-	@return false if the image cannot be set
+	@param upperSymsCount an overestimated number of symbols from the unfiltered set
+	or 0 when considering the exact number of symbols from the filtered set
+	@param suffix an optional status bar message suffix
+	@param async allows showing the new status bar message asynchronously
 	*/
-	bool newImage(const std::string &imgPath, bool silent = false) override;
-	
-	void invalidateFont() override;	///< When unable to process a font type, invalidate it completely
-	void newFontFamily(const std::string &fontFile) override;
-	void newFontEncoding(int encodingIdx) override;
-	bool newFontEncoding(const std::string &encName) override;
-	void newFontSize(int fontSz) override;
-	void newSymsBatchSize(int symsBatchSz) override;
-	void newStructuralSimilarityFactor(double k) override;
-	void newUnderGlyphCorrectnessFactor(double k) override;
-	void newGlyphEdgeCorrectnessFactor(double k) override;
-	void newAsideGlyphCorrectnessFactor(double k) override;
-	void newContrastFactor(double k) override;
-	void newGravitationalSmoothnessFactor(double k) override;
-	void newDirectionalSmoothnessFactor(double k) override;
-	void newGlyphWeightFactor(double k) override;
-	void newThreshold4BlanksFactor(unsigned t) override;
-	void newHmaxSyms(int maxSyms) override;
-	void newVmaxSyms(int maxSyms) override;
-	/**
-	Sets the result mode:
-	- approximations only (actual result) - patches become symbols, with no cosmeticizing.
-	- hybrid (cosmeticized result) - for displaying approximations blended with a blurred version of the original. The better an approximation, the fainter the hint background
+	void updateStatusBarCmapInspect(unsigned upperSymsCount = 0U,
+									const std::string &suffix = "",
+									bool async = false) const override;
+	/// Reports the duration of loading symbols / transforming images
+	void reportDuration(const std::string &text, double durationS) const override;
 
-	@param hybrid boolean: when true, establishes the cosmeticized mode; otherwise leaves the actual result as it is
-	*/
-	void setResultMode(bool hybrid) override;
-	bool performTransformation(double *durationS = nullptr) override;
-	void showAboutDlg(const std::string &title, const std::wstring &content) override;
-	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
-
-	// Implementation of IPresentCmap below
+	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
-	unsigned getFontSize() const override;
-	const SymData* pointedSymbol(int x, int y) const override;
-	void displaySymCode(unsigned long symCode) const override;
-	void enlistSymbolForInvestigation(const SymData &sd) const override;
-	void symbolsReadyToInvestigate() const override;
-	CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
-	const std::set<unsigned>& getClusterOffsets() const override;
-	bool markClustersAsNotUsed() const override;
-	void showUnofficialSymDetails(unsigned symsCount) const override;
 
-	// Implementation of IUpdateSymSettings below
-	/// called by FontEngine::newFont after installing a new font to update SymSettings
-	void selectedFontFile(const std::string &fName) const override;
-	/// called by FontEngine::setNthUniqueEncoding to update the encoding in SymSettings
-	void selectedEncoding(const std::string &encName) const override;
-
-	// Implementation of IGlyphsProgressTracker below
-	/// Report progress about loading, adapting glyphs
-	void reportGlyphProgress(double progress) const override;
-	void updateSymsDone(double durationS) const override;
-	Timer createTimerForGlyphs() const override; ///< Creates the monitor to time the glyph loading and preprocessing
-	void reportSymsUpdateDuration(double elapsed) const override;
-
-	// Implementation of IPicTransformProgressTracker below
-	void transformFailedToStart() override;	///< When unable to use a font type, invalidate it completely and abandon the transformation
-	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
-	void reportTransformationProgress(double progress, bool showDraft = false) const override;
-	void presentTransformationResults(double completionDurationS = -1.) const override;
-	Timer createTimerForImgTransform() const override; ///< Creates the monitor to time the picture approximation process
-
-	/// Base class for TimerActions_SymSetUpdate and TimerActions_ImgTransform
-	struct TimerActions_Controller /*abstract*/ : ITimerActions {
-	protected:
-		const Controller &ctrler; ///< actual manager of the events
-
-		TimerActions_Controller(const Controller &ctrler_);
-		void operator=(const TimerActions_Controller&) = delete;
-	};
-
-	/// Actions for start & stop chronometer while timing glyphs loading & preprocessing
-	struct TimerActions_SymSetUpdate : TimerActions_Controller {
-		TimerActions_SymSetUpdate(const Controller &ctrler_);
-		void operator=(const TimerActions_SymSetUpdate&) = delete;
-
-		void onStart() override;	///< action to be performed when the timer is started
-
-		/// action to be performed when the timer is released/deleted
-		/// @param elapsedS total elapsed time in seconds
-		void onRelease(double elapsedS) override;
-	};
-
-	/// Actions for start & stop chronometer while timing the approximation of the picture
-	struct TimerActions_ImgTransform : TimerActions_Controller {
-		TimerActions_ImgTransform(const Controller &ctrler_);
-		void operator=(const TimerActions_ImgTransform&) = delete;
-
-		void onStart() override;	///< action to be performed when the timer is started
-
-		/// action to be performed when the timer is released/deleted
-		/// @param elapsedS total elapsed time in seconds
-		void onRelease(double elapsedS) override;
-
-		/// action to be performed when the timer is canceled
-		/// @param reason explanation for cancellation
-		void onCancel(const std::string &reason = "") override;
-	};
-
-#ifdef UNIT_TESTING
-	// Method available only in Unit Testing mode
-	bool newImage(const cv::Mat &imgMat);	///< Provide directly a matrix instead of an image
-#endif // UNIT_TESTING defined
+	void showResultedImage(double completionDurationS) override; ///< Displays the resulted image
 };
 
 #endif // H_CONTROLLER

@@ -39,6 +39,7 @@
 #ifndef UNIT_TESTING
 
 #include "controller.h"
+#include "controlPanelActionsBase.h"
 #include "appStart.h"
 #include "settings.h"
 #include "study.h"
@@ -131,21 +132,22 @@ namespace {
 
 		Settings s;
 		Controller c(s);
+		std::shared_ptr<IControlPanelActions> cpa = c.getControlPanelActions();
 
-		if(!c.loadSettings(settingsPath)) {
+		if(!cpa->loadSettings(settingsPath)) {
 			cerr<<caseName<<"\tCouldn't load settings from `"<<settingsPath<<'`'<<endl;
 			return;
 		}
 
-		if(!c.newImage(imgPath, true)) {
+		if(!cpa->newImage(imgPath, true)) {
 			cerr<<caseName<<"\tCouldn't load the image `"<<imgPath<<'`'<<endl;
 			return;
 		}
 
-		c.newSymsBatchSize(0); // ensure no drafts
+		cpa->newSymsBatchSize(0); // ensure no drafts
 
 		double durationS;
-		if(!c.performTransformation(&durationS)) {
+		if(!cpa->performTransformation(&durationS)) {
 			cerr<<caseName<<"\tCouldn't start the transformation!"<<endl;
 			return;
 		}

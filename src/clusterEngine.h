@@ -90,7 +90,7 @@ public:
 	*/
 	void process(VSymData &symsSet, const std::string &fontType = "");
 
-	inline bool worthGrouping() const { return worthy; }
+	inline const bool& worthGrouping() const { return worthy; }
 	inline unsigned getClustersCount() const { return clustersCount; }
 	inline const std::vector<std::vector<unsigned>>& getSymsIndicesPerCluster() const { return symsIndicesPerCluster; }
 

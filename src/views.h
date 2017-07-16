@@ -114,7 +114,9 @@ public:
 	void resize() const;
 };
 
-struct IPresentCmap; // forward declaration
+// Forward declarations
+struct IPresentCmap;
+struct ISelectSymbols;
 
 /**
 Class for displaying the symbols from the current charmap (cmap).
@@ -124,11 +126,13 @@ can be browsed using the page slider.
 */
 class CmapInspect : public CvWin {
 protected:
-	const IPresentCmap &cmapPresenter;	///< window manager
+	std::shared_ptr<const IPresentCmap> cmapPresenter;	///< presents the cmap window
+	std::shared_ptr<const ISelectSymbols> symsSelector;	///< allows saving a selection of symbols
 
 	cv::Mat grid;				///< the symbols' `hive`
 	int page = 0;				///< page slider position
 	unsigned pagesCount = 0U;	///< used for dividing the cmap
+	const unsigned &fontSz;		///< font size
 	unsigned cellSide = 0U;		///< used for dividing the cmap
 	unsigned symsPerRow = 0U;	///< used for dividing the cmap
 	unsigned symsPerPage = 0U;	///< used for dividing the cmap
@@ -151,7 +155,9 @@ protected:
 					  unsigned idxOfFirstSymFromPage);
 
 public:
-	CmapInspect(const IPresentCmap &cmapPresenter_);
+	CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
+				std::shared_ptr<const ISelectSymbols> symsSelector_,
+				const unsigned &fontSz_);
 	void operator=(const CmapInspect&) = delete;
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback

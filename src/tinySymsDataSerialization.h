@@ -67,7 +67,7 @@ struct VTinySymsIO {
 
 	/// Serializes this VTinySymsIO object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int /*version*/) {
+	void serialize(Archive &ar, const unsigned /*version*/) {
 #ifndef AI_REVIEWER_CHECK
 		ar & tinySyms;
 #endif // AI_REVIEWER_CHECK not defined

@@ -38,13 +38,15 @@
 
 #include "fontEngine.h"
 #include "fontErrorsHelper.h"
+#include "controllerBase.h"
 #include "tinySym.h"
 #include "symFilter.h"
 #include "symFilterCache.h"
-#include "updateSymSettings.h"
+#include "updateSymSettingsBase.h"
 #include "glyphsProgressTracker.h"
 #include "presentCmap.h"
-#include "settings.h"
+#include "settingsBase.h"
+#include "symSettings.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "misc.h"
@@ -122,11 +124,10 @@ namespace {
 } // anonymous namespace
 
 #pragma warning ( disable : WARN_DYNAMIC_CAST_MIGHT_FAIL )
-FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) : ctrler(ctrler_),
-					   symSettingsUpdater(dynamic_cast<const IUpdateSymSettings&>(ctrler_)),
-					   glyphsProgress(dynamic_cast<const IGlyphsProgressTracker&>(ctrler_)),
-					   cmapPresenter(dynamic_cast<const IPresentCmap&>(ctrler_)),
-					   ss(ss_), symsCont(dynamic_cast<const IPresentCmap&>(ctrler_)) {
+FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) :
+						symSettingsUpdater(ctrler_.getUpdateSymSettings()),
+						cmapPresenter(ctrler_.getPresentCmap()),
+						ss(ss_), symsCont(const_cast<IController&>(ctrler_)) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) 
 		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + FtErrors[(size_t)error], runtime_error);
@@ -201,7 +202,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	symsCount = 0U;
 	symsUnableToLoad.clear();
 
-	symSettingsUpdater.selectedEncoding(encName);
+	symSettingsUpdater->newFontEncoding(encName);
 
 	return true;
 }
@@ -273,7 +274,7 @@ bool FontEngine::newFont(const string &fontFile_) {
 	
 	setFace(face_, fontPath.string());
 	
-	symSettingsUpdater.selectedFontFile(fontFile_);
+	symSettingsUpdater->newFontFile(fontFile_);
 
 	return true;
 }
@@ -397,7 +398,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	if(nullptr == symsMonitor)
 		THROW_WITH_CONST_MSG("Please use FontEngine::setSymsMonitor before calling " __FUNCTION__ "!", logic_error);
 
-	if(!Settings::isFontSizeOk(fontSz_))
+	if(!ISettings::isFontSizeOk(fontSz_))
 		THROW_WITH_VAR_MSG("Invalid font size (" + to_string(fontSz_) + ") for " __FUNCTION__ "!", invalid_argument);
 
 	cout<<"Setting font size "<<fontSz_<<endl;
@@ -425,7 +426,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	loadFitSymbols.setTotalSteps((size_t)symsCount);
 	symsCont.reset(fontSz_, symsCount);
 
-	cmapPresenter.showUnofficialSymDetails(symsCount);
+	cmapPresenter->showUnofficialSymDetails(symsCount);
 
 	SymFilterCache sfc;
 	sfc.setFontSz(fontSz_);

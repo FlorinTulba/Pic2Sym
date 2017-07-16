@@ -47,7 +47,8 @@
 #include "clusterSupport.h"
 #include "matchSupport.h"
 #include "cmapPerspective.h"
-#include "settings.h"
+#include "settingsBase.h"
+#include "symSettings.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"
@@ -105,12 +106,12 @@ namespace {
 	}
 } // anonymous namespace
 
-MatchEngine::MatchEngine(const Settings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
+MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_), ce(fe_),
 			matchAssessor(MatchAssessor::specializedInstance(availAspects)) {
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
-		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.matchSettings()));
+		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));
 
 	matchAssessor.updateEnabledMatchAspectsCount();
 }
@@ -133,7 +134,7 @@ void MatchEngine::updateSymbols() {
 
 	fieldsComputations.setTotalSteps((size_t)symsCount);
 
-	const unsigned sz = cfg.symSettings().getFontSz();
+	const unsigned sz = cfg.getSS().getFontSz();
 
 #pragma omp parallel if(PrepareMoreGlyphsAtOnce)
 #pragma omp for schedule(static, 1) nowait // ordered would be useful only for debugging (ompPrintf)
@@ -199,11 +200,15 @@ void MatchEngine::getReady() {
 	updateSymbols();
 
 	if(preselManager!=nullptr)
-		preselManager->matchSupport().updateCachedData(cfg.symSettings().getFontSz(), fe);
+		preselManager->matchSupport().updateCachedData(cfg.getSS().getFontSz(), fe);
 	else
 		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
 
 	matchAssessor.getReady(cachedData);
+}
+
+const bool& MatchEngine::isClusteringUseful() const {
+	return ce.worthGrouping();
 }
 
 bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx,
@@ -318,7 +323,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	}
 
 	if(betterMatchFound)
-		draftMatch.updatePatchApprox(cfg.matchSettings());
+		draftMatch.updatePatchApprox(cfg.getMS());
 
 	return betterMatchFound;
 }

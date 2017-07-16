@@ -39,40 +39,19 @@
 #ifndef H_SETTINGS
 #define H_SETTINGS
 
+#include "settingsBase.h"
 #include "matchSettings.h"
 #include "imgSettings.h"
 #include "symSettings.h"
 
-class Controller;
-
 /// Envelopes all parameters required for transforming images
-class Settings {
+class Settings : public ISettingsRW {
+protected:
 	SymSettings ss;		///< parameters concerning the symbols set used for approximating patches
 	ImgSettings is;		///< contains max count of horizontal & vertical patches to process
 	MatchSettings ms;	///< settings used during approximation process
-	friend class Controller; ///< the unique setter of ss, is, ms (apart serialization)
-
-	/**
-	Loads or saves a Settings object.
-
-	@param ar the source/target archive
-	@param version When loading (overwriting *this with the Settings from ar),
-	it represents the version of the object loaded from ar;
-	When saving to ar, it's the last version of Settings
-	*/
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned version) {
-		UNREFERENCED_PARAMETER(version);
-		ar & ss & is & ms;
-	}
-	friend class boost::serialization::access;
 
 public:
-	static bool isBlanksThresholdOk(unsigned t);
-	static bool isHmaxSymsOk(unsigned syms);
-	static bool isVmaxSymsOk(unsigned syms);
-	static bool isFontSizeOk(unsigned fs);
-
 	/**
 	Creates a complete set of settings required during image transformations.
 
@@ -81,15 +60,15 @@ public:
 	Settings(const MatchSettings &ms_);
 	Settings(); ///< Creates Settings with empty MatchSettings
 
-	const SymSettings& symSettings() const { return ss; }
-	const ImgSettings& imgSettings() const { return is; }
-	const MatchSettings& matchSettings() const { return ms; }
+	// Read-only accessors
+	const SymSettings& getSS() const override;
+	const ImgSettings& getIS() const override;
+	const MatchSettings& getMS() const override;
 
-	friend std::ostream& operator<<(std::ostream &os, const Settings &s);
+	// Accessors for changing the settings
+	SymSettings& SS() override;
+	ImgSettings& IS() override;
+	MatchSettings& MS() override;
 };
-
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(Settings, 0)
-#endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_SETTINGS

@@ -39,28 +39,60 @@
 #ifndef H_CONTROL_PANEL_ACTIONS
 #define H_CONTROL_PANEL_ACTIONS
 
-#include "controllerBase.h"
+#include "controlPanelActionsBase.h"
 
-#pragma warning ( push, 0 )
+// Forward declarations
+struct ISettingsRW;
+class FontEngine;
+class MatchAssessor;
+class Transformer;
+class Img;
+class CmapInspect;
+class Comparator;
+class ControlPanel;
 
-#include <string>
+/// Implementation for the actions triggered by the controls from Control Panel
+class ControlPanelActions : public IControlPanelActions {
+protected:
+	IController &ctrler;
+	ISettingsRW &cfg;
+	FontEngine &fe;
+	MatchAssessor &ma;
+	Transformer &t;
+	Img &img;			///< original image to process after resizing
+	Comparator &comp;	///< view for comparing original & result
+	ControlPanel &cp;	///< the configuration view
+	std::shared_ptr<CmapInspect> &pCmi;
 
-#pragma warning ( pop )
+	// Validation flags
+	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
+	bool fontFamilyOk = false;	///< is there a symbol set available (not set yet, so false)
 
-/**
-Interface defining the actions triggered by the controls from Control Panel
-*/
-struct IControlPanelActions /*abstract*/ : virtual IController {
-	virtual ~IControlPanelActions() = 0 {}
+	/// Reports uncorrected settings when visualizing the cmap or while executing transform command.
+	/// Cmap visualization can ignore image-related errors by setting 'imageRequired' to false.
+	bool validState(bool imageRequired = true) const;
+
+	// Next 3 protected methods do the ground work for their public correspondent methods
+	bool _newFontFamily(const std::string &fontFile, bool forceUpdate = false);
+	bool _newFontEncoding(const std::string &encName, bool forceUpdate = false);
+	bool _newFontSize(int fontSz, bool forceUpdate = false);
+
+public:
+	static Img& getImg();
+	ControlPanel& getControlPanel(ISettingsRW &cfg_);
+
+	ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
+						FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,
+						Comparator &comp_, std::shared_ptr<CmapInspect> &pCmi_);
 
 	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
-	virtual void restoreUserDefaultMatchSettings() = 0;
-	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current MatchSettings to 'initMatchSettings.cfg'
+	void restoreUserDefaultMatchSettings() override;
+	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
 
-	virtual bool loadSettings(const std::string &from = "") = 0;	///< updating the Settings object
-	virtual void saveSettings() const = 0;	///< saving the Settings object
+	bool loadSettings(const std::string &from = "") override;	///< updating the ISettingsRW object
+	void saveSettings() const override;	///< saving the ISettingsRW object
 
-	virtual unsigned getFontEncodingIdx() const = 0; ///< needed to restore encoding index
+	unsigned getFontEncodingIdx() const override; ///< needed to restore encoding index
 
 	/**
 	Sets an image to be transformed.
@@ -69,25 +101,30 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 
 	@return false if the image cannot be set
 	*/
-	virtual bool newImage(const std::string &imgPath, bool silent = false) = 0;
-	
-	virtual void invalidateFont() = 0;	///< When unable to process a font type, invalidate it completely
-	virtual void newFontFamily(const std::string &fontFile) = 0;
-	virtual void newFontEncoding(int encodingIdx) = 0;
-	virtual bool newFontEncoding(const std::string &encName) = 0;
-	virtual void newFontSize(int fontSz) = 0;
-	virtual void newSymsBatchSize(int symsBatchSz) = 0;
-	virtual void newStructuralSimilarityFactor(double k) = 0;
-	virtual void newUnderGlyphCorrectnessFactor(double k) = 0;
-	virtual void newGlyphEdgeCorrectnessFactor(double k) = 0;
-	virtual void newAsideGlyphCorrectnessFactor(double k) = 0;
-	virtual void newContrastFactor(double k) = 0;
-	virtual void newGravitationalSmoothnessFactor(double k) = 0;
-	virtual void newDirectionalSmoothnessFactor(double k) = 0;
-	virtual void newGlyphWeightFactor(double k) = 0;
-	virtual void newThreshold4BlanksFactor(unsigned t) = 0;
-	virtual void newHmaxSyms(int maxSyms) = 0;
-	virtual void newVmaxSyms(int maxSyms) = 0;
+	bool newImage(const std::string &imgPath, bool silent = false) override;
+
+#ifdef UNIT_TESTING
+	// Method available only in Unit Testing mode
+	bool newImage(const cv::Mat &imgMat) override;	///< Provide directly a matrix instead of an image
+#endif // UNIT_TESTING defined
+
+	void invalidateFont() override;	///< When unable to process a font type, invalidate it completely
+	void newFontFamily(const std::string &fontFile) override;
+	void newFontEncoding(int encodingIdx) override;
+	bool newFontEncoding(const std::string &encName) override;
+	void newFontSize(int fontSz) override;
+	void newSymsBatchSize(int symsBatchSz) override;
+	void newStructuralSimilarityFactor(double k) override;
+	void newUnderGlyphCorrectnessFactor(double k) override;
+	void newGlyphEdgeCorrectnessFactor(double k) override;
+	void newAsideGlyphCorrectnessFactor(double k) override;
+	void newContrastFactor(double k) override;
+	void newGravitationalSmoothnessFactor(double k) override;
+	void newDirectionalSmoothnessFactor(double k) override;
+	void newGlyphWeightFactor(double k) override;
+	void newThreshold4BlanksFactor(unsigned t) override;
+	void newHmaxSyms(int maxSyms) override;
+	void newVmaxSyms(int maxSyms) override;
 
 	/**
 	Sets the result mode:
@@ -96,7 +133,7 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 
 	@param hybrid boolean: when true, establishes the cosmeticized mode; otherwise leaves the actual result as it is
 	*/
-	virtual void setResultMode(bool hybrid) = 0;
+	void setResultMode(bool hybrid) override;
 
 	/**
 	Approximates an image based on current settings
@@ -105,10 +142,10 @@ struct IControlPanelActions /*abstract*/ : virtual IController {
 
 	@return false if the transformation cannot be started; true otherwise (even when the transformation is canceled and the result is just a draft)
 	*/
-	virtual bool performTransformation(double *durationS = nullptr) = 0;
+	bool performTransformation(double *durationS = nullptr) override;
 
-	virtual void showAboutDlg(const std::string &title, const std::wstring &content) = 0;
-	virtual void showInstructionsDlg(const std::string &title, const std::wstring &content) = 0;
+	void showAboutDlg(const std::string &title, const std::wstring &content) override;
+	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
 };
 
-#endif
+#endif // H_CONTROL_PANEL_ACTIONS
