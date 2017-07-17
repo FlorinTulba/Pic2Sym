@@ -87,6 +87,8 @@
     <ClInclude Include="src\settings.h" />
     <ClInclude Include="src\settingsBase.h" />
     <ClInclude Include="src\sievesSymsFilter.h" />
+    <ClInclude Include="src\sliderConversion.h" />
+    <ClInclude Include="src\sliderConversionBase.h" />
     <ClInclude Include="src\stackBlur.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
@@ -165,6 +167,7 @@
     <ClCompile Include="src\selectSymbols.cpp" />
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
+    <ClCompile Include="src\sliderConversion.cpp" />
     <ClCompile Include="src\stackBlur.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\study.cpp" />

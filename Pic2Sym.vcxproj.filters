@@ -435,6 +435,12 @@
     <ClInclude Include="src\settingsBase.h">
       <Filter>Header Files\Settings</Filter>
     </ClInclude>
+    <ClInclude Include="src\sliderConversionBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sliderConversion.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -655,6 +661,9 @@
     </ClCompile>
     <ClCompile Include="src\settings.cpp">
       <Filter>Source Files\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sliderConversion.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -58,6 +58,7 @@ struct ISettings;
 struct IControlPanelActions;
 class ImgSettings;
 class MatchSettings;
+class SliderConverter;
 
 /**
 Configures the transformation settings, chooses which image to process and with which cmap.
@@ -73,55 +74,11 @@ In this latter case an error message will report the problem and the user needs 
 class ControlPanel {
 protected:
 	/**
-	Helper to convert settings from actual ranges to the ones used by the sliders.
-
-	For now, flexibility in choosing the conversion rules is more important than design,
-	so lots of redundancies appear below.
+	Map between:
+	- the addresses of the names of the sliders corresponding to the matching aspects
+	- the slider to/from value converter for each such slider
 	*/
-	struct Converter {
-		/**
-		One possible conversion function 'proportionRule':
-		x in 0..xMax;  y in 0..yMax  =>
-		y = x*yMax/xMax
-		*/
-		static double proportionRule(double x, double xMax, double yMax);
-
-		/// used for the slider controlling the structural similarity
-		struct StructuralSim {
-			static int toSlider(double ssim);
-			static double fromSlider(int ssim);
-		};
-
-		/// used for the 3 sliders controlling the correctness
-		struct Correctness {
-			static int toSlider(double correctness);
-			static double fromSlider(int correctness);
-		};
-
-		/// used for the slider controlling the contrast
-		struct Contrast {
-			static int toSlider(double contrast);
-			static double fromSlider(int contrast);
-		};
-
-		/// used for the slider controlling the 'gravitational' smoothness
-		struct Gravity {
-			static int toSlider(double gravity);
-			static double fromSlider(int gravity);
-		};
-
-		/// used for the slider controlling the directional smoothness
-		struct Direction {
-			static int toSlider(double direction);
-			static double fromSlider(int direction);
-		};
-
-		/// used for the slider controlling the preference for larger symbols
-		struct LargerSym {
-			static int toSlider(double largerSym);
-			static double fromSlider(int largerSym);
-		};
-	};
+	static const std::map<const cv::String*, std::shared_ptr<const SliderConverter>>& slidersConverters();
 
 	IControlPanelActions &performer;	///< the delegate responsible to perform selected actions
 	const ISettings &cfg;				///< the settings, required to (re)initialize the sliders
@@ -150,7 +107,8 @@ protected:
 	int symsBatchSz;
 	int hybridResult;
 	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
-	int moreContrast, gravity, direction, largerSym, thresh4Blanks;
+	int moreContrast, gravity, direction, largerSym;
+	int thresh4Blanks;
 
 	/**
 	hack field
