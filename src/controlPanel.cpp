@@ -101,8 +101,10 @@ extern const wstring ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
 const map<const String*, std::shared_ptr<const SliderConverter>>& ControlPanel::slidersConverters() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static std::shared_ptr<const map<const String*, std::shared_ptr<const SliderConverter>>> result;
 	static bool initialized = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 	if(!initialized) {
 		result = std::make_shared<const map<const String*, std::shared_ptr<const SliderConverter>>>(
 			std::move(map<const String*, std::shared_ptr<const SliderConverter>> {
