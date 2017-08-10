@@ -54,11 +54,6 @@ struct ITinySymsProvider;
 
 /// Abstract class for clustering algorithms
 struct ClusterAlg /*abstract*/ {
-	/// Gets a reference to the clustering algorithm named algName or ignores it for invalid name.
-	static ClusterAlg& algByName(const std::string &algName);
-
-	virtual ~ClusterAlg() = 0 {}
-
 	/**
 	Performs clustering of a set of symbols.
 	
@@ -76,6 +71,8 @@ struct ClusterAlg /*abstract*/ {
 	ClusterAlg& setTinySymsProvider(ITinySymsProvider &tsp_);
 	
 	ClusterAlg& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+
+	virtual ~ClusterAlg() = 0 {}
 
 protected:
 	ITinySymsProvider *tsp = nullptr;	///< offers support for tiny symbols

@@ -43,7 +43,6 @@
 using namespace std;
 using namespace cv;
 
-extern const bool UseSkipMatchAspectsHeuristic;
 extern const double EnableSkipAboveMatchRatio;
 
 ScoreThresholds::ScoreThresholds() {}
@@ -98,22 +97,6 @@ void ScoreThresholds::update(double multiplier, const ScoreThresholds &reference
 MatchAssessor& MatchAssessor::availableAspects(const vector<std::shared_ptr<MatchAspect>> &availAspects_) {
 	availAspects = &availAspects_;
 	return *this;
-}
-
-MatchAssessor& MatchAssessor::specializedInstance(const vector<std::shared_ptr<MatchAspect>> &availAspects_) {
-	if(UseSkipMatchAspectsHeuristic) {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static MatchAssessorSkip instSkip;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		return instSkip.availableAspects(availAspects_);
-	}
-
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static MatchAssessorNoSkip instNoSkip;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-	return instNoSkip.availableAspects(availAspects_);
 }
 
 MatchAssessor::MatchAssessor() {}

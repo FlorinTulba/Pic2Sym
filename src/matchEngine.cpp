@@ -73,9 +73,28 @@ extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the uni
 using namespace std;
 using namespace cv;
 
+extern const bool UseSkipMatchAspectsHeuristic;
 extern unsigned TinySymsSz();
 
 namespace {
+	/// Returns a configured instance of MatchAssessorNoSkip or MatchAssessorSkip,
+	/// depending on UseSkipMatchAspectsHeuristic
+	MatchAssessor& specializedInstance(const vector<std::shared_ptr<MatchAspect>> &availAspects_) {
+		if(UseSkipMatchAspectsHeuristic) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+			static MatchAssessorSkip instSkip;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+			return instSkip.availableAspects(availAspects_);
+		}
+
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+		static MatchAssessorNoSkip instNoSkip;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+		return instNoSkip.availableAspects(availAspects_);
+	}
+
 	/// Determines the cluster and the symbol within it corresponding to symIdx
 	void locateIdx(const set<unsigned> &clusterOffsets, unsigned symIdx,
 				   unsigned &clusterIdx, unsigned &symIdxWithinCluster) {
@@ -110,7 +129,7 @@ namespace {
 
 MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_), ce(fe_),
-			matchAssessor(MatchAssessor::specializedInstance(availAspects)) {
+			matchAssessor(specializedInstance(availAspects)) {
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));

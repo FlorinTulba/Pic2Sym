@@ -36,45 +36,9 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "noClustering.h"
-#include "ttsasClustering.h"
-#include "partitionClustering.h"
-
-#pragma warning ( push, 0 )
-
-#include <iostream>
-
-#pragma warning ( pop )
+#include "clusterAlg.h"
 
 using namespace std;
-
-ClusterAlg& ClusterAlg::algByName(const string &algName) {
-	ClusterAlg *pAlg = nullptr;
-	if(0 == algName.compare(TTSAS_Clustering::Name)) {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static TTSAS_Clustering alg;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		pAlg = &alg;
-	} else if(0 == algName.compare(PartitionClustering::Name)) {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static PartitionClustering alg;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		pAlg = &alg;
-	} else {
-		if(0 != algName.compare(NoClustering::Name)) {
-			cerr<<"Unaware of clustering algorithm '"<<algName
-				<<"'! Therefore no clustering will be used!"<<endl;
-		}
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static NoClustering alg;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		pAlg = &alg;
-	}
-	return *pAlg;
-}
 
 ClusterAlg& ClusterAlg::setTinySymsProvider(ITinySymsProvider &tsp_) {
 	tsp = &tsp_;

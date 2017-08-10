@@ -121,9 +121,6 @@ public:
 
 	MatchAssessor& availableAspects(const std::vector<std::shared_ptr<MatchAspect>> &availAspects_);
 
-	/// Returns a configured instance of MatchAssessorNoSkip or MatchAssessorSkip, depending on UseSkipMatchAspectsHeuristic
-	static MatchAssessor& specializedInstance(const std::vector<std::shared_ptr<MatchAspect>> &availAspects_);
-
 	void newlyEnabledMatchAspect();		///< increments enabledAspectsCount
 	void newlyDisabledMatchAspect();	///< decrements enabledAspectsCount
 	void updateEnabledMatchAspectsCount();		///< updates enabledAspectsCount by checking which aspects are enabled
@@ -166,15 +163,11 @@ public:
 };
 
 /// MatchAssessor version when UseSkipMatchAspectsHeuristic is false
-class MatchAssessorNoSkip : public MatchAssessor {
-	friend class MatchAssessor;
-
-protected:
+struct MatchAssessorNoSkip : MatchAssessor {
 	MatchAssessorNoSkip();
 	MatchAssessorNoSkip(const MatchAssessorNoSkip&) = delete;
 	void operator=(const MatchAssessorNoSkip&) = delete;
 
-public:
 	/**
 	@param draftScore a new reference score
 	@param scoresToBeat the mentioned threshold scores
@@ -184,8 +177,6 @@ public:
 
 /// MatchAssessor version when UseSkipMatchAspectsHeuristic is true
 class MatchAssessorSkip : public MatchAssessor {
-	friend class MatchAssessor;
-
 protected:
 	std::vector<double> invMaxIncreaseFactors; ///< 1 over (max possible increase of the score based on remaining aspects)
 
@@ -203,11 +194,11 @@ protected:
 	*/
 	double thresholdDraftScore = 0.;
 
+public:
 	MatchAssessorSkip();
 	MatchAssessorSkip(const MatchAssessorSkip&) = delete;
 	void operator=(const MatchAssessorSkip&) = delete;
 
-public:
 	/**
 	Prepares the enabled aspects for an image transformation process.
 

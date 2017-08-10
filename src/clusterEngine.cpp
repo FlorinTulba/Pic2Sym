@@ -37,6 +37,9 @@
  ***********************************************************************************************/
 
 #include "clusterEngine.h"
+#include "noClustering.h"
+#include "ttsasClustering.h"
+#include "partitionClustering.h"
 #include "clusterSupport.h"
 #include "symbolsSupport.h"
 #include "jobMonitorBase.h"
@@ -61,26 +64,57 @@ using namespace cv;
 extern const string ClusterAlgName;
 extern const double MinAverageClusterSize;
 
-/// Reports various details about the identified clusters
-static void reportClustersInfo(const vector<vector<unsigned>> &symsIndicesPerCluster,
-							   unsigned clustersCount, const VSymData &symsSet) {
-	const auto maxClusterSz = max_element(CBOUNDS(symsIndicesPerCluster),
-										  [] (const vector<unsigned> &a, const vector<unsigned> &b) {
-		return a.size() < b.size();
-	})->size();
-	const auto nonTrivialClusters = (unsigned)count_if(CBOUNDS(symsIndicesPerCluster),
-													   [] (const vector<unsigned> &a) {
-		return a.size() > 1ULL;
-	});
-	const auto clusteredSyms = (unsigned)symsSet.size() - (clustersCount - nonTrivialClusters);
+namespace {
+	/// Gets a reference to the clustering algorithm named algName or ignores it for invalid name.
+	ClusterAlg& algByName(const string &algName) {
+		ClusterAlg *pAlg = nullptr;
+		if(0 == algName.compare(TTSAS_Clustering::Name)) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+			static TTSAS_Clustering alg;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	cout<<"There are "<<nonTrivialClusters
-		<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
-	cout<<"Largest cluster contains "<<maxClusterSz<<" symbols."<<endl;
-}
+			pAlg = &alg;
+		} else if(0 == algName.compare(PartitionClustering::Name)) {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+			static PartitionClustering alg;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+			pAlg = &alg;
+		} else {
+			if(0 != algName.compare(NoClustering::Name)) {
+				cerr<<"Unaware of clustering algorithm '"<<algName
+					<<"'! Therefore no clustering will be used!"<<endl;
+			}
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+			static NoClustering alg;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+			pAlg = &alg;
+		}
+		return *pAlg;
+	}
+
+	/// Reports various details about the identified clusters
+	void reportClustersInfo(const vector<vector<unsigned>> &symsIndicesPerCluster,
+							unsigned clustersCount, const VSymData &symsSet) {
+		const auto maxClusterSz = max_element(CBOUNDS(symsIndicesPerCluster),
+											  [] (const vector<unsigned> &a, const vector<unsigned> &b) {
+			return a.size() < b.size();
+		})->size();
+		const auto nonTrivialClusters = (unsigned)count_if(CBOUNDS(symsIndicesPerCluster),
+														   [] (const vector<unsigned> &a) {
+			return a.size() > 1ULL;
+		});
+		const auto clusteredSyms = (unsigned)symsSet.size() - (clustersCount - nonTrivialClusters);
+
+		cout<<"There are "<<nonTrivialClusters
+			<<" non-trivial clusters that hold a total of "<<clusteredSyms<<" symbols."<<endl;
+		cout<<"Largest cluster contains "<<maxClusterSz<<" symbols."<<endl;
+	}
+} // anonymous namespace
 
 ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
-	clustAlg(ClusterAlg::algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
+	clustAlg(algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
 
 void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) {
 	if(symsSet.empty())
