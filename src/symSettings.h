@@ -44,10 +44,10 @@
 #include <string>
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
+#	include <boost/serialization/split_member.hpp>
+#	include <boost/serialization/version.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
@@ -59,6 +59,7 @@ protected:
 	std::string encoding;	///< the particular encoding of the used cmap
 	unsigned fontSz;		///< size of the symbols
 
+public:
 	/**
 	Loads a SymSettings object from ar overwriting *this and reporting the changes.
 
@@ -89,10 +90,8 @@ protected:
 
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
 
-public:
 	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
 	SymSettings(unsigned fontSz_) : fontSz(fontSz_) {}
 
@@ -109,11 +108,12 @@ public:
 
 	bool operator==(const SymSettings &other) const;
 	bool operator!=(const SymSettings &other) const;
-	friend std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
 };
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(SymSettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
+
+std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
 
 #endif // H_SYM_SETTINGS

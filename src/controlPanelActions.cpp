@@ -63,8 +63,8 @@
 #include "boost_filesystem_operations.h"
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
@@ -149,7 +149,7 @@ void ControlPanelActions::restoreUserDefaultMatchSettings() {
 		return;
 
 #ifndef UNIT_TESTING
-	MatchSettingsManip::instance().loadUserDefaults(cfg.MS());
+	MatchSettingsManip::instance().loadUserDefaults(cfg.refMS());
 #endif // UNIT_TESTING not defined
 
 	cp.updateMatchSettings(cfg.getMS());
@@ -336,8 +336,8 @@ void ControlPanelActions::invalidateFont() {
 	if(pCmi)
 		pCmi->clear();
 
-	cfg.SS().setFontFile("");
-	cfg.SS().setEncoding("");
+	cfg.refSS().setFontFile("");
+	cfg.refSS().setEncoding("");
 	fe.invalidateFont();
 }
 
@@ -450,7 +450,7 @@ bool ControlPanelActions::_newFontSize(int fontSz, bool forceUpdate/* = false*/)
 	if((unsigned)fontSz == cfg.getSS().getFontSz() && !forceUpdate)
 		return false;
 
-	cfg.SS().setFontSz((unsigned)fontSz);
+	cfg.refSS().setFontSz((unsigned)fontSz);
 
 	if(!fontFamilyOk) {
 		if(pCmi)
@@ -510,7 +510,7 @@ void ControlPanelActions::newHmaxSyms(int maxSymbols) {
 		return;
 	}
 
-	cfg.IS().setMaxHSyms((unsigned)maxSymbols);
+	cfg.refIS().setMaxHSyms((unsigned)maxSymbols);
 }
 
 void ControlPanelActions::newVmaxSyms(int maxSymbols) {
@@ -531,7 +531,7 @@ void ControlPanelActions::newVmaxSyms(int maxSymbols) {
 		return;
 	}
 
-	cfg.IS().setMaxVSyms((unsigned)maxSymbols);
+	cfg.refIS().setMaxVSyms((unsigned)maxSymbols);
 }
 
 void ControlPanelActions::setResultMode(bool hybrid) {
@@ -540,7 +540,7 @@ void ControlPanelActions::setResultMode(bool hybrid) {
 	if(nullptr == permit)
 		return;
 
-	cfg.MS().setResultMode(hybrid);
+	cfg.refMS().setResultMode(hybrid);
 }
 
 void ControlPanelActions::newThreshold4BlanksFactor(unsigned threshold) {
@@ -549,13 +549,13 @@ void ControlPanelActions::newThreshold4BlanksFactor(unsigned threshold) {
 	if(nullptr == permit)
 		return;
 
-	cfg.MS().setBlankThreshold(threshold);
+	cfg.refMS().setBlankThreshold(threshold);
 }
 
 #define UPDATE_MATCH_ASPECT_VALUE(AspectName, NewValue) \
 	const double PrevVal = cfg.getMS().get_k##AspectName(); \
 	if(NewValue != PrevVal) { \
-		cfg.MS().set_k##AspectName(NewValue); \
+		cfg.refMS().set_k##AspectName(NewValue); \
 		if(PrevVal == 0.) { /* just enabled this aspect */ \
 			ma.newlyEnabledMatchAspect(); \
 		} else if(NewValue == 0.) { /* just disabled this aspect */ \

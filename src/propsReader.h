@@ -45,8 +45,8 @@
 
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifndef AI_REVIEWER_CHECK
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/info_parser.hpp>
+#	include <boost/property_tree/ptree.hpp>
+#	include <boost/property_tree/info_parser.hpp>
 #endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )

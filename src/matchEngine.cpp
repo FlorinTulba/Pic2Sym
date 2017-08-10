@@ -40,8 +40,9 @@
 #include "matchAssessment.h"
 #include "clusterEngine.h"
 #include "matchAspectsFactory.h"
-#include "matchParams.h"
-#include "patch.h"
+#include "matchParamsBase.h"
+#include "patchBase.h"
+#include "bestMatchBase.h"
 #include "preselectManager.h"
 #include "preselectSyms.h"
 #include "clusterSupport.h"
@@ -89,15 +90,16 @@ namespace {
 								 const VSymData &symsSet,
 								 const CachedData &cd,
 								 ScoreThresholds &scoresToBeatBySyms,
-								 BestMatch &draftMatch, MatchParams &mp) {
+								 IBestMatch &draftMatch) {
 		bool betterMatchFound = false;
 		const auto &assessor = me.assessor();
+		auto &mp = draftMatch.refParams();
 		for(unsigned idx = fromIdx; idx <= lastIdx; ++idx) {
-			mp.reset(); // preserves patch-invariant fields
-			const auto &symData = symsSet[idx];
+			mp->reset(); // preserves patch-invariant fields
+			const auto &symData = *symsSet[idx];
 			double score;
-			if(assessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
-				draftMatch.update(score, symData.code, idx, symData, mp);
+			if(assessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, *mp, score)) {
+				draftMatch.update(score, symData.getCode(), idx, symData);
 				assessor.scoresToBeat(score, scoresToBeatBySyms);
 				betterMatchFound = true;
 			}
@@ -141,32 +143,11 @@ void MatchEngine::updateSymbols() {
 	for(int i = 0; i<symsCount; ++i) {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
-		const auto &pms = rawSyms[(size_t)i];
-		const Mat glyph = pms.toMatD01(sz),
-				negGlyph = pms.toMat(sz, true);
-		Mat fgMask, bgMask, edgeMask, groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph;
-		double minVal, diffMinMax; // for very small fonts, minVal might be > 0 and diffMinMax might be < 255
-
 		// Computing SymData fields separately, to keep the critical emplace from below as short as possible
-		SymData::computeFields(glyph, fgMask, bgMask, edgeMask,
-							   groundedGlyph, blurOfGroundedGlyph, varianceOfGroundedGlyph,
-							   minVal, diffMinMax, false);
+		unique_ptr<const ISymData> newSym = make_unique<const SymData>(*rawSyms[(size_t)i], sz, false);
 
 #pragma omp critical // ordered instead of critical would be useful only for debugging
-		symsSet.emplace_back(negGlyph,
-							 pms.symCode,
-							 pms.symIdx,
-							 minVal, diffMinMax,
-							 pms.avgPixVal, pms.mc,
-							 SymData::MatArray { {
-										fgMask,					// FG_MASK_IDX
-										bgMask,					// BG_MASK_IDX
-										edgeMask,				// EDGE_MASK_IDX
-										groundedGlyph,			// GROUNDED_SYM_IDX
-										blurOfGroundedGlyph,	// BLURRED_GR_SYM_IDX
-										varianceOfGroundedGlyph	// VARIANCE_GR_SYM_IDX
-								} },
-								pms.removable);
+		symsSet.emplace_back(move(newSym));
 
 		// #pragma omp master not allowed in for
 		if(omp_get_thread_num() == 0)
@@ -212,9 +193,9 @@ const bool& MatchEngine::isClusteringUseful() const {
 }
 
 bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx,
-									   BestMatch &draftMatch, MatchProgress &matchProgress) const {
+									   IBestMatch &draftMatch, MatchProgress &matchProgress) const {
 	assert(matchAssessor.enabledMatchAspectsCount() > 0ULL);
-	assert(draftMatch.patch.needsApproximation);
+	assert(draftMatch.getPatch().nonUniform());
 	assert(upperSymIdx <= getSymsCount());
 	assert(preselManager != nullptr);
 
@@ -222,10 +203,11 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	const CachedData &cd = matchSupport.cachedData();
 	const VSymData &inspectedSet = preselManager->clustersSupport().clusteredSyms();
 
-	const Mat &toApprox = draftMatch.patch.matrixToApprox();
-	MatchParams &mp = draftMatch.bestVariant.params;
+	const Mat &toApprox = draftMatch.getPatch().matrixToApprox();
+	auto &mp = draftMatch.refParams();
+	assert(mp);
 	ScoreThresholds scoresToBeatBySyms;
-	matchAssessor.scoresToBeat(draftMatch.score, scoresToBeatBySyms);
+	matchAssessor.scoresToBeat(draftMatch.getScore(), scoresToBeatBySyms);
 
 	double score;
 	bool betterMatchFound = false;
@@ -235,25 +217,24 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 		locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
 
 		const auto &clusters = ce.getClusters();
-		const bool previouslyQualified = (clusters[fromCluster].sz > 1U) &&
-						draftMatch.lastPromisingNontrivialCluster.is_initialized() &&
-						(*draftMatch.lastPromisingNontrivialCluster == fromCluster);
+		const bool previouslyQualified = (clusters[fromCluster]->getSz() > 1U) &&
+						(draftMatch.getLastPromisingNontrivialCluster() == fromCluster);
 
 		// Multi-element clusters still qualify with slightly inferior scores,
 		// as individual symbols within the cluster might deliver a superior score.
 		extern const double InvestigateClusterEvenForInferiorScoreFactor;
-		ScoreThresholds scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
+		ScoreThresholds scoresToBeatByClusters(InvestigateClusterEvenForInferiorScoreFactor,
+											   scoresToBeatBySyms);
 
 		// 1st cluster might have already been qualified for thorough examination
 		if(previouslyQualified) { // cluster already qualified
 			const unsigned upperLimit = (fromCluster < lastCluster) ?
-											clusters[fromCluster].sz : lastSymIdxWithinLastCluster;
-			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit,
-									*this, toApprox, inspectedSet, cd,
-									scoresToBeatBySyms,
-									draftMatch, mp)) {
-				scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
-				matchProgress.remarkedMatch(*draftMatch.symIdx, draftMatch.score);
+				clusters[fromCluster]->getSz() : lastSymIdxWithinLastCluster;
+			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit, *this, toApprox, 
+									inspectedSet, cd, scoresToBeatBySyms, draftMatch)) {
+				scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor,
+											  scoresToBeatBySyms);
+				matchProgress.remarkedMatch(*draftMatch.getSymIdx(), draftMatch.getScore());
 
 				betterMatchFound = true;
 			}
@@ -271,33 +252,34 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 			const auto &cluster = clusters[clusterIdx];
 
 			// Current cluster attempts qualification - it computes its own score
-			mp.reset(); // preserves patch-invariant fields
+			mp->reset(); // preserves patch-invariant fields
 
-			if(cluster.sz == 1U) { // Trivial cluster
+			if(cluster->getSz() == 1U) { // Trivial cluster
 				// Single element clusters have same score as their content.
-				const unsigned symIdx = cluster.idxOfFirstSym;
-				const auto &symData = inspectedSet[symIdx];
-				if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
-					draftMatch.update(score, symData.code, symIdx, symData, mp);
+				const unsigned symIdx = cluster->getIdxOfFirstSym();
+				const auto &symData = *inspectedSet[symIdx];
+				if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, *mp, score)) {
+					draftMatch.update(score, symData.getCode(), symIdx, symData);
 					matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
-					scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
+					scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor,
+												  scoresToBeatBySyms);
 					matchProgress.remarkedMatch(symIdx, score);
 
 					betterMatchFound = true;
 				}
 			
 			} else { // Nontrivial cluster
-				if(matchAssessor.isBetterMatch(toApprox, cluster, cd, scoresToBeatByClusters, mp, score)) {
-					draftMatch.lastPromisingNontrivialCluster = clusterIdx; // cluster is a selected candidate
+				if(matchAssessor.isBetterMatch(toApprox, *cluster, cd,
+											scoresToBeatByClusters, *mp, score)) {
+					draftMatch.setLastPromisingNontrivialCluster(clusterIdx); // cluster is a selected candidate
 
 					const unsigned upperLimit = (clusterIdx < lastCluster) ?
-						cluster.sz : lastSymIdxWithinLastCluster;
-					if(checkRangeWithinCluster(0U, upperLimit, 
-												*this, toApprox, inspectedSet, cd,
-												scoresToBeatBySyms,
-												draftMatch, mp)) {
-						scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor, scoresToBeatBySyms);
-						matchProgress.remarkedMatch(*draftMatch.symIdx, draftMatch.score);
+						cluster->getSz() : lastSymIdxWithinLastCluster;
+					if(checkRangeWithinCluster(0U, upperLimit, *this, toApprox, inspectedSet, cd,
+												scoresToBeatBySyms, draftMatch)) {
+						scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor,
+													  scoresToBeatBySyms);
+						matchProgress.remarkedMatch(*draftMatch.getSymIdx(), draftMatch.getScore());
 
 						betterMatchFound = true;
 					}
@@ -308,12 +290,12 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	} else { // Matching is performed directly with individual symbols, not with clusters
 		// Examine all remaining symbols within current batch
 		for(unsigned symIdx = fromSymIdx; symIdx < upperSymIdx; ++symIdx) {
-			const auto &symData = inspectedSet[symIdx];
+			const auto &symData = *inspectedSet[symIdx];
 
-			mp.reset(); // preserves patch-invariant fields
+			mp->reset(); // preserves patch-invariant fields
 
-			if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, mp, score)) {
-				draftMatch.update(score, symData.code, symIdx, symData, mp);
+			if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, *mp, score)) {
+				draftMatch.update(score, symData.getCode(), symIdx, symData);
 				matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
 				matchProgress.remarkedMatch(symIdx, score);
 

@@ -40,25 +40,28 @@
 #define H_TINY_SYM
 
 #include "symData.h"
+#include "tinySymBase.h"
 
 #pragma warning ( push, 0 )
 
-#include <opencv2/core/core.hpp>
+#ifndef AI_REVIEWER_CHECK
+#	include <boost/serialization/array.hpp>
+#	include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
-struct PixMapSym; // Forward declaration
+struct IPixMapSym; // Forward declaration
+
+#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
 
 /// Data for tiny symbols
-struct TinySym : SymData {
-#ifndef AI_REVIEWER_CHECK
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of TinySym class
-#endif // AI_REVIEWER_CHECK not defined
-
-	/// Ratio between reference symbols and the shrunken symbol
-	enum { RatioRefTiny = 8 };
-
+class TinySym : public SymData, public ITinySym {
+#ifdef UNIT_TESTING // Unit Testing project may need these fields as public
+public:
+#else // UNIT_TESTING not defined - keep fields as protected
+protected:
+#endif // UNIT_TESTING
 	/*
 	Next 5 matrices from below are for the grounded version, not the original.
 	Each would normally contain elements in range 0..1, but all of them were
@@ -84,27 +87,52 @@ struct TinySym : SymData {
 	cv::Mat backslashDiagAvgProj;	///< normal diagonal projection divided by TinySymDiagsCount
 	cv::Mat slashDiagAvgProj;		///< inverse diagonal projection divided by TinySymDiagsCount
 
+public:
+#ifndef AI_REVIEWER_CHECK
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of ITinySym class
+#endif // AI_REVIEWER_CHECK not defined
+
 	TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL); ///< Empty symbols with the code & index from cmap
-	TinySym(const PixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
+	TinySym(const IPixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
 
 	/// Used to create the centroid of a cluster
 	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
 			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
 			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);
 
+#ifdef UNIT_TESTING
+	TinySym(const cv::Mat &negSym_, const cv::Point2d &mc_ = cv::Point2d(.5,.5), double avgPixVal_ = 0.); ///< generate the tiny symbol based on a negative
+#endif // UNIT_TESTING defined
+
+	/// Grounded version of the small symbol divided by TinySymArea
+	const cv::Mat& getMat() const override final;
+
+	/// Horizontal projection divided by TinySymSz
+	const cv::Mat& getHAvgProj() const override final;
+
+	/// Vertical projection divided by TinySymSz
+	const cv::Mat& getVAvgProj() const override final;
+
+	/// Normal diagonal projection divided by TinySymDiagsCount
+	const cv::Mat& getBackslashDiagAvgProj() const override final;
+
+	/// Inverse diagonal projection divided by TinySymDiagsCount
+	const cv::Mat& getSlashDiagAvgProj() const override final;
+
+	void shiftTowards(const ITinySym &sym, double weight) override;
+
 	/// Serializes this TinySym object to ar
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned version) {
 		SymData::serialize(ar, version);
-		ar & mat & 
-			hAvgProj & vAvgProj & 
+		ar & mat &
+			hAvgProj & vAvgProj &
 			backslashDiagAvgProj & slashDiagAvgProj;
 	}
-
-#ifdef UNIT_TESTING
-	TinySym(const cv::Mat &negSym_, const cv::Point2d &mc_ = cv::Point2d(.5,.5), double avgPixVal_ = 0.); ///< generate the tiny symbol based on a negative
-#endif // UNIT_TESTING defined
 };
+
+#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(TinySym, TinySym::VERSION);

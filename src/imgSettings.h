@@ -44,10 +44,10 @@
 #pragma warning ( push, 0 )
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
+#	include <boost/serialization/split_member.hpp>
+#	include <boost/serialization/version.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
@@ -62,6 +62,7 @@ protected:
 	unsigned hMaxSyms;	///< Count of resulted horizontal symbols
 	unsigned vMaxSyms;	///< Count of resulted vertical symbols
 
+public:
 	/**
 	Overwrites *this with the ImgSettings object read from ar.
 
@@ -94,10 +95,8 @@ protected:
 	}
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
 
-public:
 	/// Constructor takes initial values just to present valid sliders positions in Control Panel
 	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
 		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
@@ -107,12 +106,12 @@ public:
 
 	unsigned getMaxVSyms() const { return vMaxSyms; }
 	void setMaxVSyms(unsigned syms);
-
-	friend std::ostream& operator<<(std::ostream &os, const ImgSettings &is);
 };
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(ImgSettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
+
+std::ostream& operator<<(std::ostream &os, const ImgSettings &is); 
 
 #endif // H_IMG_SETTINGS

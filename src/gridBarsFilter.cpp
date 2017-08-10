@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "gridBarsFilter.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "symFilterCache.h"
 #include "misc.h"
 
@@ -237,12 +237,12 @@ bool GridBarsFilter::checkProjectionForGridSymbols(const Mat &sums) {
 	return metA;
 }
 
-bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+bool GridBarsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
 	// At least one side of the bounding box needs to be larger than half sz
-	if(max(pms.rows, pms.cols) < (sfc.szU>>1))
+	if(max(pms.getRows(), pms.getCols()) < (sfc.szU>>1))
 		return false;
 
 	Mat narrowGlyph = pms.asNarrowMat();
@@ -299,10 +299,10 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 
 	// Making sure glyphBin is entitled to represent narrowGlyph
 	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
-				sfc.szU - 1U - pms.top, pms.rows - 1U, pms.rowSums, &Mat::row))
+				sfc.szU - 1U - pms.getTop(), pms.getRows() - 1U, pms.getRowSums(), &Mat::row))
 		return false;
 	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
-				pms.left, pms.cols - 1U, pms.colSums, &Mat::col))
+				pms.getLeft(), pms.getCols() - 1U, pms.getColSums(), &Mat::col))
 		return false;
 
 	// Closing the space between any parallel lines of the grid symbol
@@ -312,8 +312,8 @@ bool GridBarsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sf
 
 	const int maskSz = max(3, (((int)sfc.szU>>2) | 1)), frameSz = maskSz>>1;
 	const Mat mask(maskSz, maskSz, CV_8UC1, Scalar(1U));
-	Mat glyphBinAux(pms.rows + 2*frameSz, pms.cols + 2*frameSz, CV_8UC1, Scalar(0U)),
-		destRegion(glyphBinAux, Range(frameSz, pms.rows+frameSz), Range(frameSz, pms.cols+frameSz)),
+	Mat glyphBinAux(pms.getRows() + 2*frameSz, pms.getCols() + 2*frameSz, CV_8UC1, Scalar(0U)),
+		destRegion(glyphBinAux, Range(frameSz, pms.getRows()+frameSz), Range(frameSz, pms.getCols()+frameSz)),
 		closedGlyphBin;
 	glyphBin.copyTo(destRegion);
 	morphologyEx(glyphBinAux, closedGlyphBin, MORPH_CLOSE, mask,

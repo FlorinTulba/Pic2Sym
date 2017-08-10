@@ -47,7 +47,7 @@
 
 #pragma warning ( pop )
 
-struct SymData; // Forward declaration
+struct ISymData; // Forward declaration
 
 /**
 Helpful for blurring and computing cluster representatives.
@@ -68,7 +68,7 @@ struct SymsSupport {
 	virtual bool usingTinySymbols() const;
 
 	/// Generates clusters with normal / tiny format, depending on PreselectionByTinySyms
-	virtual void computeClusterRepresentative(const std::vector<const SymData*> &clusterSyms,
+	virtual void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
 											  int symSz, double invClusterSz,
 											  cv::Mat &synthesizedSym, cv::Mat &negSym) const;
 };

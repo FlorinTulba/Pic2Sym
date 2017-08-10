@@ -50,7 +50,11 @@
 
 #pragma warning ( push, 0 )
 
+// Using <thread> in VS2013 might trigger this warning:
+// https://connect.microsoft.com/VisualStudio/feedback/details/809540/c-warnings-in-stl-thread
+#pragma warning( disable : WARN_VIRT_DESTRUCT_EXPECTED )
 #include <thread>
+#pragma warning( default : WARN_VIRT_DESTRUCT_EXPECTED )
 
 #include <opencv2/highgui/highgui.hpp>
 

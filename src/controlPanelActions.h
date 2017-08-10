@@ -85,6 +85,8 @@ public:
 						FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,
 						Comparator &comp_, std::shared_ptr<CmapInspect> &pCmi_);
 
+	void operator=(const ControlPanelActions&) = delete;
+
 	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
 	void restoreUserDefaultMatchSettings() override;
 	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'

@@ -50,7 +50,7 @@
 #pragma warning ( pop )
 
 // Forward declarations
-struct BestMatch;
+struct IBestMatch;
 struct ISettings;
 class MatchAspect;
 class MatchAssessor;
@@ -100,7 +100,7 @@ public:
 	/// @return true if a new better match is found within the new batch of symbols
 	bool improvesBasedOnBatch(unsigned fromSymIdx,			///< start of the batch
 							  unsigned upperSymIdx,			///< end of the batch (exclusive)
-							  BestMatch &draftMatch,		///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
+							  IBestMatch &draftMatch,		///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
 							  MatchProgress &matchProgress	///< observer notified for each new improved match
 							  ) const;
 

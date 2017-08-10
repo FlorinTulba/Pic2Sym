@@ -37,9 +37,11 @@
  ***********************************************************************************************/
 
 #include "tinySym.h"
+#include "pixMapSym.h"
 #include "fontEngine.h"
 #include "fontErrorsHelper.h"
 #include "tinySymsDataSerialization.h"
+#include "pmsContBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -109,8 +111,8 @@ const VTinySyms& FontEngine::getTinySyms() {
 	Both involve requesting fonts of different sizes from the same font 'library' object
 	and also operating on the same 'face' object while considering the requests.
 	*/
-	if(!symsCont.isReady())
-		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after symsCont.setAsReady()!", logic_error);
+	if(!symsCont->isReady())
+		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after symsCont->setAsReady()!", logic_error);
 
 	if(tinySyms.empty()) {
 		VTinySymsIO tinySymsDataSerializer(tinySyms);
@@ -125,7 +127,7 @@ const VTinySyms& FontEngine::getTinySyms() {
 			then resized to TinySymsSize, so to get more precise approximations (non-zero fractional parts)
 			and to avoid hinting that increases for small font sizes.
 			*/
-			static const unsigned RefSymsSize = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
+			static const unsigned RefSymsSize = TinySymsSize * (unsigned)ITinySym::RatioRefTiny,
 								RefSymsSizeX64 = RefSymsSize << 6;
 			static const double RefSymsSizeD = (double)RefSymsSize,
 								maxGlyphSum = double(255U * RefSymsSize * RefSymsSize);

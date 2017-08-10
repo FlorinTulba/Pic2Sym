@@ -41,6 +41,7 @@
 #include "controllerBase.h"
 #include "tinySym.h"
 #include "symFilter.h"
+#include "pmsCont.h"
 #include "symFilterCache.h"
 #include "updateSymSettingsBase.h"
 #include "glyphsProgressTracker.h"
@@ -127,7 +128,7 @@ namespace {
 FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) :
 						symSettingsUpdater(ctrler_.getUpdateSymSettings()),
 						cmapPresenter(ctrler_.getPresentCmap()),
-						ss(ss_), symsCont(const_cast<IController&>(ctrler_)) {
+						ss(ss_), symsCont(new PmsCont(const_cast<IController&>(ctrler_))) {
 	const FT_Error error = FT_Init_FreeType(&library);
 	if(error != FT_Err_Ok) 
 		THROW_WITH_VAR_MSG("Couldn't initialize FreeType! Error: " + FtErrors[(size_t)error], runtime_error);
@@ -144,7 +145,7 @@ void FontEngine::invalidateFont() {
 	face = nullptr;
 	disposeTinySyms();
 	uniqueEncs.clear();
-	symsCont.reset();
+	symsCont->reset();
 	symsUnableToLoad.clear();
 	encodingIndex = symsCount = 0U;
 }
@@ -198,7 +199,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	cout<<"Using encoding "<<encName<<" (index "<<encodingIndex<<')'<<endl;
 
 	tinySyms.clear();
-	symsCont.reset();
+	symsCont->reset();
 	symsCount = 0U;
 	symsUnableToLoad.clear();
 
@@ -245,7 +246,7 @@ void FontEngine::setFace(FT_Face face_, const string &/*fontFile_ = ""*/) {
 	}
 
 	tinySyms.clear();
-	symsCont.reset();
+	symsCont->reset();
 	symsCount = 0U;
 	symsUnableToLoad.clear();
 	uniqueEncs.clear();
@@ -389,7 +390,7 @@ void FontEngine::adjustScaling(unsigned sz, FT_BBox &bb, double &factorH, double
 }
 
 void FontEngine::setFontSz(unsigned fontSz_) {
-	if(symsCont.isReady() && symsCont.getFontSz() == fontSz_)
+	if(symsCont->isReady() && symsCont->getFontSz() == fontSz_)
 		return; // same font size
 
 	if(face == nullptr)
@@ -424,7 +425,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	loadFitSymbols.setTotalSteps((size_t)symsCount);
-	symsCont.reset(fontSz_, symsCount);
+	symsCont->reset(fontSz_, symsCount);
 
 	cmapPresenter->showUnofficialSymDetails(symsCount);
 
@@ -451,7 +452,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 		if(width > fontSz_ || height > fontSz_)
 			toResize.emplace_back(c, i, max(1., width/sz), max(1., height/sz));
 		else
-			symsCont.appendSym(c, i, g, bb, sfc);
+			symsCont->appendSym(c, i, g, bb, sfc);
 	}
 
 	if(countOfSymsUnableToLoad < symsUnableToLoad.size())
@@ -487,7 +488,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 			THROW_WITH_VAR_MSG("Couldn't load glyph " + to_string(item.symCode) +
 								" which needed resizing twice. Error: " +
 								FtErrors[(size_t)error], runtime_error);
-		symsCont.appendSym(item.symCode, item.symIdx, face->glyph, bb, sfc);
+		symsCont->appendSym(item.symCode, item.symIdx, face->glyph, bb, sfc);
 
 		loadExtraSqueezedSymbols.taskAdvanced(++i);
 	}
@@ -497,7 +498,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	static TaskMonitor determineCoverageOfSmallGlyphs("determine coverageOfSmallGlyphs", *symsMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	symsCont.setAsReady();
+	symsCont->setAsReady();
 	determineCoverageOfSmallGlyphs.taskDone(); // mark it as already finished
 
 	/**
@@ -512,7 +513,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<endl<<"Resulted Bounding box: "<<bb.yMin<<","<<bb.xMin<<" -> "<<bb.yMax<<","<<bb.xMax<<endl;
 
 	cout<<"Symbols considered small cover at most "<<
-		fixed<<setprecision(2)<<100.*symsCont.getCoverageOfSmallGlyphs()<<"% of the box"<<endl;
+		fixed<<setprecision(2)<<100.*symsCont->getCoverageOfSmallGlyphs()<<"% of the box"<<endl;
 
 	if(!toResize.empty()) {
 		cout<<toResize.size()<<" symbols were resized twice: ";
@@ -524,16 +525,16 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<endl;
 #endif // VIEW_CONCLUSIONS_FROM_RESHAPING_LOADED_FONTS && !UNIT_TESTING
 	cout<<endl;
-	if(symsCont.getBlanksCount() != 0U)
-		cout<<"Removed "<<symsCont.getBlanksCount()<<" Space characters from symsSet!"<<endl;
-	if(symsCont.getDuplicatesCount() != 0U)
-		cout<<"Removed "<<symsCont.getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
+	if(symsCont->getBlanksCount() != 0U)
+		cout<<"Removed "<<symsCont->getBlanksCount()<<" Space characters from symsSet!"<<endl;
+	if(symsCont->getDuplicatesCount() != 0U)
+		cout<<"Removed "<<symsCont->getDuplicatesCount()<<" duplicates from symsSet!"<<endl;
 
-	const auto &removableSymsByCateg = symsCont.getRemovableSymsByCateg();
+	const auto &removableSymsByCateg = symsCont->getRemovableSymsByCateg();
 	for(const auto &categAndCount : removableSymsByCateg)
 		cout<<"Detected "<<categAndCount.second<<' '<<SymFilter::filterName(categAndCount.first)<<" in the symsSet!"<<endl;
 
-	cout<<"Count of remaining symbols is "<<symsCont.getSyms().size()<<endl;
+	cout<<"Count of remaining symbols is "<<symsCont->getSyms().size()<<endl;
 }
 
 const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) const {
@@ -560,18 +561,18 @@ unsigned FontEngine::upperSymsCount() const {
 	return symsCount;
 }
 
-const vector<const PixMapSym>& FontEngine::symsSet() const {
-	if(face == nullptr || !symsCont.isReady())
+const VPixMapSym& FontEngine::symsSet() const {
+	if(face == nullptr || !symsCont->isReady())
 		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
 
-	return symsCont.getSyms();
+	return symsCont->getSyms();
 }
 
 double FontEngine::smallGlyphsCoverage() const {
-	if(face == nullptr || !symsCont.isReady())
+	if(face == nullptr || !symsCont->isReady())
 		THROW_WITH_CONST_MSG(__FUNCTION__  " called before selecting a font.", logic_error);
 
-	return symsCont.getCoverageOfSmallGlyphs();
+	return symsCont->getCoverageOfSmallGlyphs();
 }
 
 const string& FontEngine::fontFileName() const {

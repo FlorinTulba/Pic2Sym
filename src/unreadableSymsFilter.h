@@ -67,7 +67,7 @@ progressively less readable.
 struct UnreadableSymsFilter : public TSymFilter<UnreadableSymsFilter> {
 	CHECK_ENABLED_SYM_FILTER(UnreadableSymsFilter);
 
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
+	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	UnreadableSymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
 	UnreadableSymsFilter(const UnreadableSymsFilter&) = delete;

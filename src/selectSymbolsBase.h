@@ -39,18 +39,18 @@
 #ifndef H_SELECT_SYMBOLS_BASE
 #define H_SELECT_SYMBOLS_BASE
 
-struct SymData; // Forward declaration
+struct ISymData; // forward declaration
 
 /// Allows saving a selection of symbols pointed within the charmap viewer
 struct ISelectSymbols /*abstract*/ {
 	/// Provides details about the symbol under the mouse
-	virtual const SymData* pointedSymbol(int x, int y) const = 0;
+	virtual const ISymData* pointedSymbol(int x, int y) const = 0;
 
 	/// Appends the code of the symbol under the mouse to the status bar
 	virtual void displaySymCode(unsigned long symCode) const = 0;
 
 	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
-	virtual void enlistSymbolForInvestigation(const SymData &sd) const = 0;
+	virtual void enlistSymbolForInvestigation(const ISymData &sd) const = 0;
 
 	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
 	virtual void symbolsReadyToInvestigate() const = 0;

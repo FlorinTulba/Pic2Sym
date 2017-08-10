@@ -39,15 +39,10 @@
 #ifndef H_PIXMAP_SYM
 #define H_PIXMAP_SYM
 
-#include "symFilterBase.h"
+#include "pixMapSymBase.h"
 
 #pragma warning ( push, 0 )
 
-#include <vector>
-#include <map>
-#include <memory>
-
-#include <opencv2/core.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -64,7 +59,8 @@ The height('rows'), width('cols') are also recorded.
 The bitmap pitch is transformed into width, so 'pixels' is continuous.
 Fields 'left' and 'top' indicate the position of the top-left corner within the drawing square.
 */
-struct PixMapSym {
+class PixMapSym : public IPixMapSym {
+protected:
 	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc;
 
@@ -74,7 +70,7 @@ struct PixMapSym {
 	cv::Mat colSums; ///< row with the sums of the pixels of each column of the symbol (each pixel in 0..1)
 	cv::Mat rowSums; ///< row with the sums of the pixels of each row of the symbol (each pixel in 0..1)
 
-	size_t symIdx = 0U;				///< symbol index within cmap
+	size_t symIdx = 0ULL;			///< symbol index within cmap
 	double avgPixVal = 0.;			///< average of the pixel values divided by 255
 
 	unsigned long symCode = 0UL;	///< symbol code
@@ -84,6 +80,7 @@ struct PixMapSym {
 
 	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
 
+public:
 	/**
 	Processes a FT_Bitmap object to store a faithful representation of the symCode
 	drawn within a bounding box (BBox).
@@ -117,13 +114,34 @@ struct PixMapSym {
 
 	bool operator==(const PixMapSym &other) const; ///< useful to detect duplicates
 
-	cv::Mat asNarrowMat() const;			///< a matrix with the symbol within its tight bounding box
+	/// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
+	const cv::Point2d& getMc() const override final;
+
+	/// Row with the sums of the pixels of each column of the symbol (each pixel in 0..1)
+	const cv::Mat& getColSums() const override final;
+
+	/// Row with the sums of the pixels of each row of the symbol (each pixel in 0..1)
+	const cv::Mat& getRowSums() const override final;
+
+	size_t getSymIdx() const override final;			///< symbol index within cmap
+	double getAvgPixVal() const override final;			///< average of the pixel values divided by 255
+	unsigned long getSymCode() const override final;	///< the code of the symbol
+	unsigned char getRows() const override final;		///< the height of the representation of this symbol
+	unsigned char getCols() const override final;		///< the width of the representation of this symbol
+	unsigned char getLeft() const override final;		///< horizontal position within the drawing square
+	unsigned char getTop() const override final;		///< vertical position within the drawing square
+
+	/// When set to true, the symbol will appear as marked (inversed) in the cmap viewer
+	bool isRemovable() const override final;
+	void setRemovable(bool removable_ = true) override final; ///< allows changing removable
+	
+	cv::Mat asNarrowMat() const override final;	///< a matrix with the symbol within its tight bounding box
 
 	/// the symbol within a square of fontSz x fontSz, either as is, or inversed
-	cv::Mat toMat(unsigned fontSz, bool inverse = false) const;
+	cv::Mat toMat(unsigned fontSz, bool inverse = false) const override;
 
 	/// Conversion PixMapSym .. Mat of type double with range [0..1] instead of [0..255]
-	cv::Mat toMatD01(unsigned fontSz) const;
+	cv::Mat toMatD01(unsigned fontSz) const override;
 
 	/**
 	Computing the mass center (mc) and average pixel value (divided by 255) of a given symbol.
@@ -131,8 +149,10 @@ struct PixMapSym {
 
 	It's static for easier Unit Testing.
 	*/
-	static void computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const std::vector<unsigned char> &data,
-									  unsigned char rows, unsigned char cols, unsigned char left, unsigned char top,
+	static void computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum,
+									  const std::vector<unsigned char> &data,
+									  unsigned char rows, unsigned char cols,
+									  unsigned char left, unsigned char top,
 									  const cv::Mat &consec, const cv::Mat &revConsec,
 									  cv::Point2d &mc, double &avgPixVal,
 									  cv::Mat *colSums = nullptr, cv::Mat *rowSums = nullptr);
@@ -146,62 +166,4 @@ struct PixMapSym {
 #endif // UNIT_TESTING defined
 };
 
-struct IController; // forward declaration
-
-/// Convenience container to hold PixMapSym-s of same size
-class PmsCont {
-protected:
-	std::vector<const PixMapSym> syms;	///< data for each symbol within current charmap
-
-	// Precomputed entities during reset
-	cv::Mat consec;					///< vector of consecutive values 0..fontSz-1
-	cv::Mat revConsec;				///< consec reversed
-
-	IController &ctrler;	///< updates Cmap View as soon as there are enough symbols for 1 page
-
-	/**
-	Member that allows setting filters to detect symbols with undesired features.
-	Passing this field as parameter to a function/method is allowed only in dereferenced form:
-		*symFilter
-	*/
-	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
-	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
-
-	double maxGlyphSum;				///< max sum of a glyph's pixels
-	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
-
-	unsigned fontSz = 0U;			///< bounding box size
-
-	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
-	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
-
-	bool ready = false;				///< is container ready to provide useful data?
-
-public:
-	PmsCont(IController &ctrler_);
-	PmsCont(const PmsCont&) = delete;
-	void operator=(const PmsCont&) = delete;
-
-	bool isReady() const { return ready; }
-	unsigned getFontSz() const;
-	unsigned getBlanksCount() const;
-	unsigned getDuplicatesCount() const;
-	const std::map<unsigned, unsigned>& getRemovableSymsByCateg() const;
-	double getCoverageOfSmallGlyphs() const;
-	const std::vector<const PixMapSym>& getSyms() const;
-
-	/// clears & prepares container for new entries
-	void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U);
-
-	/**
-	appendSym puts valid glyphs into vector 'syms'.
-
-	Space (empty / full) glyphs are invalid.
-	Also updates the count of blanks & duplicates and of any filtered out symbols.
-	*/
-	void appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc);
-
-	void setAsReady(); ///< No other symbols to append. Statistics can be now computed
-};
-
-#endif
+#endif // H_PIXMAP_SYM

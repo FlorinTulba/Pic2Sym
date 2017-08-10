@@ -68,7 +68,7 @@ void TaskMonitor::setTotalSteps(size_t totalSteps_) {
 
 void TaskMonitor::taskAdvanced(size_t steps/* = 1U*/) {
 	assert(totalSteps > 0.); // Please call this method only after setTotalSteps()
-	if(0U == steps)
+	if(0ULL == steps)
 		return;
 
 	double taskProgress = steps / totalSteps;

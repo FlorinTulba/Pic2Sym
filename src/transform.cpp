@@ -41,8 +41,9 @@
 #include "matchAssessment.h"
 #include "settingsBase.h"
 #include "symSettings.h"
-#include "matchParams.h"
-#include "patch.h"
+#include "matchParamsBase.h"
+#include "bestMatchBase.h"
+#include "patchBase.h"
 #include "preselectManager.h"
 #include "transformSupport.h"
 #include "preselectSyms.h"
@@ -192,14 +193,14 @@ struct ResultFileManager {
 /// In Debug mode (not UnitTesting), when the transformation wasn't canceled, log the parameters of the matches
 static void logDataForBestMatches(volatile bool &isCanceled,
 						   const string &studiedCase, unsigned sz, int h, int w, bool usesUnicode,
-						   const std::vector<std::vector<BestMatch>> &draftMatches) {
+						   const vector<vector<unique_ptr<IBestMatch>>> &draftMatches) {
 	if(isCanceled)
 		return;
 	TransformTrace tt(studiedCase, sz, usesUnicode); // log support (DEBUG mode only)
 	for(int r = 0; r<h; r += sz) {
 		auto &draftRow = draftMatches[(unsigned)r/sz];
 		for(int c = 0; c<w; c += sz) {
-			const auto &draftMatch = draftRow[(unsigned)c/sz];
+			const auto &draftMatch = *draftRow[(unsigned)c/sz];
 			tt.newEntry((unsigned)r, (unsigned)c, draftMatch); // log the data about best match (DEBUG mode only)
 		}
 	}

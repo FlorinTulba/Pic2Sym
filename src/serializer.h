@@ -60,8 +60,8 @@ To disable it, just comment its definition in 'compressOption.h' file
 #include <string>
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
+#	include <boost/iostreams/filtering_streambuf.hpp>
+#	include <boost/iostreams/filter/zlib.hpp>
 #endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )

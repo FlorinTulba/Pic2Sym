@@ -49,7 +49,7 @@
 #include <set>
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/algorithm/string/replace.hpp>
+#	include <boost/algorithm/string/replace.hpp>
 #endif // AI_REVIEWER_CHECK
 
 #include <opencv2/core/core.hpp>
@@ -92,7 +92,7 @@ namespace {
 	/// Base class for IsOdd and IsEven from below
 	template<class Type, typename = enable_if_t<is_integral<Type>::value>>
 	struct IsOddOrEven : ConfigItemValidator<Type> {
-		void examine(const string &itemName, const Type &itemVal) const override {
+		void examine(const string &itemName, const Type &itemVal) const override final {
 #define REQUIRE_PARITY(ParityType, Mod2Remainder) \
 			if((Type)Mod2Remainder != (itemVal & (Type)1)) { \
 				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
@@ -114,14 +114,14 @@ namespace {
 
 	/// Throws for non-odd configuration items
 	template<class Type>
-	struct IsOdd : IsOddOrEven<Type> {
+	struct IsOdd final : IsOddOrEven<Type> {
 		IsOdd() : IsOddOrEven(true) {}
 		void operator=(const IsOdd&) = delete;
 	};
 
 	/// Throws for non-even configuration items
 	template<class Type>
-	struct IsEven : IsOddOrEven<Type> {
+	struct IsEven final : IsOddOrEven<Type> {
 		IsEven() : IsOddOrEven(false) {}
 		void operator=(const IsEven&) = delete;
 	};
@@ -129,7 +129,7 @@ namespace {
 	/// Base class for IsLessThan and IsGreaterThan from below
 	template<class Type, typename = enable_if_t<is_arithmetic<Type>::value>>
 	struct IsLessOrGreaterThan : ConfigItemValidator<Type> {
-		void examine(const string &itemName, const Type &itemVal) const override {
+		void examine(const string &itemName, const Type &itemVal) const override final {
 #define REQUIRE_REL(RelationType) \
 			if(!(itemVal RelationType refVal)) { \
 				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
@@ -160,28 +160,28 @@ namespace {
 
 	/// Throws for values > or >= than refVal_
 	template<class Type>
-	struct IsLessThan : IsLessOrGreaterThan<Type> {
+	struct IsLessThan final : IsLessOrGreaterThan<Type> {
 		IsLessThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(true, refVal_, orEqual_) {}
 		void operator=(const IsLessThan&) = delete;
 	};
 
 	/// Throws for values < or <= than refVal_
 	template<class Type>
-	struct IsGreaterThan : IsLessOrGreaterThan<Type> {
+	struct IsGreaterThan final : IsLessOrGreaterThan<Type> {
 		IsGreaterThan(const Type &refVal_, bool orEqual_ = false) : IsLessOrGreaterThan(false, refVal_, orEqual_) {}
 		void operator=(const IsGreaterThan&) = delete;
 	};
 
 	/// Checks that the provided value for a configuration item is within a given set of accepted values.
 	template<class Type>
-	struct IsOneOf : ConfigItemValidator<Type> {
+	struct IsOneOf final : ConfigItemValidator<Type> {
 		IsOneOf(const set<Type> &allowedSet_) : allowedSet(allowedSet_), allowedSetStr(setAsString(allowedSet_)) {
 			if(allowedSet_.empty())
 				THROW_WITH_CONST_MSG(__FUNCTION__ " should get a non-empty set of allowed values!", invalid_argument);
 		}
 		void operator=(const IsOneOf&) = delete;
 
-		void examine(const string &itemName, const Type &itemVal) const override {
+		void examine(const string &itemName, const Type &itemVal) const override final {
 			if(allowedSet.cend() == allowedSet.find(itemVal))
 				THROW_WITH_VAR_MSG("Configuration item '" + itemName +
 					"' needs to be among these values: " + allowedSetStr + "!", invalid_argument);

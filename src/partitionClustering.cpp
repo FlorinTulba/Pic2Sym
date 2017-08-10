@@ -94,13 +94,13 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 											[&] (const TinySym &a, const TinySym &b) {
 #if !defined _DEBUG || defined UNIT_TESTING
 			if(!FastDistSymToClusterComputation) {
-				const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+				const double l1Dist = norm(a.getMat() - b.getMat(), NORM_L1);
 				return l1Dist <= MaxAvgProjErrForPartitionClustering;
 			}
 
-			if(abs(a.avgPixVal - b.avgPixVal) > MaxDiffAvgPixelValForPartitionClustering)
+			if(abs(a.getAvgPixVal() - b.getAvgPixVal()) > MaxDiffAvgPixelValForPartitionClustering)
 				return false;
-			const Point2d mcDelta = a.mc - b.mc;
+			const Point2d mcDelta = a.getMc() - b.getMc();
 			const double mcDeltaY = abs(mcDelta.y);
 			if(mcDeltaY > MaxRelMcOffsetForPartitionClustering)
 				return false;
@@ -122,15 +122,15 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 					return false; \
 			}
 
-			CheckProjections(vAvgProj);
-			CheckProjections(hAvgProj);
-			CheckProjections(backslashDiagAvgProj);
-			CheckProjections(slashDiagAvgProj);
+			CheckProjections(getVAvgProj());
+			CheckProjections(getHAvgProj());
+			CheckProjections(getBackslashDiagAvgProj());
+			CheckProjections(getSlashDiagAvgProj());
 
 #undef CheckProjections
 
-			auto itA = a.mat.begin<double>(), itAEnd = a.mat.end<double>(),
-				itB = b.mat.begin<double>();
+			auto itA = a.getMat().begin<double>(), itAEnd = a.getMat().end<double>(),
+				itB = b.getMat().begin<double>();
 			for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
 				if(sumOfAbsDiffs > MaxAvgProjErrForPartitionClustering)
@@ -141,18 +141,18 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 #else // DEBUG mode and UNIT_TESTING not defined
 			if(!FastDistSymToClusterComputation) {
-				const double l1Dist = norm(a.mat - b.mat, NORM_L1);
+				const double l1Dist = norm(a.getMat() - b.getMat(), NORM_L1);
 				return l1Dist <= MaxAvgProjErrForPartitionClustering;
 			}
 
-			const double avgPixDiff = abs(a.avgPixVal - b.avgPixVal);
+			const double avgPixDiff = abs(a.getAvgPixVal() - b.getAvgPixVal());
 			const bool bAvgPixDiff = avgPixDiff > MaxDiffAvgPixelValForPartitionClustering;
 			if(bAvgPixDiff) {
 				++countAvgPixDiff;
 				return false;
 			}
 
-			const double mcsOffset = norm(a.mc - b.mc);
+			const double mcsOffset = norm(a.getMc() - b.getMc());
 			const bool bMcsOffset = mcsOffset > MaxRelMcOffsetForPartitionClustering;
 			if(bMcsOffset) {
 				++countMcsOffset;
@@ -169,11 +169,11 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 				} \
 			}
 
-			CheckDifferences(vAvgProj, countVdiff);
-			CheckDifferences(hAvgProj, countHdiff);
-			CheckDifferences(backslashDiagAvgProj, countBslashDiff);
-			CheckDifferences(slashDiagAvgProj, countSlashDiff);
-			CheckDifferences(mat, countDiff);
+			CheckDifferences(getVAvgProj(), countVdiff);
+			CheckDifferences(getHAvgProj(), countHdiff);
+			CheckDifferences(getBackslashDiagAvgProj(), countBslashDiff);
+			CheckDifferences(getSlashDiagAvgProj(), countSlashDiff);
+			CheckDifferences(getMat(), countDiff);
 
 #undef CheckDifferences
 
@@ -199,7 +199,8 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 	// Adapt clusters for filtered cmap
 	symsIndicesPerCluster.assign(rawClusters.clustersCount, vector<unsigned>());
 	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
-		symsIndicesPerCluster[(size_t)rawClusters.clusterLabels[symsToGroup[(size_t)i].symIdx]].push_back(i);
+		symsIndicesPerCluster[(size_t)rawClusters.clusterLabels
+			[symsToGroup[(size_t)i]->getSymIdx()]].		push_back(i);
 	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
 							   [] (const vector<unsigned> &elem) { return elem.empty(); });
 	symsIndicesPerCluster.resize((size_t)distance(symsIndicesPerCluster.begin(), newEndIt));

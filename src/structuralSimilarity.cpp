@@ -40,6 +40,7 @@
 #include "structuralSimilarity.h"
 #include "blur.h"
 #include "matchParams.h"
+#include "symDataBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -65,8 +66,8 @@ The returned value is in 0..1 range,
 		small for small ssim-s or large k (>1)
 		larger for good ssim-s or 0 < k <= 1
 */
-double StructuralSimilarity::score(const MatchParams &mp, const CachedData&) const {
-	return pow((1. + mp.ssim.value()) / 2., k);
+double StructuralSimilarity::score(const IMatchParams &mp, const CachedData&) const {
+	return pow((1. + mp.getSsim().value()) / 2., k);
 }
 
 /*
@@ -76,9 +77,9 @@ Downsampling was not used, as the results normally get inspected by
 enlarging the regions of interest.
 */
 void StructuralSimilarity::fillRequiredMatchParams(const Mat &patch,
-												   const SymData &symData,
+												   const ISymData &symData,
 												   const CachedData &cachedData,
-												   MatchParams &mp) const {
+												   IMatchParamsRW &mp) const {
 	mp.computeSsim(patch, symData, cachedData);
 }
 
@@ -115,7 +116,7 @@ void MatchParams::computeVariancePatch(const Mat &patch, const CachedData &cache
 	variancePatch = variancePatch_;
 }
 
-void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const CachedData &cachedData) {
+void MatchParams::computeSsim(const Mat &patch, const ISymData &symData, const CachedData &cachedData) {
 	if(ssim)
 		return;
 
@@ -135,12 +136,12 @@ void MatchParams::computeSsim(const Mat &patch, const SymData &symData, const Ca
 	// Saving 2 calls to BlurEngine each time current symbol is compared to a patch:
 	// Blur and Variance of the approximated patch are computed based on the blur and variance
 	// of the grounded version of the original symbol
-	const double diffRatio = contrast.value() / symData.diffMinMax;
+	const double diffRatio = contrast.value() / symData.getDiffMinMax();
 	const Mat blurredPatchApprox = bg.value() + diffRatio *
-										symData.masks[SymData::BLURRED_GR_SYM_IDX],
+										symData.getMask(ISymData::BLURRED_GR_SYM_IDX),
 				blurredPatchApproxSq = blurredPatchApprox.mul(blurredPatchApprox),
 				variancePatchApprox = diffRatio * diffRatio *
-										symData.masks[SymData::VARIANCE_GR_SYM_IDX];
+										symData.getMask(ISymData::VARIANCE_GR_SYM_IDX);
 
 #ifdef _DEBUG // checking the simplifications mentioned above
 	// Since the other blur algorithms have lower quality, it is difficult to set an error threshold that is also valid for them

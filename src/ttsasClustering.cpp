@@ -105,7 +105,7 @@ namespace {
 	/// Representative of a cluster of symbols
 	struct Cluster {
 		vector<SymIdx> memberIndices;	///< indices of the member symbols
-		TinySym centroid;			///< characteristics of the centroid
+		TinySym centroid;				///< characteristics of the centroid
 
 		Cluster(const TinySym &sym, SymIdx symIdx) :
 			memberIndices({ symIdx }),
@@ -116,9 +116,9 @@ namespace {
 			the cluster root symbol (parameter sym from here),
 			so any addMember() call would change the root symbol, as well.
 			*/
-			centroid(sym.mc, sym.avgPixVal, sym.mat.clone(),
-					sym.hAvgProj.clone(), sym.vAvgProj.clone(),
-					sym.backslashDiagAvgProj.clone(), sym.slashDiagAvgProj.clone()) {}
+			centroid(sym.getMc(), sym.getAvgPixVal(), sym.getMat().clone(),
+					sym.getHAvgProj().clone(), sym.getVAvgProj().clone(),
+					sym.getBackslashDiagAvgProj().clone(), sym.getSlashDiagAvgProj().clone()) {}
 
 		size_t membersCount() const { return memberIndices.size(); }
 
@@ -128,23 +128,7 @@ namespace {
 		/// Updates centroid for the expanded cluster that considers also sym as a member
 		void addMember(const TinySym &sym, SymIdx symIdx) {
 			memberIndices.push_back(symIdx);
-			const double invNewMembersCount = 1./memberIndices.size(),
-						oneMinusInvNewMembersCount = 1. - invNewMembersCount;
-
-			// All fields suffer the transformation below due to the expansion of the cluster
-#define UpdateCentroidField(field) \
-			centroid.field = centroid.field * oneMinusInvNewMembersCount + sym.field * invNewMembersCount
-
-			UpdateCentroidField(mc);
-			UpdateCentroidField(avgPixVal);
-			UpdateCentroidField(hAvgProj);
-			UpdateCentroidField(vAvgProj);
-			UpdateCentroidField(backslashDiagAvgProj);
-			UpdateCentroidField(slashDiagAvgProj);
-
-#undef UpdateCentroidField
-
-			scaleAdd(centroid.mat, oneMinusInvNewMembersCount, sym.mat * invNewMembersCount, centroid.mat);
+			centroid.shiftTowards(sym, 1./memberIndices.size());
 		}
 	};
 
@@ -192,19 +176,19 @@ namespace {
 			const double thresholdOutsider = threshOutsider(clusterSz);
 
 			if(!FastDistSymToClusterComputation) {
-				const double l1Dist = norm(centroidCluster.mat - sym.mat, NORM_L1);
+				const double l1Dist = norm(centroidCluster.getMat() - sym.getMat(), NORM_L1);
 				if(l1Dist > thresholdOutsider * TTSAS_Threshold_Member)
 					return numeric_limits<Dist>::infinity();
 				return l1Dist;
 			}
 
 			// Comparing glyph & cluster densities
-			if(abs(sym.avgPixVal - centroidCluster.avgPixVal)  >
+			if(abs(sym.getAvgPixVal() - centroidCluster.getAvgPixVal())  >
 						MaxDiffAvgPixelValForTTSAS_Clustering * thresholdOutsider)
 				return numeric_limits<Dist>::infinity(); // skip the rest for very different densities
 
 			// Comparing glyph & cluster mass-centers
-			const Point2d mcDelta = sym.mc - centroidCluster.mc;
+			const Point2d mcDelta = sym.getMc() - centroidCluster.getMc();
 			const double mcDeltaY = abs(mcDelta.y) / thresholdOutsider;
 			if(mcDeltaY > MaxRelMcOffsetForTTSAS_Clustering) // vertical mass-centers offset
 				return numeric_limits<Dist>::infinity(); // skip the rest for very distant mass-centers
@@ -232,16 +216,16 @@ namespace {
 			}
 
 			// Comparing glyph & cluster horizontal, vertical and both diagonal projections
-			CheckProjections(vAvgProj);
-			CheckProjections(hAvgProj);
-			CheckProjections(backslashDiagAvgProj);
-			CheckProjections(slashDiagAvgProj);
+			CheckProjections(getVAvgProj());
+			CheckProjections(getHAvgProj());
+			CheckProjections(getBackslashDiagAvgProj());
+			CheckProjections(getSlashDiagAvgProj());
 
 #undef CheckProjections
 
 			// Comparing glyph & cluster L1 norm
-			auto itA = sym.mat.begin<double>(), itAEnd = sym.mat.end<double>(),
-				itB = centroidCluster.mat.begin<double>();
+			auto itA = sym.getMat().begin<double>(), itAEnd = sym.getMat().end<double>(),
+				itB = centroidCluster.getMat().begin<double>();
 			double sumOfAbsDiffs = 0.;
 			while(itA != itAEnd) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
@@ -367,7 +351,7 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 		
 		rawClustersIO.clusterLabels.resize(countOfTinySymsToGroup);
 
-		size_t clusteredTinySyms = 0U;
+		size_t clusteredTinySyms = 0ULL;
 
 		// Symbols that still don't belong to the known clusters together with their known neighbor clusters
 		map<SymIdx, NearbyClusters> ambiguousTinySyms;
@@ -515,13 +499,13 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 					const auto &centroid = updatedCluster.centroid;
 					for(const auto &memberIdx : updatedCluster.memberIndices) {
 						const auto &member = tinySyms[memberIdx];
-						assert(abs(member.avgPixVal - centroid.avgPixVal) < maxDiffAvgPixelVal);
-						assert(norm(member.mc - centroid.mc) < maxRelMcOffset);
-						assert(norm(member.hAvgProj - centroid.hAvgProj, NORM_L1) < threshold_Outsider);
-						assert(norm(member.vAvgProj - centroid.vAvgProj, NORM_L1) < threshold_Outsider);
-						assert(norm(member.backslashDiagAvgProj - centroid.backslashDiagAvgProj, NORM_L1) < threshold_Outsider);
-						assert(norm(member.slashDiagAvgProj - centroid.slashDiagAvgProj, NORM_L1) < threshold_Outsider);
-						assert(norm(member.mat - centroid.mat, NORM_L1) < threshold_Member);
+						assert(abs(member.getAvgPixVal() - centroid.getAvgPixVal()) < maxDiffAvgPixelVal);
+						assert(norm(member.getMc() - centroid.getMc()) < maxRelMcOffset);
+						assert(norm(member.getHAvgProj() - centroid.getHAvgProj(), NORM_L1) < threshold_Outsider);
+						assert(norm(member.getVAvgProj() - centroid.getVAvgProj(), NORM_L1) < threshold_Outsider);
+						assert(norm(member.getBackslashDiagAvgProj() - centroid.getBackslashDiagAvgProj(), NORM_L1) < threshold_Outsider);
+						assert(norm(member.getSlashDiagAvgProj() - centroid.getSlashDiagAvgProj(), NORM_L1) < threshold_Outsider);
+						assert(norm(member.getMat() - centroid.getMat(), NORM_L1) < threshold_Member);
 					}
 #endif // _DEBUG
 
@@ -557,7 +541,8 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 	// Adapt rawClusters for filtered cmap
 	symsIndicesPerCluster.assign(rawClustersIO.clustersCount, vector<unsigned>());
 	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
-		symsIndicesPerCluster[(size_t)rawClustersIO.clusterLabels[symsToGroup[(size_t)i].symIdx]].push_back(i);
+		symsIndicesPerCluster[(size_t)rawClustersIO.clusterLabels
+			[symsToGroup[(size_t)i]->getSymIdx()]].		push_back(i);
 	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
 									[] (const vector<unsigned> &elem) { return elem.empty(); });
 	symsIndicesPerCluster.resize((size_t)distance(symsIndicesPerCluster.begin(), newEndIt));

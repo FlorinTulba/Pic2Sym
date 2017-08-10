@@ -40,24 +40,22 @@
 #define H_MATCH_SUPPORT_WITH_PRESELECTION
 
 #include "matchSupport.h"
+#include "symDataBase.h"
 #include "cachedData.h"
 
 #pragma warning ( push, 0 )
 
-#include <vector>
 #include <stack>
 
 #pragma warning ( pop )
 
 // Forward declarations
-struct BestMatch;
+struct IBestMatch;
 class MatchAssessor;
 class MatchSettings;
 class TopCandidateMatches;
-struct SymData;
 typedef unsigned CandidateId;
 typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
-typedef std::vector<const SymData> VSymData;
 
 /**
 Type for a polymorphic parameter to be passed to MatchEngine::improvesBasedOnBatch.
@@ -107,7 +105,7 @@ public:
 
 	/// @return true if a new better match is found within this short list
 	bool improvesBasedOnBatchShortList(CandidatesShortList &&shortList,	///< most promising candidates from current batch of symbols
-									   BestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
+									   IBestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
 									   ) const;
 };
 

@@ -38,7 +38,9 @@
 
 #include "transformSupport.h"
 #include "matchEngine.h"
-#include "matchParams.h"
+#include "matchParamsBase.h"
+#include "patch.h"
+#include "bestMatch.h"
 #include "matchSupport.h"
 
 using namespace std;
@@ -47,8 +49,10 @@ using namespace cv;
 extern const bool UsingOMP;
 static MatchProgress dummy;
 
-void TransformSupport::initDraftRow(vector<vector<BestMatch>> &draft, int r, unsigned patchesPerRow,
-									const Mat &res, const Mat &resBlurred, int patchSz, bool isColor) {
+void TransformSupport::initDraftRow(vector<vector<unique_ptr<IBestMatch>>> &draft,
+									int r, unsigned patchesPerRow,
+									const Mat &res, const Mat &resBlurred,
+									int patchSz, bool isColor) {
 	const int row = r * patchSz;
 	const Range rowRange(row, row + patchSz);
 
@@ -59,43 +63,43 @@ void TransformSupport::initDraftRow(vector<vector<BestMatch>> &draft, int r, uns
 			blurredPatch(resBlurred, rowRange, colRange);
 
 		// Building a Patch with the blurred patch computed for its actual borders
-		draftMatchesRow.emplace_back(Patch(patch, blurredPatch, isColor));
+		draftMatchesRow.emplace_back(new BestMatch(Patch(patch, blurredPatch, isColor)));
 	}
 }
 
-void TransformSupport::resetDraftRow(vector<vector<BestMatch>> &draft, int r) {
+void TransformSupport::resetDraftRow(vector<vector<unique_ptr<IBestMatch>>> &draft, int r) {
 	auto &draftMatchesRow = draft[(size_t)r];
 	for(auto &draftMatch : draftMatchesRow)
-		draftMatch.reset(); // leave nothing but the Patch field
+		draftMatch->reset(); // leave nothing but the Patch field
 }
 
-void TransformSupport::patchImproved(Mat &result, unsigned sz, const BestMatch &draftMatch,
+void TransformSupport::patchImproved(Mat &result, unsigned sz, const IBestMatch &draftMatch,
 									 const Range &rowRange, int startCol) {
-	const Mat &approximation = draftMatch.bestVariant.approx;
 	Mat destRegion(result, rowRange, Range(startCol, startCol + (int)sz));
-	approximation.copyTo(destRegion);
+	draftMatch.getApprox().copyTo(destRegion);
 }
 
 void TransformSupport::manageUnifPatch(const MatchSettings &ms, Mat &result, unsigned sz, 
-									   BestMatch &draftMatch, const Range &rowRange, int startCol) {
-	if(draftMatch.bestVariant.approx.empty()) {
+									   IBestMatch &draftMatch, const Range &rowRange, int startCol) {
+	if(draftMatch.getApprox().empty()) {
 		draftMatch.updatePatchApprox(ms);
 		patchImproved(result, sz, draftMatch, rowRange, startCol);
 	}
 }
 
-bool TransformSupport::checkUnifPatch(BestMatch &draftMatch) {
-	return !draftMatch.patch.needsApproximation;
+bool TransformSupport::checkUnifPatch(IBestMatch &draftMatch) {
+	return !draftMatch.getPatch().nonUniform();
 }
 
 TransformSupport::TransformSupport(MatchEngine &me_, const MatchSettings &matchSettings_,
 								   Mat &resized_, Mat &resizedBlurred_,
-								   vector<vector<BestMatch>> &draftMatches_) :
+								   vector<vector<unique_ptr<IBestMatch>>> &draftMatches_) :
 	me(me_), matchSettings(matchSettings_),
 	resized(resized_), resizedBlurred(resizedBlurred_),
 	draftMatches(draftMatches_) {}
 
-void TransformSupport::initDrafts(bool isColor, unsigned patchSz, unsigned patchesPerCol, unsigned patchesPerRow) {
+void TransformSupport::initDrafts(bool isColor, unsigned patchSz,
+								  unsigned patchesPerCol, unsigned patchesPerRow) {
 	draftMatches.clear(); draftMatches.resize((size_t)patchesPerCol);
 
 #pragma omp parallel if(UsingOMP)
@@ -119,7 +123,7 @@ void TransformSupport::approxRow(int r, int width, unsigned patchSz,
 
 	for(int c = 0, patchColumn = 0; c < width; c += (int)patchSz, ++patchColumn) {
 		// Skip patches who appear rather uniform
-		auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
+		auto &draftMatch = *draftMatchesRow[(size_t)patchColumn];
 		if(checkUnifPatch(draftMatch)) {
 			manageUnifPatch(matchSettings, result, patchSz, draftMatch, rowRange, c);
 			continue;

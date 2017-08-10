@@ -176,7 +176,7 @@ public:
 	void reportDuration(const std::string &text, double durationS) const override;
 
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
-	void display1stPageIfFull(const std::vector<const PixMapSym> &syms) override;
+	void display1stPageIfFull(const VPixMapSym &syms) override;
 
 	void showResultedImage(double completionDurationS) override; ///< Displays the resulted image
 };

@@ -51,6 +51,8 @@ protected:
 public:
 	PicTransformProgressTracker(IController &ctrler_);
 
+	void operator=(const PicTransformProgressTracker&) = delete;
+
 	/// Called when unable to load the symbols right when attempting to transform an image
 	void transformFailedToStart() override;
 

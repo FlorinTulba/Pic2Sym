@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "unreadableSymsFilter.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "symFilterCache.h"
 #include "misc.h"
 
@@ -53,7 +53,7 @@ using namespace cv;
 UnreadableSymsFilter::UnreadableSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(3U, "less readable symbols", std::move(nextFilter_)) {}
 
-bool UnreadableSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+bool UnreadableSymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 

@@ -46,7 +46,7 @@
 #pragma warning ( pop )
 
 // Forward declarations
-struct PixMapSym;
+struct IPixMapSym;
 struct SymFilterCache;
 
 /// Interface used for filtering out some of the symbols from the charmap
@@ -56,7 +56,7 @@ struct ISymFilter /*abstract*/ {
 	void operator=(const ISymFilter&) = delete;
 
 	/// Returns the id of the filter which detected that the symbol exhibits some undesired features.
-	virtual boost::optional<unsigned> matchingFilterId(const PixMapSym&, const SymFilterCache&) const = 0;
+	virtual boost::optional<unsigned> matchingFilterId(const IPixMapSym&, const SymFilterCache&) const = 0;
 
 	virtual ~ISymFilter() = 0 {}
 };
@@ -67,7 +67,7 @@ struct DefSymFilter : ISymFilter {
 	DefSymFilter(const DefSymFilter&) = delete;
 	void operator=(const DefSymFilter&) = delete;
 
-	boost::optional<unsigned> matchingFilterId(const PixMapSym&, const SymFilterCache&) const override { return boost::none; }
+	boost::optional<unsigned> matchingFilterId(const IPixMapSym&, const SymFilterCache&) const override { return boost::none; }
 };
 
 #endif

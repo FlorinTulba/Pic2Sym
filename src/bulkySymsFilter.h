@@ -45,7 +45,7 @@
 struct BulkySymsFilter : public TSymFilter<BulkySymsFilter> {
 	CHECK_ENABLED_SYM_FILTER(BulkySymsFilter);
 	
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
+	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	BulkySymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
 	BulkySymsFilter(const BulkySymsFilter&) = delete;

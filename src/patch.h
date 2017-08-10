@@ -39,32 +39,25 @@
 #ifndef H_PATCH
 #define H_PATCH
 
-#pragma warning ( push, 0 )
-
-#include <opencv2/core/core.hpp>
-
-#pragma warning ( pop )
-
-// Forward declarations
-class MatchEngine;
-class MatchSettings;
+#include "patchBase.h"
 
 /**
 Holds useful patch information.
 
 It decides whether this patch needs approximation or not - uniform patches
 don't produce interesting approximations.
-
 */
-struct Patch {
-	cv::Mat grayD;			///< gray version of the patch to process (its data type is double)
-	const cv::Mat orig;		///< the patch to approximate
-	const cv::Mat blurred;	///< the blurred version of the orig
+class Patch : public IPatch {
+protected:
+	cv::Mat grayD;		///< gray version of the patch to process (its data type is double)
+	cv::Mat orig;		///< the patch to approximate
+	cv::Mat blurred;	///< the blurred version of the orig
 
-	const bool isColor;		///< is the patch color or grayscale?
+	bool isColor;		///< is the patch color or grayscale?
 
 	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
 
+public:
 	/**
 	Initializer
 
@@ -73,14 +66,26 @@ struct Patch {
 	@param isColor_ type of image - color => true; grayscale => false
 	*/
 	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
-	void operator=(const Patch&) = delete;
 
-	/// specifies which matrix to use during the approximation process
-	const cv::Mat& matrixToApprox() const;
+	const cv::Mat& getOrig() const override final;		///< the patch to approximate
+	const cv::Mat& getBlurred() const override final;	///< the blurred version of the orig
+
+	bool isColored() const override final;	///< is the patch color or grayscale?
+	bool nonUniform() const override final;	///< patches that appear uniform use 'blurred' as approximation
+
+	/// Specifies which matrix to use during the approximation process
+	const cv::Mat& matrixToApprox() const override;
+
+	std::unique_ptr<const IPatch> clone() const override; ///< @return a clone of itself
 
 #ifdef UNIT_TESTING
 	/// Constructor delegating its job to the one with 3 parameters
 	Patch(const cv::Mat &orig_);
+
+	/// Specifies which new matrix to use during the approximation process (gray, of type double); @return itself
+	Patch& setMatrixToApprox(const cv::Mat &m);
+
+	void forceApproximation(); ///< Forces needsApproximation value on true
 #endif // UNIT_TESTING defined
 };
 

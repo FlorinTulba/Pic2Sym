@@ -52,7 +52,7 @@
 #include "boost_filesystem_operations.h"
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/scope_exit.hpp>
+#	include <boost/scope_exit.hpp>
 #endif // AI_REVIEWER_CHECK
 
 #pragma warning ( pop )

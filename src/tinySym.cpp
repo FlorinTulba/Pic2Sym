@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "tinySym.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -58,7 +58,7 @@ namespace {
 	Therefore using #define clauses for UnitTesting project (see the #else branch).
 	*/
 	const unsigned TinySymsSize = TinySymsSz(),
-				RefSymSz = TinySymsSize * (unsigned)TinySym::RatioRefTiny,
+				RefSymSz = TinySymsSize * (unsigned)ITinySym::RatioRefTiny,
 				DiagsCountTinySym = 2U * TinySymsSize - 1U;
 	const double invTinySymSz = 1. / TinySymsSize,
 				invTinySymArea = invTinySymSz * invTinySymSz,
@@ -68,7 +68,7 @@ namespace {
 #else // UNIT_TESTING defined
 
 #define TinySymsSize			TinySymsSz()
-#define RefSymSz				(TinySymsSize * (unsigned)TinySym::RatioRefTiny)
+#define RefSymSz				(TinySymsSize * (unsigned)ITinySym::RatioRefTiny)
 #define DiagsCountTinySym		((TinySymsSize << 1) - 1U)
 #define invTinySymSz			(1. / TinySymsSize)
 #define invTinySymArea			(invTinySymSz * invTinySymSz)
@@ -84,8 +84,8 @@ TinySym::TinySym(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0ULL*/)
 		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.),
 		slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.) {}
 
-TinySym::TinySym(const PixMapSym &refSym) : 
-		SymData(refSym.symCode, refSym.symIdx, refSym.avgPixVal, refSym.mc),
+TinySym::TinySym(const IPixMapSym &refSym) : 
+		SymData(refSym.getSymCode(), refSym.getSymIdx(), refSym.getAvgPixVal(), refSym.getMc()),
 		backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1),
 		slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1) {
 
@@ -95,11 +95,7 @@ TinySym::TinySym(const PixMapSym &refSym) :
 	resize(refSymMat, tinySymMat, SizeTinySyms, 0., 0., INTER_AREA);
 	negSym = 255. - 255. * tinySymMat; // keep the double type for negSym of tiny symbols
 
-	SymData::computeFields(tinySymMat,
-						   masks[FG_MASK_IDX], masks[BG_MASK_IDX], 
-						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX], 
-						   masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
-						   minVal, diffMinMax, true);
+	SymData::computeFields(tinySymMat, *this, true);
 
 	mat = masks[GROUNDED_SYM_IDX].clone();
 
@@ -131,6 +127,25 @@ TinySym::TinySym(const Point2d &mc_, double avgPixVal_, const Mat &mat_,
 				 const Mat &backslashDiagAvgProj_, const Mat &slashDiagAvgProj_) :
 	SymData(mc_, avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
 	backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
+
+const Mat& TinySym::getMat() const { return mat; }
+const Mat& TinySym::getHAvgProj() const { return hAvgProj; }
+const Mat& TinySym::getVAvgProj() const { return vAvgProj; }
+const Mat& TinySym::getBackslashDiagAvgProj() const { return backslashDiagAvgProj; }
+const Mat& TinySym::getSlashDiagAvgProj() const { return slashDiagAvgProj; }
+
+void TinySym::shiftTowards(const ITinySym &sym, double weight) {
+	const double oneMinusWeight = 1. - weight;
+
+	mc			         = mc                   * oneMinusWeight + weight * sym.getMc();
+	avgPixVal            = avgPixVal            * oneMinusWeight + weight * sym.getAvgPixVal();
+	hAvgProj             = hAvgProj             * oneMinusWeight + weight * sym.getHAvgProj();
+	vAvgProj             = vAvgProj             * oneMinusWeight + weight * sym.getVAvgProj();
+	backslashDiagAvgProj = backslashDiagAvgProj * oneMinusWeight + weight * sym.getBackslashDiagAvgProj();
+	slashDiagAvgProj     = slashDiagAvgProj     * oneMinusWeight + weight * sym.getSlashDiagAvgProj();
+	scaleAdd(              mat,                   oneMinusWeight,  weight * sym.getMat(),
+			 mat);
+}
 
 #ifdef UNIT_TESTING
 

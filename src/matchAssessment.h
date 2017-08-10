@@ -52,8 +52,8 @@
 
 // Forward declarations
 struct CachedData;
-struct SymData;
-struct MatchParams;
+struct ISymData;
+struct IMatchParamsRW;
 class MatchAspect;
 
 /**
@@ -138,10 +138,10 @@ public:
 
 	/// Determines if symData is a better match for patch than previous matching symbol
 	virtual bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
-							   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
+							   const ISymData &symData,	///< data of the new symbol/cluster compared to the patch
 							   const CachedData &cd,	///< precomputed values
 							   const ScoreThresholds &scoresToBeat,///< scores after each aspect that beat the current best match
-							   MatchParams &mp,			///< matching parameters resulted from the comparison
+							   IMatchParamsRW &mp,			///< matching parameters resulted from the comparison
 							   double &score			///< achieved score of the new assessment
 							   ) const;
 
@@ -238,10 +238,10 @@ public:
 
 	/// Determines if symData is a better match for patch than previous matching symbol
 	bool isBetterMatch(const cv::Mat &patch,	///< the patch whose approximation through a symbol is performed
-					   const SymData &symData,	///< data of the new symbol/cluster compared to the patch
+					   const ISymData &symData,	///< data of the new symbol/cluster compared to the patch
 					   const CachedData &cd,	///< precomputed values
 					   const ScoreThresholds &scoresToBeat,///< scores after each aspect that beat the current best match
-					   MatchParams &mp,			///< matching parameters resulted from the comparison
+					   IMatchParamsRW &mp,			///< matching parameters resulted from the comparison
 					   double &score			///< achieved score of the new assessment
 					   ) const override;
 

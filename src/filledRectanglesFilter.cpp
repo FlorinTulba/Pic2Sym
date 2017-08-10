@@ -38,7 +38,7 @@
 
 #include "filledRectanglesFilter.h"
 #include "symFilterCache.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -94,7 +94,7 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 FilledRectanglesFilter::FilledRectanglesFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(0U, "filled rectangles", std::move(nextFilter_)) {}
 
-bool FilledRectanglesFilter::isDisposable(const PixMapSym &pms, const SymFilterCache&) {
+bool FilledRectanglesFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache&) {
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
@@ -108,9 +108,9 @@ bool FilledRectanglesFilter::isDisposable(const PixMapSym &pms, const SymFilterC
 	int rowsWithMaxSum, colsWithMaxSum; // sides of a possible filled rectangle
 
 	// Analyze the horizontal and vertical projections of pms, looking for signs of rectangle symbols
-	if(!checkProjectionForFilledRectangles(pms.rowSums, pms.rows, rowsWithMaxSum))
+	if(!checkProjectionForFilledRectangles(pms.getRowSums(), pms.getRows(), rowsWithMaxSum))
 		return false;
-	if(!checkProjectionForFilledRectangles(pms.colSums, pms.cols, colsWithMaxSum))
+	if(!checkProjectionForFilledRectangles(pms.getColSums(), pms.getCols(), colsWithMaxSum))
 		return false;
 	if(brightestPixels != colsWithMaxSum * rowsWithMaxSum)
 		return false; // rectangle's area should be the product of its sides

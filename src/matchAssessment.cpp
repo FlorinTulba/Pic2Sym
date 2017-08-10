@@ -153,9 +153,9 @@ void MatchAssessor::getReady(const CachedData &/*cachedData*/) {
 	assert(enabledAspectsCountM1 == enabledAspectsCount - 1ULL);
 }
 
-bool MatchAssessor::isBetterMatch(const Mat &patch, const SymData &symData, const CachedData &cd,
+bool MatchAssessor::isBetterMatch(const Mat &patch, const ISymData &symData, const CachedData &cd,
 								  const ScoreThresholds &scoresToBeat,
-								  MatchParams &mp, double &score) const {
+								  IMatchParamsRW &mp, double &score) const {
 	// There is at least one enabled match aspect,
 	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
 	assert(enabledAspectsCount > 0ULL && enabledAspectsCount == enabledAspects.size());
@@ -223,9 +223,9 @@ void MatchAssessorSkip::scoresToBeat(double draftScore, ScoreThresholds &scoresT
 	}
 }
 
-bool MatchAssessorSkip::isBetterMatch(const Mat &patch, const SymData &symData, const CachedData &cd,
+bool MatchAssessorSkip::isBetterMatch(const Mat &patch, const ISymData &symData, const CachedData &cd,
 									  const ScoreThresholds &scoresToBeat,
-									  MatchParams &mp, double &score) const {
+									  IMatchParamsRW &mp, double &score) const {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 #pragma omp atomic
 	/*

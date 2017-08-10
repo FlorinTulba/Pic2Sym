@@ -49,7 +49,7 @@
 #pragma warning ( push, 0 )
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/vector.hpp>
+#	include <boost/serialization/vector.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )

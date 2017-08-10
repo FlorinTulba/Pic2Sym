@@ -51,7 +51,7 @@
 
 #pragma warning ( pop )
 
-struct BestMatch; // forward declaration
+struct IBestMatch; // forward declaration
 
 /**
 Facilitates the tracing process during the transformation of an image.
@@ -76,7 +76,7 @@ public:
 	~TransformTrace(); ///< closes the trace stream
 
 	/// adds a new line to the trace file containing row, column and details about the best match for a new patch
-	void newEntry(unsigned r, unsigned c, const BestMatch &best);
+	void newEntry(unsigned r, unsigned c, const IBestMatch &best);
 };
 
 #endif // !H_TRANSFORM_TRACE

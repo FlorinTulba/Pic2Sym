@@ -41,6 +41,7 @@
 
 #include "match.h"
 #include "matchParams.h"
+#include "bestMatch.h"
 
 #pragma warning ( push, 0 )
 
@@ -99,7 +100,7 @@ namespace ut {
 	@param mismatches vector of BestMatch objects
 	*/
 	void showMismatches(const std::string &testTitle,
-		const std::vector<const BestMatch> &mismatches);
+						const std::vector<std::unique_ptr<BestMatch>> &mismatches);
 }
 
 #endif

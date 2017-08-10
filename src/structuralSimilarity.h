@@ -58,13 +58,13 @@ public:
 
 protected:
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	double score(const MatchParams &mp, const CachedData &cachedData) const override;
+	double score(const IMatchParams &mp, const CachedData &cachedData) const override;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	void fillRequiredMatchParams(const cv::Mat &patch,
-								 const SymData &symData,
+								 const ISymData &symData,
 								 const CachedData &cachedData,
-								 MatchParams &mp) const override;
+								 IMatchParamsRW &mp) const override;
 
 #ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 public:

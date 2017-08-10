@@ -39,7 +39,8 @@
 #ifndef H_FONT_ENGINE
 #define H_FONT_ENGINE
 
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
+#include "pmsContBase.h"
 #include "tinySymsProvider.h"
 
 #pragma warning ( push, 0 )
@@ -78,7 +79,7 @@ protected:
 	/// indices for each unique Encoding within cmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
-	PmsCont symsCont;				///< Container with the PixMapSym-s of current charmap
+	std::unique_ptr<IPmsCont> symsCont;		///< Container with the PixMapSym-s of current charmap
 	std::set<FT_ULong> symsUnableToLoad;	///< indices of the symbols that couldn't be loaded
 
 	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
@@ -126,7 +127,7 @@ public:
 	bool setNthUniqueEncoding(unsigned idx);		///< Switches to nth unique encoding
 
 	unsigned upperSymsCount() const;				///< upper bound of symbols count in the cmap
-	const std::vector<const PixMapSym>& symsSet() const;	///< get the symsSet
+	const VPixMapSym& symsSet() const;				///< get the symsSet
 	double smallGlyphsCoverage() const;				///< get coverageOfSmallGlyphs
 
 	const std::string& fontFileName() const;		///< font name provided by Font Dialog

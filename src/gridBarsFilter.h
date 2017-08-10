@@ -68,7 +68,7 @@ algorithm and then check its accuracy.
 struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
 	CHECK_ENABLED_SYM_FILTER(GridBarsFilter);
 
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
+	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
 	GridBarsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
 	GridBarsFilter(const GridBarsFilter&) = delete;

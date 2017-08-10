@@ -39,25 +39,11 @@
 #ifndef H_MATCH_PARAMS
 #define H_MATCH_PARAMS
 
-#include "patch.h"
-
-#pragma warning ( push, 0 )
-
-#include <boost/optional/optional.hpp>
-#include <opencv2/core/core.hpp>
-
-#pragma warning ( pop )
-
-// Forward declarations
-struct SymData;
-struct CachedData;
-class MatchSettings;
+#include "matchParamsBase.h"
 
 /// Holds relevant data during patch&glyph matching
-struct MatchParams {
-	/// Returns an instance as for an ideal match between a symbol and a patch
-	static const MatchParams& perfectMatch();
-
+class MatchParams : public IMatchParamsRW {
+protected:
 	// These params are computed only once, if necessary, when approximating the patch
 	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch (range 0..1 x 0..1)
 	boost::optional<cv::Mat> blurredPatch;		///< blurred version of the patch
@@ -79,35 +65,81 @@ struct MatchParams {
 	boost::optional<double> sdevBg;		///< standard deviation for bg  (0..127.5)
 	boost::optional<double> sdevEdge;	///< standard deviation for contour (0..255)
 
+public:
+	// These params are computed only once, if necessary, when approximating the patch
+	const boost::optional<cv::Point2d>& getMcPatch() const override final;		///< mass center for the patch (range 0..1 x 0..1)
+	const boost::optional<cv::Mat>& getBlurredPatch() const override final;		///< blurred version of the patch
+	const boost::optional<cv::Mat>& getBlurredPatchSq() const override final;	///< blurredPatch element-wise squared
+	const boost::optional<cv::Mat>& getVariancePatch() const override final;	///< blur(patch^2) - blurredPatchSq
+
+	// These params are evaluated for each symbol compared to the patch
+	const boost::optional<cv::Mat>& getPatchApprox() const override final;		///< patch approximated by a given symbol
+	const boost::optional<cv::Point2d>& getMcPatchApprox() const override final;///< mass center for the approximation of the patch (range 0..1 x 0..1)
+	const boost::optional<double>& getMcsOffset() const override final;			///< distance between the 2 mass centers (range 0..sqrt(2))
+	const boost::optional<double>& getSymDensity() const override final;		///< % of the box covered by the glyph (0..1)
+	const boost::optional<double>& getFg() const override final;				///< color for fg (range 0..255)
+	const boost::optional<double>& getBg() const override final;				///< color for bg (range 0..255)
+	const boost::optional<double>& getContrast() const override final;			///< fg - bg (range -255..255)
+	const boost::optional<double>& getSsim() const override final;				///< structural similarity (-1..1)
+
+	// ideal value for the standard deviations below is 0
+	const boost::optional<double>& getSdevFg() const override final;			///< standard deviation for fg (0..127.5)
+	const boost::optional<double>& getSdevBg() const override final;			///< standard deviation for bg  (0..127.5)
+	const boost::optional<double>& getSdevEdge() const override final;			///< standard deviation for contour (0..255)
+
+	std::unique_ptr<IMatchParamsRW> clone() const override;	/// @return a copy of itself
+
 	/**
 	Prepares for next symbol to match against patch.
 
 	When skipPatchInvariantParts = true resets everything except:
 	mcPatch, blurredPatch, blurredPatchSq and variancePatch.
 	*/
-	void reset(bool skipPatchInvariantParts = true);
+	MatchParams& reset(bool skipPatchInvariantParts = true) override;
+
+	// These params are computed only once, if necessary, when approximating the patch
+	MatchParams& setMcPatch(const cv::Point2d &p) override final;	///< mass center for the patch (range 0..1 x 0..1)
+	MatchParams& setBlurredPatch(const cv::Mat &m) override final;	///< blurred version of the patch
+	MatchParams& setBlurredPatchSq(const cv::Mat &m) override final;///< blurredPatch element-wise squared
+	MatchParams& setVariancePatch(const cv::Mat &m) override final;	///< blur(patch^2) - blurredPatchSq
+
+	// These params are evaluated for each symbol compared to the patch
+	MatchParams& setPatchApprox(const cv::Mat &m) override final;		///< patch approximated by a given symbol
+	MatchParams& setMcPatchApprox(const cv::Point2d &p) override final;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
+	MatchParams& setMcsOffset(double v) override final;	///< distance between the 2 mass centers (range 0..sqrt(2))
+	MatchParams& setSymDensity(double v) override final;///< % of the box covered by the glyph (0..1)
+	MatchParams& setFg(double v) override final;		///< color for fg (range 0..255)
+	MatchParams& setBg(double v) override final;		///< color for bg (range 0..255)
+	MatchParams& setContrast(double v) override final;	///< fg - bg (range -255..255)
+	MatchParams& setSsim(double v) override final;		///< structural similarity (-1..1)
+
+	// Ideal value for the standard deviations below is 0
+	MatchParams& setSdevFg(double v) override final;	///< standard deviation for fg (0..127.5)
+	MatchParams& setSdevBg(double v) override final;	///< standard deviation for bg  (0..127.5)
+	MatchParams& setSdevEdge(double v) override final;	///< standard deviation for contour (0..255)
 
 	// Methods for computing each field
-	void computeFg(const cv::Mat &patch, const SymData &symData);
-	void computeBg(const cv::Mat &patch, const SymData &symData);
-	void computeContrast(const cv::Mat &patch, const SymData &symData);
-	void computeSdevFg(const cv::Mat &patch, const SymData &symData);
-	void computeSdevBg(const cv::Mat &patch, const SymData &symData);
-	void computeSdevEdge(const cv::Mat &patch, const SymData &symData);
-	void computeSymDensity(const SymData &symData);
-	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData);
-	void computeMcPatchApprox(const cv::Mat &patch, const SymData &symData,
-							  const CachedData &cachedData);
-	void computeMcsOffset(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
-	void computePatchApprox(const cv::Mat &patch, const SymData &symData);
-	void computeBlurredPatch(const cv::Mat &patch, const CachedData &cachedData);
-	void computeBlurredPatchSq(const cv::Mat &patch, const CachedData &cachedData);
-	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData);
-	void computeSsim(const cv::Mat &patch, const SymData &symData, const CachedData &cachedData);
+	void computeFg(const cv::Mat &patch, const ISymData &symData) override;
+	void computeBg(const cv::Mat &patch, const ISymData &symData) override;
+	void computeContrast(const cv::Mat &patch, const ISymData &symData) override;
+	void computeSdevFg(const cv::Mat &patch, const ISymData &symData) override;
+	void computeSdevBg(const cv::Mat &patch, const ISymData &symData) override;
+	void computeSdevEdge(const cv::Mat &patch, const ISymData &symData) override;
+	void computeSymDensity(const ISymData &symData) override;
+	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData) override;
+	void computeMcPatchApprox(const cv::Mat &patch, const ISymData &symData,
+							  const CachedData &cachedData) override;
+	void computeMcsOffset(const cv::Mat &patch, const ISymData &symData,
+						  const CachedData &cachedData) override;
+	void computePatchApprox(const cv::Mat &patch, const ISymData &symData) override;
+	void computeBlurredPatch(const cv::Mat &patch, const CachedData &cachedData) override;
+	void computeBlurredPatchSq(const cv::Mat &patch, const CachedData &cachedData) override;
+	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData) override;
+	void computeSsim(const cv::Mat &patch, const ISymData &symData,
+					 const CachedData &cachedData) override;
 
-#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging	
-	friend std::wostream& operator<<(std::wostream &os, const MatchParams &mp);
-#endif // defined _DEBUG || defined UNIT_TESTING
+	/// Returns an instance as for an ideal match between a symbol and a patch
+	static const MatchParams& perfectMatch();
 
 #ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
 protected:
@@ -119,84 +151,6 @@ protected:
 	/// Both computeSdevFg and computeSdevBg simply call this
 	static void computeSdev(const cv::Mat &patch, const cv::Mat &mask,
 							boost::optional<double> &miu, boost::optional<double> &sdev);
-};
-
-/// A possible way to approximate the patch - average / blur / transformed glyph / hybrid
-struct ApproxVariant {
-	cv::Mat approx;			///< the approximation of the patch
-	MatchParams params;		///< parameters of the match (empty for blur-only approximations)
-
-	/// explicit constructor to avoid just passing directly a matrix and forgetting about the 2nd param
-	explicit ApproxVariant(const cv::Mat &approx_ = cv::Mat(), ///< a possible approximation of a patch
-						   const MatchParams &params_ = MatchParams() ///< the corresponding params of the match
-						   ) : approx(approx_), params(params_) {}
-};
-
-/// Holds the best match found at a given time
-struct BestMatch {
-	const Patch patch;			///< the patch to approximate, together with some other details
-	
-	/// shouldn't assign, as 'patch' member is supposed to remain the same and assign can't guarantee it
-	void operator=(const BestMatch&) = delete;
-
-	ApproxVariant bestVariant;	///< best approximating variant 
-
-	/// Index within vector<SymData>. none if patch approximation is blur-based only.
-	boost::optional<unsigned> symIdx;
-
-	/// Index of last cluster that was worth investigating thoroughly
-	boost::optional<unsigned> lastPromisingNontrivialCluster;
-
-	/// pointer to vector<SymData>[symIdx] or null when patch approximation is blur-based only.
-	const SymData *pSymData = nullptr;
-
-	/// glyph code. none if patch approximation is blur-based only
-	boost::optional<unsigned long> symCode;
-
-	/// score of the best match. If patch approximation is blur-based only, score will remain 0.
-	double score = 0.;
-
-	/// Resets everything apart the patch
-	BestMatch& reset();
-
-	/// Called when finding a better match. Returns itself
-	BestMatch& update(double score_, unsigned long symCode_, 
-					  unsigned symIdx_, const SymData &sd,
-					  const MatchParams &mp);
-
-	/**
-	It generates the approximation of the patch based on the rest of the fields.
-	
-	When pSymData is null, it approximates the patch with patch.blurredPatch.
-	
-	Otherwise it adapts the foreground and background of the original glyph to
-	be as close as possible to the patch.
-	For color patches, it does that for every channel.
-
-	For low-contrast images, it generates the average of the patch.
-
-	@param ms additional match settings that might be needed
-
-	@return reference to the updated object
-	*/
-	BestMatch& updatePatchApprox(const MatchSettings &ms);
-
-#if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
-
-	friend std::wostream& operator<<(std::wostream &os, const BestMatch &bm);
-
-	// Unicode symbols are logged in symbol format, while other encodings log their code
-	bool unicode = false;			///< is Unicode the charmap's encoding
-
-	/// Updates unicode field and returns the updated BestMatch object
-	BestMatch& setUnicode(bool unicode_);
-
-#endif // defined _DEBUG || defined UNIT_TESTING
-
-	/// Constructor setting only 'patch'. The other fields need the setters or the 'update' method.
-	BestMatch(const Patch &patch_) : patch(patch_) {}
-
-	BestMatch(const BestMatch&) = default;
 };
 
 #endif // H_MATCH_PARAMS

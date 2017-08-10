@@ -77,14 +77,16 @@ public:
 				  const CmapPerspective &cmP_,
 				  const std::shared_ptr<CmapInspect> &pCmi_);
 
+	void operator=(const SelectSymbols&) = delete;
+
 	/// Provides details about the symbol under the mouse
-	const SymData* pointedSymbol(int x, int y) const override;
+	const ISymData* pointedSymbol(int x, int y) const override;
 
 	/// Appends the code of the symbol under the mouse to the status bar
 	void displaySymCode(unsigned long symCode) const override;
 
 	/// Appends the matrix of the pointed symbol (by Ctrl + left click) to a list for separate investigation
-	void enlistSymbolForInvestigation(const SymData &sd) const override;
+	void enlistSymbolForInvestigation(const ISymData &sd) const override;
 
 	/// Saves the list with the matrices of the symbols to investigate to a file and then clears this list
 	void symbolsReadyToInvestigate() const override;

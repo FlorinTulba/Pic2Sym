@@ -63,7 +63,7 @@ struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
 class TaskMonitor;
 class PreselManager;
-struct BestMatch;
+struct IBestMatch;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
@@ -84,7 +84,7 @@ protected:
 	cv::Mat resized;			///< resized version of the original
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
 
-	std::vector<std::vector<BestMatch>> draftMatches;	///< temporary best matches
+	std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatches;	///< temporary best matches
 
 	PreselManager *preselManager = nullptr;	///< preselection manager
 

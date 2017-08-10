@@ -42,10 +42,10 @@
 #pragma warning ( push, 0 )
 
 #ifndef AI_REVIEWER_CHECK
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
+#	include <boost/serialization/split_member.hpp>
+#	include <boost/serialization/version.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
@@ -73,6 +73,7 @@ protected:
 	friend class MatchSettingsManip; // to access initialized
 #endif // UNIT_TESTING not defined
 
+public:
 	/**
 	Loading a MatchSettings object of a given version.
 	It overwrites *this, reporting any changes
@@ -136,10 +137,8 @@ protected:
 
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
 
-public:
 	/**
 	Initializes the object.
 
@@ -177,12 +176,12 @@ public:
 
 	unsigned getBlankThreshold() const { return threshold4Blank; }
 	MatchSettings& setBlankThreshold(unsigned threshold4Blank_);
-
-	friend std::ostream& operator<<(std::ostream &os, const MatchSettings &c);
 };
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
 #endif // AI_REVIEWER_CHECK not defined
+
+std::ostream& operator<<(std::ostream &os, const MatchSettings &ms);
 
 #endif // H_MATCH_SETTINGS

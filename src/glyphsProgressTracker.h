@@ -51,6 +51,8 @@ protected:
 public:
 	GlyphsProgressTracker(const IController &ctrler_);
 
+	void operator=(const GlyphsProgressTracker&) = delete;
+
 	/// Report duration of the update of the symbols and close the hourglass
 	void updateSymsDone(double durationS) const override;
 

@@ -39,10 +39,10 @@
 #ifndef H_CONTROLLER_BASE
 #define H_CONTROLLER_BASE
 
+#include "pixMapSymBase.h"
+
 #pragma warning ( push, 0 )
 
-#include <memory>
-#include <vector>
 #include <string>
 
 #pragma warning ( pop )
@@ -55,7 +55,6 @@ struct IPresentCmap;
 struct ISelectSymbols;
 struct IControlPanelActions;
 class ResizedImg;
-struct PixMapSym;
 
 /// Base interface for the Controller
 struct IController /*abstract*/ {
@@ -101,7 +100,7 @@ struct IController /*abstract*/ {
 	virtual void reportDuration(const std::string &text, double durationS) const = 0;
 
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
-	virtual void display1stPageIfFull(const std::vector<const PixMapSym> &syms) = 0;
+	virtual void display1stPageIfFull(const VPixMapSym &syms) = 0;
 
 	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
 };

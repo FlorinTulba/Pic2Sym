@@ -48,7 +48,7 @@
 #pragma warning ( pop )
 
 // Forward declarations
-struct BestMatch;
+struct IBestMatch;
 class MatchSupport;
 class MatchSupportWithPreselection;
 
@@ -60,14 +60,14 @@ class TransformSupportWithPreselection : public TransformSupport {
 protected:
 	cv::Mat resizedForTinySyms;	///< resized version of the original used by tiny symbols preselection
 	cv::Mat resBlForTinySyms;	///< blurred version of the resized used by tiny symbols preselection
-	std::vector<std::vector<BestMatch>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
+	std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
 	MatchSupportWithPreselection &matchSupport;	///< match support
 
 public:
 	/// Requires an additional MatchSupport parameter compared to the base constructor
 	TransformSupportWithPreselection(MatchEngine &me_, const MatchSettings &matchSettings_,
 									 cv::Mat &resized_, cv::Mat &resizedBlurred_,
-									 std::vector<std::vector<BestMatch>> &draftMatches_,
+									 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches_,
 									 MatchSupport &matchSupport_);
 
 	TransformSupportWithPreselection(const TransformSupportWithPreselection&) = delete;

@@ -49,8 +49,9 @@
 #pragma warning ( push, 0 )
 
 #include <opencv2/core/core.hpp>
+
 #ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/array.hpp>
+#	include <boost/serialization/array.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )

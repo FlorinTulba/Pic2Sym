@@ -73,6 +73,9 @@ public:
 	/// Take ownership of the parameter
 	SliderConverter(std::unique_ptr<const SliderConvParams> sp_) : sp(std::move(sp_)) {}
 
+	SliderConverter(const SliderConverter&) = delete;
+	void operator=(const SliderConverter&) = delete;
+
 	virtual double fromSlider(int sliderPos) const = 0;
 	virtual int toSlider(double actualValue) const = 0;
 

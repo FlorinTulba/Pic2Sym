@@ -88,7 +88,7 @@ so static methods would be enough - that is static polymorphism does the job.
 
 As a consequence, derived classes from TSymFilter must have 2 public methods with following signature:
 	static bool isEnabled()
-	static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc)
+	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc)
 */
 template<class DerivedFromTSymFilter>
 struct TSymFilter /*abstract*/ : SymFilter {
@@ -113,9 +113,9 @@ struct TSymFilter /*abstract*/ : SymFilter {
 
 	Derived classes from TSymFilter must have 2 public methods with following signature:
 		static bool isEnabled()
-		static bool isDisposable(const PixMapSym &pms, const SymFilterCache &sfc)
+		static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc)
 	*/
-	boost::optional<unsigned> matchingFilterId(const PixMapSym &pms, const SymFilterCache &sfc) const override {
+	boost::optional<unsigned> matchingFilterId(const IPixMapSym &pms, const SymFilterCache &sfc) const override {
 		// Using static polymorphism
 		if(DerivedFromTSymFilter::isEnabled() && DerivedFromTSymFilter::isDisposable(pms, sfc))
 			return filterId;

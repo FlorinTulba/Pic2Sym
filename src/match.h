@@ -40,7 +40,6 @@
 #define H_MATCH
 
 #include "matchSettings.h"
-#include "symData.h"
 #include "cachedData.h"
 
 #pragma warning ( push, 0 )
@@ -50,15 +49,18 @@
 
 #pragma warning ( pop )
 
-struct MatchParams; // forward declaration
+// Forward declarations
+struct IMatchParams;
+struct IMatchParamsRW;
+struct ISymData;
 
 /// Interface providing assessMatch method for MatchAspect classes and also for MatchEngine
 struct IMatch /*abstract*/ {
 	/// scores the match between a gray patch and a symbol
 	virtual double assessMatch(const cv::Mat &patch,
-							   const SymData &symData,
+							   const ISymData &symData,
 							   const CachedData &cachedData,
-							   MatchParams &mp) const = 0;
+							   IMatchParamsRW &mp) const = 0;
 	virtual ~IMatch() = 0 {}
 };
 
@@ -86,13 +88,13 @@ protected:
 	const double &k; ///< cached coefficient from MatchSettings, corresponding to current aspect
 
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
-	virtual double score(const MatchParams &mp, const CachedData &cachedData) const = 0;
+	virtual double score(const IMatchParams &mp, const CachedData &cachedData) const = 0;
 
 	/// Prepares required fields from MatchParams mp to be able to assess the match
 	virtual void fillRequiredMatchParams(const cv::Mat &patch,
-										 const SymData &symData,
+										 const ISymData &symData,
 										 const CachedData &cachedData,
-										 MatchParams &mp) const = 0;
+										 IMatchParamsRW &mp) const = 0;
 
 	/// Base class constructor
 	MatchAspect(const double &k_);
@@ -103,9 +105,9 @@ public:
 
 	/// Scores the match between a gray patch and a symbol based on current aspect (IMatch override)
 	double assessMatch(const cv::Mat &patch,
-					   const SymData &symData,
+					   const ISymData &symData,
 					   const CachedData &cachedData,
-					   MatchParams &mp) const override final; // Template method (reason to set it final)
+					   IMatchParamsRW &mp) const override final; // Template method (reason to set it final)
 
 	/// Computing max score of a this MatchAspect
 	double maxScore(const CachedData &cachedData) const;
@@ -153,8 +155,8 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 	public:
 		/// scores the match between a gray patch and a symbol based on current aspect
 		double assessMatch(const cv::Mat &patch,
-						   const SymData &symData,
-						   MatchParams &mp,
+						   const ISymData &symData,
+						   IMatchParamsRW &mp,
 						   const CachedData &cachedData) const override; // IMatch override
 
 	#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public

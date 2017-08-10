@@ -49,9 +49,9 @@ struct FtError {
 
 #pragma warning ( push, 0 )
 
-#include <ft2build.h>
-#include FT_TYPES_H
-#include FT_ERRORS_H
+#	include <ft2build.h>
+#	include FT_TYPES_H
+#	include FT_ERRORS_H
 
 #pragma warning ( pop )
 
@@ -63,10 +63,11 @@ struct FtError {
 #endif // AI_REVIEWER_CHECK not defined
 
 static std::vector<const std::string>&& initFtErrors() {
+
 #ifndef AI_REVIEWER_CHECK
 	const FtError ft_errors[] =
 #pragma warning ( push, 0 )
-#include FT_ERRORS_H
+#	include FT_ERRORS_H
 #pragma warning ( pop )
 
 	int maxErrCode = INT_MIN;

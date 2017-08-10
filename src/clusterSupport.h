@@ -39,9 +39,11 @@
 #ifndef H_CLUSTER_SUPPORT
 #define H_CLUSTER_SUPPORT
 
+#include "symDataBase.h"
+#include "clusterDataBase.h"
+
 #pragma warning ( push, 0 )
 
-#include <vector>
 #include <set>
 #include <string>
 
@@ -49,11 +51,7 @@
 
 // Forward declarations
 class ClusterEngine;
-struct SymData;
-struct ClusterData;
 struct SymsSupport;
-typedef std::vector<const SymData> VSymData;
-typedef std::vector<const ClusterData> VClusterData;
 
 /**
 Polymorphic helper for clustering the symbols depending on the value of PreselectionByTinySyms.

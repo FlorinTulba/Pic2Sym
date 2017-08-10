@@ -47,7 +47,7 @@
 
 #pragma warning ( pop )
 
-/// Id of the 'candidate' symbol (index in vector&lt;SymData&gt;)
+/// Id of the 'candidate' symbol (index in vector&lt;ISymData&gt;)
 typedef unsigned CandidateId;
 
 ///< Selected 'candidate' symbols to compete within final selection, ordered by their estimated potential
@@ -62,7 +62,7 @@ protected:
 	/// Data for a candidate who enters the short list
 	struct Candidate {
 		double score;		///< his score
-		CandidateId idx;	///< id of the candidate (index in vector&lt;SymData&gt;)
+		CandidateId idx;	///< id of the candidate (index in vector&lt;ISymData&gt;)
 
 		Candidate(CandidateId idx_, double score_);
 

@@ -58,6 +58,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "matchParams.h"
 #include "matchEngine.h"
 #include "patch.h"
+#include "bestMatch.h"
 #include "controller.h"
 #include "matchAspects.h"
 #include "matchAssessment.h"
@@ -211,17 +212,17 @@ namespace ut {
 				.5,	// avgPixVal = 255*(sz^2/2)/(255*sz^2) = 1/2
 				Point2d(.5, (sz/2.-1.) / (2. * (sz-1U))), // glyph's mass center downscaled by (sz-1)
 				SymData::IdxMatMap {
-					{ SymData::FG_MASK_IDX, halfUc },
-					{ SymData::BG_MASK_IDX, invHalfUc },
-					{ SymData::EDGE_MASK_IDX, horBeltUc },
+					{ ISymData::FG_MASK_IDX, halfUc },
+					{ ISymData::BG_MASK_IDX, invHalfUc },
+					{ ISymData::EDGE_MASK_IDX, horBeltUc },
 
 					// grounded glyph is same as glyph (min is already 0)
-					{ SymData::GROUNDED_SYM_IDX, halfD1 }},
+					{ ISymData::GROUNDED_SYM_IDX, halfD1 }},
 				invHalfUc);
 		
 		// copy sdWithHorizEdgeMask and adapt it for vert. edge
 		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask);
-		sdWithVertEdgeMask->masks[SymData::EDGE_MASK_IDX] = verBeltUc;
+		sdWithVertEdgeMask->masks[ISymData::EDGE_MASK_IDX] = verBeltUc;
 	}
 
 	/// Fixture helping tests computing matching parameters 
@@ -352,18 +353,18 @@ namespace ut {
 		MatchParams mp;
 		double minV, maxV;
 		mp.computePatchApprox(unifPatchD255, symData);
-		BOOST_REQUIRE(mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value(), &minV, &maxV);
+		BOOST_REQUIRE(mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value(), &minV, &maxV);
 		BOOST_TEST(minV == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == (double)valRand, test_tools::tolerance(1e-4));
 		// Its mass-center will be ( (sz-1)/2 , (sz-1)/2 )
 		mp.computeMcPatchApprox(unifPatchD255, symData, cd);
-		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == .5, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getMcPatchApprox());
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5, test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(unifPatchD255, symData);
-		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevEdge());
+		BOOST_TEST(*mp.getSdevEdge() == 0., test_tools::tolerance(1e-4));
 	}
 
 	/// Parameterized test case. A glyph which is the inverse of a patch converges to the patch.
@@ -374,18 +375,18 @@ namespace ut {
 		MatchParams mp;
 		double minV, maxV;
 		mp.computePatchApprox(invHalfD255, symData);
-		BOOST_REQUIRE(mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value()-invHalfD255, &minV, &maxV);
+		BOOST_REQUIRE(mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value()-invHalfD255, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
 		// Its mass-center will be ( (sz-1)/2 ,  (3*sz/2-1)/2 ) all downsized by (sz-1)
 		mp.computeMcPatchApprox(invHalfD255, symData, cd); \
-		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (3*sz/2.-1U) / (2. * (sz-1U)), test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getMcPatchApprox());
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->y == (3*sz/2.-1U) / (2. * (sz-1U)), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(invHalfD255, symData);
-		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevEdge());
+		BOOST_TEST(*mp.getSdevEdge() == 0., test_tools::tolerance(1e-4));
 	}
 	
 	/// Parameterized test case. A glyph which is the highest-contrast version of a patch converges to the patch.
@@ -400,18 +401,18 @@ namespace ut {
 		twoBandsD255.rowRange(0, sz/2) = 170.; twoBandsD255.rowRange(sz/2, sz) = 85.;
 
 		mp.computePatchApprox(twoBandsD255, symData);
-		BOOST_REQUIRE(mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value()-twoBandsD255, &minV, &maxV);
+		BOOST_REQUIRE(mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value()-twoBandsD255, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
 		// Its mass-center will be ( (sz-1)/2 ,  (5*sz-6)/12 )
 		mp.computeMcPatchApprox(twoBandsD255, symData, cd);
-		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (5*sz-6) / (12. * (sz-1)), test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getMcPatchApprox());
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->y == (5*sz-6) / (12. * (sz-1)), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(twoBandsD255, symData);
-		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevEdge());
+		BOOST_TEST(*mp.getSdevEdge() == 0., test_tools::tolerance(1e-4));
 	}
 
 	// msArray and fonts from below are used to generate the data sets used within
@@ -529,37 +530,38 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 	VSymData::const_iterator it = cbegin(me.symsSet), itEnd = cend(me.symsSet);
 	const unsigned symsCount = (unsigned)distance(it, itEnd),
 					SymsBatchSz = 25U;
-	vector<const BestMatch> mismatches;
+	vector<unique_ptr<BestMatch>> mismatches;
 	const auto &assessor = me.assessor();
 	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
-		const Mat &negGlyph = it->negSym; // byte 0..255
+		const Mat &negGlyph = (*it)->getNegSym(); // byte 0..255
 		Mat patchD255, blurredPatch;
 		std::shared_ptr<Patch> thePatch;
 		int attempts = 10;
 		do {
 			negGlyph.convertTo(patchD255, CV_64FC1, -1., 255.);
-			alterFgBg(patchD255, it->minVal, it->diffMinMax);
+			alterFgBg(patchD255, (*it)->getMinVal(), (*it)->getDiffMinMax());
 			addWhiteNoise(patchD255, .2, 10U); // affected % and noise amplitude
 			thePatch = std::make_shared<Patch>(patchD255);
-		} while(--attempts >= 0 && !thePatch->needsApproximation);
+		} while(--attempts >= 0 && !thePatch->nonUniform());
 
-		if(!thePatch->needsApproximation)
+		if(!thePatch->nonUniform())
 			continue; // couldn't generate a noisy non-uniform glyph
 
-		BestMatch best(*thePatch);
+		auto best = make_unique<BestMatch>(*thePatch);
 
 		if(PreselectionByTinySyms) {
 			Mat tinyPatchMat, blurredTinyPatch;
-			resize(thePatch->orig, tinyPatchMat, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
-			resize(thePatch->blurred, blurredTinyPatch, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
+			resize(thePatch->getOrig(), tinyPatchMat, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
+			resize(thePatch->getBlurred(), blurredTinyPatch, Size(TinySymsSize, TinySymsSize), 0., 0., INTER_AREA);
 			Patch tinyPatch(tinyPatchMat, blurredTinyPatch, tinyPatchMat.channels()>1);
-			if(!tinyPatch.needsApproximation) {
-				tinyPatch.needsApproximation = true; // forcing the approximation for the tiny patch
+			if(!tinyPatch.nonUniform()) {
+				tinyPatch.forceApproximation(); // forcing the approximation for the tiny patch
 
 				const Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
 											blurredTinyPatch : tinyPatchMat;
-				tinyPatch.grayD = patch2Process.clone();
-				tinyPatch.grayD.convertTo(tinyPatch.grayD, CV_64FC1);
+				Mat grayD;
+				patch2Process.clone().convertTo(grayD, CV_64FC1);
+				tinyPatch.setMatrixToApprox(grayD);
 			}
 			BestMatch bestTiny(tinyPatch);
 
@@ -572,34 +574,34 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz) {
 				// Value from below is 0.8 instead of AdmitOnShortListEvenForInferiorScoreFactor
 				// to avoid surprises caused by altered configurations
-				tcm.reset(bestTiny.score = best.score * 0.8);
+				tcm.reset(bestTiny.setScore(best->getScore() * 0.8).getScore());
 				if(me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), bestTiny, mpwp)) {
 					tcm.prepareReport();
 					auto &&shortList = tcm.getShortList();
-					mswp.improvesBasedOnBatchShortList(std::move(shortList), best);
+					mswp.improvesBasedOnBatchShortList(std::move(shortList), *best);
 				}
 			}
 
 		} else { // PreselectionByTinySyms == false here
 			MatchProgress dummy;
 			for(unsigned s = 0U; s < symsCount; s += SymsBatchSz)
-				me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), best, dummy);
+				me.improvesBasedOnBatch(s, min(s+SymsBatchSz, symsCount), *best, dummy);
 		}
 
-		if(best.symIdx != idx) {
-			mismatches.push_back(best);
+		if(best->getSymIdx() != idx) {
 			MatchParams mp;
 			double score;
 			ScoreThresholds scoresToBeat;
-			assessor.scoresToBeat(best.score, scoresToBeat);
-			assessor.isBetterMatch(patchD255, *it, me.cachedData, scoresToBeat, mp, score);
-			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best.symIdx<<endl;
+			assessor.scoresToBeat(best->getScore(), scoresToBeat);
+			assessor.isBetterMatch(patchD255, **it, me.cachedData, scoresToBeat, mp, score);
+			cerr<<"Expecting symbol index "<<idx<<" while approximated as "<<best->getSymIdx()<<endl;
 			cerr<<"Approximation achieved score="
-				<<fixed<<setprecision(17)<<best.score
+				<<fixed<<setprecision(17)<<best->getScore()
 				<<" while the score for the expected symbol is "
 				<<fixed<<setprecision(17)<<score<<endl;
-			wcerr<<"Params from approximated symbol: "<<best.bestVariant.params<<endl;
+			wcerr<<"Params from approximated symbol: "<<*best->getParams()<<endl;
 			wcerr<<"Params from expected comparison: "<<mp<<endl<<endl;
+			mismatches.push_back(std::move(best));
 		}
 	}
 
@@ -664,16 +666,16 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 		BOOST_TEST(*sdev == CachedData::sdevMaxFgBg(), test_tools::tolerance(1e-4));
 		MatchParams mp;
 		mp.computeMcPatch(halfD255, getCd());
-		BOOST_REQUIRE(mp.mcPatch);
+		BOOST_REQUIRE(mp.getMcPatch());
 		// mass-center = ( (sz-1)/2 ,  255*((sz/2-1)*(sz/2)/2)/(255*sz/2) = (sz/2-1)/2 ) all downsized by (sz-1)
-		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == (getSz()/2.-1.) / (2. * (getSz() - 1)), test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == (getSz()/2.-1.) / (2. * (getSz() - 1)), test_tools::tolerance(1e-4));
 	}
 
 	AutoTestCase1(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5, SuiteSuffix);
 		mp.computeSymDensity(*getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.symDensity);
-		BOOST_TEST(*mp.symDensity == 0.5, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSymDensity());
+		BOOST_TEST(*mp.getSymDensity() == 0.5, test_tools::tolerance(1e-4));
 	}
 
 	AutoTestCase1(CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch, SuiteSuffix);
@@ -716,44 +718,44 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 		Mat expectedPatchApprox(getSz(), getSz(), CV_64FC1, Scalar(expectedBg));
 		expectedPatchApprox.rowRange(0, getSz()/2) = expectedFgAndSdevHorEdge;
 		mp.computePatchApprox(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value()-expectedPatchApprox, &minV, &maxV);
+		BOOST_REQUIRE(mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value()-expectedPatchApprox, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
 		mp.computeMcPatch(szBandsD255, getCd());
-		BOOST_REQUIRE(mp.mcPatch);
-		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == (2*getSz()-1) / (3. * (getSz()-1)), test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getMcPatch());
+		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == (2*getSz()-1) / (3. * (getSz()-1)), test_tools::tolerance(1e-4));
 		mp.computeFg(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.fg);
-		BOOST_TEST(*mp.fg == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg());
+		BOOST_TEST(*mp.getFg() == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
 		mp.computeBg(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.bg);
-		BOOST_TEST(*mp.bg == expectedBg, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getBg());
+		BOOST_TEST(*mp.getBg() == expectedBg, test_tools::tolerance(1e-4));
 		mp.computeSdevFg(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.sdevFg);
-		BOOST_TEST(*mp.sdevFg == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevFg());
+		BOOST_TEST(*mp.getSdevFg() == expectedSdev, test_tools::tolerance(1e-4));
 		mp.computeSdevBg(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.sdevBg);
-		BOOST_TEST(*mp.sdevBg == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevBg());
+		BOOST_TEST(*mp.getSdevBg() == expectedSdev, test_tools::tolerance(1e-4));
 		mp.computeMcPatchApprox(szBandsD255, *getSdWithHorizEdgeMask(), getCd());
-		BOOST_REQUIRE(mp.mcPatchApprox);
-		BOOST_TEST(mp.mcPatchApprox->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatchApprox->y == (*mp.fg * *mp.fg + *mp.bg * *mp.bg) / pow(getSz()-1U, 2), test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getMcPatchApprox());
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->y == (*mp.getFg() * *mp.getFg() + *mp.getBg() * *mp.getBg()) / pow(getSz()-1U, 2), test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(szBandsD255, *getSdWithHorizEdgeMask());
-		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevEdge());
+		BOOST_TEST(*mp.getSdevEdge() == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
 		
 		// Do some tests also for a glyph with a vertical edge
 		mp.reset();
 		mp.computePatchApprox(szBandsD255, *getSdWithVertEdgeMask());
-		BOOST_REQUIRE(mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value()-expectedPatchApprox, &minV, &maxV);
+		BOOST_REQUIRE(mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value()-expectedPatchApprox, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
 		mp.computeSdevEdge(szBandsD255, *getSdWithVertEdgeMask());
-		BOOST_REQUIRE(mp.sdevEdge);
-		BOOST_TEST(*mp.sdevEdge == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSdevEdge());
+		BOOST_TEST(*mp.getSdevEdge() == expectedSdev, test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
@@ -783,20 +785,20 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allButMainDiagBgMask },
-					   { SymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
-					   { SymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
-					   { SymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph }});
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allButMainDiagBgMask },
+					   { ISymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
+					   { ISymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
+					   { ISymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph }});
 
 		// Testing on an uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = strSim.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.ssim &&
-					  mp.patchApprox && mp.blurredPatch && mp.blurredPatchSq && mp.variancePatch);
-		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
-		minMaxIdx(mp.patchApprox.value(), &minV, &maxV);
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSsim() &&
+					  mp.getPatchApprox() && mp.getBlurredPatch() && mp.getBlurredPatchSq() && mp.getVariancePatch());
+		BOOST_TEST(*mp.getFg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == (double)valRand, test_tools::tolerance(1e-4));
+		minMaxIdx(mp.getPatchApprox().value(), &minV, &maxV);
 		BOOST_TEST(minV == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
@@ -827,23 +829,23 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allButMainDiagBgMask },
-					   { SymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
-					   { SymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
-					   { SymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph } });
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allButMainDiagBgMask },
+					   { ISymData::GROUNDED_SYM_IDX, diagSymD1 }, // same as the glyph
+					   { ISymData::BLURRED_GR_SYM_IDX, blurOfGroundedGlyph },
+					   { ISymData::VARIANCE_GR_SYM_IDX, varOfGroundedGlyph } });
 
 		// Testing on a patch with the background = valRand and diagonal = valRand's complementary value
 		const double complVal = (double)((128U + valRand) & 0xFFU);
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.diag() = complVal;
 		res = strSim.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.patchApprox);
-		minMaxIdx(mp.patchApprox.value() - patchD255, &minV, &maxV);
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getPatchApprox());
+		minMaxIdx(mp.getPatchApprox().value() - patchD255, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.fg == complVal, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getFg() == complVal, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -860,14 +862,14 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
+				   SymData::IdxMatMap {{ ISymData::FG_MASK_IDX, diagFgMask }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = fm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.sdevFg);
-		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevFg == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getSdevFg());
+		BOOST_TEST(*mp.getFg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevFg() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -884,15 +886,15 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
+				   SymData::IdxMatMap {{ ISymData::FG_MASK_IDX, diagFgMask }});
 
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
 		res = fm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.sdevFg);
-		BOOST_TEST(*mp.fg == valRand/2., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevFg == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getSdevFg());
+		BOOST_TEST(*mp.getFg() == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevFg() == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
@@ -909,7 +911,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::FG_MASK_IDX, diagFgMask }});
+				   SymData::IdxMatMap {{ ISymData::FG_MASK_IDX, diagFgMask }});
 
 		double expectedMiu = (getSz()-1U)/2., expectedSdev = 0., aux;
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -920,9 +922,9 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		}
 		expectedSdev = sqrt(expectedSdev/getSz());
 		res = fm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.sdevFg);
-		BOOST_TEST(*mp.fg == expectedMiu, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevFg == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getSdevFg());
+		BOOST_TEST(*mp.getFg() == expectedMiu, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevFg() == expectedSdev, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdev/127.5, test_tools::tolerance(1e-4));
 	}
 
@@ -963,18 +965,18 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
-					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
-					   { SymData::GROUNDED_SYM_IDX, groundedGlyph }});
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { ISymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { ISymData::GROUNDED_SYM_IDX, groundedGlyph }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = em.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
-		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevEdge == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSdevEdge());
+		BOOST_TEST(*mp.getFg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevEdge() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -1015,19 +1017,19 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
-					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
-					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { ISymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { ISymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on a patch with upper half empty and an uniform lower half (valRand)
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
 		res = em.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
-		BOOST_TEST(*mp.fg == valRand/2., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == valRand/2., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevEdge == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSdevEdge());
+		BOOST_TEST(*mp.getFg() == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevEdge() == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-valRand/510., test_tools::tolerance(1e-4));
 	}
 
@@ -1068,10 +1070,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
-					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
-					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { ISymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { ISymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on a patch with uniform rows, but gradually brighter, from top to bottom
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1086,10 +1088,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		expectedSdev -= 2 * expectedMiu*expectedMiu;
 		expectedSdev = sqrt(expectedSdev / cnzEdge);
 		res = em.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
-		BOOST_TEST(*mp.fg == expectedMiu, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == expectedMiu, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevEdge == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSdevEdge());
+		BOOST_TEST(*mp.getFg() == expectedMiu, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == expectedMiu, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevEdge() == expectedSdev, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdev/255, test_tools::tolerance(1e-4));
 	}
 
@@ -1130,10 +1132,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask },
-					   { SymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
-					   { SymData::GROUNDED_SYM_IDX, groundedGlyph } });
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask },
+					   { ISymData::EDGE_MASK_IDX, sideDiagsEdgeMask },
+					   { ISymData::GROUNDED_SYM_IDX, groundedGlyph } });
 
 		// Testing on an uniform lower triangular patch
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
@@ -1143,10 +1145,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 			patchD255.diag(-i) = (double)valRand; // i-th lower diagonal set on valRand
 		BOOST_REQUIRE(countNonZero(patchD255) == (getArea() + getSz())/2);
 		res = em.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.sdevEdge);
-		BOOST_TEST(*mp.fg == expectedFg, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == expectedBg, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevEdge == expectedSdevEdge, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSdevEdge());
+		BOOST_TEST(*mp.getFg() == expectedFg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == expectedBg, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevEdge() == expectedSdevEdge, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdevEdge/255, test_tools::tolerance(1e-4));
 	}
 
@@ -1167,13 +1169,13 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+				   SymData::IdxMatMap {{ ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = bm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.bg && mp.sdevBg);
-		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevBg == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getBg() && mp.getSdevBg());
+		BOOST_TEST(*mp.getBg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevBg() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -1194,14 +1196,14 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+				   SymData::IdxMatMap {{ ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		patchD255.rowRange(0, getSz()/2) = 0.;
 		res = bm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.bg && mp.sdevBg);
-		BOOST_TEST(*mp.bg == valRand/2., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevBg == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getBg() && mp.getSdevBg());
+		BOOST_TEST(*mp.getBg() == valRand/2., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevBg() == valRand/2., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-valRand/255., test_tools::tolerance(1e-4));
 	}
 
@@ -1222,7 +1224,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, NOT_RELEVANT_D, // min and diff between min..max, each in range 0..1 (not relevant here)
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
-				   SymData::IdxMatMap {{ SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+				   SymData::IdxMatMap {{ ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		double expectedMiu = (getSz()-1U)/2.,
@@ -1236,9 +1238,9 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		expectedSdev += 2 * expectedMiu*expectedMiu;
 		expectedSdev = sqrt(expectedSdev / cnz);
 		res = bm.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.bg && mp.sdevBg);
-		BOOST_TEST(*mp.bg == expectedMiu, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.sdevBg == expectedSdev, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getBg() && mp.getSdevBg());
+		BOOST_TEST(*mp.getBg() == expectedMiu, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSdevBg() == expectedSdev, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-expectedSdev/127.5, test_tools::tolerance(1e-4));
 	}
 
@@ -1263,15 +1265,15 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		// Testing on a uniform patch
 		patchD255 = Mat(getSz(), getSz(), CV_64FC1, Scalar((double)valRand));
 		res = bc.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg);
-		BOOST_TEST(*mp.fg == (double)valRand, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg());
+		BOOST_TEST(*mp.getFg() == (double)valRand, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == (double)valRand, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 0., test_tools::tolerance(1e-4));
 	}
 
@@ -1296,14 +1298,14 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(255.)));
 		res = bc.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg);
-		BOOST_TEST(*mp.fg == 255., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg());
+		BOOST_TEST(*mp.getFg() == 255., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -1328,14 +1330,14 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   NOT_RELEVANT_D, // avgPixVal (not relevant here)
 				   NOT_RELEVANT_POINT, // mc sym for original fg & bg (not relevant here)
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, diagFgMask },
-					   { SymData::BG_MASK_IDX, allBut3DiagsBgMask }});
+					   { ISymData::FG_MASK_IDX, diagFgMask },
+					   { ISymData::BG_MASK_IDX, allBut3DiagsBgMask }});
 
 		patchD255 = Mat::diag(Mat(1, getSz(), CV_64FC1, Scalar(127.5)));
 		res = bc.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg);
-		BOOST_TEST(*mp.fg == 127.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg());
+		BOOST_TEST(*mp.getFg() == 127.5, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == .5, test_tools::tolerance(1e-4));
 	}
 
@@ -1359,24 +1361,24 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask }});
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask }});
 
 		// Using a patch with a single 255 pixel in top left corner
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, 0) = 255.;
 		res = gs.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
-		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == 255./(getArea()-1), test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.symDensity == 1./getArea(), test_tools::tolerance(1e-8));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
+		BOOST_TEST(*mp.getFg() == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == 255./(getArea()-1), test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSymDensity() == 1./getArea(), test_tools::tolerance(1e-8));
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(2)*.5*(1. - 1./(pow(getSz(), 2) - 1U))) *
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
@@ -1401,8 +1403,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask } });
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the middle pixels pair on the top row on 255
 		// Patch mc is at half width on top row.
@@ -1410,17 +1412,17 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		Mat(patchD255, Rect(getSz()/2U-1U, 0, 2, 1)) = Scalar(255.);
 		BOOST_REQUIRE(countNonZero(patchD255) == 2);
 		res = gs.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
-		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == 2*255./(getArea()-1), test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.symDensity == 1./getArea(), test_tools::tolerance(1e-8));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
+		BOOST_TEST(*mp.getFg() == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == 2*255./(getArea()-1), test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSymDensity() == 1./getArea(), test_tools::tolerance(1e-8));
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5/(pow(getSz(), 2) - 1U), dy = .5*(1. - 1./(pow(getSz(), 2) - 1U));
 		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
@@ -1446,24 +1448,24 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask } });
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the last pixel on the top row on 255
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, sz_1) = 255.;
 		res = gs.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
-		BOOST_TEST(*mp.fg == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.bg == 255./(getArea()-1), test_tools::tolerance(1e-4));
-		BOOST_TEST(*mp.symDensity == 1./getArea(), test_tools::tolerance(1e-8));
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
+		BOOST_TEST(*mp.getFg() == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getBg() == 255./(getArea()-1), test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSymDensity() == 1./getArea(), test_tools::tolerance(1e-8));
 
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == 1., test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == 1., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5*(1. + 1/(pow(getSz(), 2) - 1U)), dy = .5*(1. - 1/(pow(getSz(), 2) - 1U));
 		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
 				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
@@ -1488,22 +1490,22 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask } });
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with a single 255 pixel in top left corner
 		// Same as 1st scenario from Gravitational Smoothness
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, 0) = 255.;
 		res = ds.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
 	}
 
@@ -1526,8 +1528,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask } });
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the middle pixels pair on the top row on 255
 		// Patch mc is at half width on top row.
@@ -1535,14 +1537,14 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		Mat(patchD255, Rect(getSz()/2U-1U, 0, 2, 1)) = Scalar(255.);
 		res = ds.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == .5, test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(res == (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
 	}
 
@@ -1565,22 +1567,22 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   avgPixVal,
 				   origMcSym,
 				   SymData::IdxMatMap {
-					   { SymData::FG_MASK_IDX, fgMask },
-					   { SymData::BG_MASK_IDX, bgMask } });
+					   { ISymData::FG_MASK_IDX, fgMask },
+					   { ISymData::BG_MASK_IDX, bgMask } });
 
 		// Using a patch with the last pixel on the top row on 255
 		// Same as 3rd scenario from Gravitational Smoothness
 		patchD255 = Mat::zeros(getSz(), getSz(), CV_64FC1);
 		patchD255.at<double>(0, sz_1) = 255.;
 		res = ds.assessMatch(patchD255, sd, cd, mp);
-		BOOST_REQUIRE(mp.fg && mp.bg && mp.symDensity && mp.mcPatchApprox && mp.mcPatch);
+		BOOST_REQUIRE(mp.getFg() && mp.getBg() && mp.getSymDensity() && mp.getMcPatchApprox() && mp.getMcPatch());
 		// Symbol's mc migrated diagonally from bottom-right corner to above the center of patch.
 		// Migration occurred due to the new fg & bg of the symbol
-		BOOST_TEST(mp.mcPatchApprox->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatchApprox->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
-		BOOST_TEST(mp.mcPatch->x == 1., test_tools::tolerance(1e-4));
-		BOOST_TEST(mp.mcPatch->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.mcsOffset + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(mp.getMcPatchApprox()->x == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
+		BOOST_TEST(mp.getMcPatch()->x == 1., test_tools::tolerance(1e-4));
+		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
+		BOOST_TEST(res == (2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
 	}
 
@@ -1598,8 +1600,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 
 		// Testing with an empty symbol (sd.avgPixVal == 0)
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
-		BOOST_REQUIRE(mp.symDensity);
-		BOOST_TEST(*mp.symDensity == 0., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSymDensity());
+		BOOST_TEST(*mp.getSymDensity() == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 	}
 
@@ -1616,8 +1618,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   SymData::IdxMatMap {});
 
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
-		BOOST_REQUIRE(mp.symDensity);
-		BOOST_TEST(*mp.symDensity == cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSymDensity());
+		BOOST_TEST(*mp.getSymDensity() == cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -1634,8 +1636,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 				   SymData::IdxMatMap {});
 
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
-		BOOST_REQUIRE(mp.symDensity);
-		BOOST_TEST(*mp.symDensity == 1., test_tools::tolerance(1e-4));
+		BOOST_REQUIRE(mp.getSymDensity());
+		BOOST_TEST(*mp.getSymDensity() == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 2.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // MatchAspects_Tests

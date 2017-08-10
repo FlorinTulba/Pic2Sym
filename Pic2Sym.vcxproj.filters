@@ -441,6 +441,36 @@
     <ClInclude Include="src\sliderConversion.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="src\matchParamsBase.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symDataBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\patchBase.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bestMatch.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bestMatchBase.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pixMapSymBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tinySymBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterDataBase.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pmsCont.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pmsContBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -664,6 +694,15 @@
     </ClCompile>
     <ClCompile Include="src\sliderConversion.cpp">
       <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bestMatch.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pmsCont.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\clusterData.cpp">
+      <Filter>Source Files\Charmap\Clustering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

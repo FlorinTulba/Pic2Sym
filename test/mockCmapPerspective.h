@@ -51,12 +51,12 @@
 #pragma warning ( pop )
 
 // Forward declarations
-struct SymData;
+struct ISymData;
 
 class CmapPerspective {
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const SymData*> VPSymData;
+	typedef std::vector<const ISymData*> VPSymData;
 	typedef VPSymData::const_iterator VPSymDataCIt;
 	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
 

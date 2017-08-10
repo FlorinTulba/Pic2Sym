@@ -38,6 +38,7 @@
 
 #include "testMain.h"
 #include "selectBranch.h"
+#include "pixMapSym.h"
 #include "fontEngine.h"
 #include "settings.h"
 #include "controller.h"

@@ -38,7 +38,7 @@
 
 #include "symFilter.h"
 #include "symFilterCache.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )

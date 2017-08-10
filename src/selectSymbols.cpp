@@ -39,8 +39,8 @@
 #include "selectSymbols.h"
 #include "controllerBase.h"
 #include "appStart.h"
-#include "pixMapSym.h"
-#include "symData.h"
+#include "pixMapSymBase.h" 
+#include "symDataBase.h"
 #include "matchEngine.h"
 #include "settingsBase.h"
 #include "symsSerialization.h"
@@ -66,7 +66,7 @@ SelectSymbols::SelectSymbols(const IController &ctrler_,
 
 #ifndef UNIT_TESTING
 
-const SymData* SelectSymbols::pointedSymbol(int x, int y) const {
+const ISymData* SelectSymbols::pointedSymbol(int x, int y) const {
 	if(!pCmi->isBrowsable())
 		return nullptr;
 
@@ -86,9 +86,9 @@ void SelectSymbols::displaySymCode(unsigned long symCode) const {
 	ctrler.updateStatusBarCmapInspect(0U, oss.str()); // synchronous update
 }
 
-void SelectSymbols::enlistSymbolForInvestigation(const SymData &sd) const {
-	cout<<"Appending symbol "<<sd.code<<" to the list needed for further investigations"<<endl;
-	symsToInvestigate.push_back(255U - sd.negSym); // enlist actual symbol, not its negative
+void SelectSymbols::enlistSymbolForInvestigation(const ISymData &sd) const {
+	cout<<"Appending symbol "<<sd.getCode()<<" to the list needed for further investigations"<<endl;
+	symsToInvestigate.push_back(255U - sd.getNegSym()); // enlist actual symbol, not its negative
 }
 
 void SelectSymbols::symbolsReadyToInvestigate() const {

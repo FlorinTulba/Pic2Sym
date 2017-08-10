@@ -46,12 +46,10 @@
 #include <iostream>
 
 #ifndef AI_REVIEWER_CHECK
-
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
+#	include <boost/serialization/split_member.hpp>
+#	include <boost/serialization/version.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
@@ -76,17 +74,10 @@ struct ISettings /*abstract*/ {
 	virtual const ImgSettings& getIS() const = 0;	///< returns existing image settings
 	virtual const MatchSettings& getMS() const = 0;	///< returns existing match settings
 
-	friend std::ostream& operator<<(std::ostream &os, const ISettings &s);
-
 	virtual ~ISettings() = 0 {}
 
-protected:
-	/// Overwriting the read-only version not allowed, so it throws logic_error
 	template<class Archive>
-	void load(Archive&, const unsigned) {
-		THROW_WITH_CONST_MSG("Don't use the read-only ISettings interface when loading new Settings!",
-							 std::logic_error)
-	}
+	void load(Archive&, const unsigned) = delete;	///< Overwriting the read-only version not allowed
 
 	/// Saves *this to ar
 	template<class Archive>
@@ -97,7 +88,6 @@ protected:
 	}
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
 };
 
@@ -105,16 +95,16 @@ protected:
 BOOST_CLASS_VERSION(ISettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
 
+std::ostream& operator<<(std::ostream &os, const ISettings &s);
 
 /// The ISettings interface plus accessors for settings modification
 struct ISettingsRW /*abstract*/ : ISettings {
-	virtual SymSettings& SS() = 0;		///< allows current symbols settings to be changed
-	virtual ImgSettings& IS() = 0;		///< allows current image settings to be changed
-	virtual MatchSettings& MS() = 0;	///< allows current match settings to be changed
+	virtual SymSettings& refSS() = 0;		///< allows current symbols settings to be changed
+	virtual ImgSettings& refIS() = 0;		///< allows current image settings to be changed
+	virtual MatchSettings& refMS() = 0;		///< allows current match settings to be changed
 
 	virtual ~ISettingsRW() = 0 {}
 
-protected:
 	/**
 	Overwrites *this with the ISettingsRW object read from ar.
 
@@ -127,18 +117,12 @@ protected:
 
 		// read user default match settings
 #ifndef AI_REVIEWER_CHECK
-		ar >> SS() >> IS() >> MS();
+		ar >> refSS() >> refIS() >> refMS();
 #endif // AI_REVIEWER_CHECK not defined
 	}
 
-	/// Saves *this to ar
-	template<class Archive>
-	void save(Archive &ar, const unsigned version) const {
-		ISettings::save(ar, version);
-	}
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
-	friend class boost::serialization::access;
 #endif // AI_REVIEWER_CHECK not defined
 };
 

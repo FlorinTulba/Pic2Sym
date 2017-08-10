@@ -54,10 +54,10 @@ struct SymsSupportWithPreselection : SymsSupport {
 	void operator=(SymsSupportWithPreselection&&) = delete;
 
 	/// @return the value of PreselectionByTinySyms
-	bool usingTinySymbols() const override;
+	bool usingTinySymbols() const override final;
 
 	/// Generates clusters with tiny format
-	void computeClusterRepresentative(const std::vector<const SymData*> &clusterSyms,
+	void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
 									  int symSz, double invClusterSz,
 									  cv::Mat &synthesizedSym, cv::Mat &negSym) const override;
 };

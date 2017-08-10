@@ -39,7 +39,7 @@
 #include "clusterSupportWithPreselection.h"
 #include "tinySymsProvider.h"
 #include "clusterEngine.h"
-#include "symData.h"
+#include "clusterData.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -61,7 +61,7 @@ void ClustersSupportWithPreselection::groupSyms(const string &fontType/* = ""*/)
 	tinySymsSet.reserve(symsSet.size());
 	const auto &allTinySyms = tsp.getTinySyms();
 	for(const auto &sym : symsSet)
-		tinySymsSet.push_back(allTinySyms[sym.symIdx]);
+		tinySymsSet.emplace_back(new TinySym(allTinySyms[sym->getSymIdx()]));
 
 	// Clustering on tinySymsSet (Both sets get reordered)
 	ce.process(symsSet, fontType);
@@ -73,23 +73,17 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 													VClusterData &clusters,
 													set<unsigned> &clusterOffsets) {
 	const auto symsCount = symsSet.size();
-	VSymData newSymsSet, newTinySymsSet;
-	newSymsSet.reserve(symsCount);
-	newTinySymsSet.reserve(symsCount);
+	vector<unsigned> permutation;
+	permutation.reserve(symsCount);
 
 	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
 		auto &symsIndices = symsIndicesPerCluster[i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.emplace_back(tinySymsSet, offset, symsIndices, ss); // needs tinySymsSet[symsIndices] !!
+		clusters.push_back(make_unique<const ClusterData>(tinySymsSet, offset, symsIndices, ss)); // needs tinySymsSet[symsIndices] !!
 
-		for(const auto idx : symsIndices) {
-			// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
-			newSymsSet.push_back(symsSet[idx]);
-
-			// Don't use move for tinySymsSet[idx], as the symbols need to remain in tinySymsSet for later examination
-			newTinySymsSet.push_back(tinySymsSet[idx]);
-		}
+		for(const auto idx : symsIndices)
+			permutation.push_back(idx);
 
 		iota(BOUNDS(symsIndices), offset); // new pointers will be consecutive
 
@@ -97,6 +91,13 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 	}
 	clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)symsCount); // delimit last cluster
 
+	VSymData newSymsSet, newTinySymsSet;
+	newSymsSet.reserve(symsCount);
+	newTinySymsSet.reserve(symsCount);
+	for(const auto idx : permutation) {
+		newSymsSet.push_back(move(symsSet[idx]));
+		newTinySymsSet.push_back(move(tinySymsSet[idx]));
+	}
 	symsSet = move(newSymsSet);
 	tinySymsSet = move(newTinySymsSet);
 }

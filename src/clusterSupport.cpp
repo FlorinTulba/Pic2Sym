@@ -38,7 +38,7 @@
 
 #include "clusterSupport.h"
 #include "clusterEngine.h"
-#include "symData.h"
+#include "clusterData.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -60,19 +60,17 @@ void ClustersSupport::groupSyms(const string &fontType/* = ""*/) {
 void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerCluster,
 									VClusterData &clusters, set<unsigned> &clusterOffsets) {
 	const auto symsCount = symsSet.size();
-	VSymData newSymsSet;
-	newSymsSet.reserve(symsCount);
+	vector<unsigned> permutation;
+	permutation.reserve(symsCount);
 
 	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
 		auto &symsIndices = symsIndicesPerCluster[i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.emplace_back(symsSet, offset, symsIndices, ss); // needs symsSet[symsIndices] !!
+		clusters.push_back(make_unique<const ClusterData>(symsSet, offset, symsIndices, ss)); // needs symsSet[symsIndices] !!
 
-		for(const auto idx : symsIndices) {
-			// Don't use move for symsSet[idx], as the symbols need to remain in symsSet for later examination
-			newSymsSet.push_back(symsSet[idx]);
-		}
+		for(const auto idx : symsIndices)
+			permutation.push_back(idx);
 
 		iota(BOUNDS(symsIndices), offset); // new pointers will be consecutive
 
@@ -80,6 +78,10 @@ void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerClus
 	}
 	clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)symsCount); // delimit last cluster
 
+	VSymData newSymsSet;
+	newSymsSet.reserve(symsCount);
+	for(const auto idx : permutation)
+		newSymsSet.push_back(move(symsSet[idx]));
 	symsSet = move(newSymsSet);
 }
 

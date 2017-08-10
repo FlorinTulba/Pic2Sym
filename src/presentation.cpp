@@ -49,7 +49,7 @@
 #include "imgSettings.h"
 #include "jobMonitor.h"
 #include "progressNotifier.h"
-#include "matchParams.h"
+#include "matchParamsBase.h"
 #include "matchAssessment.h"
 #include "structuralSimilarity.h"
 #include "updateSymsActions.h"
@@ -60,7 +60,11 @@
 
 #include <Windows.h>
 
+// Using <thread> in VS2013 might trigger this warning:
+// https://connect.microsoft.com/VisualStudio/feedback/details/809540/c-warnings-in-stl-thread
+#pragma warning( disable : WARN_VIRT_DESTRUCT_EXPECTED )
 #include <thread>
+#pragma warning( default : WARN_VIRT_DESTRUCT_EXPECTED )
 
 #include <opencv2/highgui/highgui.hpp>
 
@@ -173,17 +177,17 @@ namespace {
 	};
 
 	/// Displays a histogram with the distribution of the weights of the symbols from the charmap
-	void viewSymWeightsHistogram(const vector<const PixMapSym> &theSyms) {
+	void viewSymWeightsHistogram(const VPixMapSym &theSyms) {
 #ifndef UNIT_TESTING
 		vector<double> symSums;
 		for(const auto &pms : theSyms)
-			symSums.push_back(pms.avgPixVal);
+			symSums.push_back(pms->getAvgPixVal());
 
 		static const size_t MaxBinHeight = 256ULL;
 		const size_t binsCount = min(256ULL, symSums.size());
 		const double smallestSum = symSums.front(), largestSum = symSums.back(),
 			sumsSpan = largestSum - smallestSum;
-		vector<size_t> hist(binsCount, 0U);
+		vector<size_t> hist(binsCount, 0ULL);
 		const auto itBegin = symSums.cbegin();
 		ptrdiff_t prevCount = 0LL;
 		for(size_t bin = 0ULL; bin < binsCount; ++bin) {
@@ -196,8 +200,8 @@ namespace {
 		for(size_t &binValue : hist)
 			binValue = (size_t)round(binValue * MaxBinHeight / maxBinValue);
 		Mat histImg((int)MaxBinHeight, (int)binsCount, CV_8UC1, Scalar(255U));
-		for(size_t bin = 0U; bin < binsCount; ++bin)
-			if(hist[bin] > 0U)
+		for(size_t bin = 0ULL; bin < binsCount; ++bin)
+			if(hist[bin] > 0ULL)
 				histImg.rowRange(int(MaxBinHeight-hist[bin]), (int)MaxBinHeight).col((int)bin) = 0U;
 		imshow("histogram", histImg);
 		waitKey(1);
@@ -265,7 +269,7 @@ extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 #pragma warning( disable : WARN_BASE_INIT_USING_THIS )
 Controller::Controller(ISettingsRW &s) :
-		updateSymSettings(std::make_shared<const UpdateSymSettings>(s.SS())),
+		updateSymSettings(std::make_shared<const UpdateSymSettings>(s.refSS())),
 		glyphsProgressTracker(std::make_shared<const GlyphsProgressTracker>(*this)),
 		picTransformProgressTracker(std::make_shared<PicTransformProgressTracker>(*this)),
 		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs",
@@ -412,21 +416,24 @@ void Controller::symbolsChanged() {
 		viewSymWeightsHistogram(fe.symsSet());
 }
 
-void Controller::display1stPageIfFull(const vector<const PixMapSym> &syms) {
+void Controller::display1stPageIfFull(const VPixMapSym &syms) {
 	if((unsigned)syms.size() != pCmi->getSymsPerPage())
 		return;
 
+	// Copy all available symbols from the 1st page in current thread
+	// to ensure they get presented in the original order by the other thread
+	auto matSyms = new vector<const Mat>;
+	matSyms->reserve(syms.size());
+	const auto fontSz = getFontSize();
+	for(const auto &pms : syms)
+		matSyms->emplace_back(pms->toMat(fontSz, true));
+
 	// Starting the thread that builds the 'pre-release' version of the 1st cmap page
-	thread([&, syms] {
-		vector<const Mat> matSyms;
-		const auto fontSz = getFontSize();
-		for(const auto &pms : syms)
-			matSyms.emplace_back(pms.toMat(fontSz, true));
-
-		const_cast<vector<const PixMapSym>&>(syms).clear(); // discard local copy of the vector
-
-		pCmi->showUnofficial1stPage(matSyms, updating1stCmapPage, updateSymsActionsQueue);
-	}).detach(); // termination doesn't matter
+	thread([&, matSyms] {
+				pCmi->showUnofficial1stPage(*matSyms, updating1stCmapPage, updateSymsActionsQueue);
+				delete matSyms;
+			}
+		).detach(); // termination doesn't matter
 }
 
 #ifndef UNIT_TESTING
@@ -674,9 +681,9 @@ void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 #ifndef AI_REVIEWER_CHECK
 				   (NegSymExtractor<CmapPerspective::VPSymDataCIt>) // conversion
 				   [](const CmapPerspective::VPSymDataCIt &iter) -> Mat {
-						if((*iter)->removable)
-							return 255U - (*iter)->negSym;
-						return (*iter)->negSym;
+						if((*iter)->isRemovable())
+							return 255U - (*iter)->getNegSym();
+						return (*iter)->getNegSym();
 					},
 #else // AI_REVIEWER_CHECK defined
 				   fnNegSymExtractor,
@@ -739,13 +746,13 @@ CmapInspect::CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
 	setMouseCallback(CmapInspectWinName, [] (int event, int x, int y, int flags, void* userdata) {
 		const ISelectSymbols *pss = reinterpret_cast<ISelectSymbols*>(userdata);
 		if(event == EVENT_MOUSEMOVE) { // Mouse move
-			const SymData *psd = pss->pointedSymbol(x, y);
+			const ISymData *psd = pss->pointedSymbol(x, y);
 			if(nullptr != psd)
-				pss->displaySymCode(psd->code);
+				pss->displaySymCode(psd->getCode());
 		} else if((event == EVENT_LBUTTONDBLCLK) && ((flags & EVENT_FLAG_CTRLKEY) == 0)) { // Ctrl key not pressed and left mouse double-click
 			pss->symbolsReadyToInvestigate();
 		} else if((event == EVENT_LBUTTONUP) && ((flags & EVENT_FLAG_CTRLKEY) != 0)) { // Ctrl key pressed and left mouse click
-			const SymData *psd = pss->pointedSymbol(x, y);
+			const ISymData *psd = pss->pointedSymbol(x, y);
 			if(nullptr != psd)
 				pss->enlistSymbolForInvestigation(*psd);
 		}
@@ -814,7 +821,7 @@ void CmapPerspective::reset(const VSymData &symsSet,
 		offset += clusterMembers->size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)offset);
 		for(size_t idxPSyms = prevOffset, idxCluster = 0ULL; idxPSyms < offset; ++idxPSyms, ++idxCluster)
-			pSyms[idxPSyms] = &symsSet[(size_t)(*clusterMembers)[idxCluster]];
+			pSyms[idxPSyms] = symsSet[(size_t)(*clusterMembers)[idxCluster]].get();
 	}
 }
 

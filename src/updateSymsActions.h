@@ -44,9 +44,9 @@
 
 #pragma warning ( push, 0 )
 
-#include <functional>
+#	include <functional>
 
-#include <boost/lockfree/queue.hpp>
+#	include <boost/lockfree/queue.hpp>
 
 #pragma warning ( pop )
 
@@ -67,7 +67,7 @@ struct IUpdateSymsAction /*abstract*/ {
 };
 
 /// Common realization of IUpdateSymsAction
-struct BasicUpdateSymsAction : IUpdateSymsAction {
+class BasicUpdateSymsAction : public IUpdateSymsAction {
 protected:
 	std::function<void()> fn; ///< the function to be called by perform, that has access to private fields & methods
 

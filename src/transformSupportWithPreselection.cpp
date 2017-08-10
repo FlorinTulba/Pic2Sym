@@ -39,7 +39,8 @@
 #include "transformSupportWithPreselection.h"
 #include "preselectSyms.h"
 #include "matchEngine.h"
-#include "matchParams.h"
+#include "matchParamsBase.h"
+#include "bestMatchBase.h"
 #include "matchSupportWithPreselection.h"
 
 #pragma warning ( push, 0 )
@@ -61,12 +62,13 @@ TransformSupportWithPreselection::TransformSupportWithPreselection(MatchEngine &
 																   const MatchSettings &matchSettings_,
 																   Mat &resized_,
 																   Mat &resizedBlurred_,
-																   vector<vector<BestMatch>> &draftMatches_,
+																   vector<vector<unique_ptr<IBestMatch>>> &draftMatches_,
 																   MatchSupport &matchSupport_) :
 	TransformSupport(me_, matchSettings_, resized_, resizedBlurred_, draftMatches_),
 	matchSupport(dynamic_cast<MatchSupportWithPreselection&>(matchSupport_)) {}
 
-void TransformSupportWithPreselection::initDrafts(bool isColor, unsigned patchSz, unsigned patchesPerCol, unsigned patchesPerRow) {
+void TransformSupportWithPreselection::initDrafts(bool isColor, unsigned patchSz,
+												  unsigned patchesPerCol, unsigned patchesPerRow) {
 	draftMatches.clear(); draftMatches.resize((size_t)patchesPerCol);
 
 	const Size imgSzForTinySyms(int(TinySymsSize * patchesPerRow), int(TinySymsSize * patchesPerCol));
@@ -78,7 +80,8 @@ void TransformSupportWithPreselection::initDrafts(bool isColor, unsigned patchSz
 #pragma omp for schedule(static, 1) nowait
 	for(int r = 0; r < (int)patchesPerCol; ++r) {
 		initDraftRow(draftMatches, r, patchesPerRow, resized, resizedBlurred, (int)patchSz, isColor);
-		initDraftRow(draftMatchesForTinySyms, r, patchesPerRow, resizedForTinySyms, resBlForTinySyms, (int)TinySymsSize, isColor);
+		initDraftRow(draftMatchesForTinySyms, r, patchesPerRow, resizedForTinySyms,
+					 resBlForTinySyms, (int)TinySymsSize, isColor);
 	}
 }
 
@@ -92,7 +95,8 @@ void TransformSupportWithPreselection::resetDrafts(unsigned patchesPerCol) {
 }
 
 void TransformSupportWithPreselection::approxRow(int r, int width, unsigned patchSz,
-												 unsigned fromSymIdx, unsigned upperSymIdx, Mat &result) {
+												 unsigned fromSymIdx, unsigned upperSymIdx,
+												 Mat &result) {
 	const int row = r * (int)patchSz;
 	const Range rowRange(row, row + (int)patchSz);
 	auto &draftMatchesRow = draftMatches[(size_t)r];
@@ -103,15 +107,18 @@ void TransformSupportWithPreselection::approxRow(int r, int width, unsigned patc
 
 	for(int c = 0, patchColumn = 0; c < width; c += (int)patchSz, ++patchColumn) {
 		// Skip patches who appear rather uniform either in tiny or normal format
-		auto &draftMatch = draftMatchesRow[(size_t)patchColumn];
-		auto &draftMatchTiny = draftMatchesRowTiny[(size_t)patchColumn];
+		auto &draftMatch = *draftMatchesRow[(size_t)patchColumn];
+		auto &draftMatchTiny = *draftMatchesRowTiny[(size_t)patchColumn];
 		if(checkUnifPatch(draftMatchTiny) || checkUnifPatch(draftMatch)) {
 			manageUnifPatch(matchSettings, result, patchSz, draftMatch, rowRange, c);
 			continue;
 		}
 
 		// Using the actual score as reference for the original threshold
-		tcm.reset(draftMatchTiny.score = draftMatch.score * AdmitOnShortListEvenForInferiorScoreFactor);
+		const double scoreToBeatByTinyDraft =
+			draftMatch.getScore() * AdmitOnShortListEvenForInferiorScoreFactor;
+		draftMatchTiny.setScore(scoreToBeatByTinyDraft);
+		tcm.reset(scoreToBeatByTinyDraft);
 
 		if(me.improvesBasedOnBatch(fromSymIdx, upperSymIdx, draftMatchTiny, mpwp)) {
 			tcm.prepareReport();

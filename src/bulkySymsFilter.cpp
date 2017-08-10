@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "bulkySymsFilter.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "symFilterCache.h"
 #include "misc.h"
 
@@ -53,7 +53,7 @@ using namespace cv;
 BulkySymsFilter::BulkySymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(2U, "bulky symbols", std::move(nextFilter_)) {}
 
-bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+bool BulkySymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
@@ -64,7 +64,7 @@ bool BulkySymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &s
 	static map<int, Mat> circleMasks;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	if(min(pms.rows, pms.cols) < (unsigned)compErMaskSide(sfc.szU))
+	if(min(pms.getRows(), pms.getCols()) < (unsigned)compErMaskSide(sfc.szU))
 		return false;
 
 	if(circleMasks.empty()) {

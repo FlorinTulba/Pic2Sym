@@ -37,53 +37,45 @@
  ***********************************************************************************************/
 
 #include "symData.h"
+#include "pixMapSymBase.h"
 #include "structuralSimilarity.h"
 #include "blur.h"
 #include "misc.h"
 
-#pragma warning ( push, 0 )
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning ( pop )
-
 using namespace std;
 using namespace cv;
-
-/*
-SymData_computeFields_STILL_BG and STILL_FG from below are constants for foreground / background thresholds.
-
-1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
-STILL_BG was set to 0, as there are font families with extremely similar glyphs.
-When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
-But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
-*/
-extern const double SymData_computeFields_STILL_BG;					// darkest shades
-static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
-
-extern const double EPSp1();
 
 SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
 				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
 	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), removable(removable_), masks(masks_) {}
 
-SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0U*/,
-				 double avgPixVal_/* = 0.*/, const cv::Point2d &mc_/* = Point2d(.5, .5)*/) :
+SymData::SymData(const IPixMapSym &pms, unsigned sz, bool forTinySym) :
+		code(pms.getSymCode()), symIdx(pms.getSymIdx()), avgPixVal(pms.getAvgPixVal()), mc(pms.getMc()),
+		negSym(pms.toMat(sz, true)), removable(pms.isRemovable()) {
+	computeFields(pms.toMatD01(sz), *this, forTinySym);
+}
+
+SymData::SymData(unsigned long code_/* = ULONG_MAX*/, size_t symIdx_/* = 0ULL*/,
+				 double avgPixVal_/* = 0.*/, const Point2d &mc_/* = Point2d(.5, .5)*/) :
 	code(code_), symIdx(symIdx_), avgPixVal(avgPixVal_), mc(mc_) {}
 
-SymData::SymData(const cv::Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVal_), mc(mc_) {}
+SymData::SymData(const Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVal_), mc(mc_) {}
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
 		avgPixVal(other.avgPixVal), mc(other.mc),
 		negSym(other.negSym), removable(other.removable), masks(other.masks) {}
 
+// Delegating constructors for virtual inheritance triggers this warning in VS2013:
+// https://connect.microsoft.com/VisualStudio/feedback/details/774986/codename-milan-delegating-constructors-causes-warning-c4100-initvbases-unreferenced-formal-parameter-w4-when-derived-class-uses-virtual-inheritance
+#pragma warning( disable : WARN_UNREF_FORMAL_PARAM )
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
 		for(auto &m : other.masks)
 			m.release();
 }
+#pragma warning( default : WARN_UNREF_FORMAL_PARAM )
 
 SymData& SymData::operator=(const SymData &other) {
 	if(this != &other) {
@@ -99,7 +91,7 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(negSym);
 		REPLACE_FIELD(removable);
 
-		for(int i = 0; i < SymData::MATRICES_COUNT; ++i)
+		for(int i = 0; i < ISymData::MATRICES_COUNT; ++i)
 			REPLACE_FIELD(masks[(size_t)i]);
 
 #undef REPLACE_FIELD
@@ -121,29 +113,58 @@ SymData& SymData::operator=(SymData &&other) {
 	return *this;
 }
 
-void SymData::computeFields(const Mat &glyph, Mat &fgMask, Mat &bgMask, Mat &edgeMask,
-							Mat &groundedGlyph, Mat &blurOfGroundedGlyph, Mat &varianceOfGroundedGlyph,
-							double &minVal, double &diffMinMax, bool forTinySym) {
-	double maxVal;
+const Point2d& SymData::getMc() const { return mc; }
+const Mat& SymData::getNegSym() const { return negSym; }
+const ISymData::MatArray& SymData::getMasks() const { return masks; }
+size_t SymData::getSymIdx() const { return symIdx; }
+double SymData::getMinVal() const { return minVal; }
+double SymData::getDiffMinMax() const { return diffMinMax; }
+double SymData::getAvgPixVal() const { return avgPixVal; }
+unsigned long SymData::getCode() const { return code; }
+bool SymData::isRemovable() const { return removable; }
+
+void SymData::computeFields(const cv::Mat &glyph, SymData &sd, bool forTinySym) {
+	extern const double EPSp1();
+
+	/*
+	SymData_computeFields_STILL_BG and STILL_FG from below are constants for foreground / background thresholds.
+
+	1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more than ideal
+	STILL_BG was set to 0, as there are font families with extremely similar glyphs.
+	When Unit Testing shouldn't identify exactly each glyph, STILL_BG might be > 0.
+	But testing on 'BPmonoBold.ttf' does tolerate such larger values (0.025, for instance).
+	*/
+	extern const double SymData_computeFields_STILL_BG;					// darkest shades
+
+#pragma warning( disable : WARN_THREAD_UNSAFE )
+	static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;	// brightest shades
+#pragma warning( default : WARN_THREAD_UNSAFE )
+
+	double minVal, maxVal;
 	minMaxIdx(glyph, &minVal, &maxVal);
 	assert(maxVal < EPSp1()); // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
 
-	diffMinMax = maxVal - minVal;
-	groundedGlyph = (minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0
+	sd.minVal = minVal;
+	const double diffMinMax = sd.diffMinMax = maxVal - minVal;
+	const Mat groundedGlyph = sd.masks[GROUNDED_SYM_IDX] =
+		(minVal==0. ? glyph.clone() : (glyph - minVal)); // min val on 0
 
-	fgMask = (glyph >= (minVal + STILL_FG * diffMinMax));
-	bgMask = (glyph <= (minVal + SymData_computeFields_STILL_BG * diffMinMax));
+	sd.masks[FG_MASK_IDX] = (glyph >= (minVal + STILL_FG * diffMinMax));
+	sd.masks[BG_MASK_IDX] = (glyph <= (minVal + SymData_computeFields_STILL_BG * diffMinMax));
 
 	// Storing a blurred version of the grounded glyph for structural similarity match aspect
+	Mat blurOfGroundedGlyph;
 	StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph, forTinySym);
-
+	sd.masks[BLURRED_GR_SYM_IDX] = blurOfGroundedGlyph;
 	// edgeMask selects all pixels that are not minVal, nor maxVal
-	inRange(glyph, minVal+EPS, maxVal-EPS, edgeMask);
+	inRange(glyph, minVal+EPS, maxVal-EPS, sd.masks[EDGE_MASK_IDX]);
 
 	// Storing also the variance of the grounded glyph for structural similarity match aspect
 	// Actual varianceOfGroundedGlyph is obtained in the subtraction after the blur
+	Mat blurOfGroundedGlyphSquared;
 	StructuralSimilarity::supportBlur.process(groundedGlyph.mul(groundedGlyph),
-											  varianceOfGroundedGlyph, forTinySym);
+											  blurOfGroundedGlyphSquared, forTinySym);
 
-	varianceOfGroundedGlyph -= blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
+	sd.masks[VARIANCE_GR_SYM_IDX] =
+		blurOfGroundedGlyphSquared - blurOfGroundedGlyph.mul(blurOfGroundedGlyph);
 }

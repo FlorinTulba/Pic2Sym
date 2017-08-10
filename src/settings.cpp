@@ -83,15 +83,15 @@ const MatchSettings& Settings::getMS() const {
 	return ms;
 }
 
-SymSettings& Settings::SS() {
+SymSettings& Settings::refSS() {
 	return ss;
 }
 
-ImgSettings& Settings::IS() {
+ImgSettings& Settings::refIS() {
 	return is;
 }
 
-MatchSettings& Settings::MS() {
+MatchSettings& Settings::refMS() {
 	return ms;
 }
 
@@ -101,38 +101,38 @@ ostream& operator<<(ostream &os, const ISettings &s) {
 }
 
 ostream& operator<<(ostream &os, const ImgSettings &is) {
-	os<<"hMaxSyms"<<" : "<<is.hMaxSyms<<endl;
-	os<<"vMaxSyms"<<" : "<<is.vMaxSyms<<endl;
+	os<<"hMaxSyms"<<" : "<<is.getMaxHSyms()<<endl;
+	os<<"vMaxSyms"<<" : "<<is.getMaxVSyms()<<endl;
 	return os;
 }
 
 ostream& operator<<(ostream &os, const SymSettings &ss) {
-	os<<"fontFile"<<" : "<<ss.fontFile<<endl;
-	os<<"encoding"<<" : "<<ss.encoding<<endl;
-	os<<"fontSz"<<" : "<<ss.fontSz<<endl;
+	os<<"fontFile"<<" : "<<ss.getFontFile()<<endl;
+	os<<"encoding"<<" : "<<ss.getEncoding()<<endl;
+	os<<"fontSz"<<" : "<<ss.getFontSz()<<endl;
 	return os;
 }
 
 ostream& operator<<(ostream &os, const MatchSettings &ms) {
-	if(ms.hybridResultMode)
-		os<<"hybridResultMode"<<" : "<<boolalpha<<ms.hybridResultMode<<endl;
-	if(ms.kSsim > 0.)
-		os<<"kSsim"<<" : "<<ms.kSsim<<endl;
-	if(ms.kSdevFg > 0.)
-		os<<"kSdevFg"<<" : "<<ms.kSdevFg<<endl;
-	if(ms.kSdevEdge > 0.)
-		os<<"kSdevEdge"<<" : "<<ms.kSdevEdge<<endl;
-	if(ms.kSdevBg > 0.)
-		os<<"kSdevBg"<<" : "<<ms.kSdevBg<<endl;
-	if(ms.kContrast > 0.)
-		os<<"kContrast"<<" : "<<ms.kContrast<<endl;
-	if(ms.kMCsOffset > 0.)
-		os<<"kMCsOffset"<<" : "<<ms.kMCsOffset<<endl;
-	if(ms.kCosAngleMCs > 0.)
-		os<<"kCosAngleMCs"<<" : "<<ms.kCosAngleMCs<<endl;
-	if(ms.kSymDensity > 0.)
-		os<<"kSymDensity"<<" : "<<ms.kSymDensity<<endl;
-	if(ms.threshold4Blank > 0.)
-		os<<"threshold4Blank"<<" : "<<ms.threshold4Blank<<endl;
+	if(ms.isHybridResult())
+		os<<"hybridResultMode : true"<<endl;
+
+#define REPORT_POSITIVE_PARAM(paramName) \
+	if(ms.get_##paramName() > 0.) \
+		os<<#paramName " : "<<ms.get_##paramName()<<endl
+
+	REPORT_POSITIVE_PARAM(kSsim);
+	REPORT_POSITIVE_PARAM(kSdevFg);
+	REPORT_POSITIVE_PARAM(kSdevEdge);
+	REPORT_POSITIVE_PARAM(kSdevBg);
+	REPORT_POSITIVE_PARAM(kContrast);
+	REPORT_POSITIVE_PARAM(kMCsOffset);
+	REPORT_POSITIVE_PARAM(kCosAngleMCs);
+	REPORT_POSITIVE_PARAM(kSymDensity);
+
+#undef REPORT_POSITIVE_PARAM
+
+	if(ms.getBlankThreshold() > 0.)
+		os<<"threshold4Blank : "<<ms.getBlankThreshold()<<endl;
 	return os;
 }

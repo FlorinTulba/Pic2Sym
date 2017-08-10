@@ -100,11 +100,13 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\bestMatch.cpp" />
     <ClCompile Include="src\blur.cpp" />
     <ClCompile Include="src\boxBlur.cpp" />
     <ClCompile Include="src\bulkySymsFilter.cpp" />
     <ClCompile Include="src\cachedData.cpp" />
     <ClCompile Include="src\clusterAlg.cpp" />
+    <ClCompile Include="src\clusterData.cpp" />
     <ClCompile Include="src\clusterEngine.cpp" />
     <ClCompile Include="src\clusterSupport.cpp" />
     <ClCompile Include="src\clusterSupportWithPreselection.cpp" />
@@ -133,6 +135,7 @@
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\picTransformProgressTracker.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
+    <ClCompile Include="src\pmsCont.cpp" />
     <ClCompile Include="src\preselectManager.cpp" />
     <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
@@ -175,6 +178,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\appStart.h" />
+    <ClInclude Include="src\bestMatch.h" />
+    <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\boost_bimap_bimap.h" />
     <ClInclude Include="src\boost_filesystem_operations.h" />
@@ -184,6 +189,7 @@
     <ClInclude Include="src\cachedData.h" />
     <ClInclude Include="src\clusterAlg.h" />
     <ClInclude Include="src\clusterData.h" />
+    <ClInclude Include="src\clusterDataBase.h" />
     <ClInclude Include="src\clusterEngine.h" />
     <ClInclude Include="src\clusterSupport.h" />
     <ClInclude Include="src\clusterSupportWithPreselection.h" />
@@ -209,6 +215,7 @@
     <ClInclude Include="src\matchAssessment.h" />
     <ClInclude Include="src\matchEngine.h" />
     <ClInclude Include="src\matchParams.h" />
+    <ClInclude Include="src\matchParamsBase.h" />
     <ClInclude Include="src\matchSettings.h" />
     <ClInclude Include="src\matchSupport.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
@@ -219,9 +226,13 @@
     <ClInclude Include="src\ompTraceSwitch.h" />
     <ClInclude Include="src\partitionClustering.h" />
     <ClInclude Include="src\patch.h" />
+    <ClInclude Include="src\patchBase.h" />
     <ClInclude Include="src\picTransformProgressTracker.h" />
     <ClInclude Include="src\picTransformProgressTrackerBase.h" />
     <ClInclude Include="src\pixMapSym.h" />
+    <ClInclude Include="src\pixMapSymBase.h" />
+    <ClInclude Include="src\pmsCont.h" />
+    <ClInclude Include="src\pmsContBase.h" />
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
@@ -238,6 +249,7 @@
     <ClInclude Include="src\symbolsSupport.h" />
     <ClInclude Include="src\symbolsSupportWithPreselection.h" />
     <ClInclude Include="src\symData.h" />
+    <ClInclude Include="src\symDataBase.h" />
     <ClInclude Include="src\symFilter.h" />
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symFilterCache.h" />
@@ -246,6 +258,7 @@
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
     <ClInclude Include="src\tinySym.h" />
+    <ClInclude Include="src\tinySymBase.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\transformSupport.h" />

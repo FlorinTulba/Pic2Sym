@@ -55,6 +55,8 @@ protected:
 public:
 	PresentCmap(const IController &ctrler_,
 				const CmapPerspective &cmP_);
+	
+	void operator=(const PresentCmap&) = delete;
 
 	/// Getting the fonts to fill currently displayed page
 	CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;

@@ -61,14 +61,14 @@ public:
 	Settings(); ///< Creates Settings with empty MatchSettings
 
 	// Read-only accessors
-	const SymSettings& getSS() const override;
-	const ImgSettings& getIS() const override;
-	const MatchSettings& getMS() const override;
+	const SymSettings& getSS() const override final;
+	const ImgSettings& getIS() const override final;
+	const MatchSettings& getMS() const override final;
 
 	// Accessors for changing the settings
-	SymSettings& SS() override;
-	ImgSettings& IS() override;
-	MatchSettings& MS() override;
+	SymSettings& refSS() override final;
+	ImgSettings& refIS() override final;
+	MatchSettings& refMS() override final;
 };
 
 #endif // H_SETTINGS

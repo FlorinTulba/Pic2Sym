@@ -37,24 +37,8 @@
  ***********************************************************************************************/
 
 #include "pixMapSym.h"
-#include "filledRectanglesFilter.h"
-#include "gridBarsFilter.h"
-#include "bulkySymsFilter.h"
-#include "unreadableSymsFilter.h"
-#include "sievesSymsFilter.h"
-#include "symFilterCache.h"
 #include "presentCmap.h"
-#include "controllerBase.h"
 #include "misc.h"
-
-#pragma warning ( push, 0 )
-
-#include <map>
-#include <numeric>
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning ( pop )
 
 using namespace std;
 using namespace cv;
@@ -196,6 +180,19 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		equal(CBOUNDS(pixels), cbegin(other.pixels));
 }
 
+const Point2d& PixMapSym::getMc() const { return mc; }
+const Mat& PixMapSym::getColSums() const { return colSums; }
+const Mat& PixMapSym::getRowSums() const { return rowSums; }
+size_t PixMapSym::getSymIdx() const { return symIdx; }
+double PixMapSym::getAvgPixVal() const { return avgPixVal; }
+unsigned long PixMapSym::getSymCode() const { return symCode; }
+unsigned char PixMapSym::getRows() const { return rows; }
+unsigned char PixMapSym::getCols() const { return cols; }
+unsigned char PixMapSym::getLeft() const { return left; }
+unsigned char PixMapSym::getTop() const { return top; }
+bool PixMapSym::isRemovable() const { return removable; }
+void PixMapSym::setRemovable(bool removable_/* = true*/) { removable = removable_; }
+
 Mat PixMapSym::asNarrowMat() const {
 	return Mat((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
 }
@@ -228,7 +225,8 @@ Mat PixMapSym::toMatD01(unsigned fontSz) const {
 	return result;
 }
 
-void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vector<unsigned char> &pixels_,
+void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum,
+									  const vector<unsigned char> &pixels_,
 									  unsigned char rows_, unsigned char cols_,
 									  unsigned char left_, unsigned char top_,
 									  const Mat &consec, const Mat &revConsec,
@@ -273,144 +271,4 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz, double maxGlyphSum, const vec
 				sumY = sumPerRow.dot(Mat(revConsec, topRange));
 
 	mc = Point2d(sumX, sumY) / (glyphSum * szM1);
-}
-
-PmsCont::PmsCont(IController &ctrler_) :
-		ctrler(ctrler_),
-		
-		// Add any additional filters as 'make_unique<NewFilter>()' in the last set of unfilled '()'
-		symFilter(make_unique<FilledRectanglesFilter>
-				(make_unique<GridBarsFilter>
-				(make_unique<BulkySymsFilter>
-				(make_unique<UnreadableSymsFilter>
-				(make_unique<SievesSymsFilter>()))))) {}
-
-unsigned PmsCont::getFontSz() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return fontSz;
-}
-
-unsigned PmsCont::getBlanksCount() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return blanks;
-}
-
-unsigned PmsCont::getDuplicatesCount() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return duplicates;
-}
-
-const map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return removableSymsByCateg;
-}
-
-double PmsCont::getCoverageOfSmallGlyphs() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return coverageOfSmallGlyphs;
-}
-
-const vector<const PixMapSym>& PmsCont::getSyms() const {
-	if(!ready)
-		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
-
-	return syms;
-}
-
-void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
-	ready = false;
-	fontSz = fontSz_;
-	maxGlyphSum = (double)(255U * fontSz_ * fontSz_);
-	blanks = duplicates = 0U;
-	coverageOfSmallGlyphs = 0.;
-
-	removableSymsByCateg.clear();
-	syms.clear();
-	if(symsCount != 0U)
-		syms.reserve(symsCount);
-
-	consec = Mat(1, (int)fontSz_, CV_64FC1);
-	revConsec.release();
-
-	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
-	flip(consec, revConsec, 1);
-	revConsec = revConsec.t();
-}
-
-void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
-	assert(!ready); // method shouldn't be called after setAsReady without reset-ing
-	
-	const FT_Bitmap b = g->bitmap;
-	const unsigned height = b.rows, width = b.width;
-
-	// Skip Space characters
-	if(height==0U || width==0U) {
-		++blanks;
-		return;
-	}
-
-	const PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
-						(int)fontSz, maxGlyphSum, consec, revConsec, bb);
-	if(pms.avgPixVal < EPS || pms.avgPixVal > OneMinEPS) { // discard disguised Space characters
-		++blanks;
-		return;
-	}
-
-	// Exclude duplicates, as well
-	for(const auto &prevPms : syms)
-		if(prevPms == pms) {
-			++duplicates;
-			return;
-		}
-
-	sfc.setBoundingBox(height, width);
-
-	const auto matchingFilterId = symFilter->matchingFilterId(pms, sfc);
-	if(matchingFilterId) {
-		auto it = removableSymsByCateg.find(*matchingFilterId);
-		if(it == removableSymsByCateg.end())
-			removableSymsByCateg.emplace(*matchingFilterId, 1U);
-		else
-			++it->second;
-
-		extern const bool PreserveRemovableSymbolsForExamination;
-		if(!PreserveRemovableSymbolsForExamination)
-			return;
-
-		const_cast<PixMapSym&>(pms).removable = true;
-	}
-
-	syms.push_back(move(const_cast<PixMapSym&>(pms)));
-
-	ctrler.display1stPageIfFull(syms);
-}
-
-void PmsCont::setAsReady() {
-	if(ready)
-		return;
-
-	// Determine below max box coverage for smallest glyphs from the kept symsSet.
-	// This will be used to favor using larger glyphs when this option is selected.
-	extern const double PmsCont_SMALL_GLYPHS_PERCENT;
-	const auto smallGlyphsQty = (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
-
-	auto itToNthGlyphSum = next(begin(syms), smallGlyphsQty);
-	nth_element(begin(syms), itToNthGlyphSum, end(syms),
-				[] (const PixMapSym &first, const PixMapSym &second) {
-		return first.avgPixVal < second.avgPixVal;
-	});
-
-	coverageOfSmallGlyphs = itToNthGlyphSum->avgPixVal;
-
-	ready = true;
 }

@@ -37,7 +37,6 @@
  ***********************************************************************************************/
 
 #include "patch.h"
-#include "matchEngine.h"
 
 #pragma warning ( push, 0 )
 
@@ -47,11 +46,6 @@
 
 using namespace std;
 using namespace cv;
-
-const Mat& Patch::matrixToApprox() const {
-	assert(needsApproximation);
-	return grayD;
-}
 
 Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 		orig(orig_), blurred(blurred_), isColor(isColor_) {
@@ -66,7 +60,7 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 	minMaxIdx(grayBlurred, &minVal, &maxVal); // assessed on blurred patch, to avoid outliers bias
 	extern const double Transformer_run_THRESHOLD_CONTRAST_BLURRED;
 	if(maxVal-minVal < Transformer_run_THRESHOLD_CONTRAST_BLURRED) {
-		needsApproximation = false;
+		const_cast<bool&>(needsApproximation) = false;
 		return;
 	}
 
@@ -74,9 +68,25 @@ Patch::Patch(const Mat &orig_, const Mat &blurred_, bool isColor_) :
 	extern const bool Transform_BlurredPatches_InsteadOf_Originals;
 	const Mat &patch2Process = Transform_BlurredPatches_InsteadOf_Originals ?
 				blurred : orig;
+	Mat gray;
 	if(isColor)
-		cvtColor(patch2Process, grayD, COLOR_RGB2GRAY);
+		cvtColor(patch2Process, gray, COLOR_RGB2GRAY);
 	else
-		grayD = patch2Process.clone();
-	grayD.convertTo(grayD, CV_64FC1);
+		gray = patch2Process.clone();
+	gray.convertTo(const_cast<Mat&>(grayD), CV_64FC1);
+}
+
+const Mat& Patch::getOrig() const { return orig; }
+const Mat& Patch::getBlurred() const { return blurred; }
+
+bool Patch::isColored() const { return isColor; }
+bool Patch::nonUniform() const { return needsApproximation; }
+
+const Mat& Patch::matrixToApprox() const {
+	assert(needsApproximation);
+	return grayD;
+}
+
+unique_ptr<const IPatch> Patch::clone() const {
+	return make_unique<const Patch>(*this);
 }

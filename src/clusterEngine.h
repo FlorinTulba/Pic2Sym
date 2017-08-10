@@ -39,7 +39,7 @@
 #ifndef H_CLUSTER_ENGINE
 #define H_CLUSTER_ENGINE
 
-#include "clusterData.h"
+#include "clusterDataBase.h"
 #include "clusterAlg.h"
 
 #pragma warning ( push, 0 )

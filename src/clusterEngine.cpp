@@ -55,16 +55,6 @@
 
 #endif // UNIT_TESTING not defined
 
-#pragma warning ( push, 0 )
-
-#include <set>
-#include <iostream>
-#include <numeric>
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning ( pop )
-
 using namespace std;
 using namespace cv;
 
@@ -89,40 +79,6 @@ static void reportClustersInfo(const vector<vector<unsigned>> &symsIndicesPerClu
 	cout<<"Largest cluster contains "<<maxClusterSz<<" symbols."<<endl;
 }
 
-ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
-						 const vector<unsigned> &clusterSymIndices,
-						 SymsSupport &symsSupport) : SymData(),
-		idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
-	assert(!clusterSymIndices.empty() && !symsSet.empty());
-	const double invClusterSz = 1./sz;
-	const Mat &firstNegSym = symsSet[0].negSym;
-	const int symSz = firstNegSym.rows;
-	double avgPixVal_ = 0.;
-	Point2d mc_;
-	vector<const SymData*> clusterSyms; clusterSyms.reserve((size_t)sz);
-
-	for(const auto clusterSymIdx : clusterSymIndices) {
-		const SymData &symData = symsSet[clusterSymIdx];
-		clusterSyms.push_back(&symData);
-
-		// avgPixVal and mc are taken from the normal-size symbol (guaranteed to be non-blank)
-		avgPixVal_ += symData.avgPixVal;
-		mc_ += symData.mc;
-	}
-	avgPixVal = avgPixVal_ * invClusterSz;
-	mc = mc_ * invClusterSz;
-
-	Mat synthesizedSym;
-	symsSupport.computeClusterRepresentative(clusterSyms, symSz, invClusterSz, synthesizedSym, negSym);
-
-	computeFields(synthesizedSym, masks[FG_MASK_IDX], masks[BG_MASK_IDX], masks[EDGE_MASK_IDX],
-				  masks[GROUNDED_SYM_IDX], masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
-				  minVal, diffMinMax, symsSupport.usingTinySymbols());
-}
-
-ClusterData::ClusterData(ClusterData &&other) : SymData(move(other)),
-	idxOfFirstSym(other.idxOfFirstSym), sz(other.sz) {}
-
 ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
 	clustAlg(ClusterAlg::algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
 
@@ -144,7 +100,7 @@ void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) 
 	// Sort symsIndicesPerCluster in ascending order of avgPixVal taken from the first symbol from each cluster
 	sort(BOUNDS(symsIndicesPerCluster),
 		 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
-		return symsSet[(size_t)a.front()].avgPixVal < symsSet[(size_t)b.front()].avgPixVal;
+		return symsSet[(size_t)a.front()]->getAvgPixVal() < symsSet[(size_t)b.front()]->getAvgPixVal();
 	});
 
 	if(averageClusterSize > MinAverageClusterSize) {

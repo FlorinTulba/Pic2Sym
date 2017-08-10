@@ -40,21 +40,29 @@
 #define H_CLUSTER_DATA
 
 #include "symData.h"
+#include "clusterDataBase.h"
 
 struct SymsSupport; // Forward declaration
 
+#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
+
 /**
 Synthesized symbol as the representative of several symbols that were clustered together.
-Inherits from SymData to qualify in passing as SymData& parameter to assessMatch method.
 
 The specific symbol indices that form the cluster aren't needed since
 the clustering regroups the symbols by clusters, so only the index of 1st cluster member and
 the cluster size appear as fields.
 */
-struct ClusterData : SymData {
+class ClusterData : public SymData, public IClusterData {
+#ifdef UNIT_TESTING // Unit Testing project may need these fields as public
+public:
+#else // UNIT_TESTING not defined - keep fields as protected
+protected:
+#endif // UNIT_TESTING
 	unsigned idxOfFirstSym;	///< index of the first symbol from symsSet that belongs to this cluster
 	unsigned sz;			///< size of the cluster - how many symbols form the cluster
 
+public:
 	/**
 	Constructs a cluster representative for the selected symbols before they get reordered.
 
@@ -72,9 +80,14 @@ struct ClusterData : SymData {
 	ClusterData(const ClusterData&) = delete;
 	void operator=(const ClusterData&) = delete;
 	void operator=(ClusterData&&) = delete;
+
+	/// Index of the first symbol from symsSet that belongs to this cluster
+	unsigned getIdxOfFirstSym() const override final;
+
+	/// Size of the cluster - how many symbols form the cluster
+	unsigned getSz() const override final;
 };
 
-/// VClusterData - vector with most information about each cluster
-typedef std::vector<const ClusterData> VClusterData;
+#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
 
 #endif // H_CLUSTER_DATA

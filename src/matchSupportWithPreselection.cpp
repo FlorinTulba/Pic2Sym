@@ -38,9 +38,10 @@
 
 #include "matchSupportWithPreselection.h"
 #include "preselectSyms.h"
-#include "matchParams.h"
 #include "matchAssessment.h"
-#include "symData.h"
+#include "matchParamsBase.h"
+#include "patchBase.h"
+#include "bestMatchBase.h"
 
 using namespace std;
 
@@ -71,25 +72,26 @@ void MatchSupportWithPreselection::updateCachedData(unsigned fontSz, const FontE
 }
 
 bool MatchSupportWithPreselection::improvesBasedOnBatchShortList(CandidatesShortList &&shortList,
-																 BestMatch &draftMatch) const {
+																 IBestMatch &draftMatch) const {
 	bool betterMatchFound = false;
 
 	double score;
 
-	MatchParams &mp = draftMatch.bestVariant.params;
+	auto &mp = draftMatch.refParams();
+	assert(mp);
 	ScoreThresholds scoresToBeat;
-	matchAssessor.scoresToBeat(draftMatch.score, scoresToBeat);
+	matchAssessor.scoresToBeat(draftMatch.getScore(), scoresToBeat);
 
 	while(!shortList.empty()) {
 		auto candidateIdx = shortList.top();
 
-		mp.reset(); // preserves patch-invariant fields
+		mp->reset(); // preserves patch-invariant fields
 
-		if(matchAssessor.isBetterMatch(draftMatch.patch.matrixToApprox(),
-									symsSet[candidateIdx], cd,
-									scoresToBeat, mp, score)) {
-			const auto &symData = symsSet[candidateIdx];
-			draftMatch.update(score, symData.code, candidateIdx, symData, mp);
+		if(matchAssessor.isBetterMatch(draftMatch.getPatch().matrixToApprox(),
+									*symsSet[candidateIdx], cd,
+									scoresToBeat, *mp, score)) {
+			const auto &symData = *symsSet[candidateIdx];
+			draftMatch.update(score, symData.getCode(), candidateIdx, symData);
 			matchAssessor.scoresToBeat(score, scoresToBeat);
 
 			betterMatchFound = true;

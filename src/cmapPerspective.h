@@ -44,16 +44,13 @@
 #ifndef H_CMAP_PERSPECTIVE
 #define H_CMAP_PERSPECTIVE
 
+#include "symDataBase.h"
+
 #pragma warning ( push, 0 )
 
-#include <vector>
 #include <set>
 
 #pragma warning ( pop )
-
-// Forward declarations
-struct SymData;
-typedef std::vector<const SymData> VSymData;
 
 /**
 Ensures the symbols from the Cmap Viewer appear sorted by cluster size and then by average pixels sum.
@@ -63,7 +60,7 @@ while transforming images.
 class CmapPerspective {
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const SymData*> VPSymData;
+	typedef std::vector<const ISymData*> VPSymData;
 	typedef VPSymData::const_iterator VPSymDataCIt;
 	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
 

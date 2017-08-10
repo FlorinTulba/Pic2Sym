@@ -48,6 +48,8 @@ protected:
 public:
 	UpdateSymSettings(SymSettings &ss_);
 
+	void operator=(const UpdateSymSettings&) = delete;
+
 	/// called by FontEngine::newFont after installing a new font to update SymSettings
 	void newFontFile(const std::string &fName) const override;
 

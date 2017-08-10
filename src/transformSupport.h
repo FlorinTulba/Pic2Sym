@@ -42,13 +42,14 @@
 #pragma warning ( push, 0 )
 
 #include <vector>
+#include <memory>
 
 #include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
 
 // Forward declarations
-struct BestMatch;
+struct IBestMatch;
 class MatchSettings;
 class MatchEngine;
 
@@ -59,34 +60,35 @@ When PreselectionByTinySyms == true, it perform those tasks also for tiny symbol
 class TransformSupport {
 protected:
 	/// Initializes a row of a draft when a new image needs to be approximated
-	static void initDraftRow(std::vector<std::vector<BestMatch>> &draft, int r, unsigned patchesPerRow,
+	static void initDraftRow(std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draft,
+							 int r, unsigned patchesPerRow,
 							 const cv::Mat &res, const cv::Mat &resBlurred, int patchSz, bool isColor);
 
 	/// Resets a row of a draft when current image needs to be approximated in a different context
-	static void resetDraftRow(std::vector<std::vector<BestMatch>> &draft, int r);
+	static void resetDraftRow(std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draft, int r);
 
 	/// Update the visualized draft
-	static void patchImproved(cv::Mat &result, unsigned sz, const BestMatch &draftMatch, 
+	static void patchImproved(cv::Mat &result, unsigned sz, const IBestMatch &draftMatch, 
 							  const cv::Range &rowRange, int startCol);
 
 	/// Update PatchApprox for uniform Patch only during the compare with 1st sym (from 1st batch)
 	static void manageUnifPatch(const MatchSettings &ms, cv::Mat &result, unsigned sz, 
-								BestMatch &draftMatch, const cv::Range &rowRange, int startCol);
+								IBestMatch &draftMatch, const cv::Range &rowRange, int startCol);
 
 	/// Determines if a given patch is worth approximating (Uniform patches don't make sense approximating)
-	static bool checkUnifPatch(BestMatch &draftMatch);
+	static bool checkUnifPatch(IBestMatch &draftMatch);
 
 	MatchEngine &me;					///< match engine
 	const MatchSettings &matchSettings;	///< match settings
 	cv::Mat &resized;					///< resized version of the original
 	cv::Mat &resizedBlurred;			///< blurred version of the resized original
-	std::vector<std::vector<BestMatch>> &draftMatches;	///< temporary best matches
+	std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches;	///< temporary best matches
 
 public:
 	/// Base constructor
 	TransformSupport(MatchEngine &me_, const MatchSettings &matchSettings_,
 					 cv::Mat &resized_, cv::Mat &resizedBlurred_,
-					 std::vector<std::vector<BestMatch>> &draftMatches_);
+					 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches_);
 
 	TransformSupport(const TransformSupport&) = delete;
 	TransformSupport(TransformSupport&&) = delete;

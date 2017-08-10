@@ -39,66 +39,39 @@
 #ifndef H_SYM_DATA
 #define H_SYM_DATA
 
+#include "symDataBase.h"
 #include "matSerialization.h"
 
 #pragma warning ( push, 0 )
-
-#include <array>
-#ifndef AI_REVIEWER_CHECK
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
 
 #ifdef UNIT_TESTING
 #	include <map>
 #endif // UNIT_TESTING defined
 
-#include <opencv2/core/core.hpp>
+#ifndef AI_REVIEWER_CHECK
+#	include <boost/serialization/array.hpp>
+#	include <boost/serialization/version.hpp>
+#endif // AI_REVIEWER_CHECK not defined
 
 #pragma warning ( pop )
 
+struct IPixMapSym; // Forward declaration
+
 /// Most symbol information
-struct SymData {
-#ifndef AI_REVIEWER_CHECK
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of SymData class
-#endif // AI_REVIEWER_CHECK not defined
-
-	/**
-	Computes most information about a symbol based on glyph parameter.
-	It's also used to spare the constructor of SymData from performing computeFields' job.
-	That can be useful when multiple threads add SymData items to a vector within a critical section,
-	so each new SymData's fields are prepared outside the critical section to minimize blocking of
-	other threads.
-	*/
-	static void computeFields(const cv::Mat &glyph, cv::Mat &fgMask, cv::Mat &bgMask,
-							  cv::Mat &edgeMask, cv::Mat &groundedGlyph, cv::Mat &blurOfGroundedGlyph,
-							  cv::Mat &varianceOfGroundedGlyph, double &minVal, double &diffMinMax,
-							  bool forTinySym);
-
+class SymData : public virtual ISymData {
+#ifdef UNIT_TESTING // Unit Testing project may need these fields as public
+public:
+#else // UNIT_TESTING not defined - keep fields as protected
+protected:
+#endif // UNIT_TESTING
 	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
 	cv::Point2d mc = cv::Point2d(.5, .5);
 
 	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; double for tiny)
 
-	enum { // indices of each matrix type within a MatArray object
-		FG_MASK_IDX,			///< mask isolating the foreground of the glyph
-		BG_MASK_IDX,			///< mask isolating the background of the glyph 
-		EDGE_MASK_IDX,			///< mask isolating the edge of the glyph (transition region fg-bg)
-		GROUNDED_SYM_IDX,		///< symbol shifted (in brightness) to have black background (0..1)
-		BLURRED_GR_SYM_IDX,		///< blurred version of the grounded symbol (0..1)
-		VARIANCE_GR_SYM_IDX,	///< variance of the grounded symbol
+	MatArray masks;			///< various masks
 
-		MATRICES_COUNT ///< KEEP THIS LAST and DON'T USE IT AS INDEX in MatArray objects!
-	};
-
-	// For each symbol from cmap, there'll be several additional helpful matrices to store
-	// along with the one for the given glyph. The enum from above should be used for selection.
-	typedef std::array< cv::Mat, MATRICES_COUNT > MatArray;
-
-	MatArray masks;				///< various masks
-
-	size_t symIdx = 0U;				///< symbol index within cmap
+	size_t symIdx = 0ULL;	///< symbol index within cmap
 	double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
 	double avgPixVal = 0.;	///< average pixel value, each pixel in 0..1
@@ -118,15 +91,71 @@ struct SymData {
 	*/
 	bool removable = false;
 
+	/**
+	Computes most information about a symbol based on glyph parameter.
+	It's also used to spare the constructor of SymData from performing computeFields' job.
+	That can be useful when multiple threads add SymData items to a vector within a critical section,
+	so each new SymData's fields are prepared outside the critical section to minimize blocking of
+	other threads.
+	*/
+	static void computeFields(const cv::Mat &glyph, SymData &sd, bool forTinySym);
+
+public:
+#ifndef AI_REVIEWER_CHECK
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of ISymData class
+#endif // AI_REVIEWER_CHECK not defined
+
 	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
 	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
 			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_, bool removable_ = false);
+	SymData(const IPixMapSym &pms, unsigned sz, bool forTinySym);
 
 	SymData(const SymData &other);
 	SymData(SymData &&other); ///< moves the matrices from other (instead of just copying them)
 
 	SymData& operator=(const SymData &other);
 	SymData& operator=(SymData &&other); ///< moves the matrices from other (instead of just copying them)
+
+	~SymData() {}
+
+	/// mass center of the symbol given original fg & bg (coordinates are within a unit-square: 0..1 x 0..1)
+	const cv::Point2d& getMc() const override final;
+
+	/// negative of the symbol (0..255 byte for normal symbols; double for tiny)
+	const cv::Mat& getNegSym() const override final;
+
+	/// various masks
+	const MatArray& getMasks() const override final;
+
+	/// symbol index within cmap
+	size_t getSymIdx() const override final;
+
+	/// the value of darkest pixel, range 0..1
+	double getMinVal() const override final;
+
+	/// difference between brightest and darkest pixels, each in 0..1
+	double getDiffMinMax() const override final;
+
+	/// average pixel value, each pixel in 0..1
+	double getAvgPixVal() const override final;
+
+	/// the code of the symbol
+	unsigned long getCode() const override final;
+
+	/**
+	Enabled symbol filters might mark this symbol as removable,
+	but PreserveRemovableSymbolsForExamination from configuration might allow it to remain
+	in the active symbol set used during image transformation.
+
+	However, when removable == true && PreserveRemovableSymbolsForExamination,
+	the symbol will appear as marked (inversed) in the cmap viewer
+
+	This field doesn't need to be serialized, as filtering options might be different
+	for distinct run sessions.
+	*/
+	bool isRemovable() const override final;
+
 
 	/**
 	Serializes this SymData object (apart from 'removable' field) to ar.
@@ -159,14 +188,14 @@ struct SymData {
 			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
 
 	/// A clone with different symIdx
-	SymData clone(size_t symIdx_);
+	std::unique_ptr<const SymData> clone(size_t symIdx_) const;
 #endif // UNIT_TESTING defined
 
 protected:
 	/* Constructors callable from derived classes only */
 
 	/// Used for creation of TinySym and ClusterData
-	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0U,
+	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL,
 			double avgPixVal_ = 0., const cv::Point2d &mc_ = cv::Point2d(.5, .5));
 
 	/// Used to create the TinySym centroid of a cluster 
@@ -176,8 +205,5 @@ protected:
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(SymData, SymData::VERSION);
 #endif // AI_REVIEWER_CHECK not defined
-
-/// VSymData - vector with most information about each symbol
-typedef std::vector<const SymData> VSymData;
 
 #endif // H_SYM_DATA

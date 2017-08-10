@@ -38,7 +38,8 @@
 
 #if defined _DEBUG || defined UNIT_TESTING
 
-#include "matchParams.h"
+#include "matchParamsBase.h"
+#include "bestMatchBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -49,32 +50,32 @@
 
 static const std::wstring COMMA(L",\t");
 
-std::wostream& operator<<(std::wostream &os, const MatchParams &mp) {
-	os<<mp.ssim<<COMMA
-		<<mp.sdevFg<<COMMA<<mp.sdevEdge<<COMMA<<mp.sdevBg<<COMMA
-		<<mp.fg<<COMMA<<mp.bg<<COMMA;
+std::wostream& operator<<(std::wostream &os, const IMatchParams &mp) {
+	os<<mp.getSsim()<<COMMA
+		<<mp.getSdevFg()<<COMMA<<mp.getSdevEdge()<<COMMA<<mp.getSdevBg()<<COMMA
+		<<mp.getFg()<<COMMA<<mp.getBg()<<COMMA;
 
-	if(mp.mcPatchApprox)
-		os<<mp.mcPatchApprox->x<<COMMA<<mp.mcPatchApprox->y<<COMMA;
+	if(mp.getMcPatchApprox())
+		os<<mp.getMcPatchApprox()->x<<COMMA<<mp.getMcPatchApprox()->y<<COMMA;
 	else
 		os<<boost::none<<COMMA<<boost::none<<COMMA;
 
-	if(mp.mcPatch)
-		os<<mp.mcPatch->x<<COMMA<<mp.mcPatch->y<<COMMA;
+	if(mp.getMcPatch())
+		os<<mp.getMcPatch()->x<<COMMA<<mp.getMcPatch()->y<<COMMA;
 	else
 		os<<boost::none<<COMMA<<boost::none<<COMMA;
 
-	os<<mp.symDensity;
+	os<<mp.getSymDensity();
 
 	return os;
 }
 
-std::wostream& operator<<(std::wostream &os, const BestMatch &bm) {
-	if(!bm.symCode)
+std::wostream& operator<<(std::wostream &os, const IBestMatch &bm) {
+	if(!bm.getSymCode())
 		os<<boost::none;
 	else {
-		unsigned long symCode = *bm.symCode;
-		if(bm.unicode) {
+		const unsigned long symCode = *bm.getSymCode();
+		if(bm.isUnicode()) {
 			switch(symCode) {
 				case (unsigned long)',':
 					os<<L"COMMA"; break;
@@ -96,7 +97,9 @@ std::wostream& operator<<(std::wostream &os, const BestMatch &bm) {
 			os<<symCode;
 	}
 
-	os<<COMMA<<bm.score<<COMMA<<bm.bestVariant.params;
+	os<<COMMA<<bm.getScore();
+	if(bm.getParams())
+		os<<COMMA<<*bm.getParams();
 	return os;
 }
 
@@ -126,8 +129,8 @@ TransformTrace::~TransformTrace() {
 	ofs.close();
 }
 
-void TransformTrace::newEntry(unsigned r, unsigned c, const BestMatch &best) {
-	ofs<<r/sz<<COMMA<<c/sz<<COMMA<<const_cast<BestMatch&>(best).setUnicode(isUnicode)<<endl;
+void TransformTrace::newEntry(unsigned r, unsigned c, const IBestMatch &best) {
+	ofs<<r/sz<<COMMA<<c/sz<<COMMA<<const_cast<IBestMatch&>(best).setUnicode(isUnicode)<<endl;
 
 	// flush after every row fully transformed
 	if(r > transformingRow) {

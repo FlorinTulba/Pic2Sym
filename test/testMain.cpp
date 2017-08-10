@@ -41,6 +41,7 @@
 #include "testMain.h"
 #include "selectBranch.h"
 #include "controller.h"
+#include "pixMapSym.h"
 #include "matchEngine.h"
 #include "fontEngine.h"
 #include "transform.h"
@@ -48,6 +49,7 @@
 #include "symSettings.h"
 #include "imgSettings.h"
 #include "img.h"
+#include "patch.h"
 #include "preselectManager.h"
 #include "picTransformProgressTracker.h"
 #include "glyphsProgressTracker.h"
@@ -164,13 +166,13 @@ namespace ut {
 	} // anonymous namespace
 
 	void showMismatches(const string &testTitle,
-						const vector<const BestMatch> &mismatches) {
+						const vector<unique_ptr<BestMatch>> &mismatches) {
 		if(mismatches.empty())
 			return;
 		
 		const unsigned cases = (unsigned)mismatches.size();
-		const auto &firstItem = mismatches.front();
-		const auto &firstRefM = firstItem.patch.orig;
+		const auto &firstItem = *mismatches.front();
+		const auto &firstRefM = firstItem.getPatch().getOrig();
 		const unsigned tileSz = (unsigned)firstRefM.rows;
 		const bool isColor = firstRefM.channels() > 1;
 		cerr<<"There were "<<cases<<" unexpected matches"<<endl;
@@ -206,11 +208,9 @@ namespace ut {
 			Range rowRange(r*tileSz, (r+1)*tileSz);
 			for(unsigned c = 0U; c<widthTiles && idx<cases; ++c, ++idx) {
 				Range colRange(c*tileSz, (c+1)*tileSz);
-				const auto &item = mismatches[idx];
-				item.patch.orig.copyTo(Mat(mRef, rowRange, colRange)); // reference
-				item.bestVariant.approx.copyTo(Mat(mRes, rowRange, colRange)); // result
-
-				// optionally present info about corresponding BestMatch get<2>(item)
+				const auto &item = *mismatches[idx];
+				item.getPatch().getOrig().copyTo(Mat(mRef, rowRange, colRange)); // reference
+				item.getApprox().copyTo(Mat(mRes, rowRange, colRange)); // result
 			}
 		}
 
@@ -339,9 +339,9 @@ bool ControlPanelActions::newImage(const Mat &imgMat) {
 		// Testing an image containing a single patch
 		if(imgMat.cols == cfg.getSS().getFontSz() && imgMat.rows == cfg.getSS().getFontSz()) {
 			if(1U != cfg.getIS().getMaxHSyms())
-				cfg.IS().setMaxHSyms(1U);
+				cfg.refIS().setMaxHSyms(1U);
 			if(1U != cfg.getIS().getMaxVSyms())
-				cfg.IS().setMaxVSyms(1U);
+				cfg.refIS().setMaxVSyms(1U);
 		}
 	}
 
@@ -394,11 +394,11 @@ bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg>) {
 
 void Controller::showResultedImage(double) {}
 
-const SymData* SelectSymbols::pointedSymbol(int, int) const { return nullptr; }
+const ISymData* SelectSymbols::pointedSymbol(int, int) const { return nullptr; }
 
 void SelectSymbols::displaySymCode(unsigned long) const {}
 
-void SelectSymbols::enlistSymbolForInvestigation(const SymData&) const {}
+void SelectSymbols::enlistSymbolForInvestigation(const ISymData&) const {}
 
 void SelectSymbols::symbolsReadyToInvestigate() const {}
 
@@ -425,11 +425,7 @@ TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, d
 	assert(!negSym_.empty());
 	negSym = negSym_;
 	Mat tinySymMat = 1 - negSym * INV_255();
-	SymData::computeFields(tinySymMat,
-						   masks[FG_MASK_IDX], masks[BG_MASK_IDX],
-						   masks[EDGE_MASK_IDX], masks[GROUNDED_SYM_IDX],
-						   masks[BLURRED_GR_SYM_IDX], masks[VARIANCE_GR_SYM_IDX],
-						   minVal, diffMinMax, true);
+	SymData::computeFields(tinySymMat, *this, true);
 
 	mat = masks[GROUNDED_SYM_IDX].clone();
 	// computing average projections
@@ -463,14 +459,13 @@ SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double dif
 				 double avgPixVal_, const Point2d &mc_, const SymData::IdxMatMap &relevantMats,
 				 const Mat &negSym_/* = Mat()*/) :
 		code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-		avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_),
-		masks(SymData::MatArray { { Mat(), Mat(), Mat(), Mat(), Mat(), Mat() } }) {
+		avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_) {
 	for(const auto &idxAndMat : relevantMats)
 		masks[idxAndMat.first] = idxAndMat.second;
 }
 
-SymData SymData::clone(size_t symIdx_) {
-	return SymData(negSym, code, symIdx_, minVal, diffMinMax, avgPixVal, mc, masks);
+unique_ptr<const SymData> SymData::clone(size_t symIdx_) const {
+	return make_unique<const SymData>(negSym, code, symIdx_, minVal, diffMinMax, avgPixVal, mc, masks);
 }
 
 PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const Mat &revConsec) : 
@@ -496,6 +491,10 @@ static const Mat blurredVersionOf(const Mat &orig_) {
 }
 
 Patch::Patch(const Mat &orig_) : Patch(orig_, blurredVersionOf(orig_), orig_.channels()>1) {}
+
+Patch& Patch::setMatrixToApprox(const Mat &m) { const_cast<Mat&>(grayD) = m; return *this; }
+
+void Patch::forceApproximation() { const_cast<bool&>(needsApproximation) = true; }
 
 bool ClusterEngine::clusteredAlready(const string&, const string&, boost::filesystem::path&) { return false; }
 

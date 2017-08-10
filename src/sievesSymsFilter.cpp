@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "sievesSymsFilter.h"
-#include "pixMapSym.h"
+#include "pixMapSymBase.h"
 #include "symFilterCache.h"
 #include "misc.h"
 
@@ -59,12 +59,12 @@ namespace {
 	If any of the sums is outside the allowed range, the symbol appears not evenly distributed,
 	so it cannot be a sieve.
 	*/
-	bool isEvenlyDistributed(const PixMapSym &pms, const SymFilterCache &sfc, const Mat &brightGlyph,
+	bool isEvenlyDistributed(const IPixMapSym &pms, const SymFilterCache &sfc, const Mat &brightGlyph,
 							 bool toInvert, unsigned sz, unsigned halfSz, unsigned lastSzBit) {
 		// threshold ratio between 1/4 of the symbol sum and the sum of each quadrant
 		static const double SumQuarterThreshold = 1.5364;
 
-		double sumBrightGlyph = (toInvert ? (1. - pms.avgPixVal) : pms.avgPixVal) * sfc.areaD;
+		double sumBrightGlyph = (toInvert ? (1. - pms.getAvgPixVal()) : pms.getAvgPixVal()) * sfc.areaD;
 
 		// Ignore central lines when sz is odd
 		if(lastSzBit != 0U) {
@@ -254,7 +254,7 @@ SievesSymsFilter::SievesSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullpt
 Determines if provided pms looks like a sieve by comparing its magnitude of the Fourier transform
 with the geometric signature of sieves - a rectangle with minimum sides and area values.
 */
-bool SievesSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &sfc) {
+bool SievesSymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
@@ -263,7 +263,7 @@ bool SievesSymsFilter::isDisposable(const PixMapSym &pms, const SymFilterCache &
 				lastSzBit = sz & 1U;	// 1 for odd sz, 0 for even sz
 
 	// Using inverted glyph if original is too dark
-	const bool toInvert = (pms.avgPixVal < .5);
+	const bool toInvert = (pms.getAvgPixVal() < .5);
 	Mat brightGlyph = pms.toMatD01(sz);
 	if(toInvert)
 		brightGlyph = 1. - brightGlyph;
