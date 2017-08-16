@@ -57,7 +57,7 @@
 struct IController;
 struct IUpdateSymSettings;
 struct IPresentCmap;
-class SymSettings;
+struct ISymSettings;
 class AbsJobMonitor;
 
 /// FontEngine class wraps some necessary FreeType functionality.
@@ -74,7 +74,7 @@ protected:
 
 	VTinySyms tinySyms;	///< small version of all the symbols from current cmap
 
-	const SymSettings &ss;			///< settings of this font engine
+	const ISymSettings &ss;			///< settings of this font engine
 
 	/// indices for each unique Encoding within cmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
@@ -113,7 +113,7 @@ public:
 	@param ctrler_ font validation and glyph preprocessing monitor aspects of the Controller
 	@param ss_ font data
 	*/
-	FontEngine(const IController &ctrler_, const SymSettings &ss_);
+	FontEngine(const IController &ctrler_, const ISymSettings &ss_);
 	FontEngine(const FontEngine&) = delete;
 	void operator=(const FontEngine&) = delete;
 	~FontEngine();
@@ -151,4 +151,4 @@ public:
 	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 };
 
-#endif
+#endif // H_FONT_ENGINE

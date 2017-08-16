@@ -40,16 +40,36 @@
 #define H_SETTINGS
 
 #include "settingsBase.h"
-#include "matchSettings.h"
-#include "imgSettings.h"
-#include "symSettings.h"
+
+#pragma warning ( push, 0 )
+
+#ifndef AI_REVIEWER_CHECK
+
+#	include <boost/archive/binary_oarchive.hpp>
+#	include <boost/archive/binary_iarchive.hpp>
+#	include <boost/serialization/split_member.hpp>
+#	include <boost/serialization/version.hpp>
+
+// Forward declarations
+class SymSettings;
+class ImgSettings;
+class MatchSettings;
+
+#endif // AI_REVIEWER_CHECK not defined
+
+#pragma warning ( pop )
+
+// Forward declarations
+struct ISymSettings;
+struct IfImgSettings;
+struct IMatchSettings;
 
 /// Envelopes all parameters required for transforming images
 class Settings : public ISettingsRW {
 protected:
-	SymSettings ss;		///< parameters concerning the symbols set used for approximating patches
-	ImgSettings is;		///< contains max count of horizontal & vertical patches to process
-	MatchSettings ms;	///< settings used during approximation process
+	std::unique_ptr<ISymSettings> ss;		///< parameters concerning the symbols set used for approximating patches
+	std::unique_ptr<IfImgSettings> is;		///< contains max count of horizontal & vertical patches to process
+	std::unique_ptr<IMatchSettings> ms;		///< settings used during approximation process
 
 public:
 	/**
@@ -57,18 +77,54 @@ public:
 
 	@param ms_ incoming parameter copied to ms field.
 	*/
-	Settings(const MatchSettings &ms_);
+	Settings(const IMatchSettings &ms_);
 	Settings(); ///< Creates Settings with empty MatchSettings
 
 	// Read-only accessors
-	const SymSettings& getSS() const override final;
-	const ImgSettings& getIS() const override final;
-	const MatchSettings& getMS() const override final;
+	const ISymSettings& getSS() const override final;
+	const IfImgSettings& getIS() const override final;
+	const IMatchSettings& getMS() const override final;
 
 	// Accessors for changing the settings
-	SymSettings& refSS() override final;
-	ImgSettings& refIS() override final;
-	MatchSettings& refMS() override final;
+	ISymSettings& refSS() override final;
+	IfImgSettings& refIS() override final;
+	IMatchSettings& refMS() override final;
+
+	/**
+	Overwrites *this with the Settings object read from ar.
+
+	@param ar source of the object to load
+	@param version the version of the loaded Settings
+	*/
+	template<class Archive>
+	void load(Archive &ar, const unsigned version) {
+		UNREFERENCED_PARAMETER(version);
+
+		// read user default match settings
+#ifndef AI_REVIEWER_CHECK
+		ar >> dynamic_cast<SymSettings&>(*ss)
+			>> dynamic_cast<ImgSettings&>(*is)
+			>> dynamic_cast<MatchSettings&>(*ms);
+#endif // AI_REVIEWER_CHECK not defined
+	}
+
+	/// Saves *this to ar
+	template<class Archive>
+	void save(Archive &ar, const unsigned) const {
+#ifndef AI_REVIEWER_CHECK
+		ar << dynamic_cast<const SymSettings&>(*ss)
+			<< dynamic_cast<const ImgSettings&>(*is)
+			<< dynamic_cast<const MatchSettings&>(*ms);
+#endif // AI_REVIEWER_CHECK not defined
+	}
+
+#ifndef AI_REVIEWER_CHECK
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+#endif // AI_REVIEWER_CHECK not defined
 };
+
+#ifndef AI_REVIEWER_CHECK
+BOOST_CLASS_VERSION(Settings, 0)
+#endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_SETTINGS

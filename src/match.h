@@ -39,7 +39,7 @@
 #ifndef H_MATCH
 #define H_MATCH
 
-#include "matchSettings.h"
+#include "matchSettingsBase.h"
 #include "cachedData.h"
 
 #pragma warning ( push, 0 )
@@ -85,7 +85,7 @@ protected:
 		NameRegistrator(const std::string &aspectType);
 	};
 
-	const double &k; ///< cached coefficient from MatchSettings, corresponding to current aspect
+	const double &k; ///< cached coefficient from IMatchSettings, corresponding to current aspect
 
 	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
 	virtual double score(const IMatchParams &mp, const CachedData &cachedData) const = 0;
@@ -163,7 +163,7 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 	protected:
 	#endif // UNIT_TESTING defined
 		/// Constructor Details
-		<NewAspect>(const MatchSettings &ms);
+		<NewAspect>(const IMatchSettings &ms);
 
 		REGISTER_MATCH_ASPECT(<NewAspect>);
 	};

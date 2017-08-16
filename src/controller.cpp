@@ -38,7 +38,7 @@
 
 #include "controller.h"
 #include "settingsBase.h"
-#include "symSettings.h"
+#include "symSettingsBase.h"
 #include "matchEngine.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
@@ -119,7 +119,7 @@ Comparator& Controller::getComparator() {
 	GET_FIELD_NO_ARGS(Comparator);
 }
 
-FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
+FontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 

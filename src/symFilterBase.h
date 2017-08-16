@@ -70,4 +70,4 @@ struct DefSymFilter : ISymFilter {
 	boost::optional<unsigned> matchingFilterId(const IPixMapSym&, const SymFilterCache&) const override { return boost::none; }
 };
 
-#endif
+#endif // H_SYM_FILTER_BASE

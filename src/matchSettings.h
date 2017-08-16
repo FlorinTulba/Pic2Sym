@@ -39,7 +39,14 @@
 #ifndef H_MATCH_SETTINGS
 #define H_MATCH_SETTINGS
 
+#include "matchSettingsBase.h"
+#include "misc.h"
+
 #pragma warning ( push, 0 )
+
+#ifndef UNIT_TESTING
+#	include "boost_filesystem_path.h"
+#endif // UNIT_TESTING not defined
 
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/archive/binary_oarchive.hpp>
@@ -51,12 +58,21 @@
 #pragma warning ( pop )
 
 /// MatchSettings class controls the matching parameters for transforming one or more images.
-class MatchSettings {
-public:
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 2U; ///< version of MatchSettings class
-
+class MatchSettings : public IMatchSettings {
 protected:
+#ifndef UNIT_TESTING
+	static boost::filesystem::path defCfgPath;	///< Path of the original configuration file
+	static boost::filesystem::path cfgPath;	///< Path of the user configuration file
+
+	static void configurePaths();	///< initializes defCfgPath & cfgPath
+
+	bool parseCfg();	///< Loads the settings provided in cfgFile
+
+	/// creates 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+	void createUserDefaults();
+
+#endif // UNIT_TESTING not defined
+
 	double kSsim = 0.;				///< power of factor controlling structural similarity
 	double kSdevFg = 0.;			///< power of factor for foreground glyph-patch correlation
 	double kSdevEdge = 0.;			///< power of factor for contour glyph-patch correlation
@@ -70,10 +86,12 @@ protected:
 
 #ifndef UNIT_TESTING
 	bool initialized = false;		///< true after FIRST completed initialization
-	friend class MatchSettingsManip; // to access initialized
 #endif // UNIT_TESTING not defined
 
 public:
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 2U; ///< version of MatchSettings class
+
 	/**
 	Loading a MatchSettings object of a given version.
 	It overwrites *this, reporting any changes
@@ -81,12 +99,30 @@ public:
 	@param ar the source of the object
 	@param version what version is the loaded object
 
-	@throw invalid_argument when MatchSettingsManip::instance().load() throws
+	@throw invalid_argument for an obsolete 'initMatchSettings.cfg'
 	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
 #ifndef UNIT_TESTING
-		MatchSettingsManip::instance().load(*this, ar, version);
+		if(version < MatchSettings::VERSION) {
+			/*
+			MatchSettings is considered correctly initialized if its data is read from
+			'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
+			'initMatchSettings.cfg'(if it exists and is newer than 'res/defaultMatchSettings.txt').
+
+			Each launch of the application will either create / update 'initMatchSettings.cfg'
+			if this doesn't exist / is older than 'res/defaultMatchSettings.txt'.
+
+			Besides, anytime MatchSettings::VERSION is increased, 'initMatchSettings.cfg' becomes
+			obsolete, so it must be overwritten with the fresh data from 'res/defaultMatchSettings.txt'.
+
+			Initialized is set to true at the end of the construction.
+			*/
+			if(!initialized) // can happen only when loading an obsolete 'initMatchSettings.cfg'
+				THROW_WITH_CONST_MSG("Obsolete version of 'initMatchSettings.cfg'!", invalid_argument);
+
+			// Point reachable while reading Settings with an older version of MatchSettings field
+		}
 #endif // UNIT_TESTING not defined
 
 		// It is useful to see which settings changed when loading =>
@@ -135,53 +171,63 @@ public:
 			<< threshold4Blank;
 	}
 
-#ifndef AI_REVIEWER_CHECK
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif // AI_REVIEWER_CHECK not defined
-
 	/**
 	Initializes the object.
 
 	When unit testing, it leaves it empty.
-	Otherwise it will ask MatchSettingsManip to load its fields from disk.
+	Otherwise it will load its fields from disk.
 	*/
 	MatchSettings();
 
-	const bool& isHybridResult() const { return hybridResultMode; }
-	MatchSettings& setResultMode(bool hybridResultMode_);
+	const bool& isHybridResult() const override final { return hybridResultMode; }
+	MatchSettings& setResultMode(bool hybridResultMode_) override;
 
-	const double& get_kSsim() const { return kSsim; }
-	MatchSettings& set_kSsim(double kSsim_);
+	const double& get_kSsim() const override final { return kSsim; }
+	MatchSettings& set_kSsim(double kSsim_) override;
 
-	const double& get_kSdevFg() const { return kSdevFg; }
-	MatchSettings& set_kSdevFg(double kSdevFg_);
+	const double& get_kSdevFg() const override final { return kSdevFg; }
+	MatchSettings& set_kSdevFg(double kSdevFg_) override;
 
-	const double& get_kSdevEdge() const { return kSdevEdge; }
-	MatchSettings& set_kSdevEdge(double kSdevEdge_);
+	const double& get_kSdevEdge() const override final { return kSdevEdge; }
+	MatchSettings& set_kSdevEdge(double kSdevEdge_) override;
 
-	const double& get_kSdevBg() const { return kSdevBg; }
-	MatchSettings& set_kSdevBg(double kSdevBg_);
+	const double& get_kSdevBg() const override final { return kSdevBg; }
+	MatchSettings& set_kSdevBg(double kSdevBg_) override;
 
-	const double& get_kContrast() const { return kContrast; }
-	MatchSettings& set_kContrast(double kContrast_);
+	const double& get_kContrast() const override final { return kContrast; }
+	MatchSettings& set_kContrast(double kContrast_) override;
 
-	const double& get_kCosAngleMCs() const { return kCosAngleMCs; }
-	MatchSettings& set_kCosAngleMCs(double kCosAngleMCs_);
+	const double& get_kCosAngleMCs() const override final { return kCosAngleMCs; }
+	MatchSettings& set_kCosAngleMCs(double kCosAngleMCs_) override;
 
-	const double& get_kMCsOffset() const { return kMCsOffset; }
-	MatchSettings& set_kMCsOffset(double kMCsOffset_);
+	const double& get_kMCsOffset() const override final { return kMCsOffset; }
+	MatchSettings& set_kMCsOffset(double kMCsOffset_) override;
 
-	const double& get_kSymDensity() const { return kSymDensity; }
-	MatchSettings& set_kSymDensity(double kSymDensity_);
+	const double& get_kSymDensity() const override final { return kSymDensity; }
+	MatchSettings& set_kSymDensity(double kSymDensity_) override;
 
-	unsigned getBlankThreshold() const { return threshold4Blank; }
-	MatchSettings& setBlankThreshold(unsigned threshold4Blank_);
+	unsigned getBlankThreshold() const override final { return threshold4Blank; }
+	MatchSettings& setBlankThreshold(unsigned threshold4Blank_) override;
+
+#ifndef UNIT_TESTING
+	/// loads user defaults or throws for obsolete / invalid file
+	void replaceByUserDefaults() override;
+	void saveAsUserDefaults() const override;	///< save these as user defaults
+#endif // UNIT_TESTING not defined
+
+	/// Provides a representation of these settings in a verbose manner or not
+	const std::string toString(bool verbose) const override;
+
+	/// @return a clone of current settings
+	std::unique_ptr<IMatchSettings> clone() const override;
+
+#ifndef AI_REVIEWER_CHECK
+	BOOST_SERIALIZATION_SPLIT_MEMBER();
+#endif // AI_REVIEWER_CHECK not defined
 };
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
 #endif // AI_REVIEWER_CHECK not defined
-
-std::ostream& operator<<(std::ostream &os, const MatchSettings &ms);
 
 #endif // H_MATCH_SETTINGS

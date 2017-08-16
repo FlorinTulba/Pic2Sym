@@ -50,7 +50,7 @@
 
 // Forward declarations
 struct IBestMatch;
-class MatchSettings;
+struct IMatchSettings;
 class MatchEngine;
 
 /**
@@ -72,21 +72,21 @@ protected:
 							  const cv::Range &rowRange, int startCol);
 
 	/// Update PatchApprox for uniform Patch only during the compare with 1st sym (from 1st batch)
-	static void manageUnifPatch(const MatchSettings &ms, cv::Mat &result, unsigned sz, 
+	static void manageUnifPatch(const IMatchSettings &ms, cv::Mat &result, unsigned sz, 
 								IBestMatch &draftMatch, const cv::Range &rowRange, int startCol);
 
 	/// Determines if a given patch is worth approximating (Uniform patches don't make sense approximating)
 	static bool checkUnifPatch(IBestMatch &draftMatch);
 
 	MatchEngine &me;					///< match engine
-	const MatchSettings &matchSettings;	///< match settings
+	const IMatchSettings &matchSettings;	///< match settings
 	cv::Mat &resized;					///< resized version of the original
 	cv::Mat &resizedBlurred;			///< blurred version of the resized original
 	std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches;	///< temporary best matches
 
 public:
 	/// Base constructor
-	TransformSupport(MatchEngine &me_, const MatchSettings &matchSettings_,
+	TransformSupport(MatchEngine &me_, const IMatchSettings &matchSettings_,
 					 cv::Mat &resized_, cv::Mat &resizedBlurred_,
 					 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches_);
 

@@ -37,11 +37,11 @@
  ***********************************************************************************************/
 
 #include "updateSymSettings.h"
-#include "symSettings.h"
+#include "symSettingsBase.h"
 
 using namespace std;
 
-UpdateSymSettings::UpdateSymSettings(SymSettings &ss_) : ss(ss_) {}
+UpdateSymSettings::UpdateSymSettings(ISymSettings &ss_) : ss(ss_) {}
 
 void UpdateSymSettings::newFontFile(const string &fName) const {
 	ss.setFontFile(fName);

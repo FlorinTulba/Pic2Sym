@@ -41,8 +41,12 @@
 #include "pixMapSym.h"
 #include "fontEngine.h"
 #include "settings.h"
+#include "symSettingsBase.h"
+#include "imgSettingsBase.h"
+#include "matchSettingsBase.h"
 #include "controller.h"
 #include "jobMonitor.h"
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 

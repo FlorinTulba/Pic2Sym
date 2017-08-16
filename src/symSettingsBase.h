@@ -36,18 +36,41 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_MOCK_TRANSFORM_TRACE
-#define H_MOCK_TRANSFORM_TRACE
+#ifndef H_SYM_SETTINGS_BASE
+#define H_SYM_SETTINGS_BASE
 
-#if defined _DEBUG && !defined UNIT_TESTING
-#	error Should not include this header unless in Release or Unit Testing mode
-#endif // Debug mode and UNIT_TESTING not defined
+#pragma warning ( push, 0 )
 
-/// Mock class when tracing isn't actually performed 
-class TransformTrace {
-public:
-	TransformTrace(...) {}
-	inline void newEntry(...) {}
+#include <string>
+#include <iostream>
+#include <memory>
+
+#pragma warning ( pop )
+
+/// Base class for the parameters concerning the symbols set used for approximating patches.
+struct ISymSettings /*abstract*/ {
+	virtual const std::string& getFontFile() const = 0;
+	virtual void setFontFile(const std::string &fontFile_) = 0;
+
+	virtual const std::string& getEncoding() const = 0;
+	virtual void setEncoding(const std::string &encoding_) = 0;
+
+	virtual const unsigned& getFontSz() const = 0;
+	virtual void setFontSz(unsigned fontSz_) = 0;
+
+	/// Reset font settings apart from the font size
+	/// which should remain on its value from the Control Panel
+	virtual void reset() = 0;
+
+	/// Report if these settings are initialized or not
+	virtual bool initialized() const = 0;
+
+	virtual ~ISymSettings() = 0 {}
+
+	/// @return a copy of these settings
+	virtual std::unique_ptr<ISymSettings> clone() const = 0;
 };
 
-#endif // H_MOCK_TRANSFORM_TRACE
+std::ostream& operator<<(std::ostream &os, const ISymSettings &ss);
+
+#endif // H_SYM_SETTINGS_BASE

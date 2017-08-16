@@ -55,7 +55,7 @@ struct IMatchParams;
 struct IMatchParamsRW;
 struct IPatch;
 struct ISymData;
-class MatchSettings;
+struct IMatchSettings;
 
 /// Base class to hold the best match found at a given time
 struct IBestMatch /*abstract*/ {
@@ -109,7 +109,7 @@ struct IBestMatch /*abstract*/ {
 
 	@return reference to the updated object
 	*/
-	virtual IBestMatch& updatePatchApprox(const MatchSettings &ms) = 0;
+	virtual IBestMatch& updatePatchApprox(const IMatchSettings &ms) = 0;
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	/**

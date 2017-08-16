@@ -60,4 +60,4 @@ namespace ut {
 						   std::vector<const cv::Mat> &symsSelection);
 }
 
-#endif
+#endif // H_SYMS_SERIALIZATION

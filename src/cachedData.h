@@ -98,4 +98,4 @@ struct CachedData {
 	void useNewSymSize(unsigned sz_);
 };
 
-#endif
+#endif // H_CACHED_DATA

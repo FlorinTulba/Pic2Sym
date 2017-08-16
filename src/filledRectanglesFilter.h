@@ -62,4 +62,4 @@ protected:
 												   unsigned sideLen, int &countOfMaxSums);
 };
 
-#endif
+#endif // H_FILLED_RECTANGLES_FILTER

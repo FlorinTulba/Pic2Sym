@@ -124,7 +124,7 @@ public:
 
 	@return reference to the updated object
 	*/
-	BestMatch& updatePatchApprox(const MatchSettings &ms) override;
+	BestMatch& updatePatchApprox(const IMatchSettings &ms) override;
 
 #if defined _DEBUG || defined UNIT_TESTING // Next members are necessary for logging
 	// Unicode symbols are logged in symbol format, while other encodings log their code

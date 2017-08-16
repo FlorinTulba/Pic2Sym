@@ -117,4 +117,4 @@ public:
 	virtual void cancel(const std::string &reason = "The task was canceled");
 };
 
-#endif
+#endif // H_TIMING

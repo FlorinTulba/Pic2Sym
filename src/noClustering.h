@@ -51,4 +51,4 @@ struct NoClustering final : ClusterAlg {
 						const std::string &fontType = "") override;
 };
 
-#endif
+#endif // H_NO_CLUSTERING

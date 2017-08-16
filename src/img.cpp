@@ -98,7 +98,11 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 	vMaxSyms = syms;
 }
 
-ResizedImg::ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_) :
+unique_ptr<IfImgSettings> ImgSettings::clone() const {
+	return make_unique<ImgSettings>(*this);
+}
+
+ResizedImg::ResizedImg(const Img &img, const IfImgSettings &is, unsigned patchSz_) :
 		patchSz(patchSz_), original(img) {
 	const Mat &source = img.original();
 	if(source.empty())

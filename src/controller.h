@@ -54,7 +54,7 @@ class FontEngine;
 class MatchEngine;
 struct ISettings;
 struct ISettingsRW;
-class SymSettings;
+struct ISymSettings;
 class Img;
 class ControlPanel;
 class AbsJobMonitor;
@@ -124,7 +124,7 @@ public: // Providing get<field> as public for Unit Testing
 #endif // UNIT_TESTING defined
 	// Methods for initialization
 	static Comparator& getComparator();
-	FontEngine& getFontEngine(const SymSettings &ss_) const;
+	FontEngine& getFontEngine(const ISymSettings &ss_) const;
 	MatchEngine& getMatchEngine(const ISettings &cfg_);
 	Transformer& getTransformer(const ISettings &cfg_);
 	PreselManager& getPreselManager(const ISettings &cfg_);

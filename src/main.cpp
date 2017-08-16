@@ -42,6 +42,9 @@
 #include "controlPanelActionsBase.h"
 #include "appStart.h"
 #include "settings.h"
+#include "symSettingsBase.h"
+#include "imgSettingsBase.h"
+#include "matchSettingsBase.h"
 #include "study.h"
 #include "ompTraceSwitch.h"
 

@@ -40,7 +40,7 @@
 #include "controllerBase.h"
 #include "matchAssessment.h"
 #include "settingsBase.h"
-#include "symSettings.h"
+#include "symSettingsBase.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
 #include "patchBase.h"

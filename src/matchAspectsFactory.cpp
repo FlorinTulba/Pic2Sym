@@ -44,7 +44,7 @@
 using namespace std;
 
 std::shared_ptr<MatchAspect> MatchAspectsFactory::create(const string &aspectName,
-														 const MatchSettings &ms) {
+														 const IMatchSettings &ms) {
 #define HANDLE_MATCH_ASPECT(Aspect) \
 	if(aspectName.compare(#Aspect) == 0) \
 		return std::make_shared<Aspect>(ms)

@@ -131,4 +131,4 @@ struct TSymFilter /*abstract*/ : SymFilter {
 		return DerivedFromTSymFilter##Enabled; \
 	}			
 
-#endif
+#endif // H_SYM_FILTER

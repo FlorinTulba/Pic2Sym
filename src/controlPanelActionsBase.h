@@ -53,9 +53,9 @@
 
 /// Interface defining the actions triggered by the controls from Control Panel
 struct IControlPanelActions /*abstract*/ {
-	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
+	/// overwriting IMatchSettings with the content of 'initMatchSettings.cfg'
 	virtual void restoreUserDefaultMatchSettings() = 0;
-	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current MatchSettings to 'initMatchSettings.cfg'
+	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current IMatchSettings to 'initMatchSettings.cfg'
 
 	virtual bool loadSettings(const std::string &from = "") = 0;	///< updating the Settings object
 	virtual void saveSettings() const = 0;	///< saving the Settings object

@@ -46,10 +46,131 @@
 
 #ifndef UNIT_TESTING
 
-#include "matchSettingsManip.h"
+#include "appStart.h"
+#include "propsReader.h"
+#include "settingsBase.h"
+
+#include "boost_filesystem_operations.h"
+
+#ifndef AI_REVIEWER_CHECK
+
+#include <boost/scope_exit.hpp>
+
+using namespace boost::archive;
+
+#endif // AI_REVIEWER_CHECK
+
+using namespace std;
+using namespace boost::filesystem;
+
+path MatchSettings::defCfgPath;
+path MatchSettings::cfgPath;
+
+void MatchSettings::configurePaths() {
+	if(defCfgPath.empty()) {
+		defCfgPath = cfgPath = AppStart::dir();
+
+		if(!exists(defCfgPath.append("res").append("defaultMatchSettings.txt")))
+			THROW_WITH_VAR_MSG(__FUNCTION__" : There's no " + defCfgPath.string(), runtime_error);
+
+		cfgPath.append("initMatchSettings.cfg");
+	}
+}
+
+void MatchSettings::replaceByUserDefaults() {
+	ifstream ifs(cfgPath.string(), ios::binary);
+#ifndef AI_REVIEWER_CHECK
+	binary_iarchive ia(ifs);
+	ia>>*this; // when initialized==false, throws invalid_argument for obsolete 'initMatchSettings.cfg'
+#endif // AI_REVIEWER_CHECK
+}
+
+void MatchSettings::saveAsUserDefaults() const {
+	ofstream ofs(cfgPath.string(), ios::binary);
+#ifndef AI_REVIEWER_CHECK
+	binary_oarchive oa(ofs);
+	oa<<*this;
+#endif // AI_REVIEWER_CHECK
+}
+
+void MatchSettings::createUserDefaults() {
+	if(!parseCfg())
+		THROW_WITH_CONST_MSG(__FUNCTION__" : Invalid Configuration!", runtime_error);
+
+	saveAsUserDefaults();
+}
+
+bool MatchSettings::parseCfg() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static PropsReader parser(defCfgPath);
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+	bool correct = false;
+	const bool newResultMode = parser.read<bool>("HYBRID_RESULT");
+	const double new_kSsim = parser.read<double>("STRUCTURAL_SIMILARITY"),
+		new_kSdevFg = parser.read<double>("UNDER_SYM_CORRECTNESS"),
+		new_kSdevEdge = parser.read<double>("SYM_EDGE_CORRECTNESS"),
+		new_kSdevBg = parser.read<double>("ASIDE_SYM_CORRECTNESS"),
+		new_kMCsOffset = parser.read<double>("MORE_CONTRAST_PREF"),
+		new_kCosAngleMCs = parser.read<double>("GRAVITATIONAL_SMOOTHNESS"),
+		new_kContrast = parser.read<double>("DIRECTIONAL_SMOOTHNESS"),
+		new_kSymDensity = parser.read<double>("LARGER_SYM_PREF");
+	const unsigned newThreshold4Blank = parser.read<unsigned>("THRESHOLD_FOR_BLANK");
+
+	if(!ISettings::isBlanksThresholdOk(newThreshold4Blank) ||
+	   new_kSsim < 0. || new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
+	   new_kContrast < 0. || new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
+	   new_kSymDensity < 0.)
+	   cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
+	else {
+		correct = true;
+		setResultMode(newResultMode);
+		set_kSsim(new_kSsim);
+		set_kSdevFg(new_kSdevFg);
+		set_kSdevEdge(new_kSdevEdge);
+		set_kSdevBg(new_kSdevBg);
+		set_kContrast(new_kContrast);
+		set_kMCsOffset(new_kMCsOffset);
+		set_kCosAngleMCs(new_kCosAngleMCs);
+		set_kSymDensity(new_kSymDensity);
+		setBlankThreshold(newThreshold4Blank);
+
+		cout<<"Initial config values:"<<endl<<*this<<endl;
+	}
+
+	return correct;
+}
 
 MatchSettings::MatchSettings() {
-	MatchSettingsManip::instance().initMatchSettings(*this);
+	configurePaths();
+
+#ifndef AI_REVIEWER_CHECK
+	// Ensure initialized is true when leaving the method
+#pragma warning ( disable : WARN_CANNOT_GENERATE_ASSIGN_OP )
+	BOOST_SCOPE_EXIT(&initialized) {
+		if(!initialized)
+			initialized = true;
+	} BOOST_SCOPE_EXIT_END;
+#pragma warning ( default : WARN_CANNOT_GENERATE_ASSIGN_OP )
+#endif // AI_REVIEWER_CHECK
+
+	if(exists(cfgPath)) {
+		if(last_write_time(cfgPath) > last_write_time(defCfgPath)) { // newer
+			try {
+				replaceByUserDefaults(); // throws invalid files or older versions
+
+				return;
+
+			} catch(...) {} // invalid files or older versions
+		}
+
+		// Renaming the obsolete file
+		rename(cfgPath, boost::filesystem::path(cfgPath)
+			   .concat(".").concat(to_string(time(nullptr))).concat(".bak"));
+	}
+
+	// Create a fresh 'initMatchSettings.cfg' with data from 'res/defaultMatchSettings.txt'
+	createUserDefaults();
 }
 
 #endif // UNIT_TESTING not defined
@@ -134,4 +255,8 @@ MatchSettings& MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
 		threshold4Blank = threshold4Blank_;
 	}
 	return *this;
+}
+
+unique_ptr<IMatchSettings> MatchSettings::clone() const {
+	return make_unique<MatchSettings>(*this);
 }

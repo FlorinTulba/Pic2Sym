@@ -87,9 +87,9 @@ public:
 
 	void operator=(const ControlPanelActions&) = delete;
 
-	/// overwriting MatchSettings with the content of 'initMatchSettings.cfg'
+	/// overwriting IMatchSettings with the content of 'initMatchSettings.cfg'
 	void restoreUserDefaultMatchSettings() override;
-	void setUserDefaultMatchSettings() const override; ///< saving current MatchSettings to 'initMatchSettings.cfg'
+	void setUserDefaultMatchSettings() const override; ///< saving current IMatchSettings to 'initMatchSettings.cfg'
 
 	bool loadSettings(const std::string &from = "") override;	///< updating the ISettingsRW object
 	void saveSettings() const override;	///< saving the ISettingsRW object

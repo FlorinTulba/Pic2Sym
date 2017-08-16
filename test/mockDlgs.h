@@ -85,4 +85,4 @@ public:
 	bool italic() const { return false; }
 };
 
-#endif
+#endif // H_MOCK_DLGS

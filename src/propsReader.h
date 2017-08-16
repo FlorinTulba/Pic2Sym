@@ -98,4 +98,4 @@ public:
 	}
 };
 
-#endif
+#endif // H_PROPS_READER

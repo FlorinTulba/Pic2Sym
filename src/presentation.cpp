@@ -45,8 +45,9 @@
 #include "selectSymbols.h"
 #include "controlPanelActions.h"
 #include "settingsBase.h"
-#include "symSettings.h"
-#include "imgSettings.h"
+#include "imgSettingsBase.h"
+#include "symSettingsBase.h"
+#include "matchSettings.h"
 #include "jobMonitor.h"
 #include "progressNotifier.h"
 #include "matchParamsBase.h"
@@ -226,17 +227,47 @@ string MatchEngine::getIdForSymsToUse() {
 	return oss.str();
 }
 
-void Transformer::updateStudiedCase(int rows, int cols) {
-	const auto &ss = cfg.getMS();
+const string MatchSettings::toString(bool verbose) const {
 	ostringstream oss;
-	oss<<img.name()<<'_'
-		<<me.getIdForSymsToUse()<<'_'
-		<<ss.isHybridResult()<<'_'
-		<<ss.get_kSsim()<<'_'
-		<<ss.get_kSdevFg()<<'_'<<ss.get_kSdevEdge()<<'_'<<ss.get_kSdevBg()<<'_'
-		<<ss.get_kContrast()<<'_'<<ss.get_kMCsOffset()<<'_'<<ss.get_kCosAngleMCs()<<'_'
-		<<ss.get_kSymDensity()<<'_'<<ss.getBlankThreshold()<<'_'
-		<<cols<<'_'<<rows; // no extension yet
+	if(verbose) {
+		if(hybridResultMode)
+			oss<<"hybridResultMode : true"<<endl;
+
+#define REPORT_POSITIVE_PARAM(paramName) \
+		if(paramName > 0.) \
+			oss<<#paramName " : "<<paramName<<endl
+
+		REPORT_POSITIVE_PARAM(kSsim);
+		REPORT_POSITIVE_PARAM(kSdevFg);
+		REPORT_POSITIVE_PARAM(kSdevEdge);
+		REPORT_POSITIVE_PARAM(kSdevBg);
+		REPORT_POSITIVE_PARAM(kContrast);
+		REPORT_POSITIVE_PARAM(kMCsOffset);
+		REPORT_POSITIVE_PARAM(kCosAngleMCs);
+		REPORT_POSITIVE_PARAM(kSymDensity);
+
+#undef REPORT_POSITIVE_PARAM
+
+		if(threshold4Blank > 0.)
+			oss<<"threshold4Blank : "<<threshold4Blank<<endl;
+
+	} else {
+		oss<<hybridResultMode<<'_'
+			<<kSsim<<'_'
+			<<kSdevFg<<'_'<<kSdevEdge<<'_'<<kSdevBg<<'_'
+			<<kContrast<<'_'<<kMCsOffset<<'_'<<kCosAngleMCs<<'_'
+			<<kSymDensity<<'_'<<threshold4Blank;
+	}
+
+	return std::move(oss.str());
+}
+
+void Transformer::updateStudiedCase(int rows, int cols) {
+	const auto &ms = cfg.getMS();
+	ostringstream oss;
+
+	// no extension yet
+	oss<<img.name()<<'_'<<me.getIdForSymsToUse()<<'_'<<ms.toString(false)<<'_'<<cols<<'_'<<rows;
 	studiedCase = oss.str(); // this text is included in the result & trace file names
 }
 

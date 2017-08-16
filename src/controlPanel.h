@@ -56,8 +56,8 @@
 // Forward declarations
 struct ISettings;
 struct IControlPanelActions;
-class ImgSettings;
-class MatchSettings;
+struct IfImgSettings;
+struct IMatchSettings;
 class SliderConverter;
 
 /**
@@ -159,8 +159,8 @@ public:
 
 	/// updates font size & encoding sliders, if necessary
 	void updateSymSettings(unsigned encIdx, unsigned fontSz_);
-	void updateImgSettings(const ImgSettings &is); ///< updates sliders concerning ImgSettings items
-	void updateMatchSettings(const MatchSettings &ms); ///< updates sliders concerning MatchSettings items
+	void updateImgSettings(const IfImgSettings &is); ///< updates sliders concerning IfImgSettings items
+	void updateMatchSettings(const IMatchSettings &ms); ///< updates sliders concerning IMatchSettings items
 };
 
 #endif // H_CONTROL_PANEL

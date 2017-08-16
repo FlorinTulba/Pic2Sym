@@ -46,6 +46,15 @@
 
 using namespace std;
 
+void SymSettings::reset() {
+	fontFile = encoding = "";
+	// the font size should remain on its value from the Control Panel
+}
+
+bool SymSettings::initialized() const {
+	return !fontFile.empty() && !encoding.empty();
+}
+
 void SymSettings::setFontFile(const std::string &fontFile_) {
 	if(fontFile.compare(fontFile_) == 0)
 		return;
@@ -65,6 +74,10 @@ void SymSettings::setFontSz(unsigned fontSz_) {
 		return;
 	cout<<"fontSz"<<" : "<<fontSz<<" -> "<<fontSz_<<endl;
 	fontSz = fontSz_;
+}
+
+unique_ptr<ISymSettings> SymSettings::clone() const {
+	return make_unique<SymSettings>(*this);
 }
 
 bool SymSettings::operator==(const SymSettings &other) const {

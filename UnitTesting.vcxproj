@@ -208,6 +208,7 @@
     <ClInclude Include="src\gridBarsFilter.h" />
     <ClInclude Include="src\img.h" />
     <ClInclude Include="src\imgSettings.h" />
+    <ClInclude Include="src\imgSettingsBase.h" />
     <ClInclude Include="src\jobMonitorBase.h" />
     <ClInclude Include="src\match.h" />
     <ClInclude Include="src\matchAspects.h" />
@@ -217,6 +218,7 @@
     <ClInclude Include="src\matchParams.h" />
     <ClInclude Include="src\matchParamsBase.h" />
     <ClInclude Include="src\matchSettings.h" />
+    <ClInclude Include="src\matchSettingsBase.h" />
     <ClInclude Include="src\matchSupport.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\matSerialization.h" />
@@ -254,6 +256,7 @@
     <ClInclude Include="src\symFilterBase.h" />
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
+    <ClInclude Include="src\symSettingsBase.h" />
     <ClInclude Include="src\symsSerialization.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />

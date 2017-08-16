@@ -39,7 +39,7 @@
 #include "bestMatch.h"
 #include "matchParams.h"
 #include "patchBase.h"
-#include "matchSettings.h"
+#include "matchSettingsBase.h"
 #include "symDataBase.h"
 
 using namespace std;
@@ -98,7 +98,7 @@ BestMatch& BestMatch::update(double score_, unsigned long symCode_,
 	return *this;
 }
 
-BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
+BestMatch& BestMatch::updatePatchApprox(const IMatchSettings &ms) {
 	if(nullptr == pSymData) {
 		approx = patch->getBlurred();
 		return *this;
@@ -138,7 +138,6 @@ BestMatch& BestMatch::updatePatchApprox(const MatchSettings &ms) {
 			merge(channels, patchResult);
 
 	} else { // grayscale result
-		auto &params = refParams();
 		assert(params);
 		params->computeContrast(patch->getOrig(), *pSymData);
 

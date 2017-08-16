@@ -39,6 +39,9 @@
 #include "testMain.h"
 #include "selectBranch.h"
 #include "settings.h"
+#include "symSettingsBase.h"
+#include "imgSettingsBase.h"
+#include "matchSettingsBase.h"
 #include "controller.h"
 #include "controlPanelActionsBase.h"
 

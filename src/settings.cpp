@@ -37,6 +37,9 @@
  ***********************************************************************************************/
 
 #include "settings.h"
+#include "symSettings.h"
+#include "imgSettings.h"
+#include "matchSettings.h"
 
 using namespace std;
 
@@ -65,34 +68,44 @@ bool ISettings::isFontSizeOk(unsigned fs) {
 	return fs>=Settings_MIN_FONT_SIZE && fs<=Settings_MAX_FONT_SIZE;
 }
 
-Settings::Settings(const MatchSettings &ms_) :
-	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms(ms_) {}
+Settings::Settings(const IMatchSettings &ms_) :
+	ss(new SymSettings(Settings_DEF_FONT_SIZE)),
+	is(new ImgSettings(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS)),
+	ms(move(ms_.clone())) {}
 
 Settings::Settings() :
-	ss(Settings_DEF_FONT_SIZE), is(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS), ms() {}
+	ss(new SymSettings(Settings_DEF_FONT_SIZE)),
+	is(new ImgSettings(Settings_MAX_H_SYMS, Settings_MAX_V_SYMS)),
+	ms(new MatchSettings) {}
 
-const SymSettings& Settings::getSS() const {
-	return ss;
+const ISymSettings& Settings::getSS() const {
+	assert(ss);
+	return *ss;
 }
 
-const ImgSettings& Settings::getIS() const {
-	return is;
+const IfImgSettings& Settings::getIS() const {
+	assert(is);
+	return *is;
 }
 
-const MatchSettings& Settings::getMS() const {
-	return ms;
+const IMatchSettings& Settings::getMS() const {
+	assert(ms);
+	return *ms;
 }
 
-SymSettings& Settings::refSS() {
-	return ss;
+ISymSettings& Settings::refSS() {
+	assert(ss);
+	return *ss;
 }
 
-ImgSettings& Settings::refIS() {
-	return is;
+IfImgSettings& Settings::refIS() {
+	assert(is);
+	return *is;
 }
 
-MatchSettings& Settings::refMS() {
-	return ms;
+IMatchSettings& Settings::refMS() {
+	assert(ms);
+	return *ms;
 }
 
 ostream& operator<<(ostream &os, const ISettings &s) {
@@ -100,39 +113,20 @@ ostream& operator<<(ostream &os, const ISettings &s) {
 	return os;
 }
 
-ostream& operator<<(ostream &os, const ImgSettings &is) {
+ostream& operator<<(ostream &os, const IfImgSettings &is) {
 	os<<"hMaxSyms"<<" : "<<is.getMaxHSyms()<<endl;
 	os<<"vMaxSyms"<<" : "<<is.getMaxVSyms()<<endl;
 	return os;
 }
 
-ostream& operator<<(ostream &os, const SymSettings &ss) {
+ostream& operator<<(ostream &os, const ISymSettings &ss) {
 	os<<"fontFile"<<" : "<<ss.getFontFile()<<endl;
 	os<<"encoding"<<" : "<<ss.getEncoding()<<endl;
 	os<<"fontSz"<<" : "<<ss.getFontSz()<<endl;
 	return os;
 }
 
-ostream& operator<<(ostream &os, const MatchSettings &ms) {
-	if(ms.isHybridResult())
-		os<<"hybridResultMode : true"<<endl;
-
-#define REPORT_POSITIVE_PARAM(paramName) \
-	if(ms.get_##paramName() > 0.) \
-		os<<#paramName " : "<<ms.get_##paramName()<<endl
-
-	REPORT_POSITIVE_PARAM(kSsim);
-	REPORT_POSITIVE_PARAM(kSdevFg);
-	REPORT_POSITIVE_PARAM(kSdevEdge);
-	REPORT_POSITIVE_PARAM(kSdevBg);
-	REPORT_POSITIVE_PARAM(kContrast);
-	REPORT_POSITIVE_PARAM(kMCsOffset);
-	REPORT_POSITIVE_PARAM(kCosAngleMCs);
-	REPORT_POSITIVE_PARAM(kSymDensity);
-
-#undef REPORT_POSITIVE_PARAM
-
-	if(ms.getBlankThreshold() > 0.)
-		os<<"threshold4Blank : "<<ms.getBlankThreshold()<<endl;
+ostream& operator<<(ostream &os, const IMatchSettings &ms) {
+	os<<ms.toString(true);
 	return os;
 }

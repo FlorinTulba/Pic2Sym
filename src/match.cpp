@@ -93,7 +93,7 @@ REGISTERED_MATCH_ASPECT(GravitationalSmoothness);
 REGISTERED_MATCH_ASPECT(DirectionalSmoothness);
 REGISTERED_MATCH_ASPECT(LargerSym);
 
-FgMatch::FgMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevFg()) {}
+FgMatch::FgMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevFg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -121,7 +121,7 @@ double FgMatch::relativeComplexity() const {
 	return 3.1;
 }
 
-BgMatch::BgMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevBg()) {}
+BgMatch::BgMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevBg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -149,7 +149,7 @@ double BgMatch::relativeComplexity() const {
 	return 3.2;
 }
 
-EdgeMatch::EdgeMatch(const MatchSettings &cfg) : MatchAspect(cfg.get_kSdevEdge()) {}
+EdgeMatch::EdgeMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevEdge()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -176,7 +176,7 @@ double EdgeMatch::relativeComplexity() const {
 	return 4.;
 }
 
-BetterContrast::BetterContrast(const MatchSettings &cfg) : MatchAspect(cfg.get_kContrast()) {}
+BetterContrast::BetterContrast(const IMatchSettings &cfg) : MatchAspect(cfg.get_kContrast()) {}
 
 /**
 Encourages larger contrasts:
@@ -199,7 +199,7 @@ double BetterContrast::relativeComplexity() const {
 	return 2.;
 }
 
-GravitationalSmoothness::GravitationalSmoothness(const MatchSettings &cfg) :
+GravitationalSmoothness::GravitationalSmoothness(const IMatchSettings &cfg) :
 	MatchAspect(cfg.get_kMCsOffset()) {}
 
 /**
@@ -228,7 +228,7 @@ double GravitationalSmoothness::relativeComplexity() const {
 	return 15.;
 }
 
-DirectionalSmoothness::DirectionalSmoothness(const MatchSettings &cfg) :
+DirectionalSmoothness::DirectionalSmoothness(const IMatchSettings &cfg) :
 	MatchAspect(cfg.get_kCosAngleMCs()) {}
 
 /**
@@ -283,7 +283,7 @@ double DirectionalSmoothness::relativeComplexity() const {
 	return 15.1;
 }
 
-LargerSym::LargerSym(const MatchSettings &cfg) : MatchAspect(cfg.get_kSymDensity()) {}
+LargerSym::LargerSym(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSymDensity()) {}
 
 /**
 Encourages approximations with symbols filling at least x% of their box.
@@ -304,4 +304,3 @@ void LargerSym::fillRequiredMatchParams(const Mat&,
 double LargerSym::relativeComplexity() const {	
 	return 0.001; // Performs only a value copy
 }
-

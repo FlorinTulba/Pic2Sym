@@ -81,4 +81,4 @@ protected:
 	AbsJobMonitor *symsMonitor = nullptr;
 };
 
-#endif
+#endif // H_CLUSTER_ALG

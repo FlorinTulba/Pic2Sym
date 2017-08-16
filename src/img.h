@@ -49,7 +49,7 @@
 #pragma warning ( pop )
 
 // Forward declarations
-class ImgSettings;
+struct IfImgSettings;
 class ResizedImg;
 
 /// Img holds the data of the original image
@@ -95,7 +95,7 @@ public:
 	- The image must fit within prescribed bounds
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
-	ResizedImg(const Img &img, const ImgSettings &is, unsigned patchSz_);
+	ResizedImg(const Img &img, const IfImgSettings &is, unsigned patchSz_);
 	void operator=(const ResizedImg&) = delete;
 
 	const cv::Mat& get() const { return res; }
@@ -104,4 +104,4 @@ public:
 	bool operator!=(const ResizedImg &other) const { return !(*this == other); }
 };
 
-#endif
+#endif // H_IMG

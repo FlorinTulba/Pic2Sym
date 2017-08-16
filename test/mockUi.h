@@ -97,4 +97,4 @@ public:
 	void restoreSliderValue(...) {}
 };
 
-#endif
+#endif // H_MOCK_UI

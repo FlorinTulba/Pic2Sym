@@ -92,5 +92,4 @@ MatchSupport& PreselManager::matchSupport() const {
 
 TransformSupport& PreselManager::transformSupport() const {
 	return *transfSupport;
-
 }

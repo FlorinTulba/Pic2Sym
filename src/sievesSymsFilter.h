@@ -52,4 +52,4 @@ struct SievesSymsFilter : public TSymFilter<SievesSymsFilter> {
 	void operator=(const SievesSymsFilter&) = delete;
 };
 
-#endif
+#endif // H_SIEVES_SYMS_FILTER

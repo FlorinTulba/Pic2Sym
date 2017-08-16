@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "matchParams.h"
-#include "matchSettings.h"
+#include "matchSettingsBase.h"
 #include "symDataBase.h"
 #include "cachedData.h"
 #include "patchBase.h"

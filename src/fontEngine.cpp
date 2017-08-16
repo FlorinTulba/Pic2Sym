@@ -47,7 +47,7 @@
 #include "glyphsProgressTracker.h"
 #include "presentCmap.h"
 #include "settingsBase.h"
-#include "symSettings.h"
+#include "symSettingsBase.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "misc.h"
@@ -125,7 +125,7 @@ namespace {
 } // anonymous namespace
 
 #pragma warning ( disable : WARN_DYNAMIC_CAST_MIGHT_FAIL )
-FontEngine::FontEngine(const IController &ctrler_, const SymSettings &ss_) :
+FontEngine::FontEngine(const IController &ctrler_, const ISymSettings &ss_) :
 						symSettingsUpdater(ctrler_.getUpdateSymSettings()),
 						cmapPresenter(ctrler_.getPresentCmap()),
 						ss(ss_), symsCont(new PmsCont(const_cast<IController&>(ctrler_))) {

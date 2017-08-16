@@ -39,6 +39,7 @@
 #ifndef H_IMG_SETTINGS
 #define H_IMG_SETTINGS
 
+#include "imgSettingsBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -57,7 +58,7 @@ Contains max count of horizontal & vertical patches to process.
 
 The image is resized appropriately before processing.
 */
-class ImgSettings {
+class ImgSettings : public IfImgSettings {
 protected:
 	unsigned hMaxSyms;	///< Count of resulted horizontal symbols
 	unsigned vMaxSyms;	///< Count of resulted vertical symbols
@@ -101,17 +102,17 @@ public:
 	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
 		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
 
-	unsigned getMaxHSyms() const { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms);
+	unsigned getMaxHSyms() const override final { return hMaxSyms; }
+	void setMaxHSyms(unsigned syms) override;
 
-	unsigned getMaxVSyms() const { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms);
+	unsigned getMaxVSyms() const override final { return vMaxSyms; }
+	void setMaxVSyms(unsigned syms) override;
+
+	std::unique_ptr<IfImgSettings> clone() const override;
 };
 
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(ImgSettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
-
-std::ostream& operator<<(std::ostream &os, const ImgSettings &is); 
 
 #endif // H_IMG_SETTINGS

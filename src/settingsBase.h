@@ -39,25 +39,16 @@
 #ifndef H_SETTINGS_BASE
 #define H_SETTINGS_BASE
 
-#include "misc.h"
-
 #pragma warning ( push, 0 )
 
 #include <iostream>
 
-#ifndef AI_REVIEWER_CHECK
-#	include <boost/archive/binary_oarchive.hpp>
-#	include <boost/archive/binary_iarchive.hpp>
-#	include <boost/serialization/split_member.hpp>
-#	include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
-
 #pragma warning ( pop )
 
 // Forward declarations
-class SymSettings;
-class ImgSettings;
-class MatchSettings;
+struct ISymSettings;
+struct IfImgSettings;
+struct IMatchSettings;
 
 /**
 Interface providing read-only access to all parameters required for transforming images.
@@ -70,64 +61,22 @@ struct ISettings /*abstract*/ {
 	static bool isVmaxSymsOk(unsigned syms);
 	static bool isFontSizeOk(unsigned fs);
 
-	virtual const SymSettings& getSS() const = 0;	///< returns existing symbols settings
-	virtual const ImgSettings& getIS() const = 0;	///< returns existing image settings
-	virtual const MatchSettings& getMS() const = 0;	///< returns existing match settings
+	virtual const ISymSettings& getSS() const = 0;	///< returns existing symbols settings
+	virtual const IfImgSettings& getIS() const = 0;	///< returns existing image settings
+	virtual const IMatchSettings& getMS() const = 0;///< returns existing match settings
 
 	virtual ~ISettings() = 0 {}
-
-	template<class Archive>
-	void load(Archive&, const unsigned) = delete;	///< Overwriting the read-only version not allowed
-
-	/// Saves *this to ar
-	template<class Archive>
-	void save(Archive &ar, const unsigned) const {
-#ifndef AI_REVIEWER_CHECK
-		ar << getSS() << getIS() << getMS();
-#endif // AI_REVIEWER_CHECK not defined
-	}
-#ifndef AI_REVIEWER_CHECK
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif // AI_REVIEWER_CHECK not defined
 };
-
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ISettings, 0)
-#endif // AI_REVIEWER_CHECK not defined
 
 std::ostream& operator<<(std::ostream &os, const ISettings &s);
 
 /// The ISettings interface plus accessors for settings modification
 struct ISettingsRW /*abstract*/ : ISettings {
-	virtual SymSettings& refSS() = 0;		///< allows current symbols settings to be changed
-	virtual ImgSettings& refIS() = 0;		///< allows current image settings to be changed
-	virtual MatchSettings& refMS() = 0;		///< allows current match settings to be changed
+	virtual ISymSettings& refSS() = 0;		///< allows current symbols settings to be changed
+	virtual IfImgSettings& refIS() = 0;		///< allows current image settings to be changed
+	virtual IMatchSettings& refMS() = 0;	///< allows current match settings to be changed
 
 	virtual ~ISettingsRW() = 0 {}
-
-	/**
-	Overwrites *this with the ISettingsRW object read from ar.
-
-	@param ar source of the object to load
-	@param version the version of the loaded ISettingsRW
-	*/
-	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
-		UNREFERENCED_PARAMETER(version);
-
-		// read user default match settings
-#ifndef AI_REVIEWER_CHECK
-		ar >> refSS() >> refIS() >> refMS();
-#endif // AI_REVIEWER_CHECK not defined
-	}
-
-#ifndef AI_REVIEWER_CHECK
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif // AI_REVIEWER_CHECK not defined
 };
-
-#ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ISettingsRW, 0)
-#endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_SETTINGS_BASE

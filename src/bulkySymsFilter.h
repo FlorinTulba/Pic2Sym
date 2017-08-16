@@ -52,4 +52,4 @@ struct BulkySymsFilter : public TSymFilter<BulkySymsFilter> {
 	void operator=(const BulkySymsFilter&) = delete;
 };
 
-#endif
+#endif // H_BULKY_SYMS_FILTER

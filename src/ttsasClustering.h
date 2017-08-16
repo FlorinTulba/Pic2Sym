@@ -71,4 +71,4 @@ struct TTSAS_Clustering : ClusterAlg {
 						const std::string &fontType = "") override;
 };
 
-#endif
+#endif // H_TTSAS_CLUSTERING

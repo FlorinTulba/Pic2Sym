@@ -41,9 +41,9 @@
 #include "controlPanel.h"
 #include "controlPanelActions.h"
 #include "settingsBase.h"
-#include "symSettings.h"
-#include "imgSettings.h"
-#include "matchSettings.h"
+#include "symSettingsBase.h"
+#include "imgSettingsBase.h"
+#include "matchSettingsBase.h"
 #include "sliderConversion.h"
 #include "dlgs.h"
 #include "misc.h"
@@ -151,7 +151,7 @@ const map<const String*, std::shared_ptr<const SliderConverter>>& ControlPanel::
 	return *result;
 }
 
-void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
+void ControlPanel::updateMatchSettings(const IMatchSettings &ms) {
 	int newVal = ms.isHybridResult();
 	while(hybridResult != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_hybridResultTrName), nullptr, newVal);
@@ -195,7 +195,7 @@ void ControlPanel::updateMatchSettings(const MatchSettings &ms) {
 	pLuckySliderName = nullptr;
 }
 
-void ControlPanel::updateImgSettings(const ImgSettings &is) {
+void ControlPanel::updateImgSettings(const IfImgSettings &is) {
 	int newVal = (int)is.getMaxHSyms();
 	while(maxHSyms != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outWTrName), nullptr, newVal);

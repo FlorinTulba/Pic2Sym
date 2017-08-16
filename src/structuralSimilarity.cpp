@@ -56,7 +56,7 @@ extern const double EPSp1();
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
-StructuralSimilarity::StructuralSimilarity(const MatchSettings &cfg) :
+StructuralSimilarity::StructuralSimilarity(const IMatchSettings &cfg) :
 	MatchAspect(cfg.get_kSsim()) {}
 
 /**

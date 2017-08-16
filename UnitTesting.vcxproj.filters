@@ -557,6 +557,15 @@
     <ClInclude Include="src\tinySymBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
+    <ClInclude Include="src\matchSettingsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symSettingsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgSettingsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\BPmonoBold.ttf">

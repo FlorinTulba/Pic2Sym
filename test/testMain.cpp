@@ -46,8 +46,9 @@
 #include "fontEngine.h"
 #include "transform.h"
 #include "settingsBase.h"
-#include "symSettings.h"
-#include "imgSettings.h"
+#include "symSettingsBase.h"
+#include "imgSettingsBase.h"
+#include "matchSettings.h"
 #include "img.h"
 #include "patch.h"
 #include "preselectManager.h"
@@ -352,7 +353,7 @@ Comparator& Controller::getComparator() {
 	GET_FIELD(Comparator);
 }
 
-FontEngine& Controller::getFontEngine(const SymSettings &ss_) const {
+FontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 

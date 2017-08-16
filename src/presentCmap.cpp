@@ -73,4 +73,3 @@ void PresentCmap::showUnofficialSymDetails(unsigned symsCount) const {
 	cout<<endl<<"The current charmap contains "<<symsCount<<" symbols"<<endl;
 	ctrler.updateStatusBarCmapInspect(symsCount, "", true); // async update
 }
-

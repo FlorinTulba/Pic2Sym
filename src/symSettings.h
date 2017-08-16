@@ -39,6 +39,8 @@
 #ifndef H_SYM_SETTINGS
 #define H_SYM_SETTINGS
 
+#include "symSettingsBase.h"
+
 #pragma warning ( push, 0 )
 
 #include <string>
@@ -53,7 +55,7 @@
 #pragma warning ( pop )
 
 /// Parameters concerning the symbols set used for approximating patches.
-class SymSettings {
+class SymSettings : public ISymSettings {
 protected:
 	std::string fontFile;	///< the file containing the used font family with the desired style
 	std::string encoding;	///< the particular encoding of the used cmap
@@ -95,16 +97,24 @@ public:
 	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
 	SymSettings(unsigned fontSz_) : fontSz(fontSz_) {}
 
-	bool ready() const { return !fontFile.empty(); }
+	/// Reset font settings apart from the font size
+	/// which should remain on its value from the Control Panel
+	void reset() override;
 
-	inline const std::string& getFontFile() const { return fontFile; }
-	void setFontFile(const std::string &fontFile_);
+	/// Report if these settings are initialized or not
+	bool initialized() const override;
 
-	inline const std::string& getEncoding() const { return encoding; }
-	void setEncoding(const std::string &encoding_);
+	const std::string& getFontFile() const override final { return fontFile; }
+	void setFontFile(const std::string &fontFile_) override;
 
-	inline const unsigned& getFontSz() const { return fontSz; }
-	void setFontSz(unsigned fontSz_);
+	const std::string& getEncoding() const override final { return encoding; }
+	void setEncoding(const std::string &encoding_) override;
+
+	const unsigned& getFontSz() const override final { return fontSz; }
+	void setFontSz(unsigned fontSz_) override;
+
+	/// @return a copy of these settings
+	std::unique_ptr<ISymSettings> clone() const override;
 
 	bool operator==(const SymSettings &other) const;
 	bool operator!=(const SymSettings &other) const;
@@ -113,7 +123,5 @@ public:
 #ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(SymSettings, 0)
 #endif // AI_REVIEWER_CHECK not defined
-
-std::ostream& operator<<(std::ostream &os, const SymSettings &ss);
 
 #endif // H_SYM_SETTINGS

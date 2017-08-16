@@ -46,8 +46,10 @@
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
     <ClInclude Include="src\glyphsProgressTrackerBase.h" />
+    <ClInclude Include="src\imgSettingsBase.h" />
     <ClInclude Include="src\matchAssessment.h" />
     <ClInclude Include="src\matchParamsBase.h" />
+    <ClInclude Include="src\matchSettingsBase.h" />
     <ClInclude Include="src\matchSupport.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
@@ -80,7 +82,6 @@
     <ClInclude Include="src\matchAspectsFactory.h" />
     <ClInclude Include="src\matchEngine.h" />
     <ClInclude Include="src\matchParams.h" />
-    <ClInclude Include="src\matchSettingsManip.h" />
     <ClInclude Include="src\matSerialization.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\matchSettings.h" />
@@ -108,6 +109,7 @@
     <ClInclude Include="src\symFilter.h" />
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
+    <ClInclude Include="src\symSettingsBase.h" />
     <ClInclude Include="src\symsSerialization.h" />
     <ClInclude Include="src\taskMonitor.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
@@ -171,7 +173,6 @@
     <ClCompile Include="src\matchParams.cpp" />
     <ClCompile Include="src\matchSettings.cpp" />
     <ClCompile Include="src\match.cpp" />
-    <ClCompile Include="src\matchSettingsManip.cpp" />
     <ClCompile Include="src\misc.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
     <ClCompile Include="src\jobMonitor.cpp" />

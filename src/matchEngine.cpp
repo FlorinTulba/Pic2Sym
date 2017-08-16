@@ -49,7 +49,7 @@
 #include "matchSupport.h"
 #include "cmapPerspective.h"
 #include "settingsBase.h"
-#include "symSettings.h"
+#include "symSettingsBase.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
 #include "ompTrace.h"

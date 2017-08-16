@@ -42,6 +42,7 @@
 #include "matchParamsBase.h"
 #include "patchBase.h"
 #include "bestMatchBase.h"
+#include "matchSettingsBase.h"
 
 using namespace std;
 
@@ -56,7 +57,7 @@ void MatchProgressWithPreselection::remarkedMatch(unsigned symIdx, double score)
 
 MatchSupportWithPreselection::MatchSupportWithPreselection(CachedData &cd_, VSymData &symsSet_,
 														   MatchAssessor &matchAssessor_,
-														   const MatchSettings &matchSettings_) :
+														   const IMatchSettings &matchSettings_) :
 		MatchSupport(cd_), cdPresel(true), symsSet(symsSet_),
 		matchAssessor(matchAssessor_), matchSettings(matchSettings_) {
 	cdPresel.useNewSymSize(TinySymsSz());

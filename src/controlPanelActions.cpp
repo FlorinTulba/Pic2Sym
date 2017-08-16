@@ -38,11 +38,11 @@
 
 #include "controlPanelActions.h"
 #include "controlPanel.h"
-#include "matchSettingsManip.h"
 #include "matchAssessment.h"
 #include "transform.h"
 #include "dlgs.h"
-#include "settingsBase.h"
+#include "misc.h"
+#include "settings.h"
 #include "symSettings.h"
 #include "imgSettings.h"
 #include "matchSettings.h"
@@ -149,7 +149,7 @@ void ControlPanelActions::restoreUserDefaultMatchSettings() {
 		return;
 
 #ifndef UNIT_TESTING
-	MatchSettingsManip::instance().loadUserDefaults(cfg.refMS());
+	cfg.refMS().replaceByUserDefaults();
 #endif // UNIT_TESTING not defined
 
 	cp.updateMatchSettings(cfg.getMS());
@@ -163,7 +163,7 @@ void ControlPanelActions::setUserDefaultMatchSettings() const {
 		return;
 
 #ifndef UNIT_TESTING
-	MatchSettingsManip::instance().saveUserDefaults(cfg.getMS());
+	cfg.refMS().saveAsUserDefaults();
 #endif // UNIT_TESTING not defined
 }
 
@@ -188,14 +188,14 @@ bool ControlPanelActions::loadSettings(const string &from/* = ""*/) {
 		sourceFile = ss.selection();
 	}
 
-	const SymSettings prevSymSettings(cfg.getSS()); // keep a copy of old SymSettings
+	const auto prevSymSettings = cfg.getSS().clone(); // keep a copy of old SymSettings
 	cout<<"Loading settings from '"<<sourceFile<<'\''<<endl;
 
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
 		ifstream ifs(sourceFile, ios::binary);
 		binary_iarchive ia(ifs);
-		ia>>cfg;
+		ia >> dynamic_cast<Settings&>(cfg);
 	} catch(...) {
 		cerr<<"Couldn't load these settings"<<endl;
 		return false;
@@ -206,22 +206,23 @@ bool ControlPanelActions::loadSettings(const string &from/* = ""*/) {
 	ma.updateEnabledMatchAspectsCount();
 	cp.updateImgSettings(cfg.getIS());
 
-	if(prevSymSettings==cfg.getSS())
+	if(dynamic_cast<const SymSettings&>(*prevSymSettings)
+			== dynamic_cast<const SymSettings&>(cfg.getSS()))
 		return true;
 
 	bool fontFileChanged = false, encodingChanged = false;
 	const auto newEncName = cfg.getSS().getEncoding();
-	if(prevSymSettings.getFontFile().compare(cfg.getSS().getFontFile()) != 0) {
+	if(prevSymSettings->getFontFile().compare(cfg.getSS().getFontFile()) != 0) {
 		_newFontFamily(cfg.getSS().getFontFile(), true);
 		fontFileChanged = true;
 	}
-	if((!fontFileChanged && prevSymSettings.getEncoding().compare(newEncName) != 0) ||
+	if((!fontFileChanged && prevSymSettings->getEncoding().compare(newEncName) != 0) ||
 	   (fontFileChanged && cfg.getSS().getEncoding().compare(newEncName) != 0)) {
 		_newFontEncoding(newEncName, true);
 		encodingChanged = true;
 	}
 
-	if(prevSymSettings.getFontSz() != cfg.getSS().getFontSz()) {
+	if(prevSymSettings->getFontSz() != cfg.getSS().getFontSz()) {
 		if(fontFileChanged || encodingChanged) {
 			pCmi->updateGrid();
 		} else {
@@ -254,7 +255,7 @@ void ControlPanelActions::saveSettings() const {
 	if(nullptr == permit)
 		return;
 
-	if(!cfg.getSS().ready()) {
+	if(!cfg.getSS().initialized()) {
 		warnMsg("There's no Font yet.\nSave settings only after selecting a font !");
 		return;
 	}
@@ -272,7 +273,7 @@ void ControlPanelActions::saveSettings() const {
 	try {
 		ofstream ofs(ss.selection(), ios::binary);
 		binary_oarchive oa(ofs);
-		oa<<cfg;
+		oa << dynamic_cast<const Settings&>(cfg);
 	} catch(...) {
 		cerr<<"Couldn't save current settings"<<endl;
 		return;
@@ -336,8 +337,7 @@ void ControlPanelActions::invalidateFont() {
 	if(pCmi)
 		pCmi->clear();
 
-	cfg.refSS().setFontFile("");
-	cfg.refSS().setEncoding("");
+	cfg.refSS().reset();
 	fe.invalidateFont();
 }
 
@@ -673,4 +673,3 @@ void ControlPanelActions::showInstructionsDlg(const string &title, const wstring
 	MessageBox(nullptr, content.c_str(),
 			   str2wstr(title).c_str(), MB_ICONINFORMATION | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 }
-

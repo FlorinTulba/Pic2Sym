@@ -103,4 +103,4 @@ namespace ut {
 						const std::vector<std::unique_ptr<BestMatch>> &mismatches);
 }
 
-#endif
+#endif // H_TEST_MAIN

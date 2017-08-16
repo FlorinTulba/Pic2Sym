@@ -52,7 +52,7 @@
 // Forward declarations
 struct IBestMatch;
 class MatchAssessor;
-class MatchSettings;
+struct IMatchSettings;
 class TopCandidateMatches;
 typedef unsigned CandidateId;
 typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
@@ -84,13 +84,13 @@ protected:
 	CachedData cdPresel;				///< cached data corresponding to tiny size symbols
 	VSymData &symsSet;					///< the set of normal-size symbols
 	MatchAssessor &matchAssessor;		///< match manager based on the enabled matching aspects
-	const MatchSettings &matchSettings;	///< match settings
+	const IMatchSettings &matchSettings;///< match settings
 
 public:
 	/// Filling in the rest of the data required when PreselectionByTinySyms == true
 	MatchSupportWithPreselection(CachedData &cd_, VSymData &symsSet_,
 								 MatchAssessor &matchAssessor_,
-								 const MatchSettings &matchSettings_);
+								 const IMatchSettings &matchSettings_);
 
 	MatchSupportWithPreselection(const MatchSupportWithPreselection&) = delete;
 	MatchSupportWithPreselection(MatchSupportWithPreselection&&) = delete;

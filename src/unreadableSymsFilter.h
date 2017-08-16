@@ -74,4 +74,4 @@ struct UnreadableSymsFilter : public TSymFilter<UnreadableSymsFilter> {
 	void operator=(const UnreadableSymsFilter&) = delete;
 };
 
-#endif
+#endif // H_UNREADABLE_SYMS_FILTER

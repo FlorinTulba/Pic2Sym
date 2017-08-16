@@ -59,7 +59,7 @@ extern unsigned TinySymsSz();
 static const unsigned TinySymsSize = TinySymsSz();
 
 TransformSupportWithPreselection::TransformSupportWithPreselection(MatchEngine &me_, 
-																   const MatchSettings &matchSettings_,
+																   const IMatchSettings &matchSettings_,
 																   Mat &resized_,
 																   Mat &resizedBlurred_,
 																   vector<vector<unique_ptr<IBestMatch>>> &draftMatches_,

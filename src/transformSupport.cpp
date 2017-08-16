@@ -79,7 +79,7 @@ void TransformSupport::patchImproved(Mat &result, unsigned sz, const IBestMatch 
 	draftMatch.getApprox().copyTo(destRegion);
 }
 
-void TransformSupport::manageUnifPatch(const MatchSettings &ms, Mat &result, unsigned sz, 
+void TransformSupport::manageUnifPatch(const IMatchSettings &ms, Mat &result, unsigned sz, 
 									   IBestMatch &draftMatch, const Range &rowRange, int startCol) {
 	if(draftMatch.getApprox().empty()) {
 		draftMatch.updatePatchApprox(ms);
@@ -91,7 +91,7 @@ bool TransformSupport::checkUnifPatch(IBestMatch &draftMatch) {
 	return !draftMatch.getPatch().nonUniform();
 }
 
-TransformSupport::TransformSupport(MatchEngine &me_, const MatchSettings &matchSettings_,
+TransformSupport::TransformSupport(MatchEngine &me_, const IMatchSettings &matchSettings_,
 								   Mat &resized_, Mat &resizedBlurred_,
 								   vector<vector<unique_ptr<IBestMatch>>> &draftMatches_) :
 	me(me_), matchSettings(matchSettings_),

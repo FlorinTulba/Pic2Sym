@@ -78,4 +78,4 @@ protected:
 	static bool checkProjectionForGridSymbols(const cv::Mat &sums);
 };
 
-#endif
+#endif // H_GRID_BARS_FILTER

@@ -54,4 +54,4 @@ struct SymFilterCache {
 	void setBoundingBox(unsigned height, unsigned width);
 };
 
-#endif
+#endif // H_SYM_FILTER_CACHE
