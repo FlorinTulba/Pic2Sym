@@ -93,7 +93,7 @@ REGISTERED_MATCH_ASPECT(GravitationalSmoothness);
 REGISTERED_MATCH_ASPECT(DirectionalSmoothness);
 REGISTERED_MATCH_ASPECT(LargerSym);
 
-FgMatch::FgMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevFg()) {}
+FgMatch::FgMatch(const IMatchSettings &ms) : MatchAspect(ms.get_kSdevFg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -121,7 +121,7 @@ double FgMatch::relativeComplexity() const {
 	return 3.1;
 }
 
-BgMatch::BgMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevBg()) {}
+BgMatch::BgMatch(const IMatchSettings &ms) : MatchAspect(ms.get_kSdevBg()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -149,7 +149,7 @@ double BgMatch::relativeComplexity() const {
 	return 3.2;
 }
 
-EdgeMatch::EdgeMatch(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSdevEdge()) {}
+EdgeMatch::EdgeMatch(const IMatchSettings &ms) : MatchAspect(ms.get_kSdevEdge()) {}
 
 /**
 Returned value discourages large std. devs.
@@ -176,7 +176,7 @@ double EdgeMatch::relativeComplexity() const {
 	return 4.;
 }
 
-BetterContrast::BetterContrast(const IMatchSettings &cfg) : MatchAspect(cfg.get_kContrast()) {}
+BetterContrast::BetterContrast(const IMatchSettings &ms) : MatchAspect(ms.get_kContrast()) {}
 
 /**
 Encourages larger contrasts:
@@ -199,8 +199,8 @@ double BetterContrast::relativeComplexity() const {
 	return 2.;
 }
 
-GravitationalSmoothness::GravitationalSmoothness(const IMatchSettings &cfg) :
-	MatchAspect(cfg.get_kMCsOffset()) {}
+GravitationalSmoothness::GravitationalSmoothness(const IMatchSettings &ms) :
+	MatchAspect(ms.get_kMCsOffset()) {}
 
 /**
 Discourages mcsOffset larger than preferredMaxMcDist:
@@ -228,8 +228,8 @@ double GravitationalSmoothness::relativeComplexity() const {
 	return 15.;
 }
 
-DirectionalSmoothness::DirectionalSmoothness(const IMatchSettings &cfg) :
-	MatchAspect(cfg.get_kCosAngleMCs()) {}
+DirectionalSmoothness::DirectionalSmoothness(const IMatchSettings &ms) :
+	MatchAspect(ms.get_kCosAngleMCs()) {}
 
 /**
 Penalizes large angle between mc-s, but no so much when they are close to each other.
@@ -283,7 +283,7 @@ double DirectionalSmoothness::relativeComplexity() const {
 	return 15.1;
 }
 
-LargerSym::LargerSym(const IMatchSettings &cfg) : MatchAspect(cfg.get_kSymDensity()) {}
+LargerSym::LargerSym(const IMatchSettings &ms) : MatchAspect(ms.get_kSymDensity()) {}
 
 /**
 Encourages approximations with symbols filling at least x% of their box.

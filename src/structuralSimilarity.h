@@ -70,7 +70,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	StructuralSimilarity(const IMatchSettings &cfg);
+	StructuralSimilarity(const IMatchSettings &ms);
 	void operator=(const StructuralSimilarity&) = delete;
 
 	REGISTER_MATCH_ASPECT(StructuralSimilarity);

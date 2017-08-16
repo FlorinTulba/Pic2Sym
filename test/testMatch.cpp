@@ -302,7 +302,7 @@ namespace ut {
 
 	protected:
 		CachedData cd;		///< cached data that can be changed during tests
-		MatchSettings cfg;	///< determines which aspect is tested
+		MatchSettings ms;	///< determines which aspect is tested
 
 	public:
 		MatchParams mp;	///< tests compute these match parameters
@@ -764,8 +764,8 @@ BOOST_AUTO_TEST_SUITE_END() // CheckMatchParams
 
 FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, SuiteSuffix)
 	AutoTestCase1(CheckStructuralSimilarity_UniformPatchAndDiagGlyph_GlyphBecomesPatch, SuiteSuffix);
-		cfg.set_kSsim(1.);
-		const StructuralSimilarity strSim(cfg);
+		ms.set_kSsim(1.);
+		const StructuralSimilarity strSim(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -808,8 +808,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckStructuralSimilarity_PatchIsDimmedGlyph_GlyphBecomesPatch, SuiteSuffix);
-		cfg.set_kSsim(1.);
-		const StructuralSimilarity strSim(cfg);
+		ms.set_kSsim(1.);
+		const StructuralSimilarity strSim(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -853,8 +853,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckFgAspect_UniformPatchAndDiagGlyph_CompleteMatchAndFgBecomesPatchValue, SuiteSuffix);
-		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cfg);
+		ms.set_kSdevFg(1.);
+		const FgMatch fm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -877,8 +877,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckFgAspect_DiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerHalf_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cfg);
+		ms.set_kSdevFg(1.);
+		const FgMatch fm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -902,8 +902,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckFgAspect_DiagGlyphAndPachRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevFg(1.);
-		const FgMatch fm(cfg);
+		ms.set_kSdevFg(1.);
+		const FgMatch fm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -932,8 +932,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckEdgeAspect_UniformPatch_PerfectMatch, SuiteSuffix);
-		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cfg);
+		ms.set_kSdevEdge(1);
+		const EdgeMatch em(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -984,8 +984,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cfg);
+		ms.set_kSdevEdge(1);
+		const EdgeMatch em(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1037,8 +1037,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndPatchRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cfg);
+		ms.set_kSdevEdge(1);
+		const EdgeMatch em(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1099,8 +1099,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckEdgeAspect_EdgyDiagGlyphAndUniformLowerTriangularPatch_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevEdge(1);
-		const EdgeMatch em(cfg);
+		ms.set_kSdevEdge(1);
+		const EdgeMatch em(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1156,8 +1156,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckBgAspect_UniformPatch_PerfectMatch, SuiteSuffix);
-		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cfg);
+		ms.set_kSdevBg(1.);
+		const BgMatch bm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1183,8 +1183,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchWithUpperHalfEmptyAndUniformLowerPart_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cfg);
+		ms.set_kSdevBg(1.);
+		const BgMatch bm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1211,8 +1211,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckBgAspect_GlyphWith3MainDiagsOn0AndPatchRowValuesSameAsRowIndices_ImperfectMatch, SuiteSuffix);
-		cfg.set_kSdevBg(1.);
-		const BgMatch bm(cfg);
+		ms.set_kSdevBg(1.);
+		const BgMatch bm(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a background mask full except the main 3 diagonals
@@ -1248,8 +1248,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckContrastAspect_UniformPatch_0Contrast, SuiteSuffix);
-		cfg.set_kContrast(1.);
-		const BetterContrast bc(cfg);
+		ms.set_kContrast(1.);
+		const BetterContrast bc(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1281,8 +1281,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithMaxContrast_ContrastFromPatch, SuiteSuffix);
-		cfg.set_kContrast(1.);
-		const BetterContrast bc(cfg);
+		ms.set_kContrast(1.);
+		const BetterContrast bc(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1313,8 +1313,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckContrastAspect_EdgyDiagGlyphAndDiagPatchWithHalfContrast_ContrastFromPatch, SuiteSuffix);
-		cfg.set_kContrast(1.);
-		const BetterContrast bc(cfg);
+		ms.set_kContrast(1.);
+		const BetterContrast bc(ms);
 		const auto valRand = randUnsignedChar(1U);
 
 		// Using a symbol with a diagonal foreground mask
@@ -1345,10 +1345,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckGravitationalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch, SuiteSuffix);
-		cfg.set_kMCsOffset(1.);
+		ms.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cfg);
+		const GravitationalSmoothness gs(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1387,10 +1387,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters, SuiteSuffix);
-		cfg.set_kMCsOffset(1.);
+		ms.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cfg);
+		const GravitationalSmoothness gs(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1432,10 +1432,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters, SuiteSuffix);
-		cfg.set_kMCsOffset(1.);
+		ms.set_kMCsOffset(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const GravitationalSmoothness gs(cfg);
+		const GravitationalSmoothness gs(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1475,10 +1475,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch, SuiteSuffix);
-		cfg.set_kCosAngleMCs(1.);
+		ms.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cfg);
+		const DirectionalSmoothness ds(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1513,10 +1513,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckDirectionalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters, SuiteSuffix);
-		cfg.set_kCosAngleMCs(1.);
+		ms.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cfg);
+		const DirectionalSmoothness ds(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1552,10 +1552,10 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckDirectionalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters, SuiteSuffix);
-		cfg.set_kCosAngleMCs(1.);
+		ms.set_kCosAngleMCs(1.);
 		const unsigned sz_1 = getSz()-1U;
 		cd.useNewSymSize(getSz());
-		const DirectionalSmoothness ds(cfg);
+		const DirectionalSmoothness ds(ms);
 
 		// Checking a symbol that has a single 255 pixel in bottom right corner
 		double avgPixVal = 1. / getArea(); // a single pixel set to max
@@ -1590,9 +1590,9 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckLargerSymAspect_EmptyGlyph_Density0, SuiteSuffix);
-		cfg.set_kSymDensity(1.);
+		ms.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cfg);
+		const LargerSym ls(ms);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
@@ -1609,9 +1609,9 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge, SuiteSuffix);
-		cfg.set_kSymDensity(1.);
+		ms.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cfg);
+		const LargerSym ls(ms);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)
@@ -1627,9 +1627,9 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 	}
 
 	AutoTestCase1(CheckLargerSymAspect_LargestPosibleSymbol_LargestScore, SuiteSuffix);
-		cfg.set_kSymDensity(1.);
+		ms.set_kSymDensity(1.);
 		cd.smallGlyphsCoverage = .1; // large glyphs need to cover more than 10% of their box
-		const LargerSym ls(cfg);
+		const LargerSym ls(ms);
 
 		SymData sd(NOT_RELEVANT_UL, // symbol code (not relevant here)
 				   NOT_RELEVANT_SZ,	// symbol index (not relevant here)

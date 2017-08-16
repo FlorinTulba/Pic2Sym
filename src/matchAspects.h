@@ -61,7 +61,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	FgMatch(const IMatchSettings &cfg);
+	FgMatch(const IMatchSettings &ms);
 	void operator=(const FgMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(FgMatch);
@@ -87,7 +87,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	BgMatch(const IMatchSettings &cfg);
+	BgMatch(const IMatchSettings &ms);
 	void operator=(const BgMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(BgMatch);
@@ -113,7 +113,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	EdgeMatch(const IMatchSettings &cfg);
+	EdgeMatch(const IMatchSettings &ms);
 	void operator=(const EdgeMatch&) = delete;
 
 	REGISTER_MATCH_ASPECT(EdgeMatch);
@@ -139,7 +139,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	BetterContrast(const IMatchSettings &cfg);
+	BetterContrast(const IMatchSettings &ms);
 	void operator=(const BetterContrast&) = delete;
 
 	REGISTER_MATCH_ASPECT(BetterContrast);
@@ -165,7 +165,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	GravitationalSmoothness(const IMatchSettings &cfg);
+	GravitationalSmoothness(const IMatchSettings &ms);
 	void operator=(const GravitationalSmoothness&) = delete;
 
 	REGISTER_MATCH_ASPECT(GravitationalSmoothness);
@@ -191,7 +191,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	DirectionalSmoothness(const IMatchSettings &cfg);
+	DirectionalSmoothness(const IMatchSettings &ms);
 	void operator=(const DirectionalSmoothness&) = delete;
 
 	REGISTER_MATCH_ASPECT(DirectionalSmoothness);
@@ -217,7 +217,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 
-	LargerSym(const IMatchSettings &cfg);
+	LargerSym(const IMatchSettings &ms);
 	void operator=(const LargerSym&) = delete;
 
 	REGISTER_MATCH_ASPECT(LargerSym);

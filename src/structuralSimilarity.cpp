@@ -56,8 +56,8 @@ extern const double EPSp1();
 
 REGISTERED_MATCH_ASPECT(StructuralSimilarity);
 
-StructuralSimilarity::StructuralSimilarity(const IMatchSettings &cfg) :
-	MatchAspect(cfg.get_kSsim()) {}
+StructuralSimilarity::StructuralSimilarity(const IMatchSettings &ms) :
+	MatchAspect(ms.get_kSsim()) {}
 
 /**
 Poor structural similarity produces ssim close to -1.
