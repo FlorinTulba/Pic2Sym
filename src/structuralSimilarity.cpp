@@ -125,7 +125,7 @@ void MatchParams::computeSsim(const Mat &patch, const ISymData &symData, const C
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const bool usingGaussianBlur = (StructuralSimilarity_BlurType.compare("gaussian") == 0);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
-#endif
+#endif // _DEBUG
 
 	Mat covariance, ssimMap;
 
@@ -181,5 +181,5 @@ void MatchParams::computeSsim(const Mat &patch, const ISymData &symData, const C
 	// That's why the range check is performed only for the Gaussian blur
 	if(usingGaussianBlur)
 		assert(abs(*ssim) < EPSp1());
-#endif
+#endif // _DEBUG
 }

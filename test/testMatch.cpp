@@ -132,7 +132,7 @@ namespace ut {
 		minMaxIdx(patchD255, &newMinVal, &newMaxVal);
 		assert(newMinVal > -.5);
 		assert(newMaxVal < 255.5);
-#endif
+#endif // _DEBUG
 	}
 
 	/**

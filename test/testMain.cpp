@@ -120,9 +120,9 @@ namespace ut {
 		boost::optional<const boost::filesystem::path> pathToPic2Sym() {
 #ifdef _DEBUG
 #		define CONFIG_TYPE "Debug"
-#else
+#else // _DEBUG not defined
 #		define CONFIG_TYPE "Release"
-#endif
+#endif // _DEBUG
 			boost::filesystem::path dirOfPic2Sym(absolute("."));
 			if(exists("x64")) { // Solution root is the current folder
 				// Pic2Sym.exe is in x64/<CONFIG_TYPE>/ folder
