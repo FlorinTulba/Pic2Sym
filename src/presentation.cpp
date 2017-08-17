@@ -314,14 +314,11 @@ Controller::Controller(ISettingsRW &s) :
 		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
 		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
-		pm(getPreselManager(s)),
 		comp(getComparator()),
 		pCmi(),
 		selectSymbols(std::make_shared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
 		controlPanelActions(std::make_shared<ControlPanelActions>(*this, s,
 			getFontEngine(s.getSS()), getMatchEngine(s).assessor(), getTransformer(s), getComparator(), pCmi)) {
-	me.usePreselManager(pm);
-	t.usePreselManager(pm);
 	const_cast<IPresentCmap*>(presentCmap.get())->markClustersAsUsed(&me.isClusteringUseful());
 
 	comp.setPos(0, 0);

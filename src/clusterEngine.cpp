@@ -143,7 +143,7 @@ void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) 
 
 		// Trivial clusters are already in ascending order of avgPixVal (see the sort from above)
 
-		support->delimitGroups(symsIndicesPerCluster, clusters, clusterOffsets);
+		clusterSupport->delimitGroups(symsIndicesPerCluster, clusters, clusterOffsets);
 
 	} else {
 		worthy = false;
@@ -169,8 +169,22 @@ ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	return *this;
 }
 
-ClusterEngine& ClusterEngine::supportedBy(ClustersSupport &support_) {
-	support = &support_;
+ClustersSupport& ClusterEngine::support() {
+	if(!clusterSupport)
+		THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be used before calling 'supportedBy()'!", logic_error);
+
+	return *clusterSupport;
+}
+
+const ClustersSupport& ClusterEngine::support() const {
+	if(!clusterSupport)
+		THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be used before calling 'supportedBy()'!", logic_error);
+
+	return *clusterSupport;
+}
+
+ClusterEngine& ClusterEngine::supportedBy(unique_ptr<ClustersSupport> support) {
+	clusterSupport = move(support);
 	return *this;
 }
 

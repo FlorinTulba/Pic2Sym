@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "clusterSupportWithPreselection.h"
+#include "symbolsSupportWithPreselection.h"
 #include "tinySymsProvider.h"
 #include "clusterEngine.h"
 #include "clusterData.h"
@@ -52,9 +53,9 @@ using namespace std;
 
 ClustersSupportWithPreselection::ClustersSupportWithPreselection(ITinySymsProvider &tsp_, 
 																 ClusterEngine &ce_, 
-																 SymsSupport &ss_,
+																 unique_ptr<SymsSupport> ss_,
 																 VSymData &symsSet_) :
-	ClustersSupport(ce_, ss_, symsSet_), tsp(tsp_) {}
+	ClustersSupport(ce_, move(ss_), symsSet_), tsp(tsp_) {}
 
 void ClustersSupportWithPreselection::groupSyms(const string &fontType/* = ""*/) {
 	tinySymsSet.clear();
@@ -80,7 +81,7 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 		auto &symsIndices = symsIndicesPerCluster[i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.push_back(make_unique<const ClusterData>(tinySymsSet, offset, symsIndices, ss)); // needs tinySymsSet[symsIndices] !!
+		clusters.push_back(make_unique<const ClusterData>(tinySymsSet, offset, symsIndices, *ss)); // needs tinySymsSet[symsIndices] !!
 
 		for(const auto idx : symsIndices)
 			permutation.push_back(idx);

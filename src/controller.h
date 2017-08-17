@@ -58,7 +58,6 @@ struct ISymSettings;
 class Img;
 class ControlPanel;
 class AbsJobMonitor;
-class PreselManager;
 class Transformer;
 class Comparator;
 class CmapInspect;
@@ -96,7 +95,6 @@ protected:
 	ISettingsRW &cfg;	///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
 	Transformer &t;		///< transforming engine
-	PreselManager &pm;	///< preselection manager
 
 	// Views
 	Comparator &comp;					///< view for comparing original & result
@@ -127,7 +125,6 @@ public: // Providing get<field> as public for Unit Testing
 	FontEngine& getFontEngine(const ISymSettings &ss_) const;
 	MatchEngine& getMatchEngine(const ISettings &cfg_);
 	Transformer& getTransformer(const ISettings &cfg_);
-	PreselManager& getPreselManager(const ISettings &cfg_);
 
 public:
 	Controller(ISettingsRW &s);	///< Initializes controller with ISettingsRW object s

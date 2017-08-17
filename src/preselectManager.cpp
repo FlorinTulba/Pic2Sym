@@ -37,59 +37,72 @@
  ***********************************************************************************************/
 
 #include "preselectManager.h"
-#include "matchEngine.h"
-#include "transform.h"
-#include "matchParams.h"
 #include "symbolsSupportWithPreselection.h"
 #include "clusterSupportWithPreselection.h"
 #include "matchSupportWithPreselection.h"
 #include "transformSupportWithPreselection.h"
-#include "settingsBase.h"
+#include "bestMatchBase.h"
 
 using namespace std;
+using namespace cv;
 
 extern const bool PreselectionByTinySyms;
 
-PreselManager::PreselManager(MatchEngine &me, Transformer &tr) :
-		symsSupport_(PreselectionByTinySyms ?
-			new SymsSupportWithPreselection() :
-			new SymsSupport()),
-		clustersSupport_(PreselectionByTinySyms ?
-			new ClustersSupportWithPreselection(me.fe, me.ce, *symsSupport_, me.symsSet) :
-			new ClustersSupport(me.ce, *symsSupport_, me.symsSet)),
-		matchSupport_(PreselectionByTinySyms ?
-			new MatchSupportWithPreselection(me.cachedData, me.symsSet,
-											me.matchAssessor, me.cfg.getMS()) :
-			new MatchSupport(me.cachedData)),
-		transfSupport(PreselectionByTinySyms ?
-			new TransformSupportWithPreselection(me, me.cfg.getMS(),
-												tr.resized, tr.resizedBlurred,
-												tr.draftMatches, *matchSupport_) :
-			new TransformSupport(me, me.cfg.getMS(),
-								tr.resized, tr.resizedBlurred,
-								tr.draftMatches)) {
-	me.ce.supportedBy(*clustersSupport_);
+namespace {
+	PreselectionOn preselectionOn;
+	PreselectionOff preselectionOff;
 }
 
-PreselManager::~PreselManager() {
-	delete transfSupport;
-	delete matchSupport_;
-	delete clustersSupport_;
-	delete symsSupport_;
+const IPreselManager& IPreselManager::concrete() {
+	if(PreselectionByTinySyms)
+		return preselectionOn;
+
+	return preselectionOff;
 }
 
-SymsSupport& PreselManager::symsSupport() const {
-	return *symsSupport_;
+unique_ptr<ClustersSupport> PreselectionOn::createClusterSupport(ITinySymsProvider &tsp,
+																 ClusterEngine &ce,
+																 VSymData &symsSet) const {
+	return make_unique<ClustersSupportWithPreselection>(tsp, ce,
+														make_unique<SymsSupportWithPreselection>(),
+														symsSet);
 }
 
-ClustersSupport& PreselManager::clustersSupport() const {
-	return *clustersSupport_;
+unique_ptr<MatchSupport> PreselectionOn::createMatchSupport(CachedData &cd,
+															VSymData &symsSet,
+															MatchAssessor &matchAssessor,
+															const IMatchSettings &matchSettings) const {
+	return make_unique<MatchSupportWithPreselection>(cd, symsSet, matchAssessor, matchSettings);
 }
 
-MatchSupport& PreselManager::matchSupport() const {
-	return *matchSupport_;
+unique_ptr<TransformSupport> PreselectionOn::createTransformSupport(MatchEngine &me,
+																	const IMatchSettings &matchSettings,
+																	Mat &resized,
+																	Mat &resizedBlurred,
+																	vector<vector<unique_ptr<IBestMatch>>> &draftMatches,
+																	MatchSupport &matchSupport) const {
+	return make_unique<TransformSupportWithPreselection>(me, matchSettings, resized, resizedBlurred,
+														 draftMatches, matchSupport);
 }
 
-TransformSupport& PreselManager::transformSupport() const {
-	return *transfSupport;
+unique_ptr<ClustersSupport> PreselectionOff::createClusterSupport(ITinySymsProvider&,
+																  ClusterEngine &ce,
+																  VSymData &symsSet) const {
+	return make_unique<ClustersSupport>(ce, make_unique<SymsSupport>(), symsSet);
+}
+
+unique_ptr<MatchSupport> PreselectionOff::createMatchSupport(CachedData &cd,
+															 VSymData&,
+															 MatchAssessor&,
+															 const IMatchSettings&) const {
+	return make_unique<MatchSupport>(cd);
+}
+
+unique_ptr<TransformSupport> PreselectionOff::createTransformSupport(MatchEngine &me,
+																	 const IMatchSettings &matchSettings,
+																	 Mat &resized,
+																	 Mat &resizedBlurred,
+																	 vector<vector<unique_ptr<IBestMatch>>> &draftMatches,
+																	 MatchSupport&) const {
+	return make_unique<TransformSupport>(me, matchSettings, resized, resizedBlurred, draftMatches);
 }

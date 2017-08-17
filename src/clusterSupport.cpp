@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "clusterSupport.h"
+#include "symbolsSupport.h"
 #include "clusterEngine.h"
 #include "clusterData.h"
 #include "misc.h"
@@ -49,8 +50,8 @@
 
 using namespace std;
 
-ClustersSupport::ClustersSupport(ClusterEngine &ce_, SymsSupport &ss_, VSymData &symsSet_) :
-	ce(ce_), ss(ss_), symsSet(symsSet_) {}
+ClustersSupport::ClustersSupport(ClusterEngine &ce_, unique_ptr<SymsSupport> ss_, VSymData &symsSet_) :
+	ce(ce_), ss(move(ss_)), symsSet(symsSet_) {}
 
 void ClustersSupport::groupSyms(const string &fontType/* = ""*/) {
 	// Clustering on symsSet
@@ -67,7 +68,7 @@ void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerClus
 		auto &symsIndices = symsIndicesPerCluster[i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.push_back(make_unique<const ClusterData>(symsSet, offset, symsIndices, ss)); // needs symsSet[symsIndices] !!
+		clusters.push_back(make_unique<const ClusterData>(symsSet, offset, symsIndices, *ss)); // needs symsSet[symsIndices] !!
 
 		for(const auto idx : symsIndices)
 			permutation.push_back(idx);

@@ -45,6 +45,7 @@
 #pragma warning ( push, 0 )
 
 #include <set>
+#include <memory>
 
 #include "boost_filesystem_path.h"
 
@@ -60,7 +61,7 @@ class ClusterEngine {
 protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
-	ClustersSupport *support = nullptr;	///< provided support from the preselection manager
+	std::unique_ptr<ClustersSupport> clusterSupport;	///< provided support from the preselection manager
 
 	ClusterAlg &clustAlg;	///< algorithm used for clustering
 
@@ -104,7 +105,10 @@ public:
 
 	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
-	ClusterEngine& supportedBy(ClustersSupport &support_); ///< setting the support class offered by the preselection manager
+	ClustersSupport& support(); ///< access to clusterSupport
+	const ClustersSupport& support() const; ///< access to clusterSupport
+
+	ClusterEngine& supportedBy(std::unique_ptr<ClustersSupport> support); ///< setting the support class offered by the preselection manager
 };
 
 #endif // H_CLUSTER_ENGINE

@@ -62,13 +62,11 @@ struct ISettings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
 class TaskMonitor;
-class PreselManager;
 struct IBestMatch;
+class TransformSupport;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer {
-	friend class PreselManager;
-
 protected:
 	IController &ctrler;	///< controller
 	std::shared_ptr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
@@ -86,7 +84,8 @@ protected:
 
 	std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatches;	///< temporary best matches
 
-	PreselManager *preselManager = nullptr;	///< preselection manager
+	// Keep this after previous fields, as it depends on them
+	std::unique_ptr<TransformSupport> transformSupport;	///< initializes and updates draft matches
 
 	double durationS = 0.;		///< transformation duration in seconds
 
@@ -134,7 +133,6 @@ public:
 	void setSymsBatchSize(int symsBatchSz_);
 
 	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_); ///< setting the transformation monitor
-	Transformer& usePreselManager(PreselManager &preselManager_);		///< setting the preselection manager
 };
 
 #endif // H_TRANSFORM

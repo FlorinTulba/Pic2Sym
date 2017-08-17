@@ -218,7 +218,9 @@ extern const bool ParallelizeTr_PatchRowLoops;
 Transformer::Transformer(IController &ctrler_,
 						 const ISettings &cfg_, MatchEngine &me_, Img &img_) :
 	ctrler(ctrler_), ptpt(ctrler_.getPicTransformProgressTracker()),
-	cfg(cfg_), me(me_), img(img_) {}
+	cfg(cfg_), me(me_), img(img_),
+	transformSupport(IPreselManager::concrete().createTransformSupport(
+		me_, cfg_.getMS(), resized, resizedBlurred, draftMatches, me.support())) {}
 
 void Transformer::run() {
 	isCanceled = false;
@@ -307,11 +309,6 @@ void Transformer::run() {
 
 void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion,
 								   unsigned patchesPerCol, unsigned patchesPerRow) {
-	if(preselManager == nullptr)
-		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before " __FUNCTION__, logic_error);
-
-	auto &trSupport = preselManager->transformSupport();
-
 	// processing new resized image
 	if(newResizedImg || draftMatches.empty()) {
 		const bool isColor = img.isColor();
@@ -319,10 +316,10 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 		GaussianBlur(resized, resizedBlurred, BlurWinSize,
 					 BlurStandardDeviation, BlurStandardDeviation, BORDER_REPLICATE);
 		
-		trSupport.initDrafts(isColor, sz, patchesPerCol, patchesPerRow);
+		transformSupport->initDrafts(isColor, sz, patchesPerCol, patchesPerRow);
 
 	} else { // processing same ResizedImg
-		trSupport.resetDrafts(patchesPerCol);
+		transformSupport->resetDrafts(patchesPerCol);
 	}
 }
 
@@ -331,8 +328,6 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	// since its value is checked during the loop - the same story as for isCanceled
 	volatile size_t finalizedRows = 0U;
 
-	assert(preselManager != nullptr);
-	auto &trSupport = preselManager->transformSupport();
 	const int patchesPerCol = h / (int)sz;
 	const size_t rowsOfPatches = size_t(patchesPerCol),
 				batchSz = size_t(upperIdx - fromIdx),
@@ -346,7 +341,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 
 		ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: [%d - %d); row = %d", fromIdx, upperIdx, r);
 
-		trSupport.approxRow(r, w, sz, fromIdx, upperIdx, result);
+		transformSupport->approxRow(r, w, sz, fromIdx, upperIdx, result);
 
 #pragma omp atomic
 		++finalizedRows;
@@ -383,10 +378,5 @@ void Transformer::setSymsBatchSize(int symsBatchSz_) {
 
 Transformer& Transformer::useTransformMonitor(AbsJobMonitor &transformMonitor_) {
 	transformMonitor = &transformMonitor_;
-	return *this;
-}
-
-Transformer& Transformer::usePreselManager(PreselManager &preselManager_) {
-	preselManager = &preselManager_;
 	return *this;
 }

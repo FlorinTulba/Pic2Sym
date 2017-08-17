@@ -52,16 +52,14 @@
 // Forward declarations
 struct IBestMatch;
 struct ISettings;
+class MatchSupport;
 class MatchAspect;
 class MatchAssessor;
 class MatchProgress;
-class PreselManager;
 class CmapPerspective;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine {
-	friend class PreselManager;
-
 protected:
 	const ISettings &cfg;		///< settings for the engine
 	FontEngine &fe;				///< symbols set manager
@@ -80,9 +78,11 @@ public:
 	CachedData cachedData;			///< data precomputed by getReady before performing the matching series
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
+	// Keep this below the fields, as it depends on them
+	std::unique_ptr<MatchSupport> matchSupport; ///< cached data management
+
 protected:
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
-	PreselManager *preselManager = nullptr;	///< preselection manager
 
 public:
 	MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
@@ -93,6 +93,8 @@ public:
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
 
 	const MatchAssessor& assessor() const; ///< access to the const methods of the matchAssessor
+
+	MatchSupport& support(); ///< access to matchSupport
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
 	void getReady();		///< called before a series of improvesBasedOnBatch
@@ -109,7 +111,6 @@ public:
 	const bool& isClusteringUseful() const; ///< Clustering should be avoided when the obtained clusters are really small
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_);		///< setting the symbols monitor
-	MatchEngine& usePreselManager(PreselManager &preselManager_);	///< setting the preselection manager
 
 	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
 };

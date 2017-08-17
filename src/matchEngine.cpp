@@ -45,6 +45,7 @@
 #include "bestMatchBase.h"
 #include "preselectManager.h"
 #include "preselectSyms.h"
+#include "symbolsSupport.h"
 #include "clusterSupport.h"
 #include "matchSupport.h"
 #include "cmapPerspective.h"
@@ -129,7 +130,10 @@ namespace {
 
 MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_), ce(fe_),
-			matchAssessor(specializedInstance(availAspects)) {
+			matchAssessor(specializedInstance(availAspects)),
+			matchSupport(IPreselManager::concrete().createMatchSupport(
+				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
+	ce.supportedBy(IPreselManager::concrete().createClusterSupport(fe_, ce, symsSet));
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));
@@ -175,10 +179,7 @@ void MatchEngine::updateSymbols() {
 
 	fieldsComputations.taskDone();
 
-	if(preselManager == nullptr)
-		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
-
-	preselManager->clustersSupport().groupSyms(fe.getFontType());
+	ce.support().groupSyms(fe.getFontType());
 	cmP.reset(symsSet, ce.getSymsIndicesPerCluster());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
@@ -196,14 +197,15 @@ const MatchAssessor& MatchEngine::assessor() const {
 	return matchAssessor;
 }
 
+MatchSupport& MatchEngine::support() {
+	assert(matchSupport);
+	return *matchSupport;
+}
+
 void MatchEngine::getReady() {
 	updateSymbols();
 
-	if(preselManager!=nullptr)
-		preselManager->matchSupport().updateCachedData(cfg.getSS().getFontSz(), fe);
-	else
-		THROW_WITH_CONST_MSG("Please call 'usePreselManager()' before using " __FUNCTION__, logic_error);
-
+	matchSupport->updateCachedData(cfg.getSS().getFontSz(), fe);
 	matchAssessor.getReady(cachedData);
 }
 
@@ -216,11 +218,9 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	assert(matchAssessor.enabledMatchAspectsCount() > 0ULL);
 	assert(draftMatch.getPatch().nonUniform());
 	assert(upperSymIdx <= getSymsCount());
-	assert(preselManager != nullptr);
 
-	auto &matchSupport = preselManager->matchSupport();
-	const CachedData &cd = matchSupport.cachedData();
-	const VSymData &inspectedSet = preselManager->clustersSupport().clusteredSyms();
+	const CachedData &cd = matchSupport->cachedData();
+	const VSymData &inspectedSet = ce.support().clusteredSyms();
 
 	const Mat &toApprox = draftMatch.getPatch().matrixToApprox();
 	auto &mp = draftMatch.refParams();
@@ -332,11 +332,6 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
 	ce.useSymsMonitor(symsMonitor_);
-	return *this;
-}
-
-MatchEngine& MatchEngine::usePreselManager(PreselManager &preselManager_) {
-	preselManager = &preselManager_;
 	return *this;
 }
 

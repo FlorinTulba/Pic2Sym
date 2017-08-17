@@ -60,12 +60,12 @@ For PreselectionByTinySyms == true, the clusters include tiny symbols.
 class ClustersSupport {
 protected:
 	ClusterEngine &ce;		///< clusters manager
-	SymsSupport &ss;		///< helper for symbols
+	const std::unique_ptr<SymsSupport> ss;	///< helper for symbols
 	VSymData &symsSet;		///< set of most information on each symbol
 
 public:
 	/// Base constructor
-	ClustersSupport(ClusterEngine &ce_, SymsSupport &ss_, VSymData &symsSet_);
+	ClustersSupport(ClusterEngine &ce_, std::unique_ptr<SymsSupport> ss_, VSymData &symsSet_);
 
 	ClustersSupport(const ClustersSupport&) = delete;
 	ClustersSupport(ClustersSupport&&) = delete;

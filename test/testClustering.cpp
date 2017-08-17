@@ -51,6 +51,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "testMain.h"
 #include "selectBranch.h"
 #include "tinySymsProvider.h"
+#include "preselectManager.h"
 #include "preselectionHelper.h"
 #include "symbolsSupportWithPreselection.h"
 #include "clusterSupportWithPreselection.h"
@@ -127,29 +128,6 @@ namespace ut {
 		bool checkAlgType() const {
 			return string(typeid(AlgType).name()).
 				compare(typeid(clustAlg).name()) == 0;
-		}
-	};
-
-	/// Creates and destroys necessary ClustersSupport objects
-	struct ClusterHelper {
-		SymsSupport * const symsSupport_;			///< symbols helper
-		ClustersSupport * const clustersSupport_;	///< clusters helper
-
-		/// Constructs the appropriate clustersSupport_ considering PreselectionByTinySyms
-		ClusterHelper(ITinySymsProvider &tsp, ClusterEngine &ce, VSymData &symsSet) :
-			symsSupport_(PreselectionByTinySyms ?
-				new SymsSupportWithPreselection() :
-				new SymsSupport()),
-			clustersSupport_(PreselectionByTinySyms ?
-				new ClustersSupportWithPreselection(tsp, ce, *symsSupport_, symsSet) :
-				new ClustersSupport(ce, *symsSupport_, symsSet)) {
-			ce.supportedBy(*clustersSupport_);
-		}
-
-		/// Destroys generated objects
-		~ClusterHelper() {
-			delete clustersSupport_;
-			delete symsSupport_;
 		}
 	};
 
@@ -287,8 +265,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ClusterHelper ch(tsp, ce, symsSet);
-		ch.clustersSupport_->groupSyms();
+		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ce.support().groupSyms();
 		BOOST_REQUIRE(!ce.worthGrouping());
 		BOOST_REQUIRE(ce.getClustersCount() == symsCount);
 	}
@@ -300,8 +278,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ClusterHelper ch(tsp, ce, symsSet);
-		ch.clustersSupport_->groupSyms();
+		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
@@ -312,8 +290,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ClusterHelper ch(tsp, ce, symsSet);
-		ch.clustersSupport_->groupSyms();
+		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
@@ -324,8 +302,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ClusterHelper ch(tsp, ce, symsSet);
-		ch.clustersSupport_->groupSyms();
+		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();
@@ -345,8 +323,8 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ClusterHelper ch(tsp, ce, symsSet);
-		ch.clustersSupport_->groupSyms();
+		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();
 		const auto &clusters = ce.getClusters();

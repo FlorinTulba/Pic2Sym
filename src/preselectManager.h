@@ -39,40 +39,94 @@
 #ifndef H_PRESELECT_MANAGER
 #define H_PRESELECT_MANAGER
 
+#include "symDataBase.h"
+
+#pragma warning ( push, 0 )
+
+#include <vector>
+#include <memory>
+
+#include <opencv2/core/core.hpp>
+
+#pragma warning ( pop )
+
 // Forward declarations
-struct SymsSupport;
+struct ITinySymsProvider;
+struct CachedData;
+struct IMatchSettings;
+struct IBestMatch;
+class ClusterEngine;
 class ClustersSupport;
 class MatchSupport;
+class MatchAssessor;
 class TransformSupport;
 class MatchEngine;
-class Transformer;
 
-/**
-A friend of MatchEngine and Transformer for implementing preselection modes.
-It is an abstract factory controlled by PreselectionByTinySyms.
-*/
-class PreselManager {
-protected:
-	SymsSupport * const symsSupport_;			///< blurring and computing cluster representatives
-	ClustersSupport * const clustersSupport_;	///< clusters isolation
-	MatchSupport * const matchSupport_;			///< cached data management
-	TransformSupport * const transfSupport;		///< initializes and updates draft matches
+/// Abstract factory controlled by PreselectionByTinySyms
+struct IPreselManager /*abstract*/ {
+	static const IPreselManager& concrete();
 
-public:
-	/// Gets its data from its 2 friends: MatchEngine and Transformer
-	PreselManager(MatchEngine &me, Transformer &tr);
+	virtual std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+																  ClusterEngine &ce,
+																  VSymData &symsSet) const = 0;
+	virtual std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+															 VSymData &symsSet,
+															 MatchAssessor &matchAssessor,
+															 const IMatchSettings &matchSettings) const = 0;
+	virtual std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+																	 const IMatchSettings &matchSettings,
+																	 cv::Mat &resized,
+																	 cv::Mat &resizedBlurred,
+																	 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+																	 MatchSupport &matchSupport) const = 0;
 
-	PreselManager(const PreselManager&) = delete;
-	PreselManager(PreselManager&&) = delete;
-	void operator=(const PreselManager&) = delete;
-	void operator=(PreselManager&&) = delete;
-	
-	~PreselManager(); ///< Destroys all the heap-allocated fields
+	virtual ~IPreselManager() = 0 {}
+};
 
-	SymsSupport& symsSupport() const;
-	ClustersSupport& clustersSupport() const;
-	MatchSupport& matchSupport() const;
-	TransformSupport& transformSupport() const;
+/// PreselectionByTinySyms is true
+struct PreselectionOn : IPreselManager {
+	PreselectionOn() = default;
+	PreselectionOn(const PreselectionOn&) = delete;
+	PreselectionOn(PreselectionOn&&) = delete;
+	void operator=(const PreselectionOn&) = delete;
+	void operator=(PreselectionOn&&) = delete;
+
+	std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+														  ClusterEngine &ce,
+														  VSymData &symsSet) const override;
+	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+													 VSymData &symsSet,
+													 MatchAssessor &matchAssessor,
+													 const IMatchSettings &matchSettings) const override;
+	std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+															 const IMatchSettings &matchSettings,
+															 cv::Mat &resized,
+															 cv::Mat &resizedBlurred,
+															 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+															 MatchSupport &matchSupport) const override;
+};
+
+/// PreselectionByTinySyms is false
+struct PreselectionOff : IPreselManager {
+	PreselectionOff() = default;
+	PreselectionOff(const PreselectionOff&) = delete;
+	PreselectionOff(PreselectionOff&&) = delete;
+	void operator=(const PreselectionOff&) = delete;
+	void operator=(PreselectionOff&&) = delete;
+
+	std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+														  ClusterEngine &ce,
+														  VSymData &symsSet) const override;
+	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+													 VSymData &symsSet,
+													 MatchAssessor &matchAssessor,
+													 const IMatchSettings &matchSettings) const override;
+	std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+															 const IMatchSettings &matchSettings,
+															 cv::Mat &resized,
+															 cv::Mat &resizedBlurred,
+															 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+															 MatchSupport &matchSupport) const override;
 };
 
 #endif // H_PRESELECT_MANAGER

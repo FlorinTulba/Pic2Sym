@@ -46,7 +46,10 @@
 #include "views.h"
 #include "img.h"
 #include "transform.h"
-#include "preselectManager.h"
+#include "transformSupport.h"
+#include "symbolsSupport.h"
+#include "matchSupport.h"
+#include "clusterSupport.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"
 #include "misc.h"
@@ -129,10 +132,6 @@ MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
 
 Transformer& Controller::getTransformer(const ISettings &cfg_) {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
-}
-
-PreselManager& Controller::getPreselManager(const ISettings &cfg_) {
-	GET_FIELD(PreselManager, getMatchEngine(cfg_), getTransformer(cfg_));
 }
 
 #undef GET_FIELD_NO_ARGS
