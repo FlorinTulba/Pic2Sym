@@ -129,11 +129,11 @@ namespace {
 } // anonymous namespace
 
 MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
-			cfg(cfg_), fe(fe_), cmP(cmP_), ce(fe_),
+			cfg(cfg_), fe(fe_), cmP(cmP_),
 			matchAssessor(specializedInstance(availAspects)),
+			ce(fe_, symsSet),
 			matchSupport(IPreselManager::concrete().createMatchSupport(
 				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
-	ce.supportedBy(IPreselManager::concrete().createClusterSupport(fe_, ce, symsSet));
 	std::shared_ptr<MatchAspect> aspect;
 	for(const auto &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));

@@ -138,9 +138,6 @@ public:
 	void computeSsim(const cv::Mat &patch, const ISymData &symData,
 					 const CachedData &cachedData) override;
 
-	/// Returns an instance as for an ideal match between a symbol and a patch
-	static const MatchParams& perfectMatch();
-
 #ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
 protected:
 #endif // UNIT_TESTING not defined

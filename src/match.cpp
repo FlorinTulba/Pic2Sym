@@ -38,9 +38,10 @@
 
 #include "match.h"
 #include "matchAspects.h"
-#include "symData.h"
+#include "symDataBase.h"
 #include "cachedData.h"
 #include "matchParams.h"
+#include "warnings.h"
 
 using namespace std;
 using namespace cv;
@@ -49,6 +50,25 @@ namespace {
 	const Point2d ORIGIN; // (0, 0)
 	const double TWOmSQRT2 = 2. - sqrt(2);
 
+	/// Prepares the value before launching any image transformation (spares transformation time)
+	const MatchParams& createPerfectMatch() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+		static MatchParams idealMatch;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+
+		idealMatch.
+			setMcPatch(Point2d()).setMcPatchApprox(Point2d()).
+			setMcsOffset(0.).	// Same mass centers
+			setSdevFg(0.).setSdevBg(0.).setSdevEdge(0.). // All standard deviations 0
+			setSsim(1.).		// Perfect structural similarity
+			setSymDensity(1.).	// Largest density possible
+			setContrast(255.);	// Largest contrast possible
+
+		return idealMatch;
+	}
+
+	/// Early processing of the perfect match, to spare transformation time
+	const MatchParams &thePerfectMatch = createPerfectMatch();
 } // anonymous namespace
 
 MatchAspect::MatchAspect(const double &k_) : k(k_) {}
@@ -62,7 +82,7 @@ double MatchAspect::assessMatch(const Mat &patch,
 }
 
 double MatchAspect::maxScore(const CachedData &cachedData) const {
-	return score(MatchParams::perfectMatch(), cachedData);
+	return score(thePerfectMatch, cachedData);
 }
 
 bool MatchAspect::enabled() const {

@@ -69,7 +69,6 @@ protected:
 	AbsJobMonitor *symsMonitor = nullptr;
 
 	std::string symsIdReady;	///< type of symbols ready to use for transformation
-	ClusterEngine ce;			///< clusters manager
 
 #ifdef UNIT_TESTING // UnitTesting project needs access to following fields
 public:
@@ -78,10 +77,12 @@ public:
 	CachedData cachedData;			///< data precomputed by getReady before performing the matching series
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
+protected:
+	ClusterEngine ce;				///< clusters manager
+
 	// Keep this below the fields, as it depends on them
 	std::unique_ptr<MatchSupport> matchSupport; ///< cached data management
 
-protected:
 	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
 
 public:

@@ -24,6 +24,7 @@
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
+    <ClInclude Include="src\blurBase.h" />
     <ClInclude Include="src\boost_bimap_bimap.h" />
     <ClInclude Include="src\boost_filesystem_operations.h" />
     <ClInclude Include="src\boost_filesystem_path.h" />

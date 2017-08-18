@@ -54,14 +54,14 @@
 // Forward declarations
 class AbsJobMonitor;
 struct ITinySymsProvider;
-class ClustersSupport;
+struct IClustersSupport;
 
 /// Clusters a set of symbols
 class ClusterEngine {
 protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
-	std::unique_ptr<ClustersSupport> clusterSupport;	///< provided support from the preselection manager
+	std::unique_ptr<IClustersSupport> clusterSupport;	///< provided support from the preselection manager
 
 	ClusterAlg &clustAlg;	///< algorithm used for clustering
 
@@ -73,7 +73,7 @@ protected:
 	bool worthy = false;				///< grouping symbols is worth-doing only above a threshold average cluster size
 
 public:
-	ClusterEngine(ITinySymsProvider &tsp_); ///< Creates the cluster algorithm prescribed in varConfig.txt
+	ClusterEngine(ITinySymsProvider &tsp_, VSymData &symsSet_); ///< Creates the cluster algorithm prescribed in varConfig.txt
 	void operator=(const ClusterEngine&) = delete;
 
 	/**
@@ -105,10 +105,8 @@ public:
 
 	ClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
 
-	ClustersSupport& support(); ///< access to clusterSupport
-	const ClustersSupport& support() const; ///< access to clusterSupport
-
-	ClusterEngine& supportedBy(std::unique_ptr<ClustersSupport> support); ///< setting the support class offered by the preselection manager
+	IClustersSupport& support(); ///< access to clusterSupport
+	const IClustersSupport& support() const; ///< access to clusterSupport
 };
 
 #endif // H_CLUSTER_ENGINE

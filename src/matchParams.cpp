@@ -54,32 +54,7 @@ namespace {
 	const double EPSpSdevMaxFgBg = CachedData::sdevMaxFgBg() + EPS;
 	const double EPSpSdevMaxEdge = CachedData::sdevMaxEdge() + EPS;
 	const double EPSpSqrt2 = sqrt(2.) + EPS;
-
-	/// Prepares the value before launching any image transformation (spares transformation time)
-	const MatchParams& createPerfectMatch() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static MatchParams idealMatch;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		idealMatch.
-			setMcPatch(Point2d()).setMcPatchApprox(Point2d()).
-			setMcsOffset(0.).	// Same mass centers
-			setSdevFg(0.).setSdevBg(0.).setSdevEdge(0.). // All standard deviations 0
-			setSsim(1.).		// Perfect structural similarity
-			setSymDensity(1.).	// Largest density possible
-			setContrast(255.);	// Largest contrast possible
-
-		return idealMatch;
-	}
-
-	/// Early processing of the perfect match, to spare transformation time
-	const MatchParams &thePerfectMatch = createPerfectMatch();
-
 } // anonymous namespace
-
-const MatchParams& MatchParams::perfectMatch() {
-	return thePerfectMatch;
-}
 
 const optional<Point2d>& MatchParams::getMcPatch() const { return mcPatch; }
 const optional<Mat>& MatchParams::getBlurredPatch() const { return blurredPatch; }

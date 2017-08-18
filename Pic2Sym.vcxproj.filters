@@ -477,6 +477,9 @@
     <ClInclude Include="src\imgSettingsBase.h">
       <Filter>Header Files\Settings</Filter>
     </ClInclude>
+    <ClInclude Include="src\blurBase.h">
+      <Filter>Header Files\Var\Blurring</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

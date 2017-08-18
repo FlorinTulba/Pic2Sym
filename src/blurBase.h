@@ -36,36 +36,28 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "blur.h"
-#include "misc.h"
+#ifndef H_BLUR_BASE
+#define H_BLUR_BASE
 
-using namespace std;
-using namespace cv;
+#pragma warning ( push, 0 )
 
-BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static ConfiguredInstances configuredInstances_;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+#include <opencv2/core/core.hpp>
 
-	return configuredInstances_;
-}
+#pragma warning ( pop )
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const IBlurEngine &configuredInstance) {
-	configuredInstances().emplace(blurType, &configuredInstance);
-}
+/// Interface for the BlurEngine
+struct IBlurEngine /*abstract*/ {
+	/**
+	Blurring toBlur into blurred depending on forTinySym.
 
-const IBlurEngine& BlurEngine::byName(const string &blurType) {
-	try {
-		return *configuredInstances().at(blurType);
-	} catch(out_of_range&) {
-		THROW_WITH_VAR_MSG("Unknown blur type: '" + blurType + "' in " __FUNCTION__, invalid_argument);
-	}
-}
+	@param toBlur is a single channel matrix with values of type double
+	@param blurred the result of the blur (not initialized when method gets called)
+	@param forTinySym demands generating a Gaussian blur with smaller window and standard deviation
+	for tiny symbols
+	*/
+	virtual void process(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const = 0;
 
-void BlurEngine::process(const Mat &toBlur, Mat &blurred, bool forTinySym) const {
-	assert(!toBlur.empty() && toBlur.type() == CV_64FC1);
+	virtual ~IBlurEngine() = 0 {}
+};
 
-	blurred = Mat(toBlur.size(), CV_64FC1, 0.);
-	
-	doProcess(toBlur, blurred, forTinySym);
-}
+#endif // H_BLUR_BASE

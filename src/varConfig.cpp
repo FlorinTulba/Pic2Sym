@@ -448,7 +448,7 @@ BlurEngine::ConfInstRegistrator StackBlur::cir("stack", StackBlur::configuredIns
 BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian", GaussBlur::configuredInstance());
 
 // Keep this after StructuralSimilarity_BlurType and below all defined cir static fields
-const BlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(StructuralSimilarity_BlurType);
+const IBlurEngine& StructuralSimilarity::supportBlur = BlurEngine::byName(StructuralSimilarity_BlurType);
 
 static READ_INT_PROP(BlurWindowSize, oddI(), atLeast3i(), lessThan20i());
 extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);

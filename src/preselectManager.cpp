@@ -60,7 +60,7 @@ const IPreselManager& IPreselManager::concrete() {
 	return preselectionOff;
 }
 
-unique_ptr<ClustersSupport> PreselectionOn::createClusterSupport(ITinySymsProvider &tsp,
+unique_ptr<IClustersSupport> PreselectionOn::createClusterSupport(ITinySymsProvider &tsp,
 																 ClusterEngine &ce,
 																 VSymData &symsSet) const {
 	return make_unique<ClustersSupportWithPreselection>(tsp, ce,
@@ -85,7 +85,7 @@ unique_ptr<TransformSupport> PreselectionOn::createTransformSupport(MatchEngine 
 														 draftMatches, matchSupport);
 }
 
-unique_ptr<ClustersSupport> PreselectionOff::createClusterSupport(ITinySymsProvider&,
+unique_ptr<IClustersSupport> PreselectionOff::createClusterSupport(ITinySymsProvider&,
 																  ClusterEngine &ce,
 																  VSymData &symsSet) const {
 	return make_unique<ClustersSupport>(ce, make_unique<SymsSupport>(), symsSet);

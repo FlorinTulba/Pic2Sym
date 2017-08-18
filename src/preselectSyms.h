@@ -59,16 +59,29 @@ the previous best known match.
 */
 class TopCandidateMatches {
 protected:
+	/// Interface for the data for a candidate who enters the short list
+	struct ICandidate /*abstract*/ {
+		virtual double getScore() const = 0;
+		virtual CandidateId getIdx() const = 0;
+
+		virtual ~ICandidate() = 0 {}
+	};
+	
 	/// Data for a candidate who enters the short list
-	struct Candidate {
+	class Candidate : public ICandidate {
+	protected:
 		double score;		///< his score
 		CandidateId idx;	///< id of the candidate (index in vector&lt;ISymData&gt;)
 
+	public:
 		Candidate(CandidateId idx_, double score_);
+
+		double getScore() const override final { return score; }
+		CandidateId getIdx() const override final { return idx; }
 
 		/// Comparator based on the score
 		struct Greater {
-			bool operator()(const Candidate &c1, const Candidate &c2) const;
+			bool operator()(const ICandidate &c1, const ICandidate &c2) const;
 		};
 	};
 

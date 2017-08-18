@@ -39,7 +39,7 @@
 #include "symData.h"
 #include "pixMapSymBase.h"
 #include "structuralSimilarity.h"
-#include "blur.h"
+#include "blurBase.h"
 #include "misc.h"
 
 using namespace std;

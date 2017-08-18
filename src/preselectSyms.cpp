@@ -57,9 +57,9 @@ TopCandidateMatches::Candidate::Candidate(CandidateId idx_, double score_) :
 		idx(idx_), score(score_) {}
 
 bool TopCandidateMatches::Candidate::
-		Greater::operator()(const Candidate &c1,
-							const Candidate &c2) const {
-	return c1.score > c2.score;
+		Greater::operator()(const ICandidate &c1,
+							const ICandidate &c2) const {
+	return c1.getScore() > c2.getScore();
 }
 
 TopCandidateMatches::TopCandidateMatches(unsigned shortListLength/* = 1U*/,
@@ -90,7 +90,7 @@ bool TopCandidateMatches::checkCandidate(unsigned candidateIdx, double score) {
 
 	if((unsigned)scrapbook.size() == n) // If the short list is full now
 		// New threshold is the score of the new worst candidate
-		thresholdScore = scrapbook.top().score;
+		thresholdScore = scrapbook.top().getScore();
 
 	return true;
 }
@@ -99,7 +99,7 @@ void TopCandidateMatches::prepareReport() {
 	assert(!shortListReady); // this method should be called only once
 
 	while(!scrapbook.empty()) {
-		shortList.push(scrapbook.top().idx); // place worse candidates to the bottom of the stack
+		shortList.push(scrapbook.top().getIdx()); // place worse candidates to the bottom of the stack
 		scrapbook.pop();
 	}
 

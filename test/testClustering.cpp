@@ -121,7 +121,7 @@ namespace ut {
 
 		ITinySymsProvider *tsp;	///< provider of tiny symbols
 
-		TestClusterEngine() : ClusterEngine(*(tsp = new TinySymsProvider)) {}
+		TestClusterEngine() : ClusterEngine(*(tsp = new TinySymsProvider), VSymData()) {}
 		~TestClusterEngine() { delete tsp; }
 
 		template<class AlgType>
@@ -260,12 +260,11 @@ BOOST_AUTO_TEST_SUITE_END() // ClusterEngineCreation
 FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 	AutoTestCase1(UsingNoClustering_6identicalSymbols_0nonTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "None";
-		ClusterEngine ce(tsp);
-		ce.useSymsMonitor(jm);
 		size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ClusterEngine ce(tsp, symsSet);
+		ce.useSymsMonitor(jm);
 		ce.support().groupSyms();
 		BOOST_REQUIRE(!ce.worthGrouping());
 		BOOST_REQUIRE(ce.getClustersCount() == symsCount);
@@ -273,36 +272,33 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 
 	AutoTestCase1(UsingPartitionClustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "Partition";
-		ClusterEngine ce(tsp);
-		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ClusterEngine ce(tsp, symsSet);
+		ce.useSymsMonitor(jm);
 		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
 	AutoTestCase1(UsingTTSASclustering_6identicalSymbols_noTrivialClusters, SuiteSuffix);
 		refClusterAlgName = "TTSAS";
-		ClusterEngine ce(tsp);
-		ce.useSymsMonitor(jm);
 		const size_t symsCount = 6U;
 		tsp.tinySyms.assign(symsCount, EmptyTinySym());
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ClusterEngine ce(tsp, symsSet);
+		ce.useSymsMonitor(jm);
 		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.getClustersCount() == 1U);
 	}
 
 	AutoTestCase1(UsingPartitionClustering_x0x0xSequence_2Clusters, SuiteSuffix);
 		refClusterAlgName = "Partition";
-		ClusterEngine ce(tsp);
-		ce.useSymsMonitor(jm);
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ClusterEngine ce(tsp, symsSet);
+		ce.useSymsMonitor(jm);
 		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();
@@ -318,12 +314,11 @@ FixtureTestSuiteSuffix(SuiteFixture, BasicClustering_Tests, SuiteSuffix)
 
 	AutoTestCase1(UsingTTSASclustering_x0x0xSequence_2Clusters, SuiteSuffix);
 		refClusterAlgName = "TTSAS";
-		ClusterEngine ce(tsp);
-		ce.useSymsMonitor(jm);
 		tsp.tinySyms = vector<const TinySym>{ MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym(), EmptyTinySym(), MainDiagTinySym() };
 		const size_t symsCount = tsp.tinySyms.size();
 		VSymData symsSet(symsCount); setConsecIndices(EmptySymData5x5, symsSet);
-		ce.supportedBy(IPreselManager::concrete().createClusterSupport(tsp, ce, symsSet));
+		ClusterEngine ce(tsp, symsSet);
+		ce.useSymsMonitor(jm);
 		ce.support().groupSyms();
 		BOOST_REQUIRE(ce.worthGrouping());
 		const auto &clusterOffsets = ce.getClusterOffsets();

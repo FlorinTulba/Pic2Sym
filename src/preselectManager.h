@@ -55,8 +55,8 @@ struct ITinySymsProvider;
 struct CachedData;
 struct IMatchSettings;
 struct IBestMatch;
+struct IClustersSupport;
 class ClusterEngine;
-class ClustersSupport;
 class MatchSupport;
 class MatchAssessor;
 class TransformSupport;
@@ -66,7 +66,7 @@ class MatchEngine;
 struct IPreselManager /*abstract*/ {
 	static const IPreselManager& concrete();
 
-	virtual std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	virtual std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 																  ClusterEngine &ce,
 																  VSymData &symsSet) const = 0;
 	virtual std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
@@ -91,7 +91,7 @@ struct PreselectionOn : IPreselManager {
 	void operator=(const PreselectionOn&) = delete;
 	void operator=(PreselectionOn&&) = delete;
 
-	std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 														  ClusterEngine &ce,
 														  VSymData &symsSet) const override;
 	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
@@ -114,7 +114,7 @@ struct PreselectionOff : IPreselManager {
 	void operator=(const PreselectionOff&) = delete;
 	void operator=(PreselectionOff&&) = delete;
 
-	std::unique_ptr<ClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 														  ClusterEngine &ce,
 														  VSymData &symsSet) const override;
 	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,

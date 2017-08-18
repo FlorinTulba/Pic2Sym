@@ -38,7 +38,7 @@
 
 #include "match.h"
 #include "structuralSimilarity.h"
-#include "blur.h"
+#include "blurBase.h"
 #include "matchParams.h"
 #include "symDataBase.h"
 #include "misc.h"

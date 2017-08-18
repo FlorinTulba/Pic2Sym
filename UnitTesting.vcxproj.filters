@@ -566,6 +566,9 @@
     <ClInclude Include="src\imgSettingsBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
+    <ClInclude Include="src\blurBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\BPmonoBold.ttf">

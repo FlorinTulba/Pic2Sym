@@ -41,7 +41,7 @@
 
 #include "match.h"
 
-class BlurEngine; // Forward declaration
+struct IBlurEngine; // forward declaration
 
 /**
 Selecting a symbol with best structural similarity.
@@ -51,7 +51,7 @@ See https://ece.uwaterloo.ca/~z70wang/research/ssim for details.
 class StructuralSimilarity : public MatchAspect {
 public:
 	/// Blurring algorithm used to support this match aspect. The Controller sets it at start.
-	static const BlurEngine &supportBlur;
+	static const IBlurEngine &supportBlur;
 
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	double relativeComplexity() const override;

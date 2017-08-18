@@ -53,11 +53,32 @@
 class ClusterEngine;
 struct SymsSupport;
 
+/// Interface for ClustersSupport
+struct IClustersSupport /*abstract*/ {
+	/**
+	Clusters symsSet. For PreselectionByTinySyms == true it clusters also the tiny symbols.
+	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
+	*/
+	virtual void groupSyms(const std::string &fontType = "") = 0;
+
+	/**
+	Rearranges symsSet and its tiny correspondent version when PreselectionByTinySyms == true.
+	Computes the cluster representatives and marks the limits between the symbols for different clusters.
+	*/
+	virtual void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+							   VClusterData &clusters, std::set<unsigned> &clusterOffsets) = 0;
+
+	/// Returns the rearranged symsSet or its tiny correspondent version when PreselectionByTinySyms == true.
+	virtual const VSymData& clusteredSyms() const = 0;
+
+	virtual ~IClustersSupport() = 0 {}
+};
+
 /**
 Polymorphic helper for clustering the symbols depending on the value of PreselectionByTinySyms.
 For PreselectionByTinySyms == true, the clusters include tiny symbols.
 */
-class ClustersSupport {
+class ClustersSupport : public IClustersSupport {
 protected:
 	ClusterEngine &ce;		///< clusters manager
 	const std::unique_ptr<SymsSupport> ss;	///< helper for symbols
@@ -72,23 +93,21 @@ public:
 	void operator=(const ClustersSupport&) = delete;
 	void operator=(ClustersSupport&&) = delete;
 
-	virtual ~ClustersSupport() {}
-
 	/**
 	Clusters symsSet. For PreselectionByTinySyms == true it clusters also the tiny symbols.
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	virtual void groupSyms(const std::string &fontType = "");
+	void groupSyms(const std::string &fontType = "") override;
 
 	/**
 	Rearranges symsSet and its tiny correspondent version when PreselectionByTinySyms == true.
 	Computes the cluster representatives and marks the limits between the symbols for different clusters.
 	*/
-	virtual void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-							   VClusterData &clusters, std::set<unsigned> &clusterOffsets);
+	void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
+							   VClusterData &clusters, std::set<unsigned> &clusterOffsets) override;
 
 	/// Returns the rearranged symsSet or its tiny correspondent version when PreselectionByTinySyms == true.
-	virtual const VSymData& clusteredSyms() const;
+	const VSymData& clusteredSyms() const override;
 };
 
 #endif // H_CLUSTER_SUPPORT

@@ -40,6 +40,7 @@
 #include "noClustering.h"
 #include "ttsasClustering.h"
 #include "partitionClustering.h"
+#include "preselectManager.h"
 #include "clusterSupport.h"
 #include "symbolsSupport.h"
 #include "jobMonitorBase.h"
@@ -113,7 +114,8 @@ namespace {
 	}
 } // anonymous namespace
 
-ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_) :
+ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_, VSymData &symsSet_) :
+	clusterSupport(IPreselManager::concrete().createClusterSupport(tsp_, *this, symsSet_)),
 	clustAlg(algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
 
 void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) {
@@ -169,23 +171,14 @@ ClusterEngine& ClusterEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	return *this;
 }
 
-ClustersSupport& ClusterEngine::support() {
-	if(!clusterSupport)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be used before calling 'supportedBy()'!", logic_error);
-
+IClustersSupport& ClusterEngine::support() {
+	assert(clusterSupport);
 	return *clusterSupport;
 }
 
-const ClustersSupport& ClusterEngine::support() const {
-	if(!clusterSupport)
-		THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be used before calling 'supportedBy()'!", logic_error);
-
+const IClustersSupport& ClusterEngine::support() const {
+	assert(clusterSupport);
 	return *clusterSupport;
-}
-
-ClusterEngine& ClusterEngine::supportedBy(unique_ptr<ClustersSupport> support) {
-	clusterSupport = move(support);
-	return *this;
 }
 
 #ifndef UNIT_TESTING

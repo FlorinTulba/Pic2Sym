@@ -329,7 +329,7 @@ namespace ut {
 		}
 
 		/// help for blur
-		const BlurEngine& blurSupport = BlurEngine::byName(StructuralSimilarity_BlurType);
+		const IBlurEngine& blurSupport = BlurEngine::byName(StructuralSimilarity_BlurType);
 	};
 
 	template<bool PreselMode>
