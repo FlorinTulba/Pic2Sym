@@ -51,27 +51,58 @@ extern const double EPSp1();
 
 namespace {
 	const double EPSp255 = 255. + EPS;
-	const double EPSpSdevMaxFgBg = CachedData::sdevMaxFgBg() + EPS;
-	const double EPSpSdevMaxEdge = CachedData::sdevMaxEdge() + EPS;
+	const double EPSpSdevMaxFgBg = CachedData::MaxSdev::forFgOrBg() + EPS;
+	const double EPSpSdevMaxEdge = CachedData::MaxSdev::forEdges() + EPS;
 	const double EPSpSqrt2 = sqrt(2.) + EPS;
 } // anonymous namespace
 
+const MatchParams& MatchParams::perfectMatch() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static MatchParams idealMatch;
+	static bool initialized = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+	if(!initialized) {
+		// Same mass centers
+		idealMatch.mcPatch = idealMatch.mcPatchApprox = Point2d();
+		idealMatch.mcsOffset = 0.;
+
+		// All standard deviations 0
+		idealMatch.sdevFg = idealMatch.sdevBg = idealMatch.sdevEdge = 0.;
+
+		idealMatch.ssim = 1.;		// Perfect structural similarity
+
+		idealMatch.symDensity = 1.;	// Largest density possible
+
+		idealMatch.contrast = 255.;	// Largest contrast possible
+
+		initialized = true;
+	}
+
+	return idealMatch;
+}
+
 const optional<Point2d>& MatchParams::getMcPatch() const { return mcPatch; }
+#ifdef UNIT_TESTING
 const optional<Mat>& MatchParams::getBlurredPatch() const { return blurredPatch; }
 const optional<Mat>& MatchParams::getBlurredPatchSq() const { return blurredPatchSq; }
 const optional<Mat>& MatchParams::getVariancePatch() const { return variancePatch; }
 const optional<Mat>& MatchParams::getPatchApprox() const { return patchApprox; }
+#endif // UNIT_TESTING defined
 const optional<Point2d>& MatchParams::getMcPatchApprox() const { return mcPatchApprox; }
 const optional<double>& MatchParams::getMcsOffset() const { return mcsOffset; }
 const optional<double>& MatchParams::getSymDensity() const { return symDensity; }
+#if defined(_DEBUG) || defined(UNIT_TESTING)
 const optional<double>& MatchParams::getFg() const { return fg; }
+#endif // defined(_DEBUG) || defined(UNIT_TESTING)
 const optional<double>& MatchParams::getBg() const { return bg; }
 const optional<double>& MatchParams::getContrast() const { return contrast; }
 const optional<double>& MatchParams::getSsim() const { return ssim; }
 const optional<double>& MatchParams::getSdevFg() const { return sdevFg; }
 const optional<double>& MatchParams::getSdevBg() const { return sdevBg; }
 const optional<double>& MatchParams::getSdevEdge() const { return sdevEdge; }
+#ifdef UNIT_TESTING
 unique_ptr<IMatchParamsRW> MatchParams::clone() const { return make_unique<MatchParams>(*this); }
+#endif // UNIT_TESTING defined
 
 MatchParams& MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
@@ -84,22 +115,6 @@ MatchParams& MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	}
 	return *this;
 }
-
-MatchParams& MatchParams::setMcPatch(const cv::Point2d &p) { mcPatch = p; return *this; }
-MatchParams& MatchParams::setBlurredPatch(const cv::Mat &m) { blurredPatch = m; return *this; }
-MatchParams& MatchParams::setBlurredPatchSq(const cv::Mat &m) { blurredPatchSq = m; return *this; }
-MatchParams& MatchParams::setVariancePatch(const cv::Mat &m) { variancePatch = m; return *this; }
-MatchParams& MatchParams::setPatchApprox(const cv::Mat &m) { patchApprox = m; return *this; }
-MatchParams& MatchParams::setMcPatchApprox(const cv::Point2d &p) { mcPatchApprox = p; return *this; }
-MatchParams& MatchParams::setMcsOffset(double v) { mcsOffset = v; return *this; }
-MatchParams& MatchParams::setSymDensity(double v) { symDensity = v; return *this; }
-MatchParams& MatchParams::setFg(double v) { fg = v; return *this; }
-MatchParams& MatchParams::setBg(double v) { bg = v; return *this; }
-MatchParams& MatchParams::setContrast(double v) { contrast = v; return *this; }
-MatchParams& MatchParams::setSsim(double v) { ssim = v; return *this; }
-MatchParams& MatchParams::setSdevFg(double v) { sdevFg = v; return *this; }
-MatchParams& MatchParams::setSdevBg(double v) { sdevBg = v; return *this; }
-MatchParams& MatchParams::setSdevEdge(double v) { sdevEdge = v; return *this; }
 
 void MatchParams::computeMean(const Mat &patch, const Mat &mask, optional<double> &miu) {
 	if(miu)
@@ -227,7 +242,7 @@ void MatchParams::computeMcPatchApprox(const Mat &patch, const ISymData &symData
 				delta = .5 * bg.value(),
 				denominator = k + bg.value();
 	if(denominator == 0.)
-		mcPatchApprox = CachedData::unitSquareCenter();
+		mcPatchApprox = CachedData::MassCenters::unitSquareCenter();
 	else
 		mcPatchApprox = (k * symData.getMc() + Point2d(delta, delta)) / denominator;
 	assert(mcPatchApprox->x > -EPS && mcPatchApprox->x < EPSp1());

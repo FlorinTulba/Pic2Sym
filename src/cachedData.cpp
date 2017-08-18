@@ -59,7 +59,7 @@ namespace {
 	see 'Magic statics' from https://msdn.microsoft.com/en-us/library/hh567368.aspx .
 
 	The local class from below ensures that the static methods from CachedData are thread-safe by
-	creating a file static instance of it which calls all those vulnerable methods from CachedData
+	creating a file static instance of it which calls all those vulnerable methods from CachedData::MassCenters
 	before any other threads do.
 
 	This approach was preferred, since Visual Studio 2015 addressed already the issues and
@@ -67,10 +67,10 @@ namespace {
 	*/
 	struct StaticInitializer {
 		StaticInitializer() {
-			CachedData::unitSquareCenter();
-			CachedData::invComplPrefMaxMcDist();
-			CachedData::a_mcsOffsetFactor();
-			CachedData::b_mcsOffsetFactor();
+			CachedData::MassCenters::unitSquareCenter();
+			CachedData::MassCenters::invComplPrefMaxMcDist();
+			CachedData::MassCenters::a_mcsOffsetFactor();
+			CachedData::MassCenters::b_mcsOffsetFactor();
 		}
 	};
 
@@ -112,7 +112,7 @@ Solution:
 a = (DirSmooth_DesiredBaseForCenterAndCornerMcs / MaxAngleFactor - 1) / (maxMcDist/2 - PreferredMaxMcDist)
 b = 1 - a * PreferredMaxMcDist
 */
-const double CachedData::a_mcsOffsetFactor() {
+const double CachedData::MassCenters::a_mcsOffsetFactor() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double maxMcDist = SQRT2,
 				MaxAngleFactor = 2. * (2. - SQRT2),
@@ -123,7 +123,7 @@ const double CachedData::a_mcsOffsetFactor() {
 
 	return result;
 }
-const double CachedData::b_mcsOffsetFactor() {
+const double CachedData::MassCenters::b_mcsOffsetFactor() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double result = 1. - a_mcsOffsetFactor() * preferredMaxMcDist();
 #pragma warning ( default : WARN_THREAD_UNSAFE )
@@ -131,7 +131,7 @@ const double CachedData::b_mcsOffsetFactor() {
 	return result;
 }
 
-const Point2d& CachedData::unitSquareCenter() {
+const Point2d& CachedData::MassCenters::unitSquareCenter() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const Point2d center(.5, .5);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
@@ -140,7 +140,7 @@ const Point2d& CachedData::unitSquareCenter() {
 }
 
 /// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-const double CachedData::invComplPrefMaxMcDist() {
+const double CachedData::MassCenters::invComplPrefMaxMcDist() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const double result = 1. / (SQRT2 - preferredMaxMcDist());
 #pragma warning ( default : WARN_THREAD_UNSAFE )

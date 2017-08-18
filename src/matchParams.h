@@ -68,16 +68,20 @@ protected:
 public:
 	// These params are computed only once, if necessary, when approximating the patch
 	const boost::optional<cv::Point2d>& getMcPatch() const override final;		///< mass center for the patch (range 0..1 x 0..1)
+#ifdef UNIT_TESTING
 	const boost::optional<cv::Mat>& getBlurredPatch() const override final;		///< blurred version of the patch
 	const boost::optional<cv::Mat>& getBlurredPatchSq() const override final;	///< blurredPatch element-wise squared
 	const boost::optional<cv::Mat>& getVariancePatch() const override final;	///< blur(patch^2) - blurredPatchSq
 
 	// These params are evaluated for each symbol compared to the patch
 	const boost::optional<cv::Mat>& getPatchApprox() const override final;		///< patch approximated by a given symbol
+#endif // UNIT_TESTING defined
 	const boost::optional<cv::Point2d>& getMcPatchApprox() const override final;///< mass center for the approximation of the patch (range 0..1 x 0..1)
 	const boost::optional<double>& getMcsOffset() const override final;			///< distance between the 2 mass centers (range 0..sqrt(2))
 	const boost::optional<double>& getSymDensity() const override final;		///< % of the box covered by the glyph (0..1)
+#if defined(_DEBUG) || defined(UNIT_TESTING)
 	const boost::optional<double>& getFg() const override final;				///< color for fg (range 0..255)
+#endif // defined(_DEBUG) || defined(UNIT_TESTING)
 	const boost::optional<double>& getBg() const override final;				///< color for bg (range 0..255)
 	const boost::optional<double>& getContrast() const override final;			///< fg - bg (range -255..255)
 	const boost::optional<double>& getSsim() const override final;				///< structural similarity (-1..1)
@@ -87,7 +91,9 @@ public:
 	const boost::optional<double>& getSdevBg() const override final;			///< standard deviation for bg  (0..127.5)
 	const boost::optional<double>& getSdevEdge() const override final;			///< standard deviation for contour (0..255)
 
+#ifdef UNIT_TESTING
 	std::unique_ptr<IMatchParamsRW> clone() const override;	/// @return a copy of itself
+#endif // UNIT_TESTING defined
 
 	/**
 	Prepares for next symbol to match against patch.
@@ -96,27 +102,6 @@ public:
 	mcPatch, blurredPatch, blurredPatchSq and variancePatch.
 	*/
 	MatchParams& reset(bool skipPatchInvariantParts = true) override;
-
-	// These params are computed only once, if necessary, when approximating the patch
-	MatchParams& setMcPatch(const cv::Point2d &p) override final;	///< mass center for the patch (range 0..1 x 0..1)
-	MatchParams& setBlurredPatch(const cv::Mat &m) override final;	///< blurred version of the patch
-	MatchParams& setBlurredPatchSq(const cv::Mat &m) override final;///< blurredPatch element-wise squared
-	MatchParams& setVariancePatch(const cv::Mat &m) override final;	///< blur(patch^2) - blurredPatchSq
-
-	// These params are evaluated for each symbol compared to the patch
-	MatchParams& setPatchApprox(const cv::Mat &m) override final;		///< patch approximated by a given symbol
-	MatchParams& setMcPatchApprox(const cv::Point2d &p) override final;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
-	MatchParams& setMcsOffset(double v) override final;	///< distance between the 2 mass centers (range 0..sqrt(2))
-	MatchParams& setSymDensity(double v) override final;///< % of the box covered by the glyph (0..1)
-	MatchParams& setFg(double v) override final;		///< color for fg (range 0..255)
-	MatchParams& setBg(double v) override final;		///< color for bg (range 0..255)
-	MatchParams& setContrast(double v) override final;	///< fg - bg (range -255..255)
-	MatchParams& setSsim(double v) override final;		///< structural similarity (-1..1)
-
-	// Ideal value for the standard deviations below is 0
-	MatchParams& setSdevFg(double v) override final;	///< standard deviation for fg (0..127.5)
-	MatchParams& setSdevBg(double v) override final;	///< standard deviation for bg  (0..127.5)
-	MatchParams& setSdevEdge(double v) override final;	///< standard deviation for contour (0..255)
 
 	// Methods for computing each field
 	void computeFg(const cv::Mat &patch, const ISymData &symData) override;
@@ -137,6 +122,15 @@ public:
 	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData) override;
 	void computeSsim(const cv::Mat &patch, const ISymData &symData,
 					 const CachedData &cachedData) override;
+
+	/**
+	Returns an instance as for an ideal match between a symbol and a patch.
+	Also avoids:
+	- either cluttering the interface IMatchParamsRW with setters for creating the
+		MatchParams of the perfect match.
+	- or introducing a special constructor / Builder just for the perfect match
+	*/
+	static const MatchParams& perfectMatch();
 
 #ifndef UNIT_TESTING // UnitTesting project will still have following methods as public
 protected:

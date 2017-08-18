@@ -58,16 +58,20 @@ struct IMatchParamsRW;
 struct IMatchParams /*abstract*/ {
 	// These params are computed only once, if necessary, when approximating the patch
 	virtual const boost::optional<cv::Point2d>& getMcPatch() const = 0;		///< mass center for the patch (range 0..1 x 0..1)
+#ifdef UNIT_TESTING
 	virtual const boost::optional<cv::Mat>& getBlurredPatch() const = 0;	///< blurred version of the patch
 	virtual const boost::optional<cv::Mat>& getBlurredPatchSq() const = 0;	///< blurredPatch element-wise squared
 	virtual const boost::optional<cv::Mat>& getVariancePatch() const = 0;	///< blur(patch^2) - blurredPatchSq
 
 	// These params are evaluated for each symbol compared to the patch
 	virtual const boost::optional<cv::Mat>& getPatchApprox() const = 0;			///< patch approximated by a given symbol
+#endif // UNIT_TESTING defined
 	virtual const boost::optional<cv::Point2d>& getMcPatchApprox() const = 0;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
 	virtual const boost::optional<double>& getMcsOffset() const = 0;			///< distance between the 2 mass centers (range 0..sqrt(2))
 	virtual const boost::optional<double>& getSymDensity() const = 0;			///< % of the box covered by the glyph (0..1)
+#if defined(_DEBUG) || defined(UNIT_TESTING)
 	virtual const boost::optional<double>& getFg() const = 0;					///< color for fg (range 0..255)
+#endif // defined(_DEBUG) || defined(UNIT_TESTING)
 	virtual const boost::optional<double>& getBg() const = 0;					///< color for bg (range 0..255)
 	virtual const boost::optional<double>& getContrast() const = 0;				///< fg - bg (range -255..255)
 	virtual const boost::optional<double>& getSsim() const = 0;					///< structural similarity (-1..1)
@@ -77,14 +81,16 @@ struct IMatchParams /*abstract*/ {
 	virtual const boost::optional<double>& getSdevBg() const = 0;	///< standard deviation for bg  (0..127.5)
 	virtual const boost::optional<double>& getSdevEdge() const = 0;	///< standard deviation for contour (0..255)
 
-	virtual std::unique_ptr<IMatchParamsRW> clone() const = 0;	/// @return a copy of itself
-
 	virtual ~IMatchParams() = 0 {}
+
+#ifdef UNIT_TESTING
+	virtual std::unique_ptr<IMatchParamsRW> clone() const = 0;	/// @return a configurable copy of itself
+#endif // UNIT_TESTING defined
 };
 
 std::wostream& operator<<(std::wostream &os, const IMatchParams &mp);
 
-/// Base class (Read-only version) for the relevant parameters during patch&glyph matching
+/// Base class (Read-Write version) for the relevant parameters during patch&glyph matching
 struct IMatchParamsRW /*abstract*/ : IMatchParams {
 	/**
 	Prepares for next symbol to match against patch.
@@ -93,27 +99,6 @@ struct IMatchParamsRW /*abstract*/ : IMatchParams {
 	mcPatch, blurredPatch, blurredPatchSq and variancePatch.
 	*/
 	virtual IMatchParamsRW& reset(bool skipPatchInvariantParts = true) = 0;
-
-	// These params are computed only once, if necessary, when approximating the patch
-	virtual IMatchParamsRW& setMcPatch(const cv::Point2d &p) = 0;		///< mass center for the patch (range 0..1 x 0..1)
-	virtual IMatchParamsRW& setBlurredPatch(const cv::Mat &m) = 0;		///< blurred version of the patch
-	virtual IMatchParamsRW& setBlurredPatchSq(const cv::Mat &m) = 0;	///< blurredPatch element-wise squared
-	virtual IMatchParamsRW& setVariancePatch(const cv::Mat &m) = 0;	///< blur(patch^2) - blurredPatchSq
-
-	// These params are evaluated for each symbol compared to the patch
-	virtual IMatchParamsRW& setPatchApprox(const cv::Mat &m) = 0;			///< patch approximated by a given symbol
-	virtual IMatchParamsRW& setMcPatchApprox(const cv::Point2d &p) = 0;	///< mass center for the approximation of the patch (range 0..1 x 0..1)
-	virtual IMatchParamsRW& setMcsOffset(double v) = 0;	///< distance between the 2 mass centers (range 0..sqrt(2))
-	virtual IMatchParamsRW& setSymDensity(double v) = 0;	///< % of the box covered by the glyph (0..1)
-	virtual IMatchParamsRW& setFg(double v) = 0;			///< color for fg (range 0..255)
-	virtual IMatchParamsRW& setBg(double v) = 0;			///< color for bg (range 0..255)
-	virtual IMatchParamsRW& setContrast(double v) = 0;		//< fg - bg (range -255..255)
-	virtual IMatchParamsRW& setSsim(double v) = 0;			///< structural similarity (-1..1)
-
-	// Ideal value for the standard deviations below is 0
-	virtual IMatchParamsRW& setSdevFg(double v) = 0;		///< standard deviation for fg (0..127.5)
-	virtual IMatchParamsRW& setSdevBg(double v) = 0;		///< standard deviation for bg  (0..127.5)
-	virtual IMatchParamsRW& setSdevEdge(double v) = 0;		///< standard deviation for contour (0..255)
 
 	// Methods for computing each field
 	virtual void computeFg(const cv::Mat &patch, const ISymData&) = 0;

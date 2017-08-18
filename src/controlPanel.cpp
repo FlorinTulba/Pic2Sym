@@ -298,6 +298,41 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 		direction(slidersConverters().at(&ControlPanel_directionTrName)->toSlider(cfg_.getMS().get_kCosAngleMCs())),
 		largerSym(slidersConverters().at(&ControlPanel_largerSymTrName)->toSlider(cfg_.getMS().get_kSymDensity())),
 		thresh4Blanks((int)cfg_.getMS().getBlankThreshold()) {
+
+#ifdef AI_REVIEWER_CHECK 
+	// Current version of AI Reviewer skips the content of any lambda,
+	// so the following calls need to be issued explicitly,
+	// so that IControlPanelActions methods are not counted as underused
+
+	performer.invalidateFont();
+	performer.loadSettings();
+	performer.newAsideGlyphCorrectnessFactor(0.);
+	performer.newContrastFactor(0.);
+	performer.newDirectionalSmoothnessFactor(0.);
+	performer.newFontEncoding(0); // the overload with string param appears unused
+	performer.newFontFamily(string()); // still appears as unused
+	performer.newFontSize(0);
+	performer.newGlyphEdgeCorrectnessFactor(0.);
+	performer.newGlyphWeightFactor(0.);
+	performer.newGravitationalSmoothnessFactor(0.);
+	performer.newHmaxSyms(0);
+	performer.newImage(string(), true); // still appears as unused
+	performer.newStructuralSimilarityFactor(0.);
+	performer.newSymsBatchSize(0);
+	performer.newThreshold4BlanksFactor(0U);
+	performer.newUnderGlyphCorrectnessFactor(0.);
+	performer.newVmaxSyms(0);
+	double dummy;
+	performer.performTransformation(&dummy);
+	performer.restoreUserDefaultMatchSettings();
+	performer.saveSettings();
+	performer.setResultMode(true);
+	performer.setUserDefaultMatchSettings();
+	performer.showAboutDlg(string(), wstring()); // still appears as unused
+	performer.showInstructionsDlg(string(), wstring()); // still appears as unused
+
+#else // AI_REVIEWER_CHECK not defined
+	
 	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
 	extern const unsigned Settings_MAX_H_SYMS;
 	extern const unsigned Settings_MAX_V_SYMS;
@@ -484,6 +519,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->saveSettings();
 	}, reinterpret_cast<void*>(&performer));
+#endif // AI_REVIEWER_CHECK
 }
 
 #endif // UNIT_TESTING not defined

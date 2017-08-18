@@ -50,25 +50,8 @@ namespace {
 	const Point2d ORIGIN; // (0, 0)
 	const double TWOmSQRT2 = 2. - sqrt(2);
 
-	/// Prepares the value before launching any image transformation (spares transformation time)
-	const MatchParams& createPerfectMatch() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static MatchParams idealMatch;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-
-		idealMatch.
-			setMcPatch(Point2d()).setMcPatchApprox(Point2d()).
-			setMcsOffset(0.).	// Same mass centers
-			setSdevFg(0.).setSdevBg(0.).setSdevEdge(0.). // All standard deviations 0
-			setSsim(1.).		// Perfect structural similarity
-			setSymDensity(1.).	// Largest density possible
-			setContrast(255.);	// Largest contrast possible
-
-		return idealMatch;
-	}
-
-	/// Early processing of the perfect match, to spare transformation time
-	const MatchParams &thePerfectMatch = createPerfectMatch();
+	// Early computation and avoids the Clique MatchParams - MatchAspect
+	const IMatchParams &idealMatch = MatchParams::perfectMatch();
 } // anonymous namespace
 
 MatchAspect::MatchAspect(const double &k_) : k(k_) {}
@@ -82,7 +65,7 @@ double MatchAspect::assessMatch(const Mat &patch,
 }
 
 double MatchAspect::maxScore(const CachedData &cachedData) const {
-	return score(thePerfectMatch, cachedData);
+	return score(idealMatch, cachedData);
 }
 
 bool MatchAspect::enabled() const {
@@ -125,7 +108,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double FgMatch::score(const IMatchParams &mp, const CachedData&) const {
-	return pow(1. - mp.getSdevFg().value() / CachedData::sdevMaxFgBg(), k);
+	return pow(1. - mp.getSdevFg().value() / CachedData::MaxSdev::forFgOrBg(), k);
 }
 
 void FgMatch::fillRequiredMatchParams(const Mat &patch,
@@ -153,7 +136,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double BgMatch::score(const IMatchParams &mp, const CachedData&) const {
-	return pow(1. - mp.getSdevBg().value() / CachedData::sdevMaxFgBg(), k);
+	return pow(1. - mp.getSdevBg().value() / CachedData::MaxSdev::forFgOrBg(), k);
 }
 
 void BgMatch::fillRequiredMatchParams(const Mat &patch,
@@ -181,7 +164,7 @@ For other sdev-s       =>
 	returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
 double EdgeMatch::score(const IMatchParams &mp, const CachedData&) const {
-	return pow(1. - mp.getSdevEdge().value() / CachedData::sdevMaxEdge(), k);
+	return pow(1. - mp.getSdevEdge().value() / CachedData::MaxSdev::forEdges(), k);
 }
 
 void EdgeMatch::fillRequiredMatchParams(const Mat &patch,
@@ -232,8 +215,8 @@ Larger k induces larger penalty for large mcsOffset and
 also larger reward for small mcsOffset
 */
 double GravitationalSmoothness::score(const IMatchParams &mp, const CachedData&) const {
-	return pow(1. + (CachedData::preferredMaxMcDist() - mp.getMcsOffset().value()) *
-			   CachedData::invComplPrefMaxMcDist(), k);
+	return pow(1. + (CachedData::MassCenters::preferredMaxMcDist() - mp.getMcsOffset().value()) *
+			   CachedData::MassCenters::invComplPrefMaxMcDist(), k);
 }
 
 void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
@@ -262,8 +245,9 @@ The mc-s are consider close when the distance between them is < PreferredMaxMcDi
 So, large k penalizes large (angles & mc-s offsets) and encourages small ones from both.
 */
 double DirectionalSmoothness::score(const IMatchParams &mp, const CachedData&) const {
-	const Point2d relMcPatch = mp.getMcPatch().value() - CachedData::unitSquareCenter();
-	const Point2d relMcGlyph = mp.getMcPatchApprox().value() - CachedData::unitSquareCenter();
+	const Point2d relMcPatch = mp.getMcPatch().value() - CachedData::MassCenters::unitSquareCenter();
+	const Point2d relMcGlyph =
+		mp.getMcPatchApprox().value() - CachedData::MassCenters::unitSquareCenter();
 
 	// best gradient orientation when angle between mc-s is 0 => cos = 1	
 	double cosAngleMCs = 0.; // -1..1 range, best when 1
@@ -285,7 +269,8 @@ double DirectionalSmoothness::score(const IMatchParams &mp, const CachedData&) c
 	- >1 for mcsOffset < PreferredMaxMcDist
 	*/
 	const double mcsOffsetFactor = 
-		CachedData::a_mcsOffsetFactor() * mp.getMcsOffset().value() + CachedData::b_mcsOffsetFactor();
+		CachedData::MassCenters::a_mcsOffsetFactor() * mp.getMcsOffset().value() +
+		CachedData::MassCenters::b_mcsOffsetFactor();
 
 	return pow(angleFactor * mcsOffsetFactor, k);
 }

@@ -666,7 +666,7 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 		MatchParams::computeSdev(halfD255, getFullUc(), miu, sdev);
 		BOOST_REQUIRE(miu && sdev);
 		BOOST_TEST(*miu == 127.5, test_tools::tolerance(1e-4));
-		BOOST_TEST(*sdev == CachedData::sdevMaxFgBg(), test_tools::tolerance(1e-4));
+		BOOST_TEST(*sdev == CachedData::MaxSdev::forFgOrBg(), test_tools::tolerance(1e-4));
 		MatchParams mp;
 		mp.computeMcPatch(halfD255, getCd());
 		BOOST_REQUIRE(mp.getMcPatch());
@@ -1382,8 +1382,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.getMcPatch()->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(2)*.5*(1. - 1./(pow(getSz(), 2) - 1U))) *
-				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (CachedData::MassCenters::preferredMaxMcDist() - sqrt(2)*.5*(1. - 1./(pow(getSz(), 2) - 1U))) *
+				   CachedData::MassCenters::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndCenterOfEdgeAsPatch_McGlyphCenters, SuiteSuffix);
@@ -1427,8 +1427,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5/(pow(getSz(), 2) - 1U), dy = .5*(1. - 1./(pow(getSz(), 2) - 1U));
-		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
-				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (CachedData::MassCenters::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
+				   CachedData::MassCenters::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	AutoTestCase1(CheckGravitationalSmoothness_CornerPixelAsGlyphAndOtherCornerAsPatch_McGlyphCenters, SuiteSuffix);
@@ -1470,8 +1470,8 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatch()->x == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
 		double dx = .5*(1. + 1/(pow(getSz(), 2) - 1U)), dy = .5*(1. - 1/(pow(getSz(), 2) - 1U));
-		BOOST_TEST(res == 1. + (CachedData::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
-				   CachedData::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
+		BOOST_TEST(res == 1. + (CachedData::MassCenters::preferredMaxMcDist() - sqrt(dx*dx + dy*dy)) *
+				   CachedData::MassCenters::invComplPrefMaxMcDist(), test_tools::tolerance(1e-8));
 	}
 
 	AutoTestCase1(CheckDirectionalSmoothness_PatchAndGlyphArePixelsOnOppositeCorners_ImperfectMatch, SuiteSuffix);
@@ -1508,7 +1508,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.getMcPatch()->x == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(res == 2.*(2.-sqrt(2.)) * (CachedData::MassCenters::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::MassCenters::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 0 => cos = 1
 	}
 
@@ -1547,7 +1547,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(res == (CachedData::MassCenters::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::MassCenters::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle = 45 => cos = sqrt(2)/2
 	}
 
@@ -1585,7 +1585,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		BOOST_TEST(mp.getMcPatchApprox()->y == .5 - .5/(pow(getSz(), 2) - 1U), test_tools::tolerance(1e-8));
 		BOOST_TEST(mp.getMcPatch()->x == 1., test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == (2.-sqrt(2.)) * (CachedData::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::b_mcsOffsetFactor()),
+		BOOST_TEST(res == (2.-sqrt(2.)) * (CachedData::MassCenters::a_mcsOffsetFactor() * *mp.getMcsOffset() + CachedData::MassCenters::b_mcsOffsetFactor()),
 				   test_tools::tolerance(1e-8)); // angle is 90 => cos = 0
 	}
 

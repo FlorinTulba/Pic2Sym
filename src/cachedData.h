@@ -51,37 +51,43 @@ class FontEngine;
 
 /// Cached data for computing match parameters and evaluating match aspects
 struct CachedData {
-	/**
-	Max possible std dev = 127.5  for foreground / background.
-	Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
-	In that case, the mean is 127.5 and the std dev is:
-	sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
-	*/
-	static inline const double sdevMaxFgBg() { return 127.5; }
+	/// Constants about maximum standard deviations for foreground/background or edges
+	struct MaxSdev {
+		/**
+		Max possible std dev = 127.5  for foreground / background.
+		Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
+		In that case, the mean is 127.5 and the std dev is:
+		sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
+		*/
+		static inline const double forFgOrBg() { return 127.5; }
 
-	/**
-	Max possible std dev for edge is 255.
-	This happens in the following situation:
-	a) Foreground and background masks cover an empty area of the patch =>
-	approximated patch will be completely black
-	b) Edge mask covers a full brightness (255) area of the patch =>
-	every pixel from the patch covered by the edge mask has a deviation of 255 from
-	the corresponding zone within the approximated patch.
-	*/
-	static inline const double sdevMaxEdge() { return 255.; }
+		/**
+		Max possible std dev for edge is 255.
+		This happens in the following situation:
+		a) Foreground and background masks cover an empty area of the patch =>
+		approximated patch will be completely black
+		b) Edge mask covers a full brightness (255) area of the patch =>
+		every pixel from the patch covered by the edge mask has a deviation of 255 from
+		the corresponding zone within the approximated patch.
+		*/
+		static inline const double forEdges() { return 255.; }
+	};
 
-	/// acceptable distance between mass centers (1/8)
-	static inline const double preferredMaxMcDist() { return .125; }
-		
-	/// The center of a square with unit-length sides
-	static const cv::Point2d& unitSquareCenter();
+	/// Constants for computations concerning mass centers
+	struct MassCenters {
+		/// acceptable distance between mass centers (1/8)
+		static inline const double preferredMaxMcDist() { return .125; }
 
-	/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-	static const double invComplPrefMaxMcDist();
+		/// The center of a square with unit-length sides
+		static const cv::Point2d& unitSquareCenter();
 
-	// See comment from above the definitions of these static methods in cachedData.cpp, but also from DirectionalSmoothness::score
-	static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
-	static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
+		/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
+		static const double invComplPrefMaxMcDist();
+
+		// See comment from above the definitions of these static methods in cachedData.cpp, but also from DirectionalSmoothness::score
+		static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
+		static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
+	};
 
 	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
 
