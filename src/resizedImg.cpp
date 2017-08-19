@@ -36,43 +36,53 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_IMG
-#define H_IMG
-
-#include "imgBasicData.h"
+#include "resizedImg.h"
+#include "imgSettingsBase.h"
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 
-#include "boost_filesystem_path.h"
+#include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
-/// Img holds the data of the original image
-class Img : public IBasicImgData {
-protected:
-	boost::filesystem::path imgPath;	///< path of current image
-	std::string imgName;				///< stem part of the image file name
-	cv::Mat source;						///< the original image
-	bool color = false;					///< color / grayscale
+using namespace std;
+using namespace cv;
 
-#ifdef UNIT_TESTING
-public: // Providing reset(Mat) as public for Unit Testing
-#endif // UNIT_TESTING defined
-	bool reset(const cv::Mat &source_);
+ResizedImg::ResizedImg(const Mat &source, const IfImgSettings &is, unsigned patchSz_) :
+		patchSz(patchSz_) {
+	if(source.empty())
+		THROW_WITH_CONST_MSG("No image set yet", logic_error);
 
-public:
-	/// setting a new source image. Returns false for invalid images
-	bool reset(const std::string &picName);
+	const int initW = source.cols, initH = source.rows;
+	const double initAr = initW / (double)initH;
+	unsigned w = min(patchSz*is.getMaxHSyms(), (unsigned)initW),
+		h = min(patchSz*is.getMaxVSyms(), (unsigned)initH);
+	w -= w%patchSz;
+	h -= h%patchSz;
 
-	/// @return absolute path of the image file name
-	const boost::filesystem::path& absPath() const { return imgPath; }
+	if(w / (double)h > initAr) {
+		w = (unsigned)round(h*initAr);
+		w -= w%patchSz;
+	} else {
+		h = (unsigned)round(w/initAr);
+		h -= h%patchSz;
+	}
 
-	const cv::Mat& original() const override final { return source; }
+	if(w==(unsigned)initW && h==(unsigned)initH)
+		res = source;
+	else {
+		resize(source, res, Size((int)w, (int)h), 0, 0, CV_INTER_AREA);
+		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl;
+	}
 
-	bool isColor() const override final { return color; }	///< color / grayscale image
+	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
+}
 
-	/// @return the stem of the image file name
-	const std::string& name() const override final { return imgName; }
-};
-
-#endif // H_IMG
+bool ResizedImg::operator==(const ResizedImg &other) const {
+	return (this == &other) ||
+		(patchSz == other.patchSz && res.size == other.res.size &&
+		res.channels() == other.res.channels() &&
+		res.type() == other.res.type() &&
+		sum(res != other.res) == Scalar());
+}

@@ -117,7 +117,9 @@ const Point2d& SymData::getMc() const { return mc; }
 const Mat& SymData::getNegSym() const { return negSym; }
 const ISymData::MatArray& SymData::getMasks() const { return masks; }
 size_t SymData::getSymIdx() const { return symIdx; }
+#ifdef UNIT_TESTING
 double SymData::getMinVal() const { return minVal; }
+#endif // UNIT_TESTING defined
 double SymData::getDiffMinMax() const { return diffMinMax; }
 double SymData::getAvgPixVal() const { return avgPixVal; }
 unsigned long SymData::getCode() const { return code; }

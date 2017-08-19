@@ -58,6 +58,7 @@ struct ISymSettings;
 class Img;
 class ControlPanel;
 class AbsJobMonitor;
+struct ITransformCompletion;
 class Transformer;
 class Comparator;
 class CmapInspect;
@@ -94,7 +95,7 @@ protected:
 	FontEngine &fe;		///< font engine
 	ISettingsRW &cfg;	///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
-	Transformer &t;		///< transforming engine
+	ITransformCompletion &t;	///< results of the transformation
 
 	// Views
 	Comparator &comp;					///< view for comparing original & result

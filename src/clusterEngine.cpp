@@ -134,10 +134,16 @@ void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) 
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	// Sort symsIndicesPerCluster in ascending order of avgPixVal taken from the first symbol from each cluster
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 	sort(BOUNDS(symsIndicesPerCluster),
 		 [&] (const vector<unsigned> &a, const vector<unsigned> &b) {
 		return symsSet[(size_t)a.front()]->getAvgPixVal() < symsSet[(size_t)b.front()]->getAvgPixVal();
 	});
+
+#else // AI_REVIEWER_CHECK defined
+	// Let AI Reviewer know that following method was used within the lambda above
+	symsSet[0ULL]->getAvgPixVal();
+#endif // AI_REVIEWER_CHECK
 
 	if(averageClusterSize > MinAverageClusterSize) {
 		worthy = true;

@@ -39,6 +39,8 @@
 #include "controller.h"
 #include "fontEngine.h"
 #include "transform.h"
+#include "imgBasicData.h"
+#include "resizedImg.h"
 #include "updateSymSettings.h"
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
@@ -68,6 +70,7 @@
 #pragma warning( default : WARN_VIRT_DESTRUCT_EXPECTED )
 
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
@@ -696,7 +699,12 @@ namespace {
 
 #ifdef AI_REVIEWER_CHECK
 	template<class It>
-	const Mat fnNegSymExtractor(const typename It &) { return Mat(); }
+	const Mat fnNegSymExtractor(const typename It &it) {
+		// Let AI Reviewer know that ISymData::isRemovable() and ISymData::getNegSym()
+		// were used in the actual lambda function (see below, where fnNegSymExtractor is called)
+		(*it)->isRemovable();
+		return (*it)->getNegSym();
+	}
 #endif // AI_REVIEWER_CHECK defined
 
 } // anonymous namespace
@@ -771,8 +779,9 @@ CmapInspect::CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
 	// - mouse moves over the Charmap will display in the status bar the code of the pointed symbol
 	// - Ctrl + left mouse click will append the pointed symbol to the current list
 	// - left mouse double-click will save the current list and then it will clear it
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 	setMouseCallback(CmapInspectWinName, [] (int event, int x, int y, int flags, void* userdata) {
-		const ISelectSymbols *pss = reinterpret_cast<ISelectSymbols*>(userdata);
+		ISelectSymbols *pss = reinterpret_cast<ISelectSymbols*>(userdata);
 		if(event == EVENT_MOUSEMOVE) { // Mouse move
 			const ISymData *psd = pss->pointedSymbol(x, y);
 			if(nullptr != psd)
@@ -785,6 +794,15 @@ CmapInspect::CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
 				pss->enlistSymbolForInvestigation(*psd);
 		}
 	}, reinterpret_cast<void*>(const_cast<ISelectSymbols*>(symsSelector.get())));
+
+#else // AI_REVIEWER_CHECK defined
+	// Let AI Reviewer know that following methods were used within the lambda above
+	ISelectSymbols *pss = const_cast<ISelectSymbols*>(symsSelector.get());
+	const ISymData *psd = pss->pointedSymbol(0, 0);
+	pss->displaySymCode(psd->getCode());
+	pss->symbolsReadyToInvestigate();
+	pss->enlistSymbolForInvestigation(*psd);
+#endif // AI_REVIEWER_CHECK
 }
 
 Mat CmapInspect::createGrid() {

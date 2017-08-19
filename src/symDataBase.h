@@ -84,8 +84,10 @@ struct ISymData /*abstract*/ {
 	/// symbol index within cmap
 	virtual size_t getSymIdx() const = 0;
 	
+#ifdef UNIT_TESTING
 	/// the value of darkest pixel, range 0..1
 	virtual double getMinVal() const = 0;
+#endif // UNIT_TESTING defined
 
 	/// difference between brightest and darkest pixels, each in 0..1
 	virtual double getDiffMinMax() const = 0;

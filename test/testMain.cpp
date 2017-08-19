@@ -50,6 +50,7 @@
 #include "imgSettingsBase.h"
 #include "matchSettings.h"
 #include "img.h"
+#include "resizedImg.h"
 #include "patch.h"
 #include "transformSupport.h"
 #include "symbolsSupport.h"

@@ -160,6 +160,7 @@ MatchAssessorSkip::MatchAssessorSkip() : MatchAssessor() {}
 void MatchAssessorSkip::getReady(const CachedData &cachedData) {
 	MatchAssessor::getReady(cachedData);
 
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 	sort(BOUNDS(enabledAspects), [&] (const MatchAspect *a, const MatchAspect *b) -> bool {
 		const double relComplexityA = a->relativeComplexity(),
 					relComplexityB = b->relativeComplexity();
@@ -178,6 +179,12 @@ void MatchAssessorSkip::getReady(const CachedData &cachedData) {
 		// Descending by max score
 		return maxScoreA >= maxScoreB;
 	});
+
+#else // AI_REVIEWER_CHECK defined
+	// Let AI Reviewer know that following methods were used within the lambda above
+	enabledAspects[0ULL]->relativeComplexity();
+	enabledAspects[0ULL]->maxScore(cachedData);
+#endif // AI_REVIEWER_CHECK
 
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 	totalIsBetterMatchCalls = 0ULL;

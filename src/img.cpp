@@ -44,7 +44,7 @@
 #include <iostream>
 
 #include "boost_filesystem_operations.h"
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
 
 #pragma warning ( pop )
 
@@ -100,43 +100,4 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 
 unique_ptr<IfImgSettings> ImgSettings::clone() const {
 	return make_unique<ImgSettings>(*this);
-}
-
-ResizedImg::ResizedImg(const Img &img, const IfImgSettings &is, unsigned patchSz_) :
-		patchSz(patchSz_), original(img) {
-	const Mat &source = img.original();
-	if(source.empty())
-		THROW_WITH_CONST_MSG("No image set yet", logic_error);
-
-	const int initW = source.cols, initH = source.rows;
-	const double initAr = initW / (double)initH;
-	unsigned w = min(patchSz*is.getMaxHSyms(), (unsigned)initW),
-		h = min(patchSz*is.getMaxVSyms(), (unsigned)initH);
-	w -= w%patchSz;
-	h -= h%patchSz;
-
-	if(w / (double)h > initAr) {
-		w = (unsigned)round(h*initAr);
-		w -= w%patchSz;
-	} else {
-		h = (unsigned)round(w/initAr);
-		h -= h%patchSz;
-	}
-
-	if(w==(unsigned)initW && h==(unsigned)initH)
-		res = source;
-	else {
-		resize(source, res, Size((int)w, (int)h), 0, 0, CV_INTER_AREA);
-		cout<<"Resized to ("<<w<<'x'<<h<<')'<<endl;
-	}
-
-	cout<<"The result will be "<<w/patchSz<<" symbols wide and "<<h/patchSz<<" symbols high."<<endl<<endl;
-}
-
-bool ResizedImg::operator==(const ResizedImg &other) const {
-	return (this == &other) ||
-			(patchSz == other.patchSz && res.size == other.res.size &&
-			res.channels() == other.res.channels() &&
-			res.type() == other.res.type() &&
-			sum(res != other.res) == Scalar());
 }

@@ -72,8 +72,20 @@ struct ITimerActions /*abstract*/ {
 	virtual ~ITimerActions() = 0 {}
 };
 
+/// Commands for an alive Timer: pause/resume and cancel
+struct IActiveTimer /*abstract*/ {
+	virtual void pause() = 0;			///< pauses the timer and reports duration to all observers
+	virtual void resume() = 0;			///< resumes the timer
+
+	/// Cancels a timing task.
+	/// @param reason explanation for cancellation
+	virtual void cancel(const std::string &reason = "The task was canceled") = 0;
+
+	virtual ~IActiveTimer() = 0 {}
+};
+
 /// Timer class
-class Timer {
+class Timer : public IActiveTimer {
 protected:
 	const std::vector<std::shared_ptr<ITimerActions>> observers; ///< to be notified
 
@@ -108,13 +120,14 @@ public:
 
 	void invalidate();				///< prevents further use of this timer
 
-	virtual void pause();			///< pauses the timer and reports duration to all observers
-	virtual void resume();			///< resumes the timer
 	virtual void release();			///< stops the timer and reports duration to all observers
+
+	void pause() override;			///< pauses the timer and reports duration to all observers
+	void resume() override;			///< resumes the timer
 
 	/// Cancels a timing task.
 	/// @param reason explanation for cancellation
-	virtual void cancel(const std::string &reason = "The task was canceled");
+	void cancel(const std::string &reason = "The task was canceled") override;
 };
 
 #endif // H_TIMING

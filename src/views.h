@@ -45,7 +45,6 @@
 #define H_VIEWS
 
 #include "matchEngine.h"
-#include "img.h"
 #include "updateSymsActions.h"
 #include "cmapPerspective.h"
 

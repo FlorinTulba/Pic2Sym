@@ -40,7 +40,7 @@
 #define H_TRANSFORM
 
 #include "matchEngine.h"
-#include "img.h"
+#include "transformCompletion.h"
 
 #pragma warning ( push, 0 )
 
@@ -63,10 +63,11 @@ struct IPicTransformProgressTracker;	// data & views manager
 class Timer;
 class TaskMonitor;
 struct IBestMatch;
+struct IBasicImgData;
 class TransformSupport;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
-class Transformer {
+class Transformer : public ITransformCompletion {
 protected:
 	IController &ctrler;	///< controller
 	std::shared_ptr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
@@ -74,7 +75,7 @@ protected:
 
 	const ISettings &cfg;		///< general configuration
 	MatchEngine &me;			///< approximating patches
-	Img &img;					///< current image to process
+	IBasicImgData &img;			///< basic information about the current image to process
 
 	cv::Mat result;				///< the result of the transformation
 
@@ -116,14 +117,13 @@ protected:
 
 public:
 	Transformer(IController &ctrler_, const ISettings &cfg_,
-				MatchEngine &me_, Img &img_);
+				MatchEngine &me_, IBasicImgData &img_);
 	void operator=(const Transformer&) = delete;
 
-	void run();	///< applies the configured transformation onto current/new image
+	const cv::Mat& getResult() const override final { return result; }
+	void setDuration(double durationS_) override { durationS = durationS_; }
 
-	inline const cv::Mat& getResult() const { return result; }
 	inline double duration() const { return durationS; }
-	inline void setDuration(double durationS_) { durationS = durationS_; }
 
 	/**
 	Updates symsBatchSz.
@@ -131,6 +131,8 @@ public:
 		gets disabled for the rest of the transformation, ignoring any new slider positions.
 	*/
 	void setSymsBatchSize(int symsBatchSz_);
+
+	void run();	///< applies the configured transformation onto current/new image
 
 	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_); ///< setting the transformation monitor
 };

@@ -36,43 +36,21 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_IMG
-#define H_IMG
-
-#include "imgBasicData.h"
+#ifndef H_TRANSFORM_COMPLETION
+#define H_TRANSFORM_COMPLETION
 
 #pragma warning ( push, 0 )
 
-#include "boost_filesystem_path.h"
+#include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
 
-/// Img holds the data of the original image
-class Img : public IBasicImgData {
-protected:
-	boost::filesystem::path imgPath;	///< path of current image
-	std::string imgName;				///< stem part of the image file name
-	cv::Mat source;						///< the original image
-	bool color = false;					///< color / grayscale
+/// Allows storing the image transformation time and getting the result
+struct ITransformCompletion /*abstract*/ {
+	virtual const cv::Mat& getResult() const = 0;
+	virtual void setDuration(double durationS_) = 0;
 
-#ifdef UNIT_TESTING
-public: // Providing reset(Mat) as public for Unit Testing
-#endif // UNIT_TESTING defined
-	bool reset(const cv::Mat &source_);
-
-public:
-	/// setting a new source image. Returns false for invalid images
-	bool reset(const std::string &picName);
-
-	/// @return absolute path of the image file name
-	const boost::filesystem::path& absPath() const { return imgPath; }
-
-	const cv::Mat& original() const override final { return source; }
-
-	bool isColor() const override final { return color; }	///< color / grayscale image
-
-	/// @return the stem of the image file name
-	const std::string& name() const override final { return imgName; }
+	virtual ~ITransformCompletion() = 0 {}
 };
 
-#endif // H_IMG
+#endif // H_TRANSFORM_COMPLETION

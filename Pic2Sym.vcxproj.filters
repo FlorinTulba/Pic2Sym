@@ -480,6 +480,15 @@
     <ClInclude Include="src\blurBase.h">
       <Filter>Header Files\Var\Blurring</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgBasicData.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resizedImg.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformCompletion.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -709,6 +718,9 @@
     </ClCompile>
     <ClCompile Include="src\clusterData.cpp">
       <Filter>Source Files\Charmap\Clustering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resizedImg.cpp">
+      <Filter>Source Files\Controller\TransformEngine\Image</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

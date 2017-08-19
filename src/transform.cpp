@@ -43,6 +43,8 @@
 #include "symSettingsBase.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
+#include "imgBasicData.h"
+#include "resizedImg.h"
 #include "patchBase.h"
 #include "preselectManager.h"
 #include "transformSupport.h"
@@ -75,6 +77,8 @@ extern int __cdecl omp_get_thread_num(void); // returns 0 - the index of the uni
 #include <numeric>
 
 #include "boost_filesystem_operations.h"
+
+#include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning ( pop )
 
@@ -117,7 +121,7 @@ struct ResultFileManager {
 	volatile bool &isCanceled;	///< monitors if the process of the file was canceled
 	Mat &result;				///< reference to the result
 	path resultFile;			///< path of the result
-	Timer &timer;				///< reference to the timer used for the current transformation
+	IActiveTimer &timer;		///< reference to the timer used for the current transformation
 	bool alreadyProcessedCase = false;	///< previously studied cases don't need reprocessing
 
 	/// Creates 'Output' directory which stores generated results
@@ -133,7 +137,7 @@ struct ResultFileManager {
 	ResultFileManager(const string &studiedCase,	///< unique id describing the transformation params
 					  volatile bool &isCanceled_,	///< reference to the cancel flag
 					  Mat &result_,					///< reference to the result
-					  Timer &timer_					///< reference to the timer used for the current transformation
+					  IActiveTimer &timer_			///< reference to the timer used for the current transformation
 					  ) : isCanceled(isCanceled_), result(result_), timer(timer_) {
 		static bool outputFolderCreated = false;
 		if(!outputFolderCreated) {
@@ -216,7 +220,7 @@ extern const double BlurStandardDeviation;
 extern const bool ParallelizeTr_PatchRowLoops;
 
 Transformer::Transformer(IController &ctrler_,
-						 const ISettings &cfg_, MatchEngine &me_, Img &img_) :
+						 const ISettings &cfg_, MatchEngine &me_, IBasicImgData &img_) :
 	ctrler(ctrler_), ptpt(ctrler_.getPicTransformProgressTracker()),
 	cfg(cfg_), me(me_), img(img_),
 	transformSupport(IPreselManager::concrete().createTransformSupport(
@@ -245,7 +249,7 @@ void Transformer::run() {
 	sz = cfg.getSS().getFontSz();
 	
 	std::shared_ptr<const ResizedImg> resizedImg =
-		std::make_shared<const ResizedImg>(img, cfg.getIS(), sz); // throws when no image
+		std::make_shared<const ResizedImg>(img.original(), cfg.getIS(), sz); // throws when no image
 	const bool newResizedImg = ctrler.updateResizedImg(resizedImg);
 	const Mat &resizedVersion = resizedImg->get();
 	h = resizedVersion.rows; w = resizedVersion.cols;

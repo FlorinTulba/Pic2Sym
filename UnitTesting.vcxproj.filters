@@ -237,6 +237,9 @@
     <ClCompile Include="src\clusterData.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
+    <ClCompile Include="src\resizedImg.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -567,6 +570,15 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\blurBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgBasicData.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resizedImg.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformCompletion.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>

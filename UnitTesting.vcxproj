@@ -141,6 +141,7 @@
     <ClCompile Include="src\presentation.cpp" />
     <ClCompile Include="src\presentCmap.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
+    <ClCompile Include="src\resizedImg.cpp" />
     <ClCompile Include="src\selectSymbols.cpp" />
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="src\glyphsProgressTrackerBase.h" />
     <ClInclude Include="src\gridBarsFilter.h" />
     <ClInclude Include="src\img.h" />
+    <ClInclude Include="src\imgBasicData.h" />
     <ClInclude Include="src\imgSettings.h" />
     <ClInclude Include="src\imgSettingsBase.h" />
     <ClInclude Include="src\jobMonitorBase.h" />
@@ -241,6 +243,7 @@
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\presentCmapBase.h" />
     <ClInclude Include="src\propsReader.h" />
+    <ClInclude Include="src\resizedImg.h" />
     <ClInclude Include="src\selectSymbols.h" />
     <ClInclude Include="src\selectSymbolsBase.h" />
     <ClInclude Include="src\settings.h" />
@@ -265,6 +268,7 @@
     <ClInclude Include="src\tinySymBase.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\transformCompletion.h" />
     <ClInclude Include="src\transformSupport.h" />
     <ClInclude Include="src\transformSupportWithPreselection.h" />
     <ClInclude Include="src\ttsasClustering.h" />

@@ -90,6 +90,8 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 		const unsigned tinySymsCount = (unsigned)tinySyms.size();
 		rawClusters.clusterLabels.resize(tinySymsCount, -1);
+
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 		rawClusters.clustersCount = (unsigned)partition(tinySyms, rawClusters.clusterLabels,
 											[&] (const TinySym &a, const TinySym &b) {
 #if !defined _DEBUG || defined UNIT_TESTING
@@ -180,6 +182,15 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 			return true;
 #endif // _DEBUG, UNIT_TESTING
 		});
+
+#else // AI_REVIEWER_CHECK defined
+		// Let AI Reviewer know that following methods were used within the lambda above
+		rawClusters.clustersCount = 0U;
+		const TinySym &a = tinySyms[0ULL];
+		a.getMat(); a.getAvgPixVal(); a.getMc();
+		a.getVAvgProj(); a.getHAvgProj(); a.getBackslashDiagAvgProj(); a.getSlashDiagAvgProj();
+#endif // AI_REVIEWER_CHECK
+
 		cout<<endl<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
 			<<rawClusters.clustersCount<<" groups"<<endl;
 

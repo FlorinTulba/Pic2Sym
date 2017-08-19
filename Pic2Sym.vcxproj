@@ -47,6 +47,7 @@
     <ClInclude Include="src\filledRectanglesFilter.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
     <ClInclude Include="src\glyphsProgressTrackerBase.h" />
+    <ClInclude Include="src\imgBasicData.h" />
     <ClInclude Include="src\imgSettingsBase.h" />
     <ClInclude Include="src\matchAssessment.h" />
     <ClInclude Include="src\matchParamsBase.h" />
@@ -63,6 +64,7 @@
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\presentCmapBase.h" />
+    <ClInclude Include="src\resizedImg.h" />
     <ClInclude Include="src\selectSymbols.h" />
     <ClInclude Include="src\selectSymbolsBase.h" />
     <ClInclude Include="src\serializer.h" />
@@ -120,6 +122,7 @@
     <ClInclude Include="src\tinySymsDataSerialization.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\transformCompletion.h" />
     <ClInclude Include="src\transformSupport.h" />
     <ClInclude Include="src\transformSupportWithPreselection.h" />
     <ClInclude Include="src\transformTrace.h" />
@@ -179,6 +182,7 @@
     <ClCompile Include="src\jobMonitor.cpp" />
     <ClCompile Include="src\presentCmap.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
+    <ClCompile Include="src\resizedImg.cpp" />
     <ClCompile Include="src\selectSymbols.cpp" />
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />

@@ -394,6 +394,7 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 			and can be ignored by all ambiguous symbols with indices >= ambigSymIdx,
 			since it was already checked:
 			*/
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 			const auto ignoreAlreadyCheckedClusters = [&] (set<ClusterIdx> &prevClusters) {
 				// Remove_if doesn't work on sets, so here's the required code
 				for(auto itPrevClust = prevClusters.begin(); itPrevClust != prevClusters.end();) {
@@ -403,6 +404,16 @@ unsigned TTSAS_Clustering::formGroups(const VSymData &symsToGroup,
 						++itPrevClust; // cluster yet to be processed, keeping it
 				}
 			};
+
+#else // AI_REVIEWER_CHECK defined
+			// Let AI Reviewer know that following method was used within the lambda above
+			Cluster *dummy = nullptr;
+			dummy->idxOfLastMember();
+
+			// Define a replacement for the lambda
+#define ignoreAlreadyCheckedClusters(Param)	Param
+
+#endif // AI_REVIEWER_CHECK
 
 			/*
 			If previous loop didn't introduce/affect any cluster,

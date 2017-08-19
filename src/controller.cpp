@@ -44,7 +44,7 @@
 #include "bestMatchBase.h"
 #include "matchAssessment.h"
 #include "views.h"
-#include "img.h"
+#include "imgBasicData.h"
 #include "transform.h"
 #include "transformSupport.h"
 #include "symbolsSupport.h"
@@ -131,7 +131,8 @@ MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
 }
 
 Transformer& Controller::getTransformer(const ISettings &cfg_) {
-	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
+	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_),
+			  (IBasicImgData&)ControlPanelActions::getImg());
 }
 
 #undef GET_FIELD_NO_ARGS

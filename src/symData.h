@@ -131,8 +131,10 @@ public:
 	/// symbol index within cmap
 	size_t getSymIdx() const override final;
 
+#ifdef UNIT_TESTING
 	/// the value of darkest pixel, range 0..1
 	double getMinVal() const override final;
+#endif // UNIT_TESTING defined
 
 	/// difference between brightest and darkest pixels, each in 0..1
 	double getDiffMinMax() const override final;
