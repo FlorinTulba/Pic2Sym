@@ -43,10 +43,10 @@ using namespace std;
 
 UpdateSymSettings::UpdateSymSettings(ISymSettings &ss_) : ss(ss_) {}
 
-void UpdateSymSettings::newFontFile(const string &fName) const {
+void UpdateSymSettings::newFontFile(const stringType &fName) const {
 	ss.setFontFile(fName);
 }
 
-void UpdateSymSettings::newFontEncoding(const string &encName) const {
+void UpdateSymSettings::newFontEncoding(const stringType &encName) const {
 	ss.setEncoding(encName);
 }

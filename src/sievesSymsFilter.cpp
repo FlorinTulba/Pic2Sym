@@ -137,7 +137,7 @@ namespace {
 	Mat magnitudeSpectrum(const Mat &brightGlyph, unsigned sz) {
 		// Creating the complex input for DFT - adding zeros for the imaginary parts
 		const Mat cplxGlyphPlanes[] = { brightGlyph, Mat::zeros((int)sz, (int)sz, CV_64FC1) };
-		Mat cplxGlyph, dftGlyph, result, dftGlyphPlanes[2];
+		Mat cplxGlyph, dftGlyph, result, dftGlyphPlanes[2ULL];
 		merge(cplxGlyphPlanes, 2U, cplxGlyph);
 
 		/*
@@ -159,7 +159,7 @@ namespace {
 
 		// Computing magnitude of the spectrum from real and imaginary planes of the DFT
 		split(dftGlyph, dftGlyphPlanes);
-		magnitude(dftGlyphPlanes[0], dftGlyphPlanes[1], result);
+		magnitude(dftGlyphPlanes[0ULL], dftGlyphPlanes[1ULL], result);
 
 		return result;
 	}
@@ -213,7 +213,7 @@ namespace {
 		// Consider only FT modes whose magnitude is larger than the threshold below
 		const double thresholdMagn = minV + (maxV - minV) * MagnitudePercentThreshold;
 
-		int maxIdx[2]; // coordinates of the max magnitude FT mode within quadrant
+		int maxIdx[2ULL]; // coordinates of the max magnitude FT mode within quadrant
 		// Peak for quadrant 1&3
 		minMaxIdx(q13, nullptr, &maxV, nullptr, maxIdx);
 		if(maxV < thresholdMagn) {
@@ -221,8 +221,8 @@ namespace {
 		} else {
 			// maxIdx coordinates need to be reflected from halfSz,
 			// since the frequencies should counted from the bottom-right corner of the q13 
-			vFreq13 = halfSz - (unsigned)maxIdx[0];
-			hFreq13 = halfSz - (unsigned)maxIdx[1];
+			vFreq13 = halfSz - (unsigned)maxIdx[0ULL];
+			hFreq13 = halfSz - (unsigned)maxIdx[1ULL];
 		}
 
 		// Peak for quadrant 2&4
@@ -232,11 +232,11 @@ namespace {
 		} else {
 			// maxIdx[0] (vertical coordinate) needs to be reflected from halfSz,
 			// since the frequencies should counted from the bottom-left corner of the q24
-			vFreq24 = halfSz - (unsigned)maxIdx[0];
+			vFreq24 = halfSz - (unsigned)maxIdx[0ULL];
 
 			// maxIdx[1] (horizontal coordinate) needs to be incremented, to comply with the range:
 			// 1 .. halfSz    instead of the obtained     0 .. halfSz-1
-			hFreq24 = (unsigned)maxIdx[1] + 1U;
+			hFreq24 = (unsigned)maxIdx[1ULL] + 1U;
 		}
 
 		// For a sieve of even size and dominant FT mode of maximum frequencies in quadrant 1&3,
@@ -247,7 +247,7 @@ namespace {
 	}
 } // anonymous namespace
 
-SievesSymsFilter::SievesSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
+SievesSymsFilter::SievesSymsFilter(uniquePtr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(4U, "sieve-like symbols", std::move(nextFilter_)) {}
 
 /**

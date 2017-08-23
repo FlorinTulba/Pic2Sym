@@ -125,26 +125,26 @@ class StackBlur::Impl {
 					rp1 = r + 1U, div = (r<<1) | 1U,
 					xp0 = min(wm1, r), yp0 = min(hm1, r);
 		const double rp2 = double(r + 2U),
-					mul_sum = stack_blur8_mul[r] / pow(2, stack_blur8_shr[r]),
+					mul_sum = stack_blur8_mul[(size_t)r] / pow(2, stack_blur8_shr[(size_t)r]),
 					mul_sum_sq = mul_sum * mul_sum; // multiply only once, during the processing of columns
 
 		unsigned x, y, xp, yp, i, stack_ptr, stack_start;
 
 		const double *src_pix_ptr;
 		double *dst_pix_ptr, *stack_pix_ptr;
-		double * const stack = new double[div];
+		double * const stack = new double[(size_t)div];
 		double sumT, sumIn, sumOut;
 
 		y = 0U;
 		do { // Process image rows, this outer while-loop will be parallel computed by CUDA instead
 			// Get input and output weights
 			const unsigned row_addr = y * stride;
-			double pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + row_addr);
+			double pix = sumT = sumOut = stack[0ULL] = *(src_pix_ptr = pToProcess + row_addr);
 			sumIn = 0.;
 			for(i = 1U; i <= xp0; ++i) {
-				stack[i] = pix;
+				stack[(size_t)i] = pix;
 				sumT += pix * (i + 1U);  sumOut += pix;
-				stack[i + r] = pix = *++src_pix_ptr;
+				stack[size_t(i + r)] = pix = *++src_pix_ptr;
 				sumT += pix * (rp1 - i);  sumIn += pix;
 			}
 			if(i <= r) { // for a radius larger than image width
@@ -190,12 +190,12 @@ class StackBlur::Impl {
 #pragma warning ( default : WARN_LVALUE_CAST )
 		x = 0U;
 		do { // Process image columns, this outer while-loop will be parallel computed by CUDA instead
-			double pix = sumT = sumOut = stack[0] = *(src_pix_ptr = pToProcess + x);
+			double pix = sumT = sumOut = stack[0ULL] = *(src_pix_ptr = pToProcess + x);
 			sumIn = 0.;
 			for(i = 1U; i <= yp0; ++i) {
-				stack[i] = pix;
+				stack[(size_t)i] = pix;
 				sumT += pix * (i + 1U);  sumOut += pix;
-				stack[i + r] = pix = *(src_pix_ptr += stride);
+				stack[size_t(i + r)] = pix = *(src_pix_ptr += stride);
 				sumT += pix * (rp1 - i);  sumIn += pix;
 			}
 			if(i <= r) { // for a radius larger than image height

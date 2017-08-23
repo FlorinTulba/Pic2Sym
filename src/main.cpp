@@ -74,12 +74,12 @@ void showUsage();
 void pauseAfterError();
 
 /// Presents the misidentified symbols
-void viewMismatches(const string &testTitle, const Mat &mismatches);
+void viewMismatches(const stringType &testTitle, const Mat &mismatches);
 
 /// Presents the misfiltered symbols
-void viewMisfiltered(const string &testTitle, const Mat &misfiltered);
+void viewMisfiltered(const stringType &testTitle, const Mat &misfiltered);
 
-extern const string copyrightText;
+extern const stringType copyrightText;
 extern bool AllowReprocessingCases;
 
 #ifdef GENERATE_OPEN_MP_TRACE
@@ -88,7 +88,7 @@ omp_lock_t ompTraceLock;
 #endif // defined(GENERATE_OPEN_MP_TRACE)
 
 namespace {
-	const string hBar(80, '=');
+	const stringType hBar(80, '=');
 
 	/// Displays Copyright text
 	void copyrightNotice() {
@@ -126,16 +126,16 @@ namespace {
 	}
 
 	/// Perform an image transformation under certain conditions.
-	void timingScenario(const string &caseName,				///< title of the scenario
-						const string &settingsPath,			///< path towards a `p2s` file prescribing the settings for the transformation
-						const string &imgPath,				///< the image to transform
-						const string &reportFilePath = ""	///< the file where to report the duration
+	void timingScenario(const stringType &caseName,				///< title of the scenario
+						const stringType &settingsPath,			///< path towards a `p2s` file prescribing the settings for the transformation
+						const stringType &imgPath,				///< the image to transform
+						const stringType &reportFilePath = ""	///< the file where to report the duration
 						) {
 		AllowReprocessingCases = true;
 
 		Settings s;
 		Controller c(s);
-		std::shared_ptr<IControlPanelActions> cpa = c.getControlPanelActions();
+		std::sharedPtr<IControlPanelActions> cpa = c.getControlPanelActions();
 
 		if(!cpa->loadSettings(settingsPath)) {
 			cerr<<caseName<<"\tCouldn't load settings from `"<<settingsPath<<'`'<<endl;
@@ -162,7 +162,7 @@ namespace {
 	}
 
 	/// Returns the Mat object contained within the Unit Testing report.
-	optional<const Mat> contentOfReport(const string &testTitle, const string &contentDirName) {
+	optional<const Mat> contentOfReport(const stringType &testTitle, const stringType &contentDirName) {
 		path contentDir(path(".").append("UnitTesting").append(contentDirName));
 		if(!exists(contentDir)) {
 			cerr<<"Expected work directory: <SolutionDir>/x64/<ConfigType>/ , but the actual one is: "<<absolute(".")<<'.'<<endl;
@@ -195,7 +195,7 @@ namespace {
 	testTitle is the title of the Comparator window and
 	is also the stem of the jpg file handled by the Comparator.
 	*/
-	void viewMismatchesMode(const string &testTitle) {
+	void viewMismatchesMode(const stringType &testTitle) {
 		optional<const Mat> mismatches = contentOfReport(testTitle, "Mismatches");
 		if(!mismatches)
 			return;
@@ -210,7 +210,7 @@ namespace {
 	testTitle is the title of the window and
 	is also the stem of the jpg file handled by the viewer.
 	*/
-	void viewMisfilteredMode(const string &testTitle) {
+	void viewMisfilteredMode(const stringType &testTitle) {
 		optional<const Mat> misfiltered = contentOfReport(testTitle, "Misfiltered");
 		if(!misfiltered)
 			return;
@@ -244,8 +244,8 @@ namespace {
 
 	Last solution was the one adopted.
 	*/
-	void providePrivateDLLsPaths(const string &appPath) {
-		const auto dllsPath = absolute(appPath).concat(".local");
+	void providePrivateDLLsPaths(const stringType &appPath) {
+		const path dllsPath = absolute(appPath).concat(".local");
 		SetDllDirectory(dllsPath.wstring().c_str());
 		_putenv_s("QT_QPA_PLATFORM_PLUGIN_PATH", 
 				  path(dllsPath).append("platforms").string().c_str());
@@ -277,8 +277,8 @@ However, after introducing the Dll redirection mechanism:
 */
 void main(int argc, char* argv[]) {
 	// argv[0] is a path ending in 'Pic2Sym.exe'
-	AppStart::determinedBy(argv[0]);
-	providePrivateDLLsPaths(argv[0]);
+	AppStart::determinedBy(argv[0ULL]);
+	providePrivateDLLsPaths(argv[0ULL]);
 
 	// Some matters need separate studying. In that case, studying() should return true.
 	// However, the study mode should be ignored when launching Pic2Sym from UnitTesting or when timing scenarios,
@@ -293,9 +293,9 @@ void main(int argc, char* argv[]) {
 			normalLaunch();
 
 	} else {
-		const string firstParam(argv[1]);
+		const stringType firstParam(argv[1ULL]);
 		if(3 == argc) { // 2 parameters
-			const string secondParam(argv[2]);
+			const stringType secondParam(argv[2ULL]);
 
 			if(firstParam.compare("mismatches") == 0) {
 				viewMismatchesMode(secondParam);
@@ -312,7 +312,7 @@ void main(int argc, char* argv[]) {
 
 		} else if(6 == argc) { // 5 parameters
 			if(firstParam.compare("timing") == 0) {
-				timingScenario(argv[2], argv[3], argv[4], argv[5]);
+				timingScenario(argv[2ULL], argv[3ULL], argv[4ULL], argv[5ULL]);
 				ignoreStudyMode = true;
 
 			} else if(!studying()) {

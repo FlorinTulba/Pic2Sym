@@ -48,7 +48,7 @@ Instead, the glyphs are grouped based on a boolean predicate assessing
 if 2 given symbols could belong to the same category or not.
 */
 struct PartitionClustering : ClusterAlg {
-	static const std::string Name;	///< name of partition algorithm from varConfig.txt
+	static const std::stringType Name;	///< name of partition algorithm from varConfig.txt
 
 	/**
 	Performs clustering of a set of symbols.
@@ -61,7 +61,7 @@ struct PartitionClustering : ClusterAlg {
 	*/
 	unsigned formGroups(const VSymData &symsToGroup,
 						std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-						const std::string &fontType = "") override;
+						const std::stringType &fontType = "") override;
 };
 
 #endif // H_PARTITION_CLUSTERING

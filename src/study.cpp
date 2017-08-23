@@ -43,8 +43,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
 #include <chrono>
-#include <string>
 #include <iostream>
 
 #pragma warning ( pop )
@@ -56,11 +56,11 @@ namespace {
 	/// Simple timer class to measure the performance of some task
 	class Timer {
 	protected:
-		const string taskName;	///< name of the monitored task
+		const stringType taskName;	///< name of the monitored task
 		time_point<high_resolution_clock> startedAt;	///< starting moment
 
 	public:
-		Timer(const string &taskName_ = "") : taskName(taskName_), startedAt(high_resolution_clock::now()) {}
+		Timer(const stringType &taskName_ = "") : taskName(taskName_), startedAt(high_resolution_clock::now()) {}
 		void operator=(const Timer&) = delete;
 		~Timer() {
 			const double elapsedS = elapsed();
@@ -75,9 +75,9 @@ namespace {
 	};
 } // anonymous namespace
 
-bool prompt(const string &question, const string &context) {
+bool prompt(const stringType &question, const stringType &context) {
 	cout<<question<<" in context "<<context<<"? ([y]/n) ";
-	string line;
+	stringType line;
 	getline(cin, line);
 	return line.empty() || line.compare("y") == 0 || line.compare("Y") == 0;
 }

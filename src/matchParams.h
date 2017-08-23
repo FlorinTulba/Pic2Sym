@@ -79,9 +79,13 @@ public:
 	const boost::optional<cv::Point2d>& getMcPatchApprox() const override final;///< mass center for the approximation of the patch (range 0..1 x 0..1)
 	const boost::optional<double>& getMcsOffset() const override final;			///< distance between the 2 mass centers (range 0..sqrt(2))
 	const boost::optional<double>& getSymDensity() const override final;		///< % of the box covered by the glyph (0..1)
+
 #if defined(_DEBUG) || defined(UNIT_TESTING)
 	const boost::optional<double>& getFg() const override final;				///< color for fg (range 0..255)
+
+	const std::wstringType toWstring() const override; ///< Provides a representation of the parameters
 #endif // defined(_DEBUG) || defined(UNIT_TESTING)
+
 	const boost::optional<double>& getBg() const override final;				///< color for bg (range 0..255)
 	const boost::optional<double>& getContrast() const override final;			///< fg - bg (range -255..255)
 	const boost::optional<double>& getSsim() const override final;				///< structural similarity (-1..1)
@@ -92,7 +96,7 @@ public:
 	const boost::optional<double>& getSdevEdge() const override final;			///< standard deviation for contour (0..255)
 
 #ifdef UNIT_TESTING
-	std::unique_ptr<IMatchParamsRW> clone() const override;	/// @return a copy of itself
+	std::uniquePtr<IMatchParamsRW> clone() const override;	/// @return a copy of itself
 #endif // UNIT_TESTING defined
 
 	/**

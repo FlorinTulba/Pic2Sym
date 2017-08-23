@@ -44,8 +44,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <set>
-#include <memory>
 
 #include "boost_filesystem_path.h"
 
@@ -61,7 +61,7 @@ class ClusterEngine {
 protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
-	std::unique_ptr<IClustersSupport> clusterSupport;	///< provided support from the preselection manager
+	std::uniquePtr<IClustersSupport> clusterSupport;	///< provided support from the preselection manager
 
 	ClusterAlg &clustAlg;	///< algorithm used for clustering
 
@@ -74,13 +74,14 @@ protected:
 
 public:
 	ClusterEngine(ITinySymsProvider &tsp_, VSymData &symsSet_); ///< Creates the cluster algorithm prescribed in varConfig.txt
+	ClusterEngine(const ClusterEngine&) = delete;
 	void operator=(const ClusterEngine&) = delete;
 
 	/**
 	Determines if fontType was already clustered using algName clustering algorithm.
 	The path to the file supposed to contain the clustering results is returned in the clusteredSetFile parameter.
 	*/
-	static bool clusteredAlready(const std::string &fontType, const std::string &algName,
+	static bool clusteredAlready(const std::stringType &fontType, const std::stringType &algName,
 								 boost::filesystem::path &clusteredSetFile);
 	
 	/**
@@ -89,7 +90,7 @@ public:
 	@param symsSet original symbols to be clustered
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void process(VSymData &symsSet, const std::string &fontType = "");
+	void process(VSymData &symsSet, const std::stringType &fontType = "");
 
 	inline const bool& worthGrouping() const { return worthy; }
 	inline unsigned getClustersCount() const { return clustersCount; }

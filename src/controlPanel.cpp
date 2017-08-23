@@ -100,48 +100,48 @@ extern const String ControlPanel_thresh4BlanksTrName;
 extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 extern const String ControlPanel_symsBatchSzTrName;
-extern const wstring ControlPanel_aboutText;
-extern const wstring ControlPanel_instructionsText;
+extern const wstringType ControlPanel_aboutText;
+extern const wstringType ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
-const map<const String*, std::shared_ptr<const SliderConverter>>& ControlPanel::slidersConverters() {
+const map<const String*, std::sharedPtr<const SliderConverter>>& ControlPanel::slidersConverters() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static std::shared_ptr<const map<const String*, std::shared_ptr<const SliderConverter>>> result;
+	static std::sharedPtr<const map<const String*, std::sharedPtr<const SliderConverter>>> result;
 	static bool initialized = false;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 	if(!initialized) {
-		result = std::make_shared<const map<const String*, std::shared_ptr<const SliderConverter>>>(
-			std::move(map<const String*, std::shared_ptr<const SliderConverter>> {
+		result = std::makeShared<const map<const String*, std::sharedPtr<const SliderConverter>>>(
+			std::move(map<const String*, std::sharedPtr<const SliderConverter>> {
 				{ &ControlPanel_structuralSimTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_StructuralSim_maxSlider, ControlPanel_Converter_StructuralSim_maxReal)) },
 
 				{ &ControlPanel_underGlyphCorrectnessTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
 
 				{ &ControlPanel_glyphEdgeCorrectnessTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
 
 				{ &ControlPanel_asideGlyphCorrectnessTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
 
 				{ &ControlPanel_moreContrastTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Contrast_maxSlider, ControlPanel_Converter_Contrast_maxReal)) },
 
 				{ &ControlPanel_gravityTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Gravity_maxSlider, ControlPanel_Converter_Gravity_maxReal)) },
 
 				{ &ControlPanel_directionTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_Direction_maxSlider, ControlPanel_Converter_Direction_maxReal)) },
 
 				{ &ControlPanel_largerSymTrName,
-					std::make_shared<ProportionalSliderValue>(std::make_unique<const ProportionalSliderValue::Params>(
+					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
 					ControlPanel_Converter_LargerSym_maxSlider, ControlPanel_Converter_LargerSym_maxReal)) }
 				
 				}));
@@ -229,7 +229,7 @@ void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
 	pLuckySliderName = nullptr;
 }
 
-void ControlPanel::restoreSliderValue(const String &trName, const string &errText) {
+void ControlPanel::restoreSliderValue(const String &trName, const stringType &errText) {
 	// Determine previous value
 	int prevVal = 0;
 	if(&trName == &ControlPanel_outWTrName) {
@@ -270,7 +270,7 @@ void ControlPanel::restoreSliderValue(const String &trName, const string &errTex
 
 	slidersRestoringValue.insert(trName);
 
-	thread([&] (const String sliderName, int previousVal, const string errorText) {
+	thread([&] (const String sliderName, int previousVal, const stringType errorText) {
 				errMsg(errorText);
 
 				// Set the previous value
@@ -309,14 +309,14 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 	performer.newAsideGlyphCorrectnessFactor(0.);
 	performer.newContrastFactor(0.);
 	performer.newDirectionalSmoothnessFactor(0.);
-	performer.newFontEncoding(0); // the overload with string param appears unused
-	performer.newFontFamily(string()); // still appears as unused
+	performer.newFontEncoding(0);
+	performer.newFontFamily(stringType());
 	performer.newFontSize(0);
 	performer.newGlyphEdgeCorrectnessFactor(0.);
 	performer.newGlyphWeightFactor(0.);
 	performer.newGravitationalSmoothnessFactor(0.);
 	performer.newHmaxSyms(0);
-	performer.newImage(string(), true); // still appears as unused
+	performer.newImage(stringType(), true);
 	performer.newStructuralSimilarityFactor(0.);
 	performer.newSymsBatchSize(0);
 	performer.newThreshold4BlanksFactor(0U);
@@ -328,8 +328,8 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 	performer.saveSettings();
 	performer.setResultMode(true);
 	performer.setUserDefaultMatchSettings();
-	performer.showAboutDlg(string(), wstring()); // still appears as unused
-	performer.showInstructionsDlg(string(), wstring()); // still appears as unused
+	performer.showAboutDlg(stringType(), wstringType());
+	performer.showInstructionsDlg(stringType(), wstringType());
 
 #else // AI_REVIEWER_CHECK not defined
 	
@@ -408,7 +408,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 				pActions->newFontFamily(sf.selection());
 		} catch(FontLocationFailure&) {
 			pActions->invalidateFont();
-			extern const string CannotLoadFontErrSuffix;
+			extern const stringType CannotLoadFontErrSuffix;
 			infoMsg("Couldn't locate the selected font!" + CannotLoadFontErrSuffix, "Manageable Error");
 		}
 	}, reinterpret_cast<void*>(&performer));

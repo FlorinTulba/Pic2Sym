@@ -108,7 +108,7 @@ public:
 	unsigned getMaxVSyms() const override final { return vMaxSyms; }
 	void setMaxVSyms(unsigned syms) override;
 
-	std::unique_ptr<IfImgSettings> clone() const override;
+	std::uniquePtr<IfImgSettings> clone() const override;
 };
 
 #ifndef AI_REVIEWER_CHECK

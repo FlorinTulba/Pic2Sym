@@ -41,19 +41,19 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
+#include "std_memory.h"
 #include <iostream>
-#include <memory>
 
 #pragma warning ( pop )
 
 /// Base class for the parameters concerning the symbols set used for approximating patches.
 struct ISymSettings /*abstract*/ {
-	virtual const std::string& getFontFile() const = 0;
-	virtual void setFontFile(const std::string &fontFile_) = 0;
+	virtual const std::stringType& getFontFile() const = 0;
+	virtual void setFontFile(const std::stringType &fontFile_) = 0;
 
-	virtual const std::string& getEncoding() const = 0;
-	virtual void setEncoding(const std::string &encoding_) = 0;
+	virtual const std::stringType& getEncoding() const = 0;
+	virtual void setEncoding(const std::stringType &encoding_) = 0;
 
 	virtual const unsigned& getFontSz() const = 0;
 	virtual void setFontSz(unsigned fontSz_) = 0;
@@ -68,7 +68,7 @@ struct ISymSettings /*abstract*/ {
 	virtual ~ISymSettings() = 0 {}
 
 	/// @return a copy of these settings
-	virtual std::unique_ptr<ISymSettings> clone() const = 0;
+	virtual std::uniquePtr<ISymSettings> clone() const = 0;
 };
 
 std::ostream& operator<<(std::ostream &os, const ISymSettings &ss);

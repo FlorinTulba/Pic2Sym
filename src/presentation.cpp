@@ -96,7 +96,7 @@ using namespace cv;
 // But it will start a Pic2Sym instance that will do such calls.
 #ifndef UNIT_TESTING
 
-void viewMismatches(const string &testTitle, const Mat &mismatches) {
+void viewMismatches(const stringType &testTitle, const Mat &mismatches) {
 	const int twiceTheRows = mismatches.rows, rows = twiceTheRows>>1, cols = mismatches.cols;
 	const Mat reference = mismatches.rowRange(0, rows), // upper half is the reference
 		result = mismatches.rowRange(rows, twiceTheRows); // lower half is the result
@@ -108,7 +108,7 @@ void viewMismatches(const string &testTitle, const Mat &mismatches) {
 
 	ostringstream oss;
 	oss<<"View mismatches for "<<testTitle;
-	const string title(oss.str());
+	const stringType title(oss.str());
 
 	Comparator comp;
 	comp.setPos(0, 0);
@@ -122,7 +122,7 @@ void viewMismatches(const string &testTitle, const Mat &mismatches) {
 	Controller::handleRequests();
 }
 
-void viewMisfiltered(const string &testTitle, const Mat &misfiltered) {
+void viewMisfiltered(const stringType &testTitle, const Mat &misfiltered) {
 	const String winName = testTitle;
 	namedWindow(winName);
 	setWindowProperty(winName, CV_WND_PROP_AUTOSIZE, CV_WINDOW_NORMAL);
@@ -134,7 +134,7 @@ void viewMisfiltered(const string &testTitle, const Mat &misfiltered) {
 #endif // UNIT_TESTING not defined
 
 void pauseAfterError() {
-	string line;
+	stringType line;
 	cout<<endl<<"Press Enter to leave"<<endl;
 	getline(cin, line);
 }
@@ -153,7 +153,7 @@ void showUsage() {
 	pauseAfterError();
 }
 
-extern const string Controller_PREFIX_GLYPH_PROGRESS;
+extern const stringType Controller_PREFIX_GLYPH_PROGRESS;
 
 namespace {
 	/// Adapter from IProgressNotifier to IGlyphsProgressTracker
@@ -163,19 +163,19 @@ namespace {
 		SymsUpdateProgressNotifier(const IController &performer_) : performer(performer_) {}
 		void operator=(const SymsUpdateProgressNotifier&) = delete;
 
-		void notifyUser(const std::string&, double progress) override {
+		void notifyUser(const std::stringType&, double progress) override {
 			performer.hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS, true); // async call
 		}
 	};
 
 	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
 	struct PicTransformProgressNotifier : IProgressNotifier {
-		std::shared_ptr<const IPicTransformProgressTracker> performer;
+		std::sharedPtr<const IPicTransformProgressTracker> performer;
 
-		PicTransformProgressNotifier(std::shared_ptr<const IPicTransformProgressTracker>performer_) : performer(performer_) {}
+		PicTransformProgressNotifier(std::sharedPtr<const IPicTransformProgressTracker>performer_) : performer(performer_) {}
 		void operator=(const PicTransformProgressNotifier&) = delete;
 
-		void notifyUser(const std::string&, double progress) override {
+		void notifyUser(const std::stringType&, double progress) override {
 			performer->reportTransformationProgress(progress);
 		}
 	};
@@ -184,7 +184,7 @@ namespace {
 	void viewSymWeightsHistogram(const VPixMapSym &theSyms) {
 #ifndef UNIT_TESTING
 		vector<double> symSums;
-		for(const auto &pms : theSyms)
+		for(const uniquePtr<const IPixMapSym> &pms : theSyms)
 			symSums.push_back(pms->getAvgPixVal());
 
 		static const size_t MaxBinHeight = 256ULL;
@@ -213,14 +213,14 @@ namespace {
 	}
 } // anonymous namespace
 
-string FontEngine::getFontType() {
+stringType FontEngine::getFontType() {
 	ostringstream oss;
 	oss<<getFamily()<<'_'<<getStyle()<<'_'<<getEncoding();
 
 	return oss.str();
 }
 
-string MatchEngine::getIdForSymsToUse() {
+stringType MatchEngine::getIdForSymsToUse() {
 	const unsigned sz = cfg.getSS().getFontSz();
 	assert(ISettings::isFontSizeOk(sz));
 
@@ -230,7 +230,7 @@ string MatchEngine::getIdForSymsToUse() {
 	return oss.str();
 }
 
-const string MatchSettings::toString(bool verbose) const {
+const stringType MatchSettings::toString(bool verbose) const {
 	ostringstream oss;
 	if(verbose) {
 		if(hybridResultMode)
@@ -266,7 +266,7 @@ const string MatchSettings::toString(bool verbose) const {
 }
 
 void Transformer::updateStudiedCase(int rows, int cols) {
-	const auto &ms = cfg.getMS();
+	const IMatchSettings &ms = cfg.getMS();
 	ostringstream oss;
 
 	// no extension yet
@@ -303,37 +303,37 @@ extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 #pragma warning( disable : WARN_BASE_INIT_USING_THIS )
 Controller::Controller(ISettingsRW &s) :
-		updateSymSettings(std::make_shared<const UpdateSymSettings>(s.refSS())),
-		glyphsProgressTracker(std::make_shared<const GlyphsProgressTracker>(*this)),
-		picTransformProgressTracker(std::make_shared<PicTransformProgressTracker>(*this)),
-		glyphsUpdateMonitor(std::make_shared<JobMonitor>("Processing glyphs",
-			std::make_shared<SymsUpdateProgressNotifier>(*this),
+		updateSymSettings(std::makeShared<const UpdateSymSettings>(s.refSS())),
+		glyphsProgressTracker(std::makeShared<const GlyphsProgressTracker>(*this)),
+		picTransformProgressTracker(std::makeShared<PicTransformProgressTracker>(*this)),
+		glyphsUpdateMonitor(std::makeShared<JobMonitor>("Processing glyphs",
+			std::makeShared<SymsUpdateProgressNotifier>(*this),
 			SymbolsProcessing_ProgressReportsIncrement)),
-		imgTransformMonitor(std::make_shared<JobMonitor>("Transforming image",
-			std::make_shared<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
+		imgTransformMonitor(std::makeShared<JobMonitor>("Transforming image",
+			std::makeShared<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
 			Transform_ProgressReportsIncrement)),
 		cmP(),
-		presentCmap(std::make_shared<const PresentCmap>(*this, cmP)),
+		presentCmap(std::makeShared<const PresentCmap>(*this, cmP)),
 		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
 		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		comp(getComparator()),
 		pCmi(),
-		selectSymbols(std::make_shared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
-		controlPanelActions(std::make_shared<ControlPanelActions>(*this, s,
+		selectSymbols(std::makeShared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
+		controlPanelActions(std::makeShared<ControlPanelActions>(*this, s,
 			getFontEngine(s.getSS()), getMatchEngine(s).assessor(), getTransformer(s), getComparator(), pCmi)) {
 	const_cast<IPresentCmap*>(presentCmap.get())->markClustersAsUsed(&me.isClusteringUseful());
 
 	comp.setPos(0, 0);
 	comp.permitResize(false);
 
-	extern const string Comparator_initial_title, Comparator_statusBar;
+	extern const stringType Comparator_initial_title, Comparator_statusBar;
 	comp.setTitle(Comparator_initial_title);
 	comp.setStatus(Comparator_statusBar);
 }
 #pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
-const string Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) const {
+const stringType Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) const {
 	assert(nullptr != fe.getFamily() && 0ULL < strlen(fe.getFamily()));
 	assert(nullptr != fe.getStyle() && 0ULL < strlen(fe.getStyle()));
 	assert(!fe.getEncoding().empty());
@@ -344,7 +344,7 @@ const string Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) 
 	return oss.str();
 }
 
-const string Controller::textHourGlass(const std::string &prefix, double progress) const {
+const stringType Controller::textHourGlass(const std::stringType &prefix, double progress) const {
 	ostringstream oss;
 	oss<<prefix<<" ("<<fixed<<setprecision(0)<<progress*100.<<"%)";
 	return oss.str();
@@ -379,7 +379,7 @@ void Controller::symbolsChanged() {
 			me.updateSymbols();
 
 		} catch(NormalSymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
-			const string errText(excObj.what());
+			const stringType errText(excObj.what());
 			// An exception with the same errText will be thrown in the main thread when executing next action
 			updateSymsActionsQueue.push(new BasicUpdateSymsAction([errText] {
 				throw NormalSymsLoadingFailure(errText);
@@ -389,7 +389,7 @@ void Controller::symbolsChanged() {
 			return;
 
 		} catch(TinySymsLoadingFailure &excObj) { // capture it in one thread, then pack it for the other thread
-			const string errText(excObj.what());
+			const stringType errText(excObj.what());
 			// An exception with the same errText will be thrown in the main thread when executing next action
 			updateSymsActionsQueue.push(new BasicUpdateSymsAction([errText] {
 				throw TinySymsLoadingFailure(errText);
@@ -410,6 +410,7 @@ void Controller::symbolsChanged() {
 	}).detach(); // termination captured by updatingSymbols flag
 
 	IUpdateSymsAction *action = nullptr;
+#ifndef AI_REVIEWER_CHECK // AI Reviewer might not tackle the following lambda as expected
 	auto performRegisteredActions = [&] { // lambda used twice below
 		while(updateSymsActionsQueue.pop(action)) { // perform available actions
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
@@ -433,6 +434,16 @@ void Controller::symbolsChanged() {
 		}
 	};
 
+#else // AI_REVIEWER_CHECK defined
+	// AI Reviewer needs to be aware of the methods called within previous lambda
+	updateSymsActionsQueue.pop(action);
+	action->perform();
+
+	// Define a placeholder for the lambda above
+#define performRegisteredActions()
+
+#endif // AI_REVIEWER_CHECK
+
 	while(updatingSymbols.test_and_set()) // loop while work is carried out
 		performRegisteredActions();
 	performRegisteredActions(); // perform any remaining actions
@@ -453,10 +464,10 @@ void Controller::display1stPageIfFull(const VPixMapSym &syms) {
 
 	// Copy all available symbols from the 1st page in current thread
 	// to ensure they get presented in the original order by the other thread
-	auto matSyms = new vector<const Mat>;
+	vector<const Mat> *matSyms = new vector<const Mat>;
 	matSyms->reserve(syms.size());
 	const auto fontSz = getFontSize();
-	for(const auto &pms : syms)
+	for(const uniquePtr<const IPixMapSym> &pms : syms)
 		matSyms->emplace_back(pms->toMat(fontSz, true));
 
 	// Starting the thread that builds the 'pre-release' version of the 1st cmap page
@@ -483,7 +494,7 @@ void Controller::handleRequests() {
 	}
 }
 
-void Controller::hourGlass(double progress, const string &title/* = ""*/, bool async/* = false*/) const {
+void Controller::hourGlass(double progress, const stringType &title/* = ""*/, bool async/* = false*/) const {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const String waitWin = "Please Wait!";
 #pragma warning ( default : WARN_THREAD_UNSAFE )
@@ -507,16 +518,16 @@ void Controller::hourGlass(double progress, const string &title/* = ""*/, bool a
 				oss<<waitWin;
 			else
 				oss<<title;
-			const string hourGlassText = textHourGlass(oss.str(), progress);
+			const stringType hourGlassText = textHourGlass(oss.str(), progress);
 			setWindowTitle(waitWin, hourGlassText);
 		}
 	}
 }
 
 void Controller::updateStatusBarCmapInspect(unsigned upperSymsCount/* = 0U*/,
-											const string &suffix/* = ""*/,
+											const stringType &suffix/* = ""*/,
 											bool async/* = false*/) const {
-	const string newStatusBarText(textForCmapStatusBar(upperSymsCount) + suffix);
+	const stringType newStatusBarText(textForCmapStatusBar(upperSymsCount) + suffix);
 	if(async) { // placing a task in the queue for the GUI updating thread
 		updateSymsActionsQueue.push(new BasicUpdateSymsAction([&, newStatusBarText] {
 			pCmi->setStatus(newStatusBarText);
@@ -526,15 +537,15 @@ void Controller::updateStatusBarCmapInspect(unsigned upperSymsCount/* = 0U*/,
 	}
 }
 
-void Controller::reportDuration(const std::string &text, double durationS) const {
+void Controller::reportDuration(const std::stringType &text, double durationS) const {
 	ostringstream oss;
 	oss<<text<<' '<<durationS<<" s!";
-	const string cmapOverlayText(oss.str());
+	const stringType cmapOverlayText(oss.str());
 	cout<<endl<<cmapOverlayText<<endl<<endl;
 	pCmi->setOverlay(cmapOverlayText, 3000);
 }
 
-bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) {
+bool Controller::updateResizedImg(std::sharedPtr<const ResizedImg> resizedImg_) {
 	if(!resizedImg_)
 		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
 
@@ -702,8 +713,9 @@ namespace {
 	const Mat fnNegSymExtractor(const typename It &it) {
 		// Let AI Reviewer know that ISymData::isRemovable() and ISymData::getNegSym()
 		// were used in the actual lambda function (see below, where fnNegSymExtractor is called)
-		(*it)->isRemovable();
-		return (*it)->getNegSym();
+		const ISymData &symData = **it;
+		symData.isRemovable();
+		return symData.getNegSym();
 	}
 #endif // AI_REVIEWER_CHECK defined
 
@@ -732,7 +744,7 @@ void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
 void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 										atomic_flag &updating1stCmapPage,
 										LockFreeQueue &updateSymsActionsQueue) {
-	std::shared_ptr<Mat> unofficial = std::make_shared<Mat>();
+	std::sharedPtr<Mat> unofficial = std::makeShared<Mat>();
 	::populateGrid(CBOUNDS(symsOn1stPage),
 #ifndef AI_REVIEWER_CHECK
 				   (NegSymExtractor<vector<const Mat>::const_iterator>) // conversion
@@ -750,8 +762,8 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 	// Otherwise just leave
 	if(!updating1stCmapPage.test_and_set()) { // holds the value on true after acquiring it
 		// Creating local copies that can be passed by value to Unofficial1stPageCmap's parameter
-		auto *pUpdating1stCmapPage = &updating1stCmapPage;
-		const auto winNameCopy = winName;
+		atomic_flag *pUpdating1stCmapPage = &updating1stCmapPage;
+		const String winNameCopy = winName;
 
 		updateSymsActionsQueue.push(new BasicUpdateSymsAction([pUpdating1stCmapPage, winNameCopy, unofficial] {
 			imshow(winNameCopy, *unofficial);
@@ -761,8 +773,8 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 	}
 }
 
-CmapInspect::CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
-						 std::shared_ptr<const ISelectSymbols> symsSelector_,
+CmapInspect::CmapInspect(std::sharedPtr<const IPresentCmap> cmapPresenter_,
+						 std::sharedPtr<const ISelectSymbols> symsSelector_,
 						 const unsigned &fontSz_) :
 		CvWin(CmapInspectWinName),
 		cmapPresenter(cmapPresenter_), symsSelector(symsSelector_), fontSz(fontSz_) {
@@ -834,7 +846,7 @@ void CmapPerspective::reset(const VSymData &symsSet,
 
 	vector<const vector<unsigned> *> symsIndicesPerCluster(clustersCount);
 	size_t clustIdx = 0ULL;
-	for(const auto &clusterMembers : symsIndicesPerCluster_)
+	for(const vector<unsigned> &clusterMembers : symsIndicesPerCluster_)
 		symsIndicesPerCluster[clustIdx++] = &clusterMembers;
 
 	// View the clusters in descending order of their size
@@ -862,7 +874,7 @@ void CmapPerspective::reset(const VSymData &symsSet,
 	size_t offset = 0ULL;
 	clusterOffsets.clear();
 	clusterOffsets.insert((unsigned)offset);
-	for(auto clusterMembers : symsIndicesPerCluster) {
+	for(const vector<unsigned> *clusterMembers : symsIndicesPerCluster) {
 		const auto prevOffset = offset;
 		offset += clusterMembers->size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), (unsigned)offset);

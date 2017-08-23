@@ -52,7 +52,7 @@ void SymsSupport::computeClusterRepresentative(const vector<const ISymData*> &cl
 											   int symSz, double invClusterSz,
 											   Mat &synthesizedSym, Mat &negSym) const {
 	Mat negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
-	for(const auto pSymData : clusterSyms) {
+	for(const ISymData *pSymData : clusterSyms) {
 		assert(!pSymData->getNegSym().empty()); // normal-size symbol are guaranteed to be non-blank
 		Mat negSymD;
 		pSymData->getNegSym().convertTo(negSymD, CV_64FC1);

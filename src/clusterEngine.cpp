@@ -62,12 +62,12 @@
 using namespace std;
 using namespace cv;
 
-extern const string ClusterAlgName;
+extern const stringType ClusterAlgName;
 extern const double MinAverageClusterSize;
 
 namespace {
 	/// Gets a reference to the clustering algorithm named algName or ignores it for invalid name.
-	ClusterAlg& algByName(const string &algName) {
+	ClusterAlg& algByName(const stringType &algName) {
 		ClusterAlg *pAlg = nullptr;
 		if(0 == algName.compare(TTSAS_Clustering::Name)) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
@@ -114,11 +114,13 @@ namespace {
 	}
 } // anonymous namespace
 
+#pragma warning ( disable : WARN_BASE_INIT_USING_THIS)
 ClusterEngine::ClusterEngine(ITinySymsProvider &tsp_, VSymData &symsSet_) :
 	clusterSupport(IPreselManager::concrete().createClusterSupport(tsp_, *this, symsSet_)),
 	clustAlg(algByName(ClusterAlgName).setTinySymsProvider(tsp_)) {}
+#pragma warning ( default : WARN_BASE_INIT_USING_THIS )
 
-void ClusterEngine::process(VSymData &symsSet, const string &fontType/* = ""*/) {
+void ClusterEngine::process(VSymData &symsSet, const stringType &fontType/* = ""*/) {
 	if(symsSet.empty())
 		return;
 
@@ -191,7 +193,7 @@ const IClustersSupport& ClusterEngine::support() const {
 
 using namespace boost::filesystem;
 
-bool ClusterEngine::clusteredAlready(const string &fontType, const string &algName, path &clusteredSetFile) {
+bool ClusterEngine::clusteredAlready(const stringType &fontType, const stringType &algName, path &clusteredSetFile) {
 	if(fontType.empty())
 		return false;
 

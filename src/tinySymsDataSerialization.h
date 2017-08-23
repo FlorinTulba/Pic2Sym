@@ -48,6 +48,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
+
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/serialization/vector.hpp>
 #endif // AI_REVIEWER_CHECK not defined
@@ -74,10 +76,10 @@ struct VTinySymsIO {
 	}
 
 	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
+	bool loadFrom(const std::stringType &path);
 
 	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
+	bool saveTo(const std::stringType &path) const;
 };
 
 #ifndef AI_REVIEWER_CHECK

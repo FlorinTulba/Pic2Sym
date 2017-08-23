@@ -44,11 +44,11 @@ using namespace std;
 
 extern const bool UsingOMP;
 
-const string NoClustering::Name("None");
+const stringType NoClustering::Name("None");
 
 unsigned NoClustering::formGroups(const VSymData &symsToGroup,
 								  vector<vector<unsigned>> &symsIndicesPerCluster,
-								  const string &/*fontType = ""*/) {
+								  const stringType &/*fontType = ""*/) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor trivialClustering("trivial clustering", *symsMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )

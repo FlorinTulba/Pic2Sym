@@ -72,7 +72,7 @@ SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 #pragma warning( disable : WARN_UNREF_FORMAL_PARAM )
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
-		for(auto &m : other.masks)
+		for(Mat &m : other.masks)
 			m.release();
 }
 #pragma warning( default : WARN_UNREF_FORMAL_PARAM )
@@ -106,7 +106,7 @@ SymData& SymData::operator=(SymData &&other) {
 	if(this != &other) {
 		other.negSym.release();
 
-		for(auto &m : other.masks)
+		for(Mat &m : other.masks)
 			m.release();
 	}
 

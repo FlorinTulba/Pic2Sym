@@ -61,7 +61,7 @@ bool Img::reset(const Mat &source_) {
 	return true;
 }
 
-bool Img::reset(const string &picName) {
+bool Img::reset(const stringType &picName) {
 	path newPic(absolute(picName));
 	if(imgPath.compare(newPic) == 0)
 		return true; // image already in use
@@ -98,6 +98,6 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 	vMaxSyms = syms;
 }
 
-unique_ptr<IfImgSettings> ImgSettings::clone() const {
-	return make_unique<ImgSettings>(*this);
+uniquePtr<IfImgSettings> ImgSettings::clone() const {
+	return makeUnique<ImgSettings>(*this);
 }

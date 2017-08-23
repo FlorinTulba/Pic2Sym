@@ -91,7 +91,7 @@ bool FilledRectanglesFilter::checkProjectionForFilledRectangles(const Mat &sums,
 	return true;
 }
 
-FilledRectanglesFilter::FilledRectanglesFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
+FilledRectanglesFilter::FilledRectanglesFilter(uniquePtr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(0U, "filled rectangles", std::move(nextFilter_)) {}
 
 bool FilledRectanglesFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache&) {

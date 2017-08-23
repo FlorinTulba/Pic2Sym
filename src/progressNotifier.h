@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #pragma warning ( pop )
 
@@ -54,7 +54,7 @@ struct IProgressNotifier /*abstract*/ {
 	virtual ~IProgressNotifier() = 0 {}
 
 	/// Informs the user that the job named monitoredJob reached (100*progress)%
-	virtual void notifyUser(const std::string &monitoredJob, double progress) {
+	virtual void notifyUser(const std::stringType &monitoredJob, double progress) {
 		UNREFERENCED_PARAMETER(monitoredJob);
 		UNREFERENCED_PARAMETER(progress);
 	}

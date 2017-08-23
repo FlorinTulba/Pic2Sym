@@ -49,14 +49,13 @@
 
 #pragma warning ( pop )
 
-struct ClusterIO {
-	template<class Archive>
-	void serialize(Archive&, const unsigned) {}
-
+class ClusterIO {
+protected:
 	std::vector<int> clusterLabels;
 	unsigned clustersCount = 0U;
 
-	ClusterIO() {}
+public:
+	ClusterIO() = default;
 	ClusterIO(const ClusterIO&) = delete;
 	ClusterIO(ClusterIO&&) = delete;
 	void operator=(const ClusterIO&) = delete;
@@ -64,6 +63,15 @@ struct ClusterIO {
 
 	bool loadFrom(...) { return true; }
 	bool saveTo(...) const { return true; }
+	void serialize(...) {}
+	void reset(unsigned clustersCount_, std::vector<int> &&clusterLabels_) {
+		clustersCount = clustersCount_;
+		clusterLabels = move(clusterLabels_);
+	}
+	unsigned getClustersCount() const { return clustersCount; }
+	const std::vector<int>& getClusterLabels() const {
+		return clusterLabels;
+	}
 };
 
 #endif // H_MOCK_CLUSTER_SERIALIZATION

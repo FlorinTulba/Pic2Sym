@@ -45,7 +45,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <set>
 
 #include "boost_filesystem_path.h"
@@ -63,8 +63,8 @@ class AbsJobMonitor;
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine : public ITinySymsProvider {
 protected:
-	std::shared_ptr<const IUpdateSymSettings> symSettingsUpdater;		///< symbol settings updating aspect of the Controller
-	std::shared_ptr<const IPresentCmap> cmapPresenter;					///< cmap presenting aspect of the Controller
+	std::sharedPtr<const IUpdateSymSettings> symSettingsUpdater;		///< symbol settings updating aspect of the Controller
+	std::sharedPtr<const IPresentCmap> cmapPresenter;					///< cmap presenting aspect of the Controller
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
@@ -79,7 +79,7 @@ protected:
 	/// indices for each unique Encoding within cmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
-	std::unique_ptr<IPmsCont> symsCont;		///< Container with the PixMapSym-s of current charmap
+	std::uniquePtr<IPmsCont> symsCont;		///< Container with the PixMapSym-s of current charmap
 	std::set<FT_ULong> symsUnableToLoad;	///< indices of the symbols that couldn't be loaded
 
 	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array
@@ -92,7 +92,7 @@ protected:
 	When fName is valid, face_ parameter will return the successfully loaded font.
 	*/
 	bool checkFontFile(const boost::filesystem::path &fontPath, FT_Face &face_) const;
-	void setFace(FT_Face face_, const std::string &fontFile_/* = ""*/); ///< Installs a new font
+	void setFace(FT_Face face_, const std::stringType &fontFile_/* = ""*/); ///< Installs a new font
 
 	/**
 	Enforces sz as vertical size and determines an optimal horizontal size,
@@ -120,22 +120,22 @@ public:
 
 	void invalidateFont();	///< When unable to process a font type, invalidate it completely
 
-	bool newFont(const std::string &fontFile_);		///< Tries to use the font from 'fontFile_'
+	bool newFont(const std::stringType &fontFile_);		///< Tries to use the font from 'fontFile_'
 	void setFontSz(unsigned fontSz_);				///< Sets the desired font height in pixels
 
-	bool setEncoding(const std::string &encName, bool forceUpdate = false);	///< Sets an encoding by name
+	bool setEncoding(const std::stringType &encName, bool forceUpdate = false);	///< Sets an encoding by name
 	bool setNthUniqueEncoding(unsigned idx);		///< Switches to nth unique encoding
 
 	unsigned upperSymsCount() const;				///< upper bound of symbols count in the cmap
 	const VPixMapSym& symsSet() const;				///< get the symsSet
 	double smallGlyphsCoverage() const;				///< get coverageOfSmallGlyphs
 
-	const std::string& fontFileName() const;		///< font name provided by Font Dialog
+	const std::stringType& fontFileName() const;		///< font name provided by Font Dialog
 	unsigned uniqueEncodings() const;				///< Returns the count of unique encodings
-	const std::string& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
+	const std::stringType& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
 	FT_String* getFamily() const;					///< get font family
 	FT_String* getStyle() const;					///< get font style
-	std::string getFontType();						///< type of the symbols, independent of font size
+	std::stringType getFontType();						///< type of the symbols, independent of font size
 
 	/// (Creates/Loads and) Returns(/Saves) the small versions of all the symbols from current cmap
 	const VTinySyms& getTinySyms() override;
@@ -145,7 +145,7 @@ public:
 	The path to the file supposed to contain the desired tiny symbols data 
 	is returned in the tinySymsDataFile parameter.
 	*/
-	static bool isTinySymsDataSavedOnDisk(const std::string &fontType, 
+	static bool isTinySymsDataSavedOnDisk(const std::stringType &fontType, 
 										  boost::filesystem::path &tinySymsDataFile);
 
 	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor

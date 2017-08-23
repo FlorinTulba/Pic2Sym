@@ -42,7 +42,7 @@
 
 using namespace std;
 
-extern const string Controller_PREFIX_GLYPH_PROGRESS;
+extern const stringType Controller_PREFIX_GLYPH_PROGRESS;
 
 namespace { // Anonymous namespace
 	/// Actions for start & stop chronometer while timing glyphs loading & preprocessing
@@ -70,7 +70,7 @@ namespace { // Anonymous namespace
 GlyphsProgressTracker::GlyphsProgressTracker(const IController &ctrler_) : ctrler(ctrler_) {}
 
 Timer GlyphsProgressTracker::createTimerForGlyphs() const {
-	return Timer(std::make_shared<TimerActions>(ctrler)); // RVO
+	return Timer(std::makeShared<TimerActions>(ctrler)); // RVO
 }
 
 #ifndef UNIT_TESTING

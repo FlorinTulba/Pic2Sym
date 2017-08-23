@@ -62,7 +62,7 @@ protected:
 	Img &img;			///< original image to process after resizing
 	Comparator &comp;	///< view for comparing original & result
 	ControlPanel &cp;	///< the configuration view
-	std::shared_ptr<CmapInspect> &pCmi;
+	std::sharedPtr<CmapInspect> &pCmi;
 
 	// Validation flags
 	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
@@ -73,8 +73,8 @@ protected:
 	bool validState(bool imageRequired = true) const;
 
 	// Next 3 protected methods do the ground work for their public correspondent methods
-	bool _newFontFamily(const std::string &fontFile, bool forceUpdate = false);
-	bool _newFontEncoding(const std::string &encName, bool forceUpdate = false);
+	bool _newFontFamily(const std::stringType &fontFile, bool forceUpdate = false);
+	bool _newFontEncoding(const std::stringType &encName, bool forceUpdate = false);
 	bool _newFontSize(int fontSz, bool forceUpdate = false);
 
 public:
@@ -83,7 +83,7 @@ public:
 
 	ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
 						FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,
-						Comparator &comp_, std::shared_ptr<CmapInspect> &pCmi_);
+						Comparator &comp_, std::sharedPtr<CmapInspect> &pCmi_);
 
 	void operator=(const ControlPanelActions&) = delete;
 
@@ -91,7 +91,7 @@ public:
 	void restoreUserDefaultMatchSettings() override;
 	void setUserDefaultMatchSettings() const override; ///< saving current IMatchSettings to 'initMatchSettings.cfg'
 
-	bool loadSettings(const std::string &from = "") override;	///< updating the ISettingsRW object
+	bool loadSettings(const std::stringType &from = "") override;	///< updating the ISettingsRW object
 	void saveSettings() const override;	///< saving the ISettingsRW object
 
 	unsigned getFontEncodingIdx() const override; ///< needed to restore encoding index
@@ -103,7 +103,7 @@ public:
 
 	@return false if the image cannot be set
 	*/
-	bool newImage(const std::string &imgPath, bool silent = false) override;
+	bool newImage(const std::stringType &imgPath, bool silent = false) override;
 
 #ifdef UNIT_TESTING
 	// Method available only in Unit Testing mode
@@ -111,9 +111,11 @@ public:
 #endif // UNIT_TESTING defined
 
 	void invalidateFont() override;	///< When unable to process a font type, invalidate it completely
-	void newFontFamily(const std::string &fontFile) override;
+	void newFontFamily(const std::stringType &fontFile) override;
 	void newFontEncoding(int encodingIdx) override;
-	bool newFontEncoding(const std::string &encName) override;
+#ifdef UNIT_TESTING
+	bool newFontEncoding(const std::stringType &encName) override;
+#endif // UNIT_TESTING defined
 	void newFontSize(int fontSz) override;
 	void newSymsBatchSize(int symsBatchSz) override;
 	void newStructuralSimilarityFactor(double k) override;
@@ -146,8 +148,8 @@ public:
 	*/
 	bool performTransformation(double *durationS = nullptr) override;
 
-	void showAboutDlg(const std::string &title, const std::wstring &content) override;
-	void showInstructionsDlg(const std::string &title, const std::wstring &content) override;
+	void showAboutDlg(const std::stringType &title, const std::wstringType &content) override;
+	void showInstructionsDlg(const std::stringType &title, const std::wstringType &content) override;
 };
 
 #endif // H_CONTROL_PANEL_ACTIONS

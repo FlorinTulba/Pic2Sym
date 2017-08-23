@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <vector>
 
 #pragma warning ( pop )
@@ -65,7 +65,7 @@ struct ClusterAlg /*abstract*/ {
 	*/
 	virtual unsigned formGroups(const VSymData &symsToGroup,
 								std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-								const std::string &fontType = "") = 0;
+								const std::stringType &fontType = "") = 0;
 
 	/// Assigns to tsp the provider of tiny symbols
 	ClusterAlg& setTinySymsProvider(ITinySymsProvider &tsp_);

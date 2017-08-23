@@ -121,7 +121,7 @@ void MatchParams::computeSsim(const Mat &patch, const ISymData &symData, const C
 		return;
 
 #ifdef _DEBUG
-	extern const string StructuralSimilarity_BlurType;
+	extern const stringType StructuralSimilarity_BlurType;
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static const bool usingGaussianBlur = (StructuralSimilarity_BlurType.compare("gaussian") == 0);
 #pragma warning ( default : WARN_THREAD_UNSAFE )

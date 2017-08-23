@@ -41,9 +41,9 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <array>
 #include <vector>
-#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -115,6 +115,6 @@ struct ISymData /*abstract*/ {
 };
 
 /// VSymData - vector with most information about each symbol
-typedef std::vector<std::unique_ptr<const ISymData>> VSymData;
+typedef std::vector<std::uniquePtr<const ISymData>> VSymData;
 
 #endif // H_SYM_DATA_BASE

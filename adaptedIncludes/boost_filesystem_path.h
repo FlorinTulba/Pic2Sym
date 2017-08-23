@@ -36,28 +36,49 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_BOOST_FILESYSTEM_OPERATIONS
-#define H_BOOST_FILESYSTEM_OPERATIONS
+#ifndef H_BOOST_FILESYSTEM_PATH
+#define H_BOOST_FILESYSTEM_PATH
 
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifdef AI_REVIEWER_CHECK
 
-#include <sys/types.h>
-#include "boost_filesystem_path.h"
+#include "std_string.h"
+#include <iostream>
 
 namespace boost {
 	namespace filesystem {
-		path current_path() { return path(); }
-		path absolute(...) { return path(); }
-		bool exists(...) { return false; }
-		bool create_directory(...) { return false; }
-		std::time_t last_write_time(...) { return 0; }
-		void rename(...) {}
-	}
-}
+		class path {
+		public:
+			path(...) {}
+
+			path& operator=(const char*) { return *this; }
+			path& operator=(const std::stringType&) { return *this; }
+			path& operator=(const path&) { return *this; }
+
+			const std::stringType string() const { return ""; }
+			const std::wstringType wstring() const { return L""; }
+			const char* c_str() const { return nullptr; }
+
+			path stem() const { return *this; }
+
+			path& append(...) { return *this; }
+			path& concat(...) { return *this; }
+			path& operator/=(const path&) { return *this; }
+
+			bool empty() const { return true; }
+			bool has_parent_path() const { return true; }
+			path& remove_filename() { return *this; }
+			path& replace_extension(...) { return *this; }
+
+			int compare(...) const { return 0; }
+		};
+	} // end namespace filesystem
+} // end namespace boost
+
+std::ostream& operator<<(std::ostream &os, const boost::filesystem::path&) { return os; }
 
 #else // AI_REVIEWER_CHECK was not defined
-#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #endif // AI_REVIEWER_CHECK
 
-#endif // H_BOOST_FILESYSTEM_OPERATIONS
+#endif // H_BOOST_FILESYSTEM_PATH

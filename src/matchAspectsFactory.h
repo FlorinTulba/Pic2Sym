@@ -43,14 +43,14 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #pragma warning ( pop )
 
 /// Creates any known MatchAspect by its name
 struct MatchAspectsFactory {
 	/// Creates aspect 'aspectName' passing to it a IMatchSettings parameter
-	static std::shared_ptr<MatchAspect> create(const std::string &aspectName,
+	static std::sharedPtr<MatchAspect> create(const std::stringType &aspectName,
 											   const IMatchSettings &ms);
 };
 

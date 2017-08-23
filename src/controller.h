@@ -67,18 +67,18 @@ class CmapInspect;
 class Controller : public IController {
 protected:
 	/// Responsible of updating symbol settings
-	std::shared_ptr<const IUpdateSymSettings> updateSymSettings;
+	std::sharedPtr<const IUpdateSymSettings> updateSymSettings;
 	
 	/// Responsible for keeping track of the symbols loading process
-	std::shared_ptr<const IGlyphsProgressTracker> glyphsProgressTracker;
+	std::sharedPtr<const IGlyphsProgressTracker> glyphsProgressTracker;
 
 	/// Responsible for monitoring the progress during an image transformation
-	std::shared_ptr<IPicTransformProgressTracker> picTransformProgressTracker;
+	std::sharedPtr<IPicTransformProgressTracker> picTransformProgressTracker;
 
 
 	// Control of displayed progress
-	std::shared_ptr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
-	std::shared_ptr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
+	std::sharedPtr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
+	std::sharedPtr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
 
 	CmapPerspective cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
@@ -87,11 +87,11 @@ protected:
 	Needed by 'fe' from below.
 	Uses 'me' from below and 'cmP' from above
 	*/
-	std::shared_ptr<const IPresentCmap> presentCmap;
+	std::sharedPtr<const IPresentCmap> presentCmap;
 
 	// Data
 	/// pointer to the resized version of most recent image that had to be transformed
-	std::shared_ptr<const ResizedImg> resizedImg;
+	std::sharedPtr<const ResizedImg> resizedImg;
 	FontEngine &fe;		///< font engine
 	ISettingsRW &cfg;	///< the settings for the transformations
 	MatchEngine &me;	///< matching engine
@@ -99,13 +99,13 @@ protected:
 
 	// Views
 	Comparator &comp;					///< view for comparing original & result
-	std::shared_ptr<CmapInspect> pCmi;	///< view for inspecting the used cmap
+	std::sharedPtr<CmapInspect> pCmi;	///< view for inspecting the used cmap
 
 	/// Allows saving a selection of symbols pointed within the charmap viewer
-	std::shared_ptr<const ISelectSymbols> selectSymbols;
+	std::sharedPtr<const ISelectSymbols> selectSymbols;
 
 	/// Responsible for the actions triggered by the controls from Control Panel
-	std::shared_ptr<IControlPanelActions> controlPanelActions;
+	std::sharedPtr<IControlPanelActions> controlPanelActions;
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;
@@ -113,10 +113,10 @@ protected:
 	std::atomic_flag updating1stCmapPage;	///< controls concurrent attempts to update 1st page
 	/// Stores the events occurred while updating the symbols.
 	/// queue requires template param with trivial destructor and assign operator,
-	/// so shared_ptr isn't useful here
+	/// so sharedPtr isn't useful here
 
-	const std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
-	const std::string textHourGlass(const std::string &prefix, double progress) const; ///< progress
+	const std::stringType textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
+	const std::stringType textHourGlass(const std::stringType &prefix, double progress) const; ///< progress
 
 #ifdef UNIT_TESTING
 public: // Providing get<field> as public for Unit Testing
@@ -133,12 +133,12 @@ public:
 	void operator=(const Controller&) = delete;
 	~Controller();				///< destroys the windows
 
-	std::shared_ptr<const IUpdateSymSettings> getUpdateSymSettings() const override;
-	std::shared_ptr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
-	std::shared_ptr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
-	std::shared_ptr<const IPresentCmap> getPresentCmap() const override;
-	std::shared_ptr<const ISelectSymbols> getSelectSymbols() const override;
-	std::shared_ptr<IControlPanelActions> getControlPanelActions() override;
+	std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const override;
+	std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
+	std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
+	std::sharedPtr<const IPresentCmap> getPresentCmap() const override;
+	std::sharedPtr<const ISelectSymbols> getSelectSymbols() const override;
+	std::sharedPtr<IControlPanelActions> getControlPanelActions() override;
 
 	/// Waits for the user to press ESC and confirm he wants to leave
 	static void handleRequests();
@@ -148,7 +148,7 @@ public:
 	void symbolsChanged() override;	///< triggered by new font family / encoding / size
 
 	/// Returns true if transforming a new image or the last one, but under other image parameters
-	bool updateResizedImg(std::shared_ptr<const ResizedImg> resizedImg_) override;
+	bool updateResizedImg(std::sharedPtr<const ResizedImg> resizedImg_) override;
 
 	/**
 	Shows a 'Please wait' window and reports progress.
@@ -157,7 +157,7 @@ public:
 	@param title details about the ongoing operation
 	@param async allows showing the window asynchronously
 	*/
-	void hourGlass(double progress, const std::string &title = "", bool async = false) const override;
+	void hourGlass(double progress, const std::stringType &title = "", bool async = false) const override;
 
 	/**
 	Updates the status bar from the charmap inspector window.
@@ -168,10 +168,10 @@ public:
 	@param async allows showing the new status bar message asynchronously
 	*/
 	void updateStatusBarCmapInspect(unsigned upperSymsCount = 0U,
-									const std::string &suffix = "",
+									const std::stringType &suffix = "",
 									bool async = false) const override;
 	/// Reports the duration of loading symbols / transforming images
-	void reportDuration(const std::string &text, double durationS) const override;
+	void reportDuration(const std::stringType &text, double durationS) const override;
 
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	void display1stPageIfFull(const VPixMapSym &syms) override;

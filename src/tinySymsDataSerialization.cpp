@@ -58,7 +58,7 @@ using namespace boost::archive;
 
 VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
 
-bool VTinySymsIO::loadFrom(const string &path) {
+bool VTinySymsIO::loadFrom(const stringType &path) {
 	ifstream ifs(path, ios::binary);
 	if(!ifs) {
 		cerr<<"Couldn't find / open: " <<path<<endl;
@@ -75,7 +75,7 @@ bool VTinySymsIO::loadFrom(const string &path) {
 	return true;
 }
 
-bool VTinySymsIO::saveTo(const string &path) const {
+bool VTinySymsIO::saveTo(const stringType &path) const {
 	ofstream ofs(path, ios::binary | ios::trunc);
 	if(!ofs) {
 		cerr<<"Couldn't create / truncate: " <<path<<endl;

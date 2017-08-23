@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <map>
 
 #pragma warning ( pop )
@@ -96,7 +96,7 @@ that will be initialized in varConfig.cpp unit like this:
 class BlurEngine : public IBlurEngine {
 protected:
 	/// Mapping type between blurTypes and corresponding configured blur instances
-	typedef std::map<const std::string, const IBlurEngine*> ConfiguredInstances;
+	typedef std::map<const std::stringType, const IBlurEngine*> ConfiguredInstances;
 
 	/**
 	Derived classes register themselves like: configuredInstances().insert(blurType, configuredInst)
@@ -111,7 +111,7 @@ protected:
 	*/
 	struct ConfInstRegistrator {
 		/// Provides the blur name and the instance to be registered within BlurEngine::configuredInstances()
-		ConfInstRegistrator(const std::string &blurType, const IBlurEngine &configuredInstance);
+		ConfInstRegistrator(const std::stringType &blurType, const IBlurEngine &configuredInstance);
 	};
 
 	/**
@@ -126,7 +126,7 @@ protected:
 
 public:
 	/// Provides a specific, completely configured blur engine. Throws invalid_argument for an unrecognized blurType
-	static const IBlurEngine& byName(const std::string &blurType);
+	static const IBlurEngine& byName(const std::stringType &blurType);
 
 	/**
 	Template method checking toBlur, initializing blurred and calling doProcess

@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <vector>
 
 #pragma warning ( pop )
@@ -53,7 +53,7 @@ class Timer;
 /// Abstract class for monitoring progress of a given job
 class AbsJobMonitor /*abstract*/ {
 protected:
-	const std::string monitoredJob_;	///< name of the job
+	const std::stringType monitoredJob_;	///< name of the job
 	Timer *timer = nullptr;				///< timer for reporting elapsed and estimated remaining time
 
 	double progress_ = 0.;				///< actual known job's progress
@@ -61,11 +61,11 @@ protected:
 	bool aborted = false;				///< set if the job was aborted
 
 public:
-	AbsJobMonitor(const std::string &monitoredJob) : monitoredJob_(monitoredJob) {}
+	AbsJobMonitor(const std::stringType &monitoredJob) : monitoredJob_(monitoredJob) {}
 	void operator=(const AbsJobMonitor&) = delete;
 	virtual ~AbsJobMonitor() = 0 {};
 
-	const std::string& monitoredJob() const { return monitoredJob_; } ///< name of the job
+	const std::stringType& monitoredJob() const { return monitoredJob_; } ///< name of the job
 	double progress() const { return progress_; }	///< Overall progress of the job (0..1 range)
 	bool wasAborted() const { return aborted; }		///< Reports if the job was aborted or not
 

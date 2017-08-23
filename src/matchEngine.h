@@ -68,7 +68,7 @@ protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
 
-	std::string symsIdReady;	///< type of symbols ready to use for transformation
+	std::stringType symsIdReady;	///< type of symbols ready to use for transformation
 
 #ifdef UNIT_TESTING // UnitTesting project needs access to following fields
 public:
@@ -81,15 +81,16 @@ protected:
 	ClusterEngine ce;				///< clusters manager
 
 	// Keep this below the fields, as it depends on them
-	std::unique_ptr<MatchSupport> matchSupport; ///< cached data management
+	std::uniquePtr<MatchSupport> matchSupport; ///< cached data management
 
-	std::vector<std::shared_ptr<MatchAspect>> availAspects;	///< all the available aspects
+	std::vector<std::sharedPtr<MatchAspect>> availAspects;	///< all the available aspects
 
 public:
 	MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
+	MatchEngine(const MatchEngine&) = delete;
 	void operator=(const MatchEngine&) = delete;
 
-	std::string getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
+	std::stringType getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
 
 	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
 
@@ -113,7 +114,7 @@ public:
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_);		///< setting the symbols monitor
 
-	const std::vector<std::shared_ptr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
+	const std::vector<std::sharedPtr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
 };
 
 #endif // H_MATCH_ENGINE

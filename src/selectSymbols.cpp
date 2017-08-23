@@ -50,6 +50,7 @@
 #pragma warning ( push, 0 )
 
 #include <iostream>
+#include <ctime>
 
 #include "boost_filesystem_operations.h"
 
@@ -61,7 +62,7 @@ using namespace boost::filesystem;
 SelectSymbols::SelectSymbols(const IController &ctrler_,
 							 const MatchEngine &me_,
 							 const CmapPerspective &cmP_,
-							 const std::shared_ptr<CmapInspect> &pCmi_) :
+							 const std::sharedPtr<CmapInspect> &pCmi_) :
 	ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
 
 #ifndef UNIT_TESTING

@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <list>
 #include <vector>
 
@@ -52,11 +52,11 @@
 // Define the functions within <ut> namespace specific to UnitTesting
 namespace ut {
 	/// Saves selected symbols from symsSelection to destFile as text in a format easy to follow
-	void saveSymsSelection(const std::string &destFile,
+	void saveSymsSelection(const std::stringType &destFile,
 						   const std::list<const cv::Mat> &symsSelection);
 
 	/// Loads the symbols selection from the srcFile into symsSelection
-	void loadSymsSelection(const std::string &srcFile,
+	void loadSymsSelection(const std::stringType &srcFile,
 						   std::vector<const cv::Mat> &symsSelection);
 }
 

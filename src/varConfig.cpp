@@ -62,7 +62,7 @@ using namespace boost::algorithm;
 
 namespace {
 	/// Replaces all instances of a pattern in a text with a different string.
-	string replacePlaceholder(const string &text,	///< initial text
+	stringType replacePlaceholder(const string &text,	///< initial text
 							  const string &placeholder = "$(PIC2SYM_VERSION)",	///< pattern to be replaced
 							  const string &replacement = PIC2SYM_VERSION	///< replacement string
 							  ) {
@@ -70,7 +70,7 @@ namespace {
 #ifndef AI_REVIEWER_CHECK
 		replace_all(text_, placeholder, replacement);
 #endif // AI_REVIEWER_CHECK
-		return text_; // NRVO
+		return stringType(text_);
 	}
 
 	/// parser for reading various texts and constants customizing the runtime look and behavior
@@ -85,14 +85,14 @@ namespace {
 	template<class Type>
 	struct ConfigItemValidator /*abstract*/ {
 		/// Should throw an appropriate exception when itemVal is wrong for itemName
-		virtual void examine(const string &itemName, const Type &itemVal) const = 0;
+		virtual void examine(const stringType &itemName, const Type &itemVal) const = 0;
 		virtual ~ConfigItemValidator() = 0 {}
 	};
 
 	/// Base class for IsOdd and IsEven from below
 	template<class Type, typename = enable_if_t<is_integral<Type>::value>>
 	struct IsOddOrEven : ConfigItemValidator<Type> {
-		void examine(const string &itemName, const Type &itemVal) const override final {
+		void examine(const stringType &itemName, const Type &itemVal) const override final {
 #define REQUIRE_PARITY(ParityType, Mod2Remainder) \
 			if((Type)Mod2Remainder != (itemVal & (Type)1)) { \
 				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
@@ -129,11 +129,11 @@ namespace {
 	/// Base class for IsLessThan and IsGreaterThan from below
 	template<class Type, typename = enable_if_t<is_arithmetic<Type>::value>>
 	struct IsLessOrGreaterThan : ConfigItemValidator<Type> {
-		void examine(const string &itemName, const Type &itemVal) const override final {
+		void examine(const stringType &itemName, const Type &itemVal) const override final {
 #define REQUIRE_REL(RelationType) \
 			if(!(itemVal RelationType refVal)) { \
-				THROW_WITH_VAR_MSG("Configuration item '" + itemName + \
-					"' needs to be " #RelationType " " + to_string(refVal) + "!", out_of_range); \
+				THROW_WITH_VAR_MSG("Configuration item '" + (string)itemName + \
+					"' needs to be " #RelationType " " + (string)to_string(refVal) + "!", out_of_range); \
 			}
 
 			if(isLess) {
@@ -181,7 +181,7 @@ namespace {
 		}
 		void operator=(const IsOneOf&) = delete;
 
-		void examine(const string &itemName, const Type &itemVal) const override final {
+		void examine(const stringType &itemName, const Type &itemVal) const override final {
 			if(allowedSet.cend() == allowedSet.find(itemVal))
 				THROW_WITH_VAR_MSG("Configuration item '" + itemName +
 					"' needs to be among these values: " + allowedSetStr + "!", invalid_argument);
@@ -189,21 +189,22 @@ namespace {
 
 	protected:
 		/// Helper to initialize allowedSetStr in initialization list
-		static const string setAsString(const set<Type> &allowedSet_) {
+		static const stringType setAsString(const set<Type> &allowedSet_) {
 			ostringstream oss;
-			copy(CBOUNDS(allowedSet_), ostream_iterator<Type>(oss, ", "));
+			for(const Type &v : allowedSet_)
+				oss<<(string)v<<", ";
 			oss<<"\b\b ";
 			return oss.str();
 		}
 
 		const set<Type> allowedSet;	///< allowed set of values
-		const string allowedSetStr;	///< same set in string format
+		const stringType allowedSetStr;	///< same set in string format
 	};
 
 	/// Checks that itemName's value (itemValue) is approved by all validators, in which case it returns it.
 	/// (Non-template-recursive solution of the function)
 	template<class ItemType, class ... ValidatorTypes>
-	const ItemType& checkItem(const string &itemName, const ItemType &itemVal,
+	const ItemType& checkItem(const stringType &itemName, const ItemType &itemVal,
 							  const ValidatorTypes& ... validators) {
 		// Declaring a dummy non-empty array that is ending in the validators' expansion
 		int dummyArray[] {
@@ -233,14 +234,14 @@ namespace {
 	READ_PROP(prop, bool)
 
 #define READ_STR_PROP(prop, ...) \
-	READ_PROP(prop, string, __VA_ARGS__)
+	READ_PROP(prop, stringType, __VA_ARGS__)
 
 #else // AI_REVIEWER_CHECK defined
 #define READ_BOOL_PROP(prop) \
 	const bool prop = false;
 
 #define READ_STR_PROP(prop, ...) \
-	const string prop;
+	const stringType prop;
 
 #endif // AI_REVIEWER_CHECK
 
@@ -260,10 +261,10 @@ namespace {
 	READ_PROP(prop, double, __VA_ARGS__)
 
 #define READ_STR_PROP_CONVERT(prop, destStringType) \
-	const destStringType prop = varConfigRef().read<string>(#prop)
+	const destStringType prop = varConfigRef().read<stringType>(#prop)
 
 #define READ_WSTR_PROP(prop) \
-	const wstring prop = str2wstr(varConfigRef().read<string>(#prop))
+	const wstringType prop = str2wstr(varConfigRef().read<stringType>(#prop))
 
 // Limits for read data
 #ifndef AI_REVIEWER_CHECK
@@ -340,8 +341,8 @@ static VALIDATOR(atLeast0dot001,IsGreaterThan, double, 0.001);
 static VALIDATOR(positiveD,		IsGreaterThan, double, 0.);
 static VALIDATOR(nonNegativeD,	IsGreaterThan, double, 0., true);
 
-static VALIDATOR(availableClusterAlgs,	IsOneOf, string, { "None", "Partition", "TTSAS" });
-static VALIDATOR(availBlurAlgsForStrSim,IsOneOf, string, { "box", "ext_box", "stack", "gaussian" });
+static VALIDATOR(availableClusterAlgs,	IsOneOf, stringType, { "None", "Partition", "TTSAS" });
+static VALIDATOR(availBlurAlgsForStrSim,IsOneOf, stringType, { "box", "ext_box", "stack", "gaussian" });
 
 // Reading data
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
@@ -522,12 +523,12 @@ extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 
 extern READ_STR_PROP_CONVERT(CmapInspect_pageTrackName, String);
 
-extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfigRef().read<string>("ControlPanel_aboutText")));
+extern const wstringType ControlPanel_aboutText = str2wstr(replacePlaceholder(varConfigRef().read<string>("ControlPanel_aboutText")));
 extern READ_WSTR_PROP(ControlPanel_instructionsText);
 
 #endif // UNIT_TESTING not defined
 
-extern const string Comparator_initial_title = replacePlaceholder(varConfigRef().read<string>("Comparator_initial_title"));
+extern const stringType Comparator_initial_title = replacePlaceholder(varConfigRef().read<string>("Comparator_initial_title"));
 extern READ_STR_PROP(Comparator_statusBar);
 
 extern READ_STR_PROP(Controller_PREFIX_GLYPH_PROGRESS);

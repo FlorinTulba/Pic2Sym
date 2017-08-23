@@ -216,10 +216,10 @@ public:
 #endif // UNIT_TESTING not defined
 
 	/// Provides a representation of these settings in a verbose manner or not
-	const std::string toString(bool verbose) const override;
+	const std::stringType toString(bool verbose) const override;
 
 	/// @return a clone of current settings
-	std::unique_ptr<IMatchSettings> clone() const override;
+	std::uniquePtr<IMatchSettings> clone() const override;
 
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();

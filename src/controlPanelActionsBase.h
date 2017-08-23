@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #ifdef UNIT_TESTING
 #include <opencv2/core/core.hpp>
@@ -57,7 +57,7 @@ struct IControlPanelActions /*abstract*/ {
 	virtual void restoreUserDefaultMatchSettings() = 0;
 	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current IMatchSettings to 'initMatchSettings.cfg'
 
-	virtual bool loadSettings(const std::string &from = "") = 0;	///< updating the Settings object
+	virtual bool loadSettings(const std::stringType &from = "") = 0;	///< updating the Settings object
 	virtual void saveSettings() const = 0;	///< saving the Settings object
 
 	virtual unsigned getFontEncodingIdx() const = 0; ///< needed to restore encoding index
@@ -69,7 +69,7 @@ struct IControlPanelActions /*abstract*/ {
 
 	@return false if the image cannot be set
 	*/
-	virtual bool newImage(const std::string &imgPath, bool silent = false) = 0;
+	virtual bool newImage(const std::stringType &imgPath, bool silent = false) = 0;
 
 #ifdef UNIT_TESTING
 	// Method available only in Unit Testing mode
@@ -77,9 +77,11 @@ struct IControlPanelActions /*abstract*/ {
 #endif // UNIT_TESTING defined
 
 	virtual void invalidateFont() = 0;	///< When unable to process a font type, invalidate it completely
-	virtual void newFontFamily(const std::string &fontFile) = 0;
+	virtual void newFontFamily(const std::stringType &fontFile) = 0;
 	virtual void newFontEncoding(int encodingIdx) = 0;
-	virtual bool newFontEncoding(const std::string &encName) = 0;
+#ifdef UNIT_TESTING
+	virtual bool newFontEncoding(const std::stringType &encName) = 0;
+#endif // UNIT_TESTING defined
 	virtual void newFontSize(int fontSz) = 0;
 	virtual void newSymsBatchSize(int symsBatchSz) = 0;
 	virtual void newStructuralSimilarityFactor(double k) = 0;
@@ -112,8 +114,8 @@ struct IControlPanelActions /*abstract*/ {
 	*/
 	virtual bool performTransformation(double *durationS = nullptr) = 0;
 
-	virtual void showAboutDlg(const std::string &title, const std::wstring &content) = 0;
-	virtual void showInstructionsDlg(const std::string &title, const std::wstring &content) = 0;
+	virtual void showAboutDlg(const std::stringType &title, const std::wstringType &content) = 0;
+	virtual void showInstructionsDlg(const std::stringType &title, const std::wstringType &content) = 0;
 
 	virtual ~IControlPanelActions() = 0 {}
 };

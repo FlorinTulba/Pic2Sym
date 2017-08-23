@@ -50,11 +50,11 @@ BlurEngine::ConfiguredInstances& BlurEngine::configuredInstances() {
 	return configuredInstances_;
 }
 
-BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const string &blurType, const IBlurEngine &configuredInstance) {
+BlurEngine::ConfInstRegistrator::ConfInstRegistrator(const stringType &blurType, const IBlurEngine &configuredInstance) {
 	configuredInstances().emplace(blurType, &configuredInstance);
 }
 
-const IBlurEngine& BlurEngine::byName(const string &blurType) {
+const IBlurEngine& BlurEngine::byName(const stringType &blurType) {
 	try {
 		return *configuredInstances().at(blurType);
 	} catch(out_of_range&) {

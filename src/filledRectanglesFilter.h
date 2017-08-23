@@ -53,7 +53,7 @@ struct FilledRectanglesFilter : public TSymFilter<FilledRectanglesFilter> {
 		
 	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache&); // static polymorphism
 
-	FilledRectanglesFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	FilledRectanglesFilter(std::uniquePtr<ISymFilter> nextFilter_ = nullptr);
 	FilledRectanglesFilter(const FilledRectanglesFilter&) = delete;
 	void operator=(const FilledRectanglesFilter&) = delete;
 

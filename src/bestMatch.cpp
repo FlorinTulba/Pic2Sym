@@ -42,13 +42,25 @@
 #include "matchSettingsBase.h"
 #include "symDataBase.h"
 
+#if defined(_DEBUG) || defined(UNIT_TESTING)
+
+#pragma warning ( push, 0 )
+
+#include <boost/optional/optional_io.hpp>
+
+#pragma warning ( pop )
+
+extern const std::wstringType& COMMA();
+
+#endif // defined(_DEBUG) || defined(UNIT_TESTING)
+
 using namespace std;
 using namespace boost;
 using namespace cv;
 
 BestMatch::BestMatch(const IPatch &patch_) :
 		patch(patch_.clone()),
-		params(patch_.nonUniform() ? make_unique<MatchParams>() : nullptr) {
+		params(patch_.nonUniform() ? makeUnique<MatchParams>() : nullptr) {
 	assert(patch);
 }
 
@@ -61,7 +73,7 @@ const optional<const IMatchParams&> BestMatch::getParams() const {
 	return none;
 }
 
-unique_ptr<IMatchParamsRW>& BestMatch::refParams() { return params; }
+const uniquePtr<IMatchParamsRW>& BestMatch::refParams() const { return params; }
 const optional<unsigned>& BestMatch::getSymIdx() const { return symIdx; }
 
 const optional<unsigned>& BestMatch::getLastPromisingNontrivialCluster() const {
@@ -104,8 +116,8 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings &ms) {
 		return *this;
 	}
 
-	const auto &dataOfBest = *pSymData;
-	const auto &matricesForBest = dataOfBest.getMasks();
+	const ISymData &dataOfBest = *pSymData;
+	const ISymData::MatArray &matricesForBest = dataOfBest.getMasks();
 	const Mat &groundedBest = matricesForBest[ISymData::GROUNDED_SYM_IDX];
 	const auto patchSz = patch->getOrig().rows;
 
@@ -119,7 +131,7 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings &ms) {
 
 		double diffFgBg = 0.;
 		const size_t channelsCount = channels.size();
-		for(auto &ch : channels) {
+		for(Mat &ch : channels) {
 			ch.convertTo(ch, CV_64FC1); // processing double values
 
 			double miuFg, miuBg, newDiff;
@@ -165,8 +177,8 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings &ms) {
 	double totalSdevBlurredPatch = *sdevBlurredPatch.val,
 		totalSdevApproximation = *sdevApproximation.val;
 	if(patch->isColored()) {
-		totalSdevBlurredPatch += sdevBlurredPatch.val[1] + sdevBlurredPatch.val[2];
-		totalSdevApproximation += sdevApproximation.val[1] + sdevApproximation.val[2];
+		totalSdevBlurredPatch += sdevBlurredPatch.val[1ULL] + sdevBlurredPatch.val[2ULL];
+		totalSdevApproximation += sdevApproximation.val[1ULL] + sdevApproximation.val[2ULL];
 	}
 	const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
 	const double weight = (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
@@ -186,6 +198,41 @@ bool BestMatch::isUnicode() const {
 BestMatch& BestMatch::setUnicode(bool unicode_) {
 	unicode = unicode_;
 	return *this;
+}
+
+const wstringType BestMatch::toWstring() const {
+	wostringstream wos;
+	if(!symCode)
+		wos<<boost::none;
+	else {
+		const unsigned long theSymCode = *symCode;
+		if(unicode) {
+			switch(theSymCode) {
+				case (unsigned long)',':
+					wos<<L"COMMA"; break;
+				case (unsigned long)'(':
+					wos<<L"OPEN_PAR"; break;
+				case (unsigned long)')':
+					wos<<L"CLOSE_PAR"; break;
+				default:
+					// for other characters, check if they can be displayed on the current console
+					if(wos<<(wchar_t)theSymCode) {
+						// when they can be displayed, add in () their code
+						wos<<'('<<theSymCode<<')';
+					} else { // when they can't be displayed, show just their code
+						wos.clear(); // clear the error first
+						wos<<theSymCode;
+					}
+			}
+		} else
+			wos<<theSymCode;
+	}
+
+	wos<<COMMA()<<score;
+	if(params)
+		wos<<COMMA()<<*params;
+
+	return wos.str();
 }
 
 #endif // _DEBUG || UNIT_TESTING

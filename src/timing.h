@@ -43,10 +43,10 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
+#include "std_memory.h"
 #include <chrono>
 #include <vector>
-#include <memory>
-#include <string>
 
 #pragma warning ( pop )
 
@@ -67,7 +67,7 @@ struct ITimerActions /*abstract*/ {
 
 	/// action to be performed when the timer is canceled
 	/// @param reason explanation for cancellation
-	virtual void onCancel(const std::string &reason = "") { UNREFERENCED_PARAMETER(reason); }
+	virtual void onCancel(const std::stringType &reason = "") { UNREFERENCED_PARAMETER(reason); }
 
 	virtual ~ITimerActions() = 0 {}
 };
@@ -79,7 +79,7 @@ struct IActiveTimer /*abstract*/ {
 
 	/// Cancels a timing task.
 	/// @param reason explanation for cancellation
-	virtual void cancel(const std::string &reason = "The task was canceled") = 0;
+	virtual void cancel(const std::stringType &reason = "The task was canceled") = 0;
 
 	virtual ~IActiveTimer() = 0 {}
 };
@@ -87,7 +87,7 @@ struct IActiveTimer /*abstract*/ {
 /// Timer class
 class Timer : public IActiveTimer {
 protected:
-	const std::vector<std::shared_ptr<ITimerActions>> observers; ///< to be notified
+	const std::vector<std::sharedPtr<ITimerActions>> observers; ///< to be notified
 
 	/// the moment when computation started / was resumed last time
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
@@ -100,9 +100,9 @@ protected:
 
 public:
 	/// Initializes lastStart and notifies all observers
-	Timer(const std::vector<std::shared_ptr<ITimerActions>> &observers_);
+	Timer(const std::vector<std::sharedPtr<ITimerActions>> &observers_);
 
-	Timer(std::shared_ptr<ITimerActions> observer); ///< initializes lastStart and notifies the observer
+	Timer(std::sharedPtr<ITimerActions> observer); ///< initializes lastStart and notifies the observer
 
 	/**
 	This class relies on automatic destructor calling, so duplicates mean 2 destructor calls.
@@ -127,7 +127,7 @@ public:
 
 	/// Cancels a timing task.
 	/// @param reason explanation for cancellation
-	void cancel(const std::string &reason = "The task was canceled") override;
+	void cancel(const std::stringType &reason = "The task was canceled") override;
 };
 
 #endif // H_TIMING

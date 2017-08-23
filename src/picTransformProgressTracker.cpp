@@ -45,10 +45,10 @@ namespace { // Anonymous namespace
 	/// Actions for start & stop chronometer while timing the approximation of the picture
 	class TimerActions : public ITimerActions {
 	protected:
-		std::shared_ptr<IPicTransformProgressTracker> ptpt;
+		std::sharedPtr<IPicTransformProgressTracker> ptpt;
 
 	public:
-		TimerActions(std::shared_ptr<IPicTransformProgressTracker> ptpt_) : ptpt(ptpt_) {}
+		TimerActions(std::sharedPtr<IPicTransformProgressTracker> ptpt_) : ptpt(ptpt_) {}
 		void operator=(const TimerActions&) = delete;
 
 		/// Action to be performed when the timer is started
@@ -65,7 +65,7 @@ namespace { // Anonymous namespace
 
 		/// action to be performed when the timer is canceled
 		/// @param reason explanation for cancellation
-		void onCancel(const std::string &reason = "") override {
+		void onCancel(const std::stringType &reason = "") override {
 			ptpt->reportTransformationProgress(1., true);
 			infoMsg(reason);
 		}
@@ -75,7 +75,7 @@ namespace { // Anonymous namespace
 PicTransformProgressTracker::PicTransformProgressTracker(IController &ctrler_) : ctrler(ctrler_) {}
 
 Timer PicTransformProgressTracker::createTimerForImgTransform() const {
-	return Timer(std::make_shared<TimerActions>(ctrler.getPicTransformProgressTracker())); // RVO
+	return Timer(std::makeShared<TimerActions>(ctrler.getPicTransformProgressTracker())); // RVO
 }
 
 #ifndef UNIT_TESTING
@@ -85,7 +85,7 @@ void PicTransformProgressTracker::transformFailedToStart() {
 }
 
 void PicTransformProgressTracker::reportTransformationProgress(double progress, bool showDraft/* = false*/) const {
-	extern const string Controller_PREFIX_TRANSFORMATION_PROGRESS;
+	extern const stringType Controller_PREFIX_TRANSFORMATION_PROGRESS;
 	ctrler.hourGlass(progress, Controller_PREFIX_TRANSFORMATION_PROGRESS);
 
 	if(showDraft)

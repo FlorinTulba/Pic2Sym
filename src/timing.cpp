@@ -41,17 +41,17 @@
 using namespace std;
 using namespace std::chrono;
 
-Timer::Timer(const vector<std::shared_ptr<ITimerActions>> &observers_) :
+Timer::Timer(const vector<std::sharedPtr<ITimerActions>> &observers_) :
 		observers(observers_), lastStart(high_resolution_clock::now()), elapsedS(0.) {
-	for(auto observer : observers)
+	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onStart();
 }
 
-Timer::Timer(std::shared_ptr<ITimerActions> observer) :
-		Timer(vector<std::shared_ptr<ITimerActions>> { observer }) {}
+Timer::Timer(std::sharedPtr<ITimerActions> observer) :
+		Timer(vector<std::sharedPtr<ITimerActions>> { observer }) {}
 
 Timer::Timer(Timer &&other) :
-		observers(std::move(const_cast<vector<std::shared_ptr<ITimerActions>>&>(other.observers))),
+		observers(std::move(const_cast<vector<std::sharedPtr<ITimerActions>>&>(other.observers))),
 		lastStart(other.lastStart), elapsedS(other.elapsedS),
 		paused(other.paused), valid(other.valid) {
 	other.valid = false;
@@ -81,13 +81,13 @@ double Timer::elapsed() const {
 	return durationToReport.count();
 }
 
-void Timer::cancel(const string &reason/* = "The task was canceled"*/) {
+void Timer::cancel(const stringType &reason/* = "The task was canceled"*/) {
 	if(!valid)
 		return;
 
 	valid = false;
 
-	for(auto observer : observers)
+	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onCancel(reason);
 }
 
@@ -99,7 +99,7 @@ void Timer::pause() {
 
 	paused = true;
 
-	for(auto observer : observers)
+	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onPause(elapsedS.count());
 }
 
@@ -111,7 +111,7 @@ void Timer::resume() {
 
 	lastStart = high_resolution_clock::now();
 
-	for(auto observer : observers)
+	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onResume();
 }
 
@@ -124,6 +124,6 @@ void Timer::release() {
 	if(!paused)
 		elapsedS += high_resolution_clock::now() - lastStart;
 
-	for(auto observer : observers)
+	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onRelease(elapsedS.count());
 }

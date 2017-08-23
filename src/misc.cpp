@@ -51,10 +51,10 @@ namespace {
 
 	/// Multiton supporting info/warn/errorMsg functions
 	class MsgCateg final {
-		const string categName;
+		const stringType categName;
 		const UINT categVal;
 
-		MsgCateg(const string &categName_, UINT categVal_) :
+		MsgCateg(const stringType &categName_, UINT categVal_) :
 			categName(categName_), categVal(categVal_) {}
 		MsgCateg(const MsgCateg&) = delete;
 		void operator=(const MsgCateg&) = delete;
@@ -62,7 +62,7 @@ namespace {
 	public:
 		static const MsgCateg INFO_CATEG, WARN_CATEG, ERR_CATEG;
 
-		const string& name() const { return categName; }
+		const stringType& name() const { return categName; }
 		const UINT val() const { return categVal; }
 	};
 
@@ -72,8 +72,8 @@ namespace {
 
 #ifndef UNIT_TESTING
 	/// When interacting with the user, the messages are nicer as popup windows
-	void msg(const MsgCateg &msgCateg, const string &title_, const string &text) {
-		string title = title_;
+	void msg(const MsgCateg &msgCateg, const stringType &title_, const stringType &text) {
+		stringType title = title_;
 		if(title.empty())
 			title = msgCateg.name();
 
@@ -84,9 +84,9 @@ namespace {
 
 #else // UNIT_TESTING defined
 	/// When performing Unit Testing, the messages will appear on the console
-	void msg(const MsgCateg &msgCateg, const string &title, const string &text) {
+	void msg(const MsgCateg &msgCateg, const stringType &title, const stringType &text) {
 		cout.flush(); cerr.flush();
-		auto &os = (&msgCateg == &MsgCateg::ERR_CATEG) ? cerr : cout;
+		ostream &os = (&msgCateg == &MsgCateg::ERR_CATEG) ? cerr : cout;
 		os<<msgCateg.name();
 		if(title.empty())
 			os<<" ->"<<endl;
@@ -101,22 +101,22 @@ namespace {
 } // anonymous namespace
 
 
-void infoMsg(const string &text, const string &title/* = ""*/) {
+void infoMsg(const stringType &text, const stringType &title/* = ""*/) {
 	msg(MsgCateg::INFO_CATEG, title, text);
 }
 
-void warnMsg(const string &text, const string &title/* = ""*/) {
+void warnMsg(const stringType &text, const stringType &title/* = ""*/) {
 	msg(MsgCateg::WARN_CATEG, title, text);
 }
 
-void errMsg(const string &text, const string &title/* = ""*/) {
+void errMsg(const stringType &text, const stringType &title/* = ""*/) {
 	msg(MsgCateg::ERR_CATEG, title, text);
 }
 
-wstring str2wstr(const string &str) {
-	return wstring(CBOUNDS(str)); // RVO
+wstringType str2wstr(const stringType &str) {
+	return wstringType(CBOUNDS(str)); // RVO
 }
 
-string wstr2str(const wstring &wstr) {
-	return string(CBOUNDS(wstr)); // RVO
+stringType wstr2str(const wstringType &wstr) {
+	return stringType(CBOUNDS(wstr)); // RVO
 }

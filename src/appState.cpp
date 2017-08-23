@@ -169,47 +169,61 @@ namespace {
 		}
 	};
 
+	/// Group of parameters for update*SettingDemand() functions
+	struct UpdateSettingsParams {
+		ControlPanel &cp;
+		volatile AppStateType &appState;
+		set<const cv::String> &slidersRestoringValue;
+		const cv::String * const pLuckySliderName;
+		const String &controlName;
+
+		UpdateSettingsParams(ControlPanel &cp_,
+							 volatile AppStateType &appState_,
+							 set<const cv::String> &slidersRestoringValue_,
+							 const cv::String * const pLuckySliderName_,
+							 const String &controlName_) :
+			cp(cp_), appState(appState_), slidersRestoringValue(slidersRestoringValue_),
+			pLuckySliderName(pLuckySliderName_), controlName(controlName_) {}
+		UpdateSettingsParams(const UpdateSettingsParams&) = delete;
+		UpdateSettingsParams(UpdateSettingsParams&&) = delete;
+		void operator=(const UpdateSettingsParams&) = delete;
+		void operator=(UpdateSettingsParams&&) = delete;
+	};
+
 	/// Shared body for the controls updating the symbols settings
-	unique_ptr<ActionPermit> updateSettingDemand(ControlPanel &cp,
-												 volatile AppStateType &appState,
-												 set<const cv::String> &slidersRestoringValue,
-												 const cv::String * const pLuckySliderName,
-												 const String &controlName,
+	uniquePtr<ActionPermit> updateSettingDemand(UpdateSettingsParams &usp,
 												 AppStateType bannedMask,
-												 const string &msgWhenBanned,
+												 const stringType &msgWhenBanned,
 												 AppStateType statesToSet,
 												 bool isSlider = true) {
-		if(isSlider && slidersRestoringValue.end() != slidersRestoringValue.find(controlName))
+		if(isSlider &&
+				usp.slidersRestoringValue.end() != usp.slidersRestoringValue.find(usp.controlName))
 			return nullptr; // ignore call, as it's a value restoration maneuver
 
 		// Authorize update of the sliders while loading settings without the casual checks.
 		// Only one slider must be authorized at a time, to reduce the chances of free rides.
-		if(pLuckySliderName == &controlName)
-			return std::move(make_unique<NoTraceActionPermit>());
+		if(usp.pLuckySliderName == &usp.controlName)
+			return std::move(makeUnique<NoTraceActionPermit>());
 
 		LockAppState lock;
 
-		if(0U != (bannedMask & appState)) {
+		if(0U != (bannedMask & usp.appState)) {
 			lock.release();
 
 			if(isSlider)
-				cp.restoreSliderValue(controlName, msgWhenBanned);
+				usp.cp.restoreSliderValue(usp.controlName, msgWhenBanned);
 			else
 				errMsg(msgWhenBanned);
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, statesToSet));
+		return std::move(makeUnique<NormalActionPermit>(usp.appState, statesToSet));
 	}
 
 	/// Shared body for the sliders updating the image settings
-	unique_ptr<ActionPermit> updateImgSettingDemand(ControlPanel &cp,
-													volatile AppStateType &appState,
-													set<const cv::String> &slidersRestoringValue,
-													const cv::String * const pLuckySliderName,
-													const String &controlName) {
+	uniquePtr<ActionPermit> updateImgSettingDemand(UpdateSettingsParams &usp) {
 		return std::move(
-			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
+			updateSettingDemand(usp,
 				ST(ImgTransform) | ST(UpdateImg) | ST(LoadAllSettings) | ST(SaveAllSettings),
 				"Please don't update the image settings "
 					"while they're saved "
@@ -218,14 +232,9 @@ namespace {
 	}
 
 	/// Shared body for the controls updating the symbols settings
-	unique_ptr<ActionPermit> updateSymSettingDemand(ControlPanel &cp,
-													volatile AppStateType &appState,
-													set<const cv::String> &slidersRestoringValue,
-													const cv::String * const pLuckySliderName,
-													const String &controlName,
-													bool isSlider = true) {
+	uniquePtr<ActionPermit> updateSymSettingDemand(UpdateSettingsParams &usp, bool isSlider = true) {
 		return std::move(
-			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
+			updateSettingDemand(usp,
 				ST(ImgTransform)  | ST(UpdateSymSettings) | ST(LoadAllSettings) | ST(SaveAllSettings),
 				"Please don't update the symbols settings "
 					"before the completion of similar previous updates, "
@@ -235,13 +244,9 @@ namespace {
 	}
 
 	/// Shared body for the sliders updating the match settings
-	unique_ptr<ActionPermit> updateMatchSettingDemand(ControlPanel &cp,
-													  volatile AppStateType &appState,
-													  set<const cv::String> &slidersRestoringValue,
-													  const cv::String * const pLuckySliderName,
-													  const String &controlName) {
+	uniquePtr<ActionPermit> updateMatchSettingDemand(UpdateSettingsParams &usp) {
 		return std::move(
-			updateSettingDemand(cp, appState, slidersRestoringValue, pLuckySliderName, controlName,
+			updateSettingDemand(usp,
 				ST(ImgTransform) | ST(LoadAllSettings) | ST(LoadMatchSettings)
 					| ST(SaveAllSettings) | ST(SaveMatchSettings),
 				"Please don't update the match aspects settings "
@@ -252,24 +257,25 @@ namespace {
 	}
 } // anonymous namespace
 
-unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
+uniquePtr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 	if(independentActions.find(&controlName) != itEndIndepActions)
 		return std::move(
-			make_unique<NoTraceActionPermit>());
+			makeUnique<NoTraceActionPermit>());
+
+	UpdateSettingsParams usp(*this, appState, slidersRestoringValue, pLuckySliderName, controlName);
 
 	if(imgSettingsSliders.find(&controlName) != itEndImgSettSliders)
 		return std::move(
-			updateImgSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+			updateImgSettingDemand(usp));
 
 	const auto it = symSettingsControls.find(&controlName);
 	if(it != itEndSymSettCtrls)
 		return std::move(
-			updateSymSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName,
-									it->second));
+			updateSymSettingDemand(usp, it->second));
 
 	if(matchAspectsSliders.find(&controlName) != itEndMatchAspSliders)
 		return std::move(
-			updateMatchSettingDemand(*this, appState, slidersRestoringValue, pLuckySliderName, controlName));
+			updateMatchSettingDemand(usp));
 
 	LockAppState lock; // the actions from above who affect appState are guarded individually
 
@@ -285,7 +291,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 			return nullptr;
 		}
 
-		return std::move(make_unique<NormalActionPermit>(appState, ST(UpdateImg)));
+		return std::move(makeUnique<NormalActionPermit>(appState, ST(UpdateImg)));
 	}
 
 	if(&controlName == &ControlPanel_transformImgLabel) {
@@ -303,7 +309,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, ST(ImgTransform)));
+		return std::move(makeUnique<NormalActionPermit>(appState, ST(ImgTransform)));
 	}
 	
 	if(&controlName == &ControlPanel_restoreDefaultsLabel) {
@@ -321,7 +327,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState,
+		return std::move(makeUnique<NormalActionPermit>(appState,
 				ST(LoadMatchSettings) | ST(UpdateMatchSettings)));
 	}
 	
@@ -338,7 +344,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, ST(SaveMatchSettings)));
+		return std::move(makeUnique<NormalActionPermit>(appState, ST(SaveMatchSettings)));
 	}
 	
 	if(&controlName == &ControlPanel_loadSettingsLabel) {
@@ -356,7 +362,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState,
+		return std::move(makeUnique<NormalActionPermit>(appState,
 				ST(LoadAllSettings) | ST(UpdateImgSettings)
 					| ST(UpdateSymSettings) | ST(UpdateMatchSettings)));
 	}
@@ -375,7 +381,7 @@ unique_ptr<ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 
 			return nullptr;
 		}
-		return std::move(make_unique<NormalActionPermit>(appState, ST(SaveAllSettings)));
+		return std::move(makeUnique<NormalActionPermit>(appState, ST(SaveAllSettings)));
 	}
 	
 	THROW_WITH_VAR_MSG("No handling yet for " + controlName + " in " __FUNCTION__, domain_error);

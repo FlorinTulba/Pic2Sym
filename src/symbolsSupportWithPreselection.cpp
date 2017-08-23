@@ -52,7 +52,7 @@ void SymsSupportWithPreselection::computeClusterRepresentative(const vector<cons
 															   int symSz, double invClusterSz,
 															   Mat &synthesizedSym, Mat &negSym) const {
 	Mat negSynthesizedSym(symSz, symSz, CV_64FC1, Scalar(0.));
-	for(const auto pSymData : clusterSyms) {
+	for(const ISymData *pSymData : clusterSyms) {
 		if(!pSymData->getNegSym().empty()) // A non-blank normal-size symbol can become a blank when shrunken
 			negSynthesizedSym += pSymData->getNegSym();
 	}

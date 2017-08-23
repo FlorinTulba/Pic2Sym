@@ -46,7 +46,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <memory>
+#include "std_memory.h"
 
 #pragma warning ( pop )
 
@@ -67,11 +67,11 @@ public:
 /// Base class for performing conversions from and to slider range
 class SliderConverter /*abstract*/ {
 protected:
-	std::unique_ptr<const SliderConvParams> sp; ///< parameters required for interpreting/generating slider values
+	std::uniquePtr<const SliderConvParams> sp; ///< parameters required for interpreting/generating slider values
 
 public:
 	/// Take ownership of the parameter
-	SliderConverter(std::unique_ptr<const SliderConvParams> sp_) : sp(std::move(sp_)) {}
+	SliderConverter(std::uniquePtr<const SliderConvParams> sp_) : sp(std::move(sp_)) {}
 
 	SliderConverter(const SliderConverter&) = delete;
 	void operator=(const SliderConverter&) = delete;

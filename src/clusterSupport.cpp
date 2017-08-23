@@ -50,10 +50,10 @@
 
 using namespace std;
 
-ClustersSupport::ClustersSupport(ClusterEngine &ce_, unique_ptr<SymsSupport> ss_, VSymData &symsSet_) :
+ClustersSupport::ClustersSupport(ClusterEngine &ce_, uniquePtr<SymsSupport> ss_, VSymData &symsSet_) :
 	ce(ce_), ss(move(ss_)), symsSet(symsSet_) {}
 
-void ClustersSupport::groupSyms(const string &fontType/* = ""*/) {
+void ClustersSupport::groupSyms(const stringType &fontType/* = ""*/) {
 	// Clustering on symsSet
 	ce.process(symsSet, fontType);
 }
@@ -65,10 +65,10 @@ void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerClus
 	permutation.reserve(symsCount);
 
 	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
-		auto &symsIndices = symsIndicesPerCluster[i];
+		vector<unsigned> &symsIndices = symsIndicesPerCluster[(size_t)i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.push_back(make_unique<const ClusterData>(symsSet, offset, symsIndices, *ss)); // needs symsSet[symsIndices] !!
+		clusters.push_back(makeUnique<const ClusterData>(symsSet, offset, symsIndices, *ss)); // needs symsSet[symsIndices] !!
 
 		for(const auto idx : symsIndices)
 			permutation.push_back(idx);
@@ -82,7 +82,7 @@ void ClustersSupport::delimitGroups(vector<vector<unsigned>> &symsIndicesPerClus
 	VSymData newSymsSet;
 	newSymsSet.reserve(symsCount);
 	for(const auto idx : permutation)
-		newSymsSet.push_back(move(symsSet[idx]));
+		newSymsSet.push_back(move(symsSet[(size_t)idx]));
 	symsSet = move(newSymsSet);
 }
 

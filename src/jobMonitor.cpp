@@ -53,7 +53,7 @@
 
 using namespace std;
 
-JobMonitor::JobMonitor(const string &monitoredActivity, std::shared_ptr<IProgressNotifier> userNotifier_,
+JobMonitor::JobMonitor(const stringType &monitoredActivity, std::sharedPtr<IProgressNotifier> userNotifier_,
 					   double minProgressForUserNotifications_) :
 		AbsJobMonitor(monitoredActivity), notifier(userNotifier_),
 
@@ -79,10 +79,10 @@ void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer
 
 	// Estimated start moment of each task can be deduced from estimated total times of previous tasks
 	double contribStart;
-	details[0] = TaskDetails(0., contribStart = totalContribValues[0]);
+	details[0ULL] = TaskDetails(0., contribStart = totalContribValues[0ULL]);
 	for(unsigned i = 1U; i < totalContribItems; ++i) {
-		const double totalTaskContrib = totalContribValues[i];
-		details[i] = TaskDetails(contribStart, totalTaskContrib);
+		const double totalTaskContrib = totalContribValues[(size_t)i];
+		details[(size_t)i] = TaskDetails(contribStart, totalTaskContrib);
 		contribStart += totalTaskContrib;
 	}
 
@@ -94,7 +94,7 @@ void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer
 }
 
 void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {
-	const auto &taskDetails = details.at(taskSeqId);
+	const TaskDetails &taskDetails = details.at(taskSeqId);
 	progress_ = taskDetails.contribStart + taskProgress * taskDetails.totalContrib;
 
 	// Notify the user only as frequently as demanded

@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #include <opencv2/core/core.hpp>
 
@@ -50,7 +50,7 @@
 /// Interface for providing basic information about an image
 struct IBasicImgData /*abstract*/ {
 	virtual const cv::Mat& original() const = 0;	///< @return the original image
-	virtual const std::string& name() const = 0;	///< @return the stem of the image file name
+	virtual const std::stringType& name() const = 0;	///< @return the stem of the image file name
 	virtual bool isColor() const = 0;				///< color / grayscale image
 
 	virtual ~IBasicImgData() = 0 {}

@@ -257,6 +257,6 @@ MatchSettings& MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
 	return *this;
 }
 
-unique_ptr<IMatchSettings> MatchSettings::clone() const {
-	return make_unique<MatchSettings>(*this);
+uniquePtr<IMatchSettings> MatchSettings::clone() const {
+	return makeUnique<MatchSettings>(*this);
 }

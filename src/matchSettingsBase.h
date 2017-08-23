@@ -41,9 +41,9 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
+#include "std_memory.h"
 #include <iostream>
-#include <memory>
 
 #pragma warning ( pop )
 
@@ -96,10 +96,10 @@ struct IMatchSettings /*abstract*/ {
 #endif // UNIT_TESTING not defined
 
 	/// Provides a representation of the settings in a verbose manner or not
-	virtual const std::string toString(bool verbose) const = 0;
+	virtual const std::stringType toString(bool verbose) const = 0;
 
 	/// @return a clone of current settings
-	virtual std::unique_ptr<IMatchSettings> clone() const = 0;
+	virtual std::uniquePtr<IMatchSettings> clone() const = 0;
 
 	virtual ~IMatchSettings() = 0 {}
 };

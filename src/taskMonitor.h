@@ -67,7 +67,7 @@ public:
 	The constructor calls parent_.monitorNewTask(*this) to initialize field seqId and
 	to let the parent job know about this new task.
 	*/
-	TaskMonitor(const std::string &monitoredActivity, AbsJobMonitor &parent_);
+	TaskMonitor(const std::stringType &monitoredActivity, AbsJobMonitor &parent_);
 	void operator=(const TaskMonitor&) = delete;
 
 	void setTotalSteps(size_t totalSteps_) override;	///< total steps required to finish the activity

@@ -53,7 +53,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DisableSpecificWarnings>4503</DisableSpecificWarnings>
@@ -78,7 +78,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4503</DisableSpecificWarnings>
@@ -178,14 +178,16 @@
     <None Include="res\vga855.fon" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h" />
+    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h" />
+    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h" />
+    <ClInclude Include="adaptedIncludes\std_memory.h" />
+    <ClInclude Include="adaptedIncludes\std_string.h" />
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\bestMatch.h" />
     <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\blurBase.h" />
-    <ClInclude Include="src\boost_bimap_bimap.h" />
-    <ClInclude Include="src\boost_filesystem_operations.h" />
-    <ClInclude Include="src\boost_filesystem_path.h" />
     <ClInclude Include="src\boxBlur.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\cachedData.h" />

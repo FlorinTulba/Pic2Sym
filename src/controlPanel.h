@@ -45,9 +45,10 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
+#include "std_memory.h"
 #include <set>
 #include <map>
-#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -78,7 +79,7 @@ protected:
 	- the addresses of the names of the sliders corresponding to the matching aspects
 	- the slider to/from value converter for each such slider
 	*/
-	static const std::map<const cv::String*, std::shared_ptr<const SliderConverter>>& slidersConverters();
+	static const std::map<const cv::String*, std::sharedPtr<const SliderConverter>>& slidersConverters();
 
 	IControlPanelActions &performer;	///< the delegate responsible to perform selected actions
 	const ISettings &cfg;				///< the settings, required to (re)initialize the sliders
@@ -148,11 +149,11 @@ public:
 		  been consumed and now the restoration of the previous value can finally proceed
 		  at the termination of this thread
 	*/
-	void restoreSliderValue(const cv::String &trName, const std::string &errText);
+	void restoreSliderValue(const cv::String &trName, const std::stringType &errText);
 
 	/// Authorizes the action of the control whose name is provided as parameter.
 	/// When the action isn't allowed returns nullptr.
-	std::unique_ptr<ActionPermit> actionDemand(const cv::String &controlName);
+	std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName);
 
 	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
 	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above

@@ -44,7 +44,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <vector>
 
 #include <opencv2/core/core.hpp>
@@ -70,7 +70,7 @@ class TransformSupport;
 class Transformer : public ITransformCompletion {
 protected:
 	IController &ctrler;	///< controller
-	std::shared_ptr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
+	std::sharedPtr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
 	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
 
 	const ISettings &cfg;		///< general configuration
@@ -79,14 +79,14 @@ protected:
 
 	cv::Mat result;				///< the result of the transformation
 
-	std::string studiedCase;	///< unique id for the studied case
+	std::stringType studiedCase;	///< unique id for the studied case
 	cv::Mat resized;			///< resized version of the original
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
 
-	std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatches;	///< temporary best matches
+	std::vector<std::vector<std::uniquePtr<IBestMatch>>> draftMatches;	///< temporary best matches
 
 	// Keep this after previous fields, as it depends on them
-	std::unique_ptr<TransformSupport> transformSupport;	///< initializes and updates draft matches
+	std::uniquePtr<TransformSupport> transformSupport;	///< initializes and updates draft matches
 
 	double durationS = 0.;		///< transformation duration in seconds
 
@@ -118,6 +118,7 @@ protected:
 public:
 	Transformer(IController &ctrler_, const ISettings &cfg_,
 				MatchEngine &me_, IBasicImgData &img_);
+	Transformer(const Transformer&) = delete;
 	void operator=(const Transformer&) = delete;
 
 	const cv::Mat& getResult() const override final { return result; }

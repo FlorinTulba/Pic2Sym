@@ -45,11 +45,11 @@
 /// Holds the best match found at a given time
 class BestMatch : public IBestMatch {
 protected:
-	const std::unique_ptr<const IPatch> patch;	///< the patch to approximate, together with some other details
+	const std::uniquePtr<const IPatch> patch;	///< the patch to approximate, together with some other details
 
 	cv::Mat approx;							///< the approximation of the patch
 	
-	std::unique_ptr<IMatchParamsRW> params;	///< parameters of the match (none for blur-only approximations)
+	std::uniquePtr<IMatchParamsRW> params;	///< parameters of the match (none for blur-only approximations)
 
 	/// Index within vector&lt;DerivedFrom_ISymData&gt; none if patch approximation is blur-based only.
 	boost::optional<unsigned> symIdx;
@@ -84,7 +84,7 @@ public:
 	const boost::optional<const IMatchParams&> getParams() const override final;
 
 	/// Parameters of the match
-	std::unique_ptr<IMatchParamsRW>& refParams() override final;
+	const std::uniquePtr<IMatchParamsRW>& refParams() const override final;
 
 	/// Index within vector&lt;DerivedFrom_ISymData&gt;. none if patch approximation is blur-based only.
 	const boost::optional<unsigned>& getSymIdx() const override final;
@@ -135,8 +135,12 @@ public:
 	@return is Unicode the charmap's encoding
 	*/
 	bool isUnicode() const override final;
+
 	/// Updates unicode field and returns the updated BestMatch object
 	BestMatch& setUnicode(bool unicode_) override final;
+
+	/// Provides a representation of the match
+	const std::wstringType toWstring() const override;
 
 #endif // defined _DEBUG || defined UNIT_TESTING
 };

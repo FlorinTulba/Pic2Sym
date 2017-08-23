@@ -19,15 +19,17 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h" />
+    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h" />
+    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h" />
+    <ClInclude Include="adaptedIncludes\std_memory.h" />
+    <ClInclude Include="adaptedIncludes\std_string.h" />
     <ClInclude Include="src\bestMatch.h" />
     <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\appState.h" />
     <ClInclude Include="src\blur.h" />
     <ClInclude Include="src\blurBase.h" />
-    <ClInclude Include="src\boost_bimap_bimap.h" />
-    <ClInclude Include="src\boost_filesystem_operations.h" />
-    <ClInclude Include="src\boost_filesystem_path.h" />
     <ClInclude Include="src\boxBlur.h" />
     <ClInclude Include="src\bulkySymsFilter.h" />
     <ClInclude Include="src\clusterAlg.h" />
@@ -362,7 +364,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
@@ -390,7 +392,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>

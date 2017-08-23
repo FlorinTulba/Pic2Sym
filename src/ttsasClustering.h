@@ -55,7 +55,7 @@ It was customized to:
 - allow choosing either the first suitable parent cluster, or considering only the best paternal match
 */
 struct TTSAS_Clustering : ClusterAlg {
-	static const std::string Name;	///< name of TTSAS algorithm from varConfig.txt
+	static const std::stringType Name;	///< name of TTSAS algorithm from varConfig.txt
 
 	/**
 	Performs clustering of a set of symbols.
@@ -68,7 +68,7 @@ struct TTSAS_Clustering : ClusterAlg {
 	*/
 	unsigned formGroups(const VSymData &symsToGroup,
 						std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-						const std::string &fontType = "") override;
+						const std::stringType &fontType = "") override;
 };
 
 #endif // H_TTSAS_CLUSTERING

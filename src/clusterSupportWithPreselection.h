@@ -52,7 +52,7 @@ protected:
 public:
 	/// Besides the parameters from the base constructor, it also needs tsp_ to get the tiny symbols
 	ClustersSupportWithPreselection(ITinySymsProvider &tsp_, ClusterEngine &ce_,
-									std::unique_ptr<SymsSupport> ss_, VSymData &symsSet_);
+									std::uniquePtr<SymsSupport> ss_, VSymData &symsSet_);
 
 	ClustersSupportWithPreselection(const ClustersSupportWithPreselection&) = delete;
 	ClustersSupportWithPreselection(ClustersSupportWithPreselection&&) = delete;
@@ -63,7 +63,7 @@ public:
 	Clusters symsSet and also the tiny symbols.
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void groupSyms(const std::string &fontType = "") override;
+	void groupSyms(const std::stringType &fontType = "") override;
 
 	/**
 	Rearranges symsSet and its tiny correspondent version.

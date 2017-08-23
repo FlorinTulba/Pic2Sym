@@ -57,15 +57,15 @@ CvWin::CvWin(const String &winName_) : winName(winName_) {
 	namedWindow(winName);
 }
 
-void CvWin::setTitle(const std::string &title) const {
+void CvWin::setTitle(const std::stringType &title) const {
 	setWindowTitle(winName, title);
 }
 
-void CvWin::setOverlay(const std::string &overlay, int timeoutMs/* = 0*/) const {
+void CvWin::setOverlay(const std::stringType &overlay, int timeoutMs/* = 0*/) const {
 	displayOverlay(winName, overlay, timeoutMs);
 }
 
-void CvWin::setStatus(const std::string &status, int timeoutMs/* = 0*/) const {
+void CvWin::setStatus(const std::stringType &status, int timeoutMs/* = 0*/) const {
 	displayStatusBar(winName, status, timeoutMs);
 }
 

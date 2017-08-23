@@ -69,7 +69,7 @@ struct UnreadableSymsFilter : public TSymFilter<UnreadableSymsFilter> {
 
 	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
-	UnreadableSymsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	UnreadableSymsFilter(std::uniquePtr<ISymFilter> nextFilter_ = nullptr);
 	UnreadableSymsFilter(const UnreadableSymsFilter&) = delete;
 	void operator=(const UnreadableSymsFilter&) = delete;
 };

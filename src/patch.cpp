@@ -87,6 +87,6 @@ const Mat& Patch::matrixToApprox() const {
 	return grayD;
 }
 
-unique_ptr<const IPatch> Patch::clone() const {
-	return make_unique<const Patch>(*this);
+uniquePtr<const IPatch> Patch::clone() const {
+	return makeUnique<const Patch>(*this);
 }

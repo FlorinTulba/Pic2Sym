@@ -72,19 +72,19 @@ bool MatchAspect::enabled() const {
 	return k > 0.;
 }
 
-const vector<const string>& MatchAspect::aspectNames() {
+const vector<const stringType>& MatchAspect::aspectNames() {
 	return registeredAspects();
 }
 
-vector<const string>& MatchAspect::registeredAspects() {
+vector<const stringType>& MatchAspect::registeredAspects() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static vector<const string> names;
+	static vector<const stringType> names;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	return names;
 }
 
-MatchAspect::NameRegistrator::NameRegistrator(const string &aspectType) {
+MatchAspect::NameRegistrator::NameRegistrator(const stringType &aspectType) {
 	registeredAspects().push_back(aspectType);
 }
 

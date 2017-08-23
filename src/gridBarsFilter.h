@@ -70,7 +70,7 @@ struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
 
 	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
 
-	GridBarsFilter(std::unique_ptr<ISymFilter> nextFilter_ = nullptr);
+	GridBarsFilter(std::uniquePtr<ISymFilter> nextFilter_ = nullptr);
 	GridBarsFilter(const GridBarsFilter&) = delete;
 	void operator=(const GridBarsFilter&) = delete;
 

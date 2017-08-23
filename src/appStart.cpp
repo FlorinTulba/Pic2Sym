@@ -52,7 +52,7 @@ using namespace boost::filesystem;
 
 path AppStart::folder;
 
-void AppStart::determinedBy(const string &appFile) {
+void AppStart::determinedBy(const stringType &appFile) {
 	if(!folder.empty())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " shouldn't be called multiple times!", logic_error);
 

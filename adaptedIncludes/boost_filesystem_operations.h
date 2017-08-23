@@ -36,37 +36,28 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_BOOST_BIMAP_BIMAP
-#define H_BOOST_BIMAP_BIMAP
+#ifndef H_BOOST_FILESYSTEM_OPERATIONS
+#define H_BOOST_FILESYSTEM_OPERATIONS
 
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifdef AI_REVIEWER_CHECK
 
-#include <map>
+#include <sys/types.h>
+#include "boost_filesystem_path.h"
 
 namespace boost {
-	namespace bimaps {
-		template<class Left, typename Right>
-		class bimap {
-		public:
-			std::map<Left, Right> left;
-			std::map<Right, Left> right;
+	namespace filesystem {
+		path current_path() { return path(); }
+		path absolute(...) { return path(); }
+		bool exists(...) { return false; }
+		bool create_directory(...) { return false; }
+		std::time_t last_write_time(...) { return 0; }
+		void rename(...) {}
+	} // end namespace filesystem
+} // end namespace boost
 
-			typedef typename std::map<Left, Right>::value_type value_type;
-
-			bimap(...) {}
-
-			void clear() {}
-			size_t size() const { return 0ULL; }
-
-			void insert(...) {}
-		};
-	}
-}
-
-#else // AI_REVIEWER_CHECK not defined
-#include <boost/bimap/bimap.hpp>
+#else // AI_REVIEWER_CHECK was not defined
+#include <boost/filesystem/operations.hpp>
 #endif // AI_REVIEWER_CHECK
 
-
-#endif // H_BOOST_BIMAP_BIMAP
+#endif // H_BOOST_FILESYSTEM_OPERATIONS

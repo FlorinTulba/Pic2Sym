@@ -80,7 +80,7 @@ extern unsigned TinySymsSz();
 namespace {
 	/// Returns a configured instance of MatchAssessorNoSkip or MatchAssessorSkip,
 	/// depending on UseSkipMatchAspectsHeuristic
-	MatchAssessor& specializedInstance(const vector<std::shared_ptr<MatchAspect>> &availAspects_) {
+	MatchAssessor& specializedInstance(const vector<std::sharedPtr<MatchAspect>> &availAspects_) {
 		if(UseSkipMatchAspectsHeuristic) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 			static MatchAssessorSkip instSkip;
@@ -112,11 +112,12 @@ namespace {
 								 ScoreThresholds &scoresToBeatBySyms,
 								 IBestMatch &draftMatch) {
 		bool betterMatchFound = false;
-		const auto &assessor = me.assessor();
-		auto &mp = draftMatch.refParams();
+		const MatchAssessor &assessor = me.assessor();
+		const uniquePtr<IMatchParamsRW> &mp = draftMatch.refParams();
+		assert(mp);
 		for(unsigned idx = fromIdx; idx <= lastIdx; ++idx) {
 			mp->reset(); // preserves patch-invariant fields
-			const auto &symData = *symsSet[idx];
+			const ISymData &symData = *symsSet[(size_t)idx];
 			double score;
 			if(assessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, *mp, score)) {
 				draftMatch.update(score, symData.getCode(), idx, symData);
@@ -134,15 +135,15 @@ MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective
 			ce(fe_, symsSet),
 			matchSupport(IPreselManager::concrete().createMatchSupport(
 				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
-	std::shared_ptr<MatchAspect> aspect;
-	for(const auto &aspectName: MatchAspect::aspectNames())
+	std::sharedPtr<MatchAspect> aspect;
+	for(const stringType &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));
 
 	matchAssessor.updateEnabledMatchAspectsCount();
 }
 
 void MatchEngine::updateSymbols() {
-	const string idForSymsToUse = getIdForSymsToUse(); // throws for invalid cmap/size
+	const stringType idForSymsToUse = getIdForSymsToUse(); // throws for invalid cmap/size
 	if(symsIdReady.compare(idForSymsToUse) == 0)
 		return; // already up to date
 
@@ -153,7 +154,7 @@ void MatchEngine::updateSymbols() {
 	extern const bool PrepareMoreGlyphsAtOnce;
 
 	symsSet.clear();
-	const auto &rawSyms = fe.symsSet();
+	const VPixMapSym &rawSyms = fe.symsSet();
 	const int symsCount = (int)rawSyms.size();
 	symsSet.reserve((size_t)symsCount);
 
@@ -167,7 +168,7 @@ void MatchEngine::updateSymbols() {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
 		// Computing SymData fields separately, to keep the critical emplace from below as short as possible
-		unique_ptr<const ISymData> newSym = make_unique<const SymData>(*rawSyms[(size_t)i], sz, false);
+		uniquePtr<const ISymData> newSym = makeUnique<const SymData>(*rawSyms[(size_t)i], sz, false);
 
 #pragma omp critical // ordered instead of critical would be useful only for debugging
 		symsSet.emplace_back(move(newSym));
@@ -189,7 +190,7 @@ unsigned MatchEngine::getSymsCount() const {
 	return (unsigned)symsSet.size();
 }
 
-const vector<std::shared_ptr<MatchAspect>>& MatchEngine::availMatchAspects() const {
+const vector<std::sharedPtr<MatchAspect>>& MatchEngine::availMatchAspects() const {
 	return availAspects;
 }
 
@@ -223,7 +224,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	const VSymData &inspectedSet = ce.support().clusteredSyms();
 
 	const Mat &toApprox = draftMatch.getPatch().matrixToApprox();
-	auto &mp = draftMatch.refParams();
+	const uniquePtr<IMatchParamsRW> &mp = draftMatch.refParams();
 	assert(mp);
 	ScoreThresholds scoresToBeatBySyms;
 	matchAssessor.scoresToBeat(draftMatch.getScore(), scoresToBeatBySyms);
@@ -235,8 +236,8 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 		locateIdx(ce.getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
 		locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
 
-		const auto &clusters = ce.getClusters();
-		const bool previouslyQualified = (clusters[fromCluster]->getSz() > 1U) &&
+		const VClusterData &clusters = ce.getClusters();
+		const bool previouslyQualified = (clusters[(size_t)fromCluster]->getSz() > 1U) &&
 						(draftMatch.getLastPromisingNontrivialCluster() == fromCluster);
 
 		// Multi-element clusters still qualify with slightly inferior scores,
@@ -248,7 +249,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 		// 1st cluster might have already been qualified for thorough examination
 		if(previouslyQualified) { // cluster already qualified
 			const unsigned upperLimit = (fromCluster < lastCluster) ?
-				clusters[fromCluster]->getSz() : lastSymIdxWithinLastCluster;
+				clusters[(size_t)fromCluster]->getSz() : lastSymIdxWithinLastCluster;
 			if(checkRangeWithinCluster(firstSymIdxWithinFromCluster, upperLimit, *this, toApprox, 
 									inspectedSet, cd, scoresToBeatBySyms, draftMatch)) {
 				scoresToBeatByClusters.update(InvestigateClusterEvenForInferiorScoreFactor,
@@ -268,7 +269,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 		// Examine all remaining unchecked clusters (if any) within current batch
 		for(unsigned clusterIdx = fromCluster; clusterIdx <= lastCluster; ++clusterIdx) {
-			const auto &cluster = clusters[clusterIdx];
+			const uniquePtr<const IClusterData> &cluster = clusters[(size_t)clusterIdx];
 
 			// Current cluster attempts qualification - it computes its own score
 			mp->reset(); // preserves patch-invariant fields
@@ -276,7 +277,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 			if(cluster->getSz() == 1U) { // Trivial cluster
 				// Single element clusters have same score as their content.
 				const unsigned symIdx = cluster->getIdxOfFirstSym();
-				const auto &symData = *inspectedSet[symIdx];
+				const ISymData &symData = *inspectedSet[(size_t)symIdx];
 				if(matchAssessor.isBetterMatch(toApprox, symData, cd, scoresToBeatBySyms, *mp, score)) {
 					draftMatch.update(score, symData.getCode(), symIdx, symData);
 					matchAssessor.scoresToBeat(score, scoresToBeatBySyms);
@@ -309,7 +310,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	} else { // Matching is performed directly with individual symbols, not with clusters
 		// Examine all remaining symbols within current batch
 		for(unsigned symIdx = fromSymIdx; symIdx < upperSymIdx; ++symIdx) {
-			const auto &symData = *inspectedSet[symIdx];
+			const ISymData &symData = *inspectedSet[(size_t)symIdx];
 
 			mp->reset(); // preserves patch-invariant fields
 

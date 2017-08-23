@@ -56,7 +56,7 @@ struct ProportionalSliderValue : SliderConverter {
 	};
 
 	/// Take ownership of the parameter
-	ProportionalSliderValue(std::unique_ptr<const Params> sp_);
+	ProportionalSliderValue(std::uniquePtr<const Params> sp_);
 
 	ProportionalSliderValue(const ProportionalSliderValue&) = delete;
 	void operator=(const ProportionalSliderValue&) = delete;

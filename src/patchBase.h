@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <memory>
+#include "std_memory.h"
 
 #include <opencv2/core/core.hpp>
 
@@ -65,7 +65,7 @@ struct IPatch /*abstract*/ {
 
 	virtual ~IPatch() = 0 {}
 
-	virtual std::unique_ptr<const IPatch> clone() const = 0;	///< @return a clone of itself
+	virtual std::uniquePtr<const IPatch> clone() const = 0;	///< @return a clone of itself
 };
 
 #endif // H_PATCH_BASE

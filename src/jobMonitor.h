@@ -48,8 +48,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <limits>
-#include <memory>
 
 #pragma warning ( pop )
 
@@ -68,7 +68,7 @@ protected:
 					contribStart(contribStart_), totalContrib(totalContrib_) {}
 	};
 
-	std::shared_ptr<IProgressNotifier> notifier;	///< needed for reporting the progress of the job to the user
+	std::sharedPtr<IProgressNotifier> notifier;	///< needed for reporting the progress of the job to the user
 	double minProgressForNotifications;	///< how frequent should be the user notifications (ex.: 0.05 for reporting only every 5%)
 
 	/**
@@ -92,7 +92,7 @@ public:
 	Provides the job with its name, a notifier that informs the user about the progress and
 	the minimum threshold for how frequent the user notifications should be issued.
 	*/
-	JobMonitor(const std::string &monitoredActivity, std::shared_ptr<IProgressNotifier> userNotifier_,
+	JobMonitor(const std::stringType &monitoredActivity, std::sharedPtr<IProgressNotifier> userNotifier_,
 			   double minProgressForUserNotifications_);
 	void operator=(const JobMonitor&) = delete;
 

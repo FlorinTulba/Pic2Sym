@@ -41,8 +41,12 @@
 
 #pragma warning ( push, 0 )
 
+#if defined _DEBUG || defined UNIT_TESTING
+#include "std_string.h"
+#endif // defined _DEBUG || defined UNIT_TESTING
+
+#include "std_memory.h"
 #include <iostream>
-#include <memory>
 
 #include <boost/optional/optional.hpp>
 
@@ -69,7 +73,7 @@ struct IBestMatch /*abstract*/ {
 	virtual const boost::optional<const IMatchParams&> getParams() const = 0;
 
 	/// Parameters of the match
-	virtual std::unique_ptr<IMatchParamsRW>& refParams() = 0;
+	virtual const std::uniquePtr<IMatchParamsRW>& refParams() const = 0;
 
 	/// Index within vector&lt;DerivedFrom_ISymData&gt;. none if patch approximation is blur-based only.
 	virtual const boost::optional<unsigned>& getSymIdx() const = 0;
@@ -117,9 +121,12 @@ struct IBestMatch /*abstract*/ {
 	@return is Unicode the charmap's encoding
 	*/
 	virtual bool isUnicode() const = 0;
+
 	/// Updates unicode field; @return itself
 	virtual IBestMatch& setUnicode(bool unicode_) = 0;
 
+	/// Provides a representation of the match
+	virtual const std::wstringType toWstring() const = 0;
 #endif // defined _DEBUG || defined UNIT_TESTING
 
 	/// shouldn't assign, as 'patch' member is supposed to remain the same and assign can't guarantee it
@@ -128,6 +135,6 @@ struct IBestMatch /*abstract*/ {
 	virtual ~IBestMatch() = 0 {}
 };
 
-std::wostream& operator<<(std::wostream &os, const IBestMatch &bm);
+std::wostream& operator<<(std::wostream &wos, const IBestMatch &bm);
 
 #endif // H_BEST_MATCH_BASE

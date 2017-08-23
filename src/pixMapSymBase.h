@@ -41,8 +41,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <vector>
-#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -93,6 +93,6 @@ struct IPixMapSym /*abstract*/ {
 };
 
 /// Vector of IPixMapSym objects
-typedef std::vector<std::unique_ptr<const IPixMapSym>> VPixMapSym;
+typedef std::vector<std::uniquePtr<const IPixMapSym>> VPixMapSym;
 
 #endif // H_PIXMAP_SYM_BASE

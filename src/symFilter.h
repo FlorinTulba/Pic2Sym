@@ -43,24 +43,24 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
+#include "std_memory.h"
 #include <map>
-#include <memory>
-#include <string>
 
 #pragma warning ( pop )
 
 /// Base class of the template class TSymFilter from below, to keep the template as thin as possible
 struct SymFilter /*abstract*/ : ISymFilter {
 	/// Returns the name of the filter identified by filterId_
-	static const std::string& filterName(unsigned filterId_);
+	static const std::stringType& filterName(unsigned filterId_);
 
 private: // SymFilter cannot be directly derived, except by the friend TSymFilter declared below
 	template<class T> friend struct TSymFilter;
 
 	/// filterId - filterName associations
-	static std::map<unsigned, const std::string> filterTypes;
+	static std::map<unsigned, const std::stringType> filterTypes;
 
-	std::unique_ptr<ISymFilter> nextFilter;	///< null or a derivate from SymFilter
+	std::uniquePtr<ISymFilter> nextFilter;	///< null or a derivate from SymFilter
 	const unsigned filterId;				///< id of the filter
 
 	/**
@@ -72,8 +72,8 @@ private: // SymFilter cannot be directly derived, except by the friend TSymFilte
 
 	@throw invalid_argument for a non-unique filterId_ or for a non-unique filterName
 	*/
-	SymFilter(unsigned filterId_, const std::string &filterName,
-			  std::unique_ptr<ISymFilter> nextFilter_);
+	SymFilter(unsigned filterId_, const std::stringType &filterName,
+			  std::uniquePtr<ISymFilter> nextFilter_);
 	SymFilter(const SymFilter&) = delete;
 	void operator=(const SymFilter&) = delete;
 
@@ -101,8 +101,8 @@ struct TSymFilter /*abstract*/ : SymFilter {
 
 	@throw invalid_argument for a non-unique filterId_ or for a non-unique filterName
 	*/
-	TSymFilter(unsigned filterId_, const std::string &filterName,
-			   std::unique_ptr<ISymFilter> nextFilter_) :
+	TSymFilter(unsigned filterId_, const std::stringType &filterName,
+			   std::uniquePtr<ISymFilter> nextFilter_) :
 		SymFilter(filterId_, filterName, std::move(nextFilter_)) {}
 
 	TSymFilter(const TSymFilter&) = delete;

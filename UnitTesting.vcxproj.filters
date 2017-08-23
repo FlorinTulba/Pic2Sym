@@ -500,15 +500,6 @@
     <ClInclude Include="src\updateSymSettingsBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\boost_bimap_bimap.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\boost_filesystem_operations.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\boost_filesystem_path.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\glyphsProgressTrackerBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -579,6 +570,21 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\transformCompletion.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\std_memory.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\std_string.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>

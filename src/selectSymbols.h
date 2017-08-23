@@ -43,8 +43,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <list>
-#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -69,13 +69,13 @@ protected:
 
 	const CmapPerspective &cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
-	const std::shared_ptr<CmapInspect> &pCmi;
+	const std::sharedPtr<CmapInspect> &pCmi;
 
 public:
 	SelectSymbols(const IController &ctrler_,
 				  const MatchEngine &me_,
 				  const CmapPerspective &cmP_,
-				  const std::shared_ptr<CmapInspect> &pCmi_);
+				  const std::sharedPtr<CmapInspect> &pCmi_);
 
 	void operator=(const SelectSymbols&) = delete;
 

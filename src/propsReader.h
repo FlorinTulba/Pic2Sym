@@ -42,6 +42,7 @@
 #pragma warning ( push, 0 )
 
 #include "boost_filesystem_path.h"
+#include "std_string.h"
 
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifndef AI_REVIEWER_CHECK
@@ -84,10 +85,10 @@ public:
 	@throw ptree_bad_data when prop exists, but it cannot be converted to type T
 	*/
 	template<typename T>
-	T read(const std::string &prop) const {
+	T read(const std::stringType &prop) const {
 #ifndef AI_REVIEWER_CHECK
 		try {
-			return std::move(props.get<T>(prop));
+			return std::move(props.get<T>((string)prop));
 		} catch(boost::property_tree::ptree_bad_path&) {
 			cerr<<"Property '"<<prop<<"' is missing from '"<<propsFile<<"' !"<<endl;
 		} catch(boost::property_tree::ptree_bad_data&) {

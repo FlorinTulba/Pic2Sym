@@ -58,27 +58,27 @@ using namespace cv;
 using namespace boost::filesystem;
 
 extern unsigned TinySymsSz();
-extern const string CannotLoadFontErrSuffix;
+extern const stringType CannotLoadFontErrSuffix;
 
-SymsLoadingFailure::SymsLoadingFailure(const string& _Message) :
+SymsLoadingFailure::SymsLoadingFailure(const stringType& _Message) :
 	runtime_error(_Message.c_str()) {}
 
 SymsLoadingFailure::SymsLoadingFailure(const char *_Message) :
 	runtime_error(_Message) {}
 
-void SymsLoadingFailure::informUser(const string &msg) const {
+void SymsLoadingFailure::informUser(const stringType &msg) const {
 	ostringstream oss;
 	oss<<msg<<CannotLoadFontErrSuffix;
 	infoMsg(oss.str(), "Manageable Error");
 }
 
-TinySymsLoadingFailure::TinySymsLoadingFailure(const string& _Message) :
+TinySymsLoadingFailure::TinySymsLoadingFailure(const stringType& _Message) :
 	SymsLoadingFailure(_Message.c_str()) {}
 
 TinySymsLoadingFailure::TinySymsLoadingFailure(const char *_Message) :
 	SymsLoadingFailure(_Message) {}
 
-NormalSymsLoadingFailure::NormalSymsLoadingFailure(const string& _Message) :
+NormalSymsLoadingFailure::NormalSymsLoadingFailure(const stringType& _Message) :
 	SymsLoadingFailure(_Message.c_str()) {}
 
 NormalSymsLoadingFailure::NormalSymsLoadingFailure(const char *_Message) :
@@ -88,7 +88,7 @@ NormalSymsLoadingFailure::NormalSymsLoadingFailure(const char *_Message) :
 
 #include "appStart.h"
 
-bool FontEngine::isTinySymsDataSavedOnDisk(const string &fontType,
+bool FontEngine::isTinySymsDataSavedOnDisk(const stringType &fontType,
 										   boost::filesystem::path &tinySymsDataFile) {
 	if(fontType.empty())
 		return false;

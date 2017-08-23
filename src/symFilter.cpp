@@ -58,14 +58,14 @@ void SymFilterCache::setBoundingBox(unsigned height, unsigned width) {
 	bbAreaD = bbAreaU = height * width;
 }
 
-map<unsigned, const string> SymFilter::filterTypes;
+map<unsigned, const stringType> SymFilter::filterTypes;
 
-SymFilter::SymFilter(unsigned filterId_, const string &filterName,
-					 unique_ptr<ISymFilter> nextFilter_) : ISymFilter(),
-				nextFilter(nextFilter_ ? std::move(nextFilter_) : make_unique<DefSymFilter>()),
+SymFilter::SymFilter(unsigned filterId_, const stringType &filterName,
+					 uniquePtr<ISymFilter> nextFilter_) : ISymFilter(),
+				nextFilter(nextFilter_ ? std::move(nextFilter_) : makeUnique<DefSymFilter>()),
 				filterId(filterId_) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static set<const string> filterNames;
+	static set<const stringType> filterNames;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 #ifndef UNIT_TESTING
@@ -80,7 +80,7 @@ SymFilter::SymFilter(unsigned filterId_, const string &filterName,
 	filterNames.insert(filterName);
 }
 
-const string& SymFilter::filterName(unsigned filterId_) {
+const stringType& SymFilter::filterName(unsigned filterId_) {
 	auto it = filterTypes.find(filterId_), itEnd = filterTypes.end();
 	if(it != itEnd)
 		return it->second;

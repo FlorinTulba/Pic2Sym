@@ -44,8 +44,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
 #include <vector>
-#include <string>
 
 #pragma warning ( pop )
 
@@ -75,14 +75,14 @@ UNIT_TESTING should still have the constructors of the derived classes as public
 class MatchAspect /*abstract*/ : public IMatch {
 protected:
 	/// Provides a list of names of the already registered aspects
-	static std::vector<const std::string>& registeredAspects();
+	static std::vector<const std::stringType>& registeredAspects();
 
 	/// Helper class to populate registeredAspects.
 	/// Define a static private field of this type in each subclass using
 	/// REGISTER_MATCH_ASPECT and REGISTERED_MATCH_ASPECT defined below
 	struct NameRegistrator {
 		/// adds a new aspect name to registeredAspects
-		NameRegistrator(const std::string &aspectType);
+		NameRegistrator(const std::stringType &aspectType);
 	};
 
 	const double &k; ///< cached coefficient from IMatchSettings, corresponding to current aspect
@@ -115,34 +115,34 @@ public:
 	/// Providing a clue about how complex is this MatchAspect compared to the others
 	virtual double relativeComplexity() const = 0;
 
-	virtual const std::string& name() const = 0; ///< provides aspect's name
+	virtual const std::stringType& name() const = 0; ///< provides aspect's name
 
 	/// All aspects that are configured with coefficients > 0 are enabled; those with 0 are disabled
 	bool enabled() const;
 
 	/// Provides the list of names of all registered aspects
-	static const std::vector<const std::string>& aspectNames();
+	static const std::vector<const std::stringType>& aspectNames();
 };
 
 /// Place this call at the end of an aspect class to register (HEADER file).
 /// Definitions of 'NAME', 'nameRegistrator' and name() are provided by REGISTERED_MATCH_ASPECT.
 #define REGISTER_MATCH_ASPECT(AspectName) \
 	public: \
-		const std::string& name() const override;		/** provides aspect's name */ \
+		const std::stringType& name() const override;		/** provides aspect's name */ \
 	\
 	protected: \
-		static const std::string NAME;					/** aspect's name */ \
+		static const std::stringType NAME;					/** aspect's name */ \
 		static const NameRegistrator nameRegistrator;	/** Instance that registers this Aspect */ \
-		/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
+		/** '_Ref_count_obj' helps 'makeShared' create the object to point to */ \
 		friend class std::_Ref_count_obj<AspectName>
 
 /// Place this call in a SOURCE file, to define the entities declared by REGISTER_MATCH_ASPECT
 /// This is the definition of 'nameRegistrator'.
 #define REGISTERED_MATCH_ASPECT(AspectName) \
-	const std::string					AspectName::NAME(#AspectName); \
+	const std::stringType					AspectName::NAME(#AspectName); \
 	const AspectName::NameRegistrator	AspectName::nameRegistrator(#AspectName); \
 	\
-	const std::string& AspectName::name() const { return NAME; }
+	const std::stringType& AspectName::name() const { return NAME; }
 
 /*
 STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):

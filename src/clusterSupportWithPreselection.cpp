@@ -53,15 +53,15 @@ using namespace std;
 
 ClustersSupportWithPreselection::ClustersSupportWithPreselection(ITinySymsProvider &tsp_, 
 																 ClusterEngine &ce_, 
-																 unique_ptr<SymsSupport> ss_,
+																 uniquePtr<SymsSupport> ss_,
 																 VSymData &symsSet_) :
 	ClustersSupport(ce_, move(ss_), symsSet_), tsp(tsp_) {}
 
-void ClustersSupportWithPreselection::groupSyms(const string &fontType/* = ""*/) {
+void ClustersSupportWithPreselection::groupSyms(const stringType &fontType/* = ""*/) {
 	tinySymsSet.clear();
 	tinySymsSet.reserve(symsSet.size());
-	const auto &allTinySyms = tsp.getTinySyms();
-	for(const auto &sym : symsSet)
+	const VTinySyms &allTinySyms = tsp.getTinySyms();
+	for(const uniquePtr<const ISymData> &sym : symsSet)
 		tinySymsSet.emplace_back(new TinySym(allTinySyms[sym->getSymIdx()]));
 
 	// Clustering on tinySymsSet (Both sets get reordered)
@@ -78,10 +78,10 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 	permutation.reserve(symsCount);
 
 	for(unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i<lim; ++i) {
-		auto &symsIndices = symsIndicesPerCluster[i];
+		vector<unsigned> &symsIndices = symsIndicesPerCluster[(size_t)i];
 		const unsigned clusterSz = (unsigned)symsIndices.size();
 		clusterOffsets.emplace_hint(end(clusterOffsets), offset);
-		clusters.push_back(make_unique<const ClusterData>(tinySymsSet, offset, symsIndices, *ss)); // needs tinySymsSet[symsIndices] !!
+		clusters.push_back(makeUnique<const ClusterData>(tinySymsSet, offset, symsIndices, *ss)); // needs tinySymsSet[symsIndices] !!
 
 		for(const auto idx : symsIndices)
 			permutation.push_back(idx);
@@ -96,8 +96,8 @@ void ClustersSupportWithPreselection::delimitGroups(vector<vector<unsigned>> &sy
 	newSymsSet.reserve(symsCount);
 	newTinySymsSet.reserve(symsCount);
 	for(const auto idx : permutation) {
-		newSymsSet.push_back(move(symsSet[idx]));
-		newTinySymsSet.push_back(move(tinySymsSet[idx]));
+		newSymsSet.push_back(move(symsSet[(size_t)idx]));
+		newTinySymsSet.push_back(move(tinySymsSet[(size_t)idx]));
 	}
 	symsSet = move(newSymsSet);
 	tinySymsSet = move(newTinySymsSet);

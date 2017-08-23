@@ -44,8 +44,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
 #include <set>
-#include <string>
 
 #pragma warning ( pop )
 
@@ -59,7 +59,7 @@ struct IClustersSupport /*abstract*/ {
 	Clusters symsSet. For PreselectionByTinySyms == true it clusters also the tiny symbols.
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	virtual void groupSyms(const std::string &fontType = "") = 0;
+	virtual void groupSyms(const std::stringType &fontType = "") = 0;
 
 	/**
 	Rearranges symsSet and its tiny correspondent version when PreselectionByTinySyms == true.
@@ -81,12 +81,12 @@ For PreselectionByTinySyms == true, the clusters include tiny symbols.
 class ClustersSupport : public IClustersSupport {
 protected:
 	ClusterEngine &ce;		///< clusters manager
-	const std::unique_ptr<SymsSupport> ss;	///< helper for symbols
+	const std::uniquePtr<SymsSupport> ss;	///< helper for symbols
 	VSymData &symsSet;		///< set of most information on each symbol
 
 public:
 	/// Base constructor
-	ClustersSupport(ClusterEngine &ce_, std::unique_ptr<SymsSupport> ss_, VSymData &symsSet_);
+	ClustersSupport(ClusterEngine &ce_, std::uniquePtr<SymsSupport> ss_, VSymData &symsSet_);
 
 	ClustersSupport(const ClustersSupport&) = delete;
 	ClustersSupport(ClustersSupport&&) = delete;
@@ -97,7 +97,7 @@ public:
 	Clusters symsSet. For PreselectionByTinySyms == true it clusters also the tiny symbols.
 	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
 	*/
-	void groupSyms(const std::string &fontType = "") override;
+	void groupSyms(const std::stringType &fontType = "") override;
 
 	/**
 	Rearranges symsSet and its tiny correspondent version when PreselectionByTinySyms == true.

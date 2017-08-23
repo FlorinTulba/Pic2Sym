@@ -54,10 +54,10 @@ public:
 	void operator=(const UpdateSymSettings&) = delete;
 
 	/// called by FontEngine::newFont after installing a new font to update ISymSettings
-	void newFontFile(const std::string &fName) const override;
+	void newFontFile(const std::stringType &fName) const override;
 
 	/// called by FontEngine::setNthUniqueEncoding to update the encoding in ISymSettings
-	void newFontEncoding(const std::string &encName) const override;
+	void newFontEncoding(const std::stringType &encName) const override;
 };
 
 #endif // H_UPDATE_SYM_SETTINGS

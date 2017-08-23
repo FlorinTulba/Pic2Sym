@@ -122,30 +122,11 @@ TinySym::TinySym(const IPixMapSym &refSym) :
 	slashDiagAvgProj		*= invDiagsCountTinySym;
 }
 
-TinySym::TinySym(const Point2d &mc_, double avgPixVal_, const Mat &mat_,
-				 const Mat &hAvgProj_, const Mat &vAvgProj_,
-				 const Mat &backslashDiagAvgProj_, const Mat &slashDiagAvgProj_) :
-	SymData(mc_, avgPixVal_), mat(mat_), hAvgProj(hAvgProj_), vAvgProj(vAvgProj_),
-	backslashDiagAvgProj(backslashDiagAvgProj_), slashDiagAvgProj(slashDiagAvgProj_) {}
-
 const Mat& TinySym::getMat() const { return mat; }
 const Mat& TinySym::getHAvgProj() const { return hAvgProj; }
 const Mat& TinySym::getVAvgProj() const { return vAvgProj; }
 const Mat& TinySym::getBackslashDiagAvgProj() const { return backslashDiagAvgProj; }
 const Mat& TinySym::getSlashDiagAvgProj() const { return slashDiagAvgProj; }
-
-void TinySym::shiftTowards(const ITinySym &sym, double weight) {
-	const double oneMinusWeight = 1. - weight;
-
-	mc			         = mc                   * oneMinusWeight + weight * sym.getMc();
-	avgPixVal            = avgPixVal            * oneMinusWeight + weight * sym.getAvgPixVal();
-	hAvgProj             = hAvgProj             * oneMinusWeight + weight * sym.getHAvgProj();
-	vAvgProj             = vAvgProj             * oneMinusWeight + weight * sym.getVAvgProj();
-	backslashDiagAvgProj = backslashDiagAvgProj * oneMinusWeight + weight * sym.getBackslashDiagAvgProj();
-	slashDiagAvgProj     = slashDiagAvgProj     * oneMinusWeight + weight * sym.getSlashDiagAvgProj();
-	scaleAdd(              mat,                   oneMinusWeight,  weight * sym.getMat(),
-			 mat);
-}
 
 #ifdef UNIT_TESTING
 

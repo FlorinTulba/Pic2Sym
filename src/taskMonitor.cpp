@@ -54,7 +54,7 @@ using namespace std;
 extern const double EPSp1();
 
 #pragma warning( disable : WARN_BASE_INIT_USING_THIS )
-TaskMonitor::TaskMonitor(const string &monitoredActivity, AbsJobMonitor &parent_) :
+TaskMonitor::TaskMonitor(const stringType &monitoredActivity, AbsJobMonitor &parent_) :
 		AbsTaskMonitor(monitoredActivity), parent(parent_),
 
 		// register itself to the parent job monitor and get the order of this task within job's tasks

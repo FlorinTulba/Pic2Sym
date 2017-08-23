@@ -62,7 +62,7 @@ struct FtError {
 
 #endif // AI_REVIEWER_CHECK not defined
 
-static std::vector<const std::string>&& initFtErrors() {
+static std::vector<const std::stringType>&& initFtErrors() {
 
 #ifndef AI_REVIEWER_CHECK
 	const FtError ft_errors[] =
@@ -71,7 +71,7 @@ static std::vector<const std::string>&& initFtErrors() {
 #pragma warning ( pop )
 
 	int maxErrCode = INT_MIN;
-	for(const auto &err : ft_errors) {
+	for(const FtError &err : ft_errors) {
 		if(err.code > maxErrCode)
 			maxErrCode = err.code;
 	}
@@ -79,10 +79,10 @@ static std::vector<const std::string>&& initFtErrors() {
 	using namespace std;
 
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static vector<const string> _FtErrors(size_t(maxErrCode + 1));
+	static vector<const stringType> _FtErrors(size_t(maxErrCode + 1));
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	for(const auto &err : ft_errors) {
+	for(const FtError &err : ft_errors) {
 		if(err.msg != nullptr)
 			_FtErrors[(size_t)err.code] = err.msg;
 	}
@@ -95,9 +95,9 @@ static std::vector<const std::string>&& initFtErrors() {
 	return std::move(_FtErrors);
 
 #else // AI_REVIEWER_CHECK defined
-	return std::move(std::vector<const std::string>());
+	return std::move(std::vector<const std::stringType>());
 #endif // AI_REVIEWER_CHECK
 }
 
 using namespace std;
-const vector<const string> FtErrors(initFtErrors());
+const vector<const stringType> FtErrors(initFtErrors());

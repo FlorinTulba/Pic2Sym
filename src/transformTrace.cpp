@@ -40,67 +40,29 @@
 
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
-#include <string>
 #include <boost/optional/optional_io.hpp>
 
 #pragma warning ( pop )
 
-static const std::wstring COMMA(L",\t");
-
-std::wostream& operator<<(std::wostream &os, const IMatchParams &mp) {
-	os<<mp.getSsim()<<COMMA
-		<<mp.getSdevFg()<<COMMA<<mp.getSdevEdge()<<COMMA<<mp.getSdevBg()<<COMMA
-		<<mp.getFg()<<COMMA<<mp.getBg()<<COMMA;
-
-	if(mp.getMcPatchApprox())
-		os<<mp.getMcPatchApprox()->x<<COMMA<<mp.getMcPatchApprox()->y<<COMMA;
-	else
-		os<<boost::none<<COMMA<<boost::none<<COMMA;
-
-	if(mp.getMcPatch())
-		os<<mp.getMcPatch()->x<<COMMA<<mp.getMcPatch()->y<<COMMA;
-	else
-		os<<boost::none<<COMMA<<boost::none<<COMMA;
-
-	os<<mp.getSymDensity();
-
-	return os;
+const std::wstringType& COMMA() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+	static const std::wstringType res(L",\t");
+#pragma warning ( default : WARN_THREAD_UNSAFE )
+	return res;
 }
 
-std::wostream& operator<<(std::wostream &os, const IBestMatch &bm) {
-	if(!bm.getSymCode())
-		os<<boost::none;
-	else {
-		const unsigned long symCode = *bm.getSymCode();
-		if(bm.isUnicode()) {
-			switch(symCode) {
-				case (unsigned long)',':
-					os<<L"COMMA"; break;
-				case (unsigned long)'(':
-					os<<L"OPEN_PAR"; break;
-				case (unsigned long)')':
-					os<<L"CLOSE_PAR"; break;
-				default:
-					// for other characters, check if they can be displayed on the current console
-					if(os<<(wchar_t)symCode) {
-						// when they can be displayed, add in () their code
-						os<<'('<<symCode<<')';
-					} else { // when they can't be displayed, show just their code
-						os.clear(); // clear the error first
-						os<<symCode;
-					}
-			}
-		} else
-			os<<symCode;
-	}
+std::wostream& operator<<(std::wostream &wos, const IMatchParams &mp) {
+	wos<<mp.toWstring();
+	return wos;
+}
 
-	os<<COMMA<<bm.getScore();
-	if(bm.getParams())
-		os<<COMMA<<*bm.getParams();
-	return os;
+std::wostream& operator<<(std::wostream &wos, const IBestMatch &bm) {
+	wos<<bm.toWstring();
+	return wos;
 }
 
 #endif // _DEBUG || UNIT_TESTING
@@ -114,27 +76,27 @@ std::wostream& operator<<(std::wostream &os, const IBestMatch &bm) {
 using namespace std;
 using namespace boost::filesystem;
 
-TransformTrace::TransformTrace(const string &studiedCase_, unsigned sz_, bool isUnicode_) :
+TransformTrace::TransformTrace(const stringType &studiedCase_, unsigned sz_, bool isUnicode_) :
 		studiedCase(studiedCase_), sz(sz_), isUnicode(isUnicode_) {
 	path traceFile(AppStart::dir());
 	traceFile.append("data_").concat(studiedCase).
 		concat(".csv"); // generating a CSV trace file
 
-	extern const wstring BestMatch_HEADER;
-	ofs = wofstream(traceFile.c_str());
-	ofs<<"#Row"<<COMMA<<"#Col"<<COMMA<<BestMatch_HEADER<<endl;
+	extern const wstringType BestMatch_HEADER;
+	wofs = wofstream(traceFile.c_str());
+	wofs<<"#Row"<<COMMA()<<"#Col"<<COMMA()<<BestMatch_HEADER<<endl;
 }
 
 TransformTrace::~TransformTrace() {
-	ofs.close();
+	wofs.close();
 }
 
 void TransformTrace::newEntry(unsigned r, unsigned c, const IBestMatch &best) {
-	ofs<<r/sz<<COMMA<<c/sz<<COMMA<<const_cast<IBestMatch&>(best).setUnicode(isUnicode)<<endl;
+	wofs<<r/sz<<COMMA()<<c/sz<<COMMA()<<const_cast<IBestMatch&>(best).setUnicode(isUnicode)<<endl;
 
 	// flush after every row fully transformed
 	if(r > transformingRow) {
-		ofs.flush();
+		wofs.flush();
 		transformingRow = r;
 	}
 }

@@ -46,6 +46,7 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
 #include <vector>
 
 #ifndef AI_REVIEWER_CHECK
@@ -56,14 +57,22 @@
 #pragma warning ( pop )
 
 /// Clusters data that needs to be serialized
-struct ClusterIO {
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ClusterIO class
-
+class ClusterIO {
+protected:
 	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
 	std::vector<int> clusterLabels;	
 
 	unsigned clustersCount = 0U;		///< total number of clusters
+
+public:
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of ClusterIO class
+
+	ClusterIO() = default;
+	ClusterIO(const ClusterIO&) = delete;
+	ClusterIO(ClusterIO&&) = delete;
+	void operator=(const ClusterIO&) = delete;
+	ClusterIO& operator=(ClusterIO &&other);
 
 	/// Serializes this ClusterIO object to ar
 	template<class Archive>
@@ -75,16 +84,15 @@ struct ClusterIO {
 	}
 
 	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::string &path);
+	bool loadFrom(const std::stringType &path);
 
 	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::string &path) const;
+	bool saveTo(const std::stringType &path) const;
 
-	ClusterIO() {}
-	ClusterIO(const ClusterIO&) = delete;
-	ClusterIO(ClusterIO&&) = delete;
-	void operator=(const ClusterIO&) = delete;
-	ClusterIO& operator=(ClusterIO &&other);
+	void reset(unsigned clustersCount_, std::vector<int> &&clusterLabels_);
+
+	const std::vector<int>& getClusterLabels() const { return clusterLabels; }
+	unsigned getClustersCount() const { return clustersCount; }
 };
 
 #ifndef AI_REVIEWER_CHECK

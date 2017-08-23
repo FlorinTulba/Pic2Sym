@@ -94,7 +94,7 @@ void ScoreThresholds::update(double multiplier, const ScoreThresholds &reference
 		intermediaries[i] = multiplier * references.intermediaries[i];
 }
 
-MatchAssessor& MatchAssessor::availableAspects(const vector<std::shared_ptr<MatchAspect>> &availAspects_) {
+MatchAssessor& MatchAssessor::availableAspects(const vector<std::sharedPtr<MatchAspect>> &availAspects_) {
 	availAspects = &availAspects_;
 	return *this;
 }
@@ -112,7 +112,7 @@ void MatchAssessor::newlyDisabledMatchAspect() {
 void MatchAssessor::updateEnabledMatchAspectsCount() {
 	enabledAspectsCount = 0ULL;
 	if(availAspects != nullptr) {
-		for(auto pAspect : *availAspects)
+		for(sharedPtr<MatchAspect> pAspect : *availAspects)
 			if(pAspect->enabled())
 				++enabledAspectsCount;
 	}
@@ -127,7 +127,7 @@ size_t MatchAssessor::enabledMatchAspectsCount() const {
 void MatchAssessor::getReady(const CachedData &/*cachedData*/) {
 	enabledAspects.clear();
 	if(availAspects != nullptr) {
-		for(auto pAspect : *availAspects)
+		for(sharedPtr<MatchAspect> pAspect : *availAspects)
 			if(pAspect->enabled())
 				enabledAspects.push_back(&*pAspect);
 	}

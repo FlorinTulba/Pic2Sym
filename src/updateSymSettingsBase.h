@@ -41,17 +41,17 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #pragma warning ( pop )
 
 /// Interface that allows changing settings for the symbols.
 struct IUpdateSymSettings /*abstract*/ {
 	/// called by FontEngine::newFont after installing a new font to update ISymSettings
-	virtual void newFontFile(const std::string &fName) const = 0;
+	virtual void newFontFile(const std::stringType &fName) const = 0;
 
 	/// called by FontEngine::setNthUniqueEncoding to update the encoding in ISymSettings
-	virtual void newFontEncoding(const std::string &encName) const = 0;
+	virtual void newFontEncoding(const std::stringType &encName) const = 0;
 
 	virtual ~IUpdateSymSettings() = 0 {}
 };

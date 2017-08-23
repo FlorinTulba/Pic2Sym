@@ -55,14 +55,14 @@ bool SymSettings::initialized() const {
 	return !fontFile.empty() && !encoding.empty();
 }
 
-void SymSettings::setFontFile(const std::string &fontFile_) {
+void SymSettings::setFontFile(const std::stringType &fontFile_) {
 	if(fontFile.compare(fontFile_) == 0)
 		return;
 	cout<<"fontFile"<<" : '"<<fontFile<<"' -> '"<<fontFile_<<'\''<<endl;
 	fontFile = fontFile_;
 }
 
-void SymSettings::setEncoding(const std::string &encoding_) {
+void SymSettings::setEncoding(const std::stringType &encoding_) {
 	if(encoding.compare(encoding_) == 0)
 		return;
 	cout<<"encoding"<<" : '"<<encoding<<"' -> '"<<encoding_<<'\''<<endl;
@@ -76,8 +76,8 @@ void SymSettings::setFontSz(unsigned fontSz_) {
 	fontSz = fontSz_;
 }
 
-unique_ptr<ISymSettings> SymSettings::clone() const {
-	return make_unique<SymSettings>(*this);
+uniquePtr<ISymSettings> SymSettings::clone() const {
+	return makeUnique<SymSettings>(*this);
 }
 
 bool SymSettings::operator==(const SymSettings &other) const {

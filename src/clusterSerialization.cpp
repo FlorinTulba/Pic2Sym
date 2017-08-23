@@ -64,7 +64,7 @@ ClusterIO& ClusterIO::operator=(ClusterIO &&other) {
 	return *this;
 }
 
-bool ClusterIO::loadFrom(const string &path) {
+bool ClusterIO::loadFrom(const stringType &path) {
 	ifstream ifs(path, ios::binary);
 	if(!ifs) {
 		cerr<<"Couldn't find / open: " <<path<<endl;
@@ -82,7 +82,7 @@ bool ClusterIO::loadFrom(const string &path) {
 	return true;
 }
 
-bool ClusterIO::saveTo(const string &path) const {
+bool ClusterIO::saveTo(const stringType &path) const {
 	ofstream ofs(path, ios::binary | ios::trunc);
 	if(!ofs) {
 		cerr<<"Couldn't create / truncate: " <<path<<endl;
@@ -94,6 +94,11 @@ bool ClusterIO::saveTo(const string &path) const {
 #else // AI_REVIEWER_CHECK defined
 	return true;
 #endif // AI_REVIEWER_CHECK
+}
+
+void ClusterIO::reset(unsigned clustersCount_, vector<int> &&clusterLabels_) {
+	clustersCount = clustersCount_;
+	clusterLabels = move(clusterLabels_);
 }
 
 #endif // UNIT_TESTING not defined

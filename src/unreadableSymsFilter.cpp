@@ -50,7 +50,7 @@
 using namespace std;
 using namespace cv;
 
-UnreadableSymsFilter::UnreadableSymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
+UnreadableSymsFilter::UnreadableSymsFilter(uniquePtr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(3U, "less readable symbols", std::move(nextFilter_)) {}
 
 bool UnreadableSymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {

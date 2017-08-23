@@ -43,6 +43,18 @@
 #include "patchBase.h"
 #include "misc.h"
 
+#if defined(_DEBUG) || defined(UNIT_TESTING)
+
+#pragma warning ( push, 0 )
+
+#include <boost/optional/optional_io.hpp>
+
+#pragma warning ( pop )
+
+extern const std::wstringType& COMMA();
+
+#endif // defined(_DEBUG) || defined(UNIT_TESTING)
+
 using namespace std;
 using namespace boost;
 using namespace cv;
@@ -91,9 +103,31 @@ const optional<Mat>& MatchParams::getPatchApprox() const { return patchApprox; }
 const optional<Point2d>& MatchParams::getMcPatchApprox() const { return mcPatchApprox; }
 const optional<double>& MatchParams::getMcsOffset() const { return mcsOffset; }
 const optional<double>& MatchParams::getSymDensity() const { return symDensity; }
+
 #if defined(_DEBUG) || defined(UNIT_TESTING)
+const wstringType MatchParams::toWstring() const {
+	wostringstream os;
+	os<<ssim<<COMMA()
+		<<sdevFg<<COMMA()<<sdevEdge<<COMMA()<<sdevBg<<COMMA()
+		<<fg<<COMMA()<<bg<<COMMA();
+
+	if(mcPatchApprox)
+		os<<mcPatchApprox->x<<COMMA()<<mcPatchApprox->y<<COMMA();
+	else
+		os<<boost::none<<COMMA()<<boost::none<<COMMA();
+
+	if(mcPatch)
+		os<<mcPatch->x<<COMMA()<<mcPatch->y<<COMMA();
+	else
+		os<<boost::none<<COMMA()<<boost::none<<COMMA();
+
+	os<<symDensity;
+	return os.str();
+}
+
 const optional<double>& MatchParams::getFg() const { return fg; }
 #endif // defined(_DEBUG) || defined(UNIT_TESTING)
+
 const optional<double>& MatchParams::getBg() const { return bg; }
 const optional<double>& MatchParams::getContrast() const { return contrast; }
 const optional<double>& MatchParams::getSsim() const { return ssim; }
@@ -101,7 +135,7 @@ const optional<double>& MatchParams::getSdevFg() const { return sdevFg; }
 const optional<double>& MatchParams::getSdevBg() const { return sdevBg; }
 const optional<double>& MatchParams::getSdevEdge() const { return sdevEdge; }
 #ifdef UNIT_TESTING
-unique_ptr<IMatchParamsRW> MatchParams::clone() const { return make_unique<MatchParams>(*this); }
+uniquePtr<IMatchParamsRW> MatchParams::clone() const { return makeUnique<MatchParams>(*this); }
 #endif // UNIT_TESTING defined
 
 MatchParams& MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
@@ -186,7 +220,7 @@ void MatchParams::computeSdevEdge(const Mat &patch, const ISymData &symData) {
 	if(sdevEdge)
 		return;
 
-	const auto &edgeMask = symData.getMask(ISymData::EDGE_MASK_IDX);
+	const Mat &edgeMask = symData.getMask(ISymData::EDGE_MASK_IDX);
 	const int cnz = countNonZero(edgeMask);
 	if(cnz == 0) {
 		sdevEdge = 0.;

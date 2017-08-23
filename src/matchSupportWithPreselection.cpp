@@ -78,20 +78,20 @@ bool MatchSupportWithPreselection::improvesBasedOnBatchShortList(CandidatesShort
 
 	double score;
 
-	auto &mp = draftMatch.refParams();
+	const uniquePtr<IMatchParamsRW> &mp = draftMatch.refParams();
 	assert(mp);
 	ScoreThresholds scoresToBeat;
 	matchAssessor.scoresToBeat(draftMatch.getScore(), scoresToBeat);
 
 	while(!shortList.empty()) {
-		auto candidateIdx = shortList.top();
+		const CandidateId candidateIdx = shortList.top();
 
 		mp->reset(); // preserves patch-invariant fields
 
 		if(matchAssessor.isBetterMatch(draftMatch.getPatch().matrixToApprox(),
-									*symsSet[candidateIdx], cd,
+									*symsSet[(size_t)candidateIdx], cd,
 									scoresToBeat, *mp, score)) {
-			const auto &symData = *symsSet[candidateIdx];
+			const ISymData &symData = *symsSet[(size_t)candidateIdx];
 			draftMatch.update(score, symData.getCode(), candidateIdx, symData);
 			matchAssessor.scoresToBeat(score, scoresToBeat);
 

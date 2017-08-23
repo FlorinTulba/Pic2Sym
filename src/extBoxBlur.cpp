@@ -133,8 +133,8 @@ class ExtBoxBlur::Impl {
 					const double *dataItBegin = temp.ptr<double>(row);
 					const double *frontEdge = dataItBegin + kernelRadiusP1;
 					const double firstPixel = *dataItBegin,
-								lastPixel = dataItBegin[dataColsM1];
-					double prevFrontEdgePixel = dataItBegin[kernelRadius], frontEdgePixel,
+								lastPixel = dataItBegin[(size_t)dataColsM1];
+					double prevFrontEdgePixel = dataItBegin[(size_t)kernelRadius], frontEdgePixel,
 							prevSum = *resultIt =
 								w * (firstPixel + prevFrontEdgePixel) +
 								boxHeight * (firstPixel * kernelRadius + accumulate(dataItBegin + 1, dataItBegin + kernelRadius, 0.));

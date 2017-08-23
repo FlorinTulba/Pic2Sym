@@ -43,8 +43,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <vector>
-#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -66,18 +66,18 @@ class MatchEngine;
 struct IPreselManager /*abstract*/ {
 	static const IPreselManager& concrete();
 
-	virtual std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	virtual std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 																  ClusterEngine &ce,
 																  VSymData &symsSet) const = 0;
-	virtual std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+	virtual std::uniquePtr<MatchSupport> createMatchSupport(CachedData &cd,
 															 VSymData &symsSet,
 															 MatchAssessor &matchAssessor,
 															 const IMatchSettings &matchSettings) const = 0;
-	virtual std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+	virtual std::uniquePtr<TransformSupport> createTransformSupport(MatchEngine &me,
 																	 const IMatchSettings &matchSettings,
 																	 cv::Mat &resized,
 																	 cv::Mat &resizedBlurred,
-																	 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+																	 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
 																	 MatchSupport &matchSupport) const = 0;
 
 	virtual ~IPreselManager() = 0 {}
@@ -91,18 +91,18 @@ struct PreselectionOn : IPreselManager {
 	void operator=(const PreselectionOn&) = delete;
 	void operator=(PreselectionOn&&) = delete;
 
-	std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 														  ClusterEngine &ce,
 														  VSymData &symsSet) const override;
-	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+	std::uniquePtr<MatchSupport> createMatchSupport(CachedData &cd,
 													 VSymData &symsSet,
 													 MatchAssessor &matchAssessor,
 													 const IMatchSettings &matchSettings) const override;
-	std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+	std::uniquePtr<TransformSupport> createTransformSupport(MatchEngine &me,
 															 const IMatchSettings &matchSettings,
 															 cv::Mat &resized,
 															 cv::Mat &resizedBlurred,
-															 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+															 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
 															 MatchSupport &matchSupport) const override;
 };
 
@@ -114,18 +114,18 @@ struct PreselectionOff : IPreselManager {
 	void operator=(const PreselectionOff&) = delete;
 	void operator=(PreselectionOff&&) = delete;
 
-	std::unique_ptr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+	std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 														  ClusterEngine &ce,
 														  VSymData &symsSet) const override;
-	std::unique_ptr<MatchSupport> createMatchSupport(CachedData &cd,
+	std::uniquePtr<MatchSupport> createMatchSupport(CachedData &cd,
 													 VSymData &symsSet,
 													 MatchAssessor &matchAssessor,
 													 const IMatchSettings &matchSettings) const override;
-	std::unique_ptr<TransformSupport> createTransformSupport(MatchEngine &me,
+	std::uniquePtr<TransformSupport> createTransformSupport(MatchEngine &me,
 															 const IMatchSettings &matchSettings,
 															 cv::Mat &resized,
 															 cv::Mat &resizedBlurred,
-															 std::vector<std::vector<std::unique_ptr<IBestMatch>>> &draftMatches,
+															 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
 															 MatchSupport &matchSupport) const override;
 };
 

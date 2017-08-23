@@ -48,14 +48,15 @@ ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 		 idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
 	const double invClusterSz = 1./sz;
-	const Mat &firstNegSym = symsSet[0]->getNegSym();
-	const int symSz = firstNegSym.rows;
+	assert(!symsSet.empty());
+	const ISymData &firstSym = *symsSet[0ULL]; // ensures AI Reviewer counts method getNegSym() from below
+	const int symSz = firstSym.getNegSym().rows;
 	double avgPixVal_ = 0.;
 	Point2d mc_;
 	vector<const ISymData*> clusterSyms; clusterSyms.reserve((size_t)sz);
 
 	for(const auto clusterSymIdx : clusterSymIndices) {
-		const ISymData &symData = *symsSet[clusterSymIdx];
+		const ISymData &symData = *symsSet[(size_t)clusterSymIdx];
 		clusterSyms.push_back(&symData);
 
 		// avgPixVal and mc are taken from the normal-size symbol (guaranteed to be non-blank)

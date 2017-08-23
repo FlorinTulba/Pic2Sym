@@ -53,7 +53,7 @@ ProportionalSliderValue::Params::Params(int maxSlider_, double maxVal_) :
 			invalid_argument);
 }
 
-ProportionalSliderValue::ProportionalSliderValue(std::unique_ptr<const Params> sp_) :
+ProportionalSliderValue::ProportionalSliderValue(std::uniquePtr<const Params> sp_) :
 		SliderConverter(std::move(sp_)) {
 	if(!sp) // Testing on sp, since sp_ was moved to sp
 		THROW_WITH_CONST_MSG("ProportionalSliderValue received a nullptr Params parameter",

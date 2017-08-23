@@ -71,9 +71,9 @@ protected:
 public:
 	virtual ~CvWin() = 0 {}
 
-	void setTitle(const std::string &title) const;
-	void setOverlay(const std::string &overlay, int timeoutMs = 0) const;
-	void setStatus(const std::string &status, int timeoutMs = 0) const;
+	void setTitle(const std::stringType &title) const;
+	void setOverlay(const std::stringType &overlay, int timeoutMs = 0) const;
+	void setStatus(const std::stringType &status, int timeoutMs = 0) const;
 
 	void setPos(int x, int y) const;
 	virtual void permitResize(bool allow = true) const;
@@ -125,8 +125,8 @@ can be browsed using the page slider.
 */
 class CmapInspect : public CvWin {
 protected:
-	std::shared_ptr<const IPresentCmap> cmapPresenter;	///< presents the cmap window
-	std::shared_ptr<const ISelectSymbols> symsSelector;	///< allows saving a selection of symbols
+	std::sharedPtr<const IPresentCmap> cmapPresenter;	///< presents the cmap window
+	std::sharedPtr<const ISelectSymbols> symsSelector;	///< allows saving a selection of symbols
 
 	cv::Mat grid;				///< the symbols' `hive`
 	int page = 0;				///< page slider position
@@ -154,8 +154,8 @@ protected:
 					  unsigned idxOfFirstSymFromPage);
 
 public:
-	CmapInspect(std::shared_ptr<const IPresentCmap> cmapPresenter_,
-				std::shared_ptr<const ISelectSymbols> symsSelector_,
+	CmapInspect(std::sharedPtr<const IPresentCmap> cmapPresenter_,
+				std::sharedPtr<const ISelectSymbols> symsSelector_,
 				const unsigned &fontSz_);
 	void operator=(const CmapInspect&) = delete;
 

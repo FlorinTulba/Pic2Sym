@@ -396,15 +396,6 @@
     <ClInclude Include="src\cmapPerspective.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
-    <ClInclude Include="src\boost_filesystem_path.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\boost_filesystem_operations.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\boost_bimap_bimap.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
     <ClInclude Include="src\updateSymSettingsBase.h">
       <Filter>Header Files\Controller</Filter>
     </ClInclude>
@@ -488,6 +479,21 @@
     </ClInclude>
     <ClInclude Include="src\transformCompletion.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h">
+      <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h">
+      <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h">
+      <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\std_memory.h">
+      <Filter>Header Files\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="adaptedIncludes\std_string.h">
+      <Filter>Header Files\Testing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -55,8 +55,12 @@ struct IPixMapSym; // Forward declaration
 
 #pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
 
-/// Data for tiny symbols
-class TinySym : public SymData, public ITinySym {
+/**
+Data for tiny symbols.
+
+ITinySym is virtual inherited to allow further diamond inheritance - see ICentroid and Centroid.
+*/
+class TinySym : public SymData, public virtual ITinySym {
 #ifdef UNIT_TESTING // Unit Testing project may need these fields as public
 public:
 #else // UNIT_TESTING not defined - keep fields as protected
@@ -96,11 +100,6 @@ public:
 	TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL); ///< Empty symbols with the code & index from cmap
 	TinySym(const IPixMapSym &refSym); ///< Creates tiny symbol based on a much larger reference symbol
 
-	/// Used to create the centroid of a cluster
-	TinySym(const cv::Point2d &mc_, double avgPixVal_, const cv::Mat &mat_,
-			const cv::Mat &hAvgProj_, const cv::Mat &vAvgProj_,
-			const cv::Mat &backslashDiagAvgProj_, const cv::Mat &slashDiagAvgProj_);
-
 #ifdef UNIT_TESTING
 	TinySym(const cv::Mat &negSym_, const cv::Point2d &mc_ = cv::Point2d(.5,.5), double avgPixVal_ = 0.); ///< generate the tiny symbol based on a negative
 #endif // UNIT_TESTING defined
@@ -119,8 +118,6 @@ public:
 
 	/// Inverse diagonal projection divided by TinySymDiagsCount
 	const cv::Mat& getSlashDiagAvgProj() const override final;
-
-	void shiftTowards(const ITinySym &sym, double weight) override;
 
 	/// Serializes this TinySym object to ar
 	template<class Archive>

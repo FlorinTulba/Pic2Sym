@@ -41,7 +41,11 @@
 
 #pragma warning ( push, 0 )
 
-#include <memory>
+#if defined _DEBUG || defined UNIT_TESTING
+#include "std_string.h"
+#endif // _DEBUG || UNIT_TESTING
+
+#include "std_memory.h"
 
 #include <boost/optional/optional.hpp>
 
@@ -84,11 +88,18 @@ struct IMatchParams /*abstract*/ {
 	virtual ~IMatchParams() = 0 {}
 
 #ifdef UNIT_TESTING
-	virtual std::unique_ptr<IMatchParamsRW> clone() const = 0;	/// @return a configurable copy of itself
+	virtual std::uniquePtr<IMatchParamsRW> clone() const = 0;	/// @return a configurable copy of itself
 #endif // UNIT_TESTING defined
+
+#if defined _DEBUG || defined UNIT_TESTING
+	/// Provides a representation of the parameters
+	virtual const std::wstringType toWstring() const = 0;
+#endif // _DEBUG || UNIT_TESTING
 };
 
-std::wostream& operator<<(std::wostream &os, const IMatchParams &mp);
+#if defined _DEBUG || defined UNIT_TESTING
+std::wostream& operator<<(std::wostream &wos, const IMatchParams &mp);
+#endif // _DEBUG || UNIT_TESTING
 
 /// Base class (Read-Write version) for the relevant parameters during patch&glyph matching
 struct IMatchParamsRW /*abstract*/ : IMatchParams {

@@ -43,6 +43,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
+
 #ifndef AI_REVIEWER_CHECK
 
 #	include <boost/archive/binary_oarchive.hpp>
@@ -67,9 +69,9 @@ struct IMatchSettings;
 /// Envelopes all parameters required for transforming images
 class Settings : public ISettingsRW {
 protected:
-	std::unique_ptr<ISymSettings> ss;		///< parameters concerning the symbols set used for approximating patches
-	std::unique_ptr<IfImgSettings> is;		///< contains max count of horizontal & vertical patches to process
-	std::unique_ptr<IMatchSettings> ms;		///< settings used during approximation process
+	std::uniquePtr<ISymSettings> ss;		///< parameters concerning the symbols set used for approximating patches
+	std::uniquePtr<IfImgSettings> is;		///< contains max count of horizontal & vertical patches to process
+	std::uniquePtr<IMatchSettings> ms;		///< settings used during approximation process
 
 public:
 	/**
@@ -79,6 +81,8 @@ public:
 	*/
 	Settings(const IMatchSettings &ms_);
 	Settings(); ///< Creates Settings with empty MatchSettings
+	Settings(const Settings&) = delete;
+	void operator=(const Settings&) = delete;
 
 	// Read-only accessors
 	const ISymSettings& getSS() const override final;

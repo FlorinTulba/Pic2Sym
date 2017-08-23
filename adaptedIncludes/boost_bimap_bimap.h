@@ -36,49 +36,37 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef H_BOOST_FILESYSTEM_PATH
-#define H_BOOST_FILESYSTEM_PATH
+#ifndef H_BOOST_BIMAP_BIMAP
+#define H_BOOST_BIMAP_BIMAP
 
 // Avoid using boost preprocessor when checking design of the project with AI Reviewer
 #ifdef AI_REVIEWER_CHECK
 
-#include <string>
-#include <iostream>
+#include <map>
 
 namespace boost {
-	namespace filesystem {
-		class path {
+	namespace bimaps {
+		template<class Left, typename Right>
+		class bimap {
 		public:
-			path(...) {}
+			std::map<Left, Right> left;
+			std::map<Right, Left> right;
 
-			path& operator=(const char*) { return *this; }
-			path& operator=(const std::string&) { return *this; }
-			path& operator=(const path&) { return *this; }
+			typedef typename std::map<Left, Right>::value_type value_type;
 
-			const std::string string() const { return ""; }
-			const std::wstring  wstring() const { return L""; }
-			const char* c_str() const { return nullptr; }
+			bimap(...) {}
 
-			path stem() const { return *this; }
+			void clear() {}
+			size_t size() const { return 0ULL; }
 
-			path& append(...) { return *this; }
-			path& concat(...) { return *this; }
-			path& operator/=(const path&) { return *this; }
-
-			bool empty() const { return true; }
-			bool has_parent_path() const { return true; }
-			path& remove_filename() { return *this; }
-			path& replace_extension(...) { return *this; }
-
-			int compare(...) const { return 0; }
+			void insert(...) {}
 		};
-	}
-}
+	} // end namespace bimaps
+} // end namespace boost
 
-std::ostream& operator<<(std::ostream &os, const boost::filesystem::path&) { return os; }
-
-#else // AI_REVIEWER_CHECK was not defined
-#include <boost/filesystem/path.hpp>
+#else // AI_REVIEWER_CHECK not defined
+#include <boost/bimap/bimap.hpp>
 #endif // AI_REVIEWER_CHECK
 
-#endif // H_BOOST_FILESYSTEM_PATH
+
+#endif // H_BOOST_BIMAP_BIMAP

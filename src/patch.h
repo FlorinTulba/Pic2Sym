@@ -76,7 +76,7 @@ public:
 	/// Specifies which matrix to use during the approximation process
 	const cv::Mat& matrixToApprox() const override;
 
-	std::unique_ptr<const IPatch> clone() const override; ///< @return a clone of itself
+	std::uniquePtr<const IPatch> clone() const override; ///< @return a clone of itself
 
 #ifdef UNIT_TESTING
 	/// Constructor delegating its job to the one with 3 parameters

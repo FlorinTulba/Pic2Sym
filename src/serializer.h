@@ -57,7 +57,7 @@ To disable it, just comment its definition in 'compressOption.h' file
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/iostreams/filtering_streambuf.hpp>
@@ -82,7 +82,7 @@ copy/move draft's content onto the target object.
 @return false if any errors are detected; true otherwise
 */
 template<class Archive, class Source, class T>
-bool load(Source &src, const std::string &srcName, T &obj) {
+bool load(Source &src, const std::stringType &srcName, T &obj) {
 #ifndef AI_REVIEWER_CHECK
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {
@@ -118,7 +118,7 @@ When USE_ZLIB_COMPRESSION is defined, it assumes obj should be compressed before
 @return false if any errors are detected; true otherwise
 */
 template<class Archive, class Sink, class T>
-bool save(Sink &sink, const std::string &sinkName, const T &obj) {
+bool save(Sink &sink, const std::stringType &sinkName, const T &obj) {
 #ifndef AI_REVIEWER_CHECK
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 	try {

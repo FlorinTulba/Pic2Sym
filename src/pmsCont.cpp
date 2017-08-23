@@ -54,6 +54,7 @@
 #pragma warning ( pop )
 
 using namespace std;
+using namespace boost;
 using namespace cv;
 
 static const double OneMinEPS = 1. - EPS;
@@ -61,12 +62,12 @@ static const double OneMinEPS = 1. - EPS;
 PmsCont::PmsCont(IController &ctrler_) :
 		ctrler(ctrler_),
 		
-		// Add any additional filters as 'make_unique<NewFilter>()' in the last set of unfilled '()'
-		symFilter(make_unique<FilledRectanglesFilter>
-				(make_unique<GridBarsFilter>
-				(make_unique<BulkySymsFilter>
-				(make_unique<UnreadableSymsFilter>
-				(make_unique<SievesSymsFilter>()))))) {}
+		// Add any additional filters as 'makeUnique<NewFilter>()' in the last set of unfilled '()'
+		symFilter(makeUnique<FilledRectanglesFilter>
+				(makeUnique<GridBarsFilter>
+				(makeUnique<BulkySymsFilter>
+				(makeUnique<UnreadableSymsFilter>
+				(makeUnique<SievesSymsFilter>()))))) {}
 
 unsigned PmsCont::getFontSz() const {
 	if(!ready)
@@ -142,7 +143,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 		return;
 	}
 
-	auto pms = make_unique<const PixMapSym>(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
+	uniquePtr<const PixMapSym> pms = makeUnique<const PixMapSym>(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
 											(int)fontSz, maxGlyphSum, consec, revConsec, bb);
 	if(pms->getAvgPixVal() < EPS || pms->getAvgPixVal() > OneMinEPS) { // discard disguised Space characters
 		++blanks;
@@ -150,7 +151,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 	}
 
 	// Exclude duplicates, as well
-	for(const auto &prevPms : syms)
+	for(const uniquePtr<const IPixMapSym> &prevPms : syms)
 		if(*pms == dynamic_cast<const PixMapSym&>(*prevPms)) {
 			++duplicates;
 			return;
@@ -158,7 +159,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	sfc.setBoundingBox(height, width);
 
-	const auto matchingFilterId = symFilter->matchingFilterId(*pms, sfc);
+	const optional<unsigned> matchingFilterId = symFilter->matchingFilterId(*pms, sfc);
 	if(matchingFilterId) {
 		auto it = removableSymsByCateg.find(*matchingFilterId);
 		if(it == removableSymsByCateg.end())
@@ -173,7 +174,7 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 		const_cast<PixMapSym&>(*pms).setRemovable();
 	}
 
-	syms.push_back(move(pms));
+	syms.push_back(std::move(pms));
 
 	ctrler.display1stPageIfFull(syms);
 }
@@ -187,18 +188,16 @@ void PmsCont::setAsReady() {
 	extern const double PmsCont_SMALL_GLYPHS_PERCENT;
 	const auto smallGlyphsQty = (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
 
-	auto itToNthGlyphSum = next(begin(syms), smallGlyphsQty);
+	VPixMapSym::iterator itToNthGlyphSum = next(begin(syms), smallGlyphsQty);
 #ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
 	nth_element(begin(syms), itToNthGlyphSum, end(syms),
-				[] (const unique_ptr<const IPixMapSym> &first,
-				const unique_ptr<const IPixMapSym> &second) {
+				[] (const uniquePtr<const IPixMapSym> &first,
+				const uniquePtr<const IPixMapSym> &second) {
 		return first->getAvgPixVal() < second->getAvgPixVal();
 	});
 
 #else // AI_REVIEWER_CHECK defined
-	// Let AI Reviewer know that following method was used within the lambda above
-	const unique_ptr<const IPixMapSym> &first = *begin(syms);
-	first->getAvgPixVal();
+	syms[0]->getAvgPixVal();
 #endif // AI_REVIEWER_CHECK
 
 	coverageOfSmallGlyphs = (*itToNthGlyphSum)->getAvgPixVal();

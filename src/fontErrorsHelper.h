@@ -41,11 +41,11 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <vector>
 
 #pragma warning ( pop )
 
-extern const std::vector<const std::string> FtErrors;
+extern const std::vector<const std::stringType> FtErrors;
 
 #endif // H_FONT_ERRORS_HELPER

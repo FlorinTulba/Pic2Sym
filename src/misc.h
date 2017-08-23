@@ -43,9 +43,9 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_string.h"
 #include <iostream>
 #include <iomanip>
-#include <string>
 
 #pragma warning ( pop )
 
@@ -68,13 +68,13 @@ const double EPS = 1e-6;
 #define BOUNDS_FOR_ITEM_TYPE(iterable, type)	iterable.begin<type>(), iterable.end<type>()
 
 // string <-> wstring conversions
-std::wstring str2wstr(const std::string &str);
-std::string wstr2str(const std::wstring &wstr);
+std::wstringType str2wstr(const std::stringType &str);
+std::stringType wstr2str(const std::wstringType &wstr);
 
 // Notifying the user
-void infoMsg(const std::string &text, const std::string &title = "");
-void warnMsg(const std::string &text, const std::string &title = "");
-void errMsg(const std::string &text, const std::string &title = "");
+void infoMsg(const std::stringType &text, const std::stringType &title = "");
+void warnMsg(const std::stringType &text, const std::stringType &title = "");
+void errMsg(const std::stringType &text, const std::stringType &title = "");
 
 // Throwing exceptions while displaying the exception message to the console
 #ifndef AI_REVIEWER_CHECK
@@ -87,7 +87,7 @@ Otherwise, the program just leaves, letting no chance for reusing the method-sta
 #define THROW_WITH_CONST_MSG(excMsg, excType) \
 	{ \
 		__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
-		static const std::string constErrMsgForConsoleAndThrow(excMsg); \
+		static const std::stringType constErrMsgForConsoleAndThrow(excMsg); \
 		__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 		std::cerr<<constErrMsgForConsoleAndThrow<<std::endl; \
 		throw excType(constErrMsgForConsoleAndThrow); \
@@ -97,7 +97,7 @@ Second version should be used when the exception message is variable (reports sp
 */
 #define THROW_WITH_VAR_MSG(msg, excType) \
 	{ \
-		const std::string varErrMsgForConsoleAndThrow(msg); \
+		const std::stringType varErrMsgForConsoleAndThrow(msg); \
 		std::cerr<<varErrMsgForConsoleAndThrow<<std::endl; \
 		throw excType(varErrMsgForConsoleAndThrow); \
 	}

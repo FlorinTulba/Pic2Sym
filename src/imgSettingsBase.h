@@ -41,8 +41,8 @@
 
 #pragma warning ( push, 0 )
 
+#include "std_memory.h"
 #include <iostream>
-#include <memory>
 
 #pragma warning ( pop )
 
@@ -63,7 +63,7 @@ struct IfImgSettings /*abstract*/ {
 	virtual ~IfImgSettings() = 0 {}
 
 	/// @return a copy of these settings
-	virtual std::unique_ptr<IfImgSettings> clone() const = 0;
+	virtual std::uniquePtr<IfImgSettings> clone() const = 0;
 };
 
 std::ostream& operator<<(std::ostream &os, const IfImgSettings &is);

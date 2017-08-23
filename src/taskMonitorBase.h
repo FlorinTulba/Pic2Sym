@@ -41,21 +41,21 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #pragma warning ( pop )
 
 /// Abstract class for monitoring progress of a specific activity within a given job
 class AbsTaskMonitor /*abstract*/ {
 protected:
-	const std::string monitoredTask_;	///< name of the monitored task
+	const std::stringType monitoredTask_;	///< name of the monitored task
 
 public:
-	AbsTaskMonitor(const std::string &monitoredTask) : monitoredTask_(monitoredTask) {}
+	AbsTaskMonitor(const std::stringType &monitoredTask) : monitoredTask_(monitoredTask) {}
 	void operator=(const AbsTaskMonitor&) = delete;
 	virtual ~AbsTaskMonitor() = 0 {}
 
-	const std::string& monitoredTask() const { return monitoredTask_; } ///< name of the activity
+	const std::stringType& monitoredTask() const { return monitoredTask_; } ///< name of the activity
 
 	virtual void setTotalSteps(size_t totalSteps_) = 0;	///< total steps required to finish the activity
 	virtual void taskAdvanced(size_t steps = 1U) = 0;	///< task performer reports its progress

@@ -49,7 +49,7 @@ using namespace std;
 using namespace cv;
 
 namespace ut {
-	void saveSymsSelection(const string &destFile,
+	void saveSymsSelection(const stringType &destFile,
 						   const list<const Mat> &symsSelection) {
 		ofstream ofs(destFile);
 		ofs<<symsSelection.size()<<endl; // first line specifies the number of symbols in the list
@@ -66,7 +66,7 @@ namespace ut {
 		}
 	}
 
-	void loadSymsSelection(const string &srcFile,
+	void loadSymsSelection(const stringType &srcFile,
 						   vector<const Mat> &symsSelection) {
 		ifstream ifs(srcFile);
 

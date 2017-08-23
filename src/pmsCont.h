@@ -60,7 +60,7 @@ protected:
 	Passing this field as parameter to a function/method is allowed only in dereferenced form:
 	*symFilter
 	*/
-	std::unique_ptr<ISymFilter> symFilter = std::make_unique<DefSymFilter>();
+	std::uniquePtr<ISymFilter> symFilter = std::makeUnique<DefSymFilter>();
 	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
 
 	double maxGlyphSum;				///< max sum of a glyph's pixels

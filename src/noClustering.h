@@ -43,12 +43,12 @@
 
 /// Fallback solution when no clustering is desired
 struct NoClustering final : ClusterAlg {
-	static const std::string Name;	///< name of 'no clustering' algorithm from varConfig.txt
+	static const std::stringType Name;	///< name of 'no clustering' algorithm from varConfig.txt
 
 	/// Puts each symbol into its own cluster
 	unsigned formGroups(const VSymData &symsToGroup,
 						std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-						const std::string &fontType = "") override;
+						const std::stringType &fontType = "") override;
 };
 
 #endif // H_NO_CLUSTERING

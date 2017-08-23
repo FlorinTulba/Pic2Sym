@@ -82,14 +82,14 @@ namespace {
 	@return mapping between encodings codes and their corresponding names.
 	It's non-const just to allow accessing the map with operator[].
 	*/
-	const bimap<FT_Encoding, string>& encodingsMap() {
+	const bimap<FT_Encoding, stringType>& encodingsMap() {
 
 		// Defines pairs like { FT_ENCODING_ADOBE_STANDARD, "ADOBE_STANDARD" }
-		#define enc(encValue) { encValue, string(#encValue).substr(12) }
+		#define enc(encValue) { encValue, stringType(#encValue).substr(12) }
 
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static const bimap<FT_Encoding, string> encMap(
-			make_bimap<FT_Encoding, string>({ // known encodings
+		static const bimap<FT_Encoding, stringType> encMap(
+			make_bimap<FT_Encoding, stringType>({ // known encodings
 				enc(FT_ENCODING_NONE),
 				enc(FT_ENCODING_UNICODE),
 				enc(FT_ENCODING_MS_SYMBOL),
@@ -195,7 +195,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	}
 
 	encodingIndex = idx;	
-	const auto &encName = encodingsMap().left.find(face->charmap->encoding)->second;
+	const stringType &encName = encodingsMap().left.find(face->charmap->encoding)->second;
 	cout<<"Using encoding "<<encName<<" (index "<<encodingIndex<<')'<<endl;
 
 	tinySyms.clear();
@@ -208,7 +208,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	return true;
 }
 
-bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/) {
+bool FontEngine::setEncoding(const stringType &encName, bool forceUpdate/* = false*/) {
 	if(face == nullptr)
 		THROW_WITH_CONST_MSG("No Font yet! Please select one first and then call " __FUNCTION__ "!", logic_error);
 
@@ -233,7 +233,7 @@ bool FontEngine::setEncoding(const string &encName, bool forceUpdate/* = false*/
 	return setNthUniqueEncoding(itEnc->second);
 }
 
-void FontEngine::setFace(FT_Face face_, const string &/*fontFile_ = ""*/) {
+void FontEngine::setFace(FT_Face face_, const stringType &/*fontFile_ = ""*/) {
 	if(face_ == nullptr)
 		THROW_WITH_CONST_MSG("Can't provide a NULL face as parameter in " __FUNCTION__ "!", invalid_argument);
 
@@ -256,7 +256,7 @@ void FontEngine::setFace(FT_Face face_, const string &/*fontFile_ = ""*/) {
 
 	for(int i = 0, charmapsCount = face->num_charmaps; i<charmapsCount; ++i)
 		uniqueEncs.insert(
-			bimap<FT_Encoding, unsigned>::value_type(face->charmaps[i]->encoding, (unsigned)i));
+			bimap<FT_Encoding, unsigned>::value_type(face->charmaps[(size_t)i]->encoding, (unsigned)i));
 
 	cout<<"The available encodings are:";
 	for(const auto &enc : uniqueEncs.right)
@@ -267,7 +267,7 @@ void FontEngine::setFace(FT_Face face_, const string &/*fontFile_ = ""*/) {
 	setNthUniqueEncoding(0U);
 }
 
-bool FontEngine::newFont(const string &fontFile_) {
+bool FontEngine::newFont(const stringType &fontFile_) {
 	FT_Face face_;
 	const path fontPath(absolute(fontFile_));
 	if(!checkFontFile(fontPath, face_))
@@ -474,7 +474,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	const double numeratorV = factorV * fontSzMul64,
 				numeratorH = factorH * fontSzMul64;
 	i = 0U;
-	for(const auto &item : toResize) {
+	for(const DataForSymToResize &item : toResize) {
 		req.height = (FT_Long)floor(numeratorV / item.vRatio);
 		req.width = (FT_Long)floor(numeratorH / item.hRatio);
 		FT_Error error = FT_Request_Size(face, &req);
@@ -517,7 +517,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 
 	if(!toResize.empty()) {
 		cout<<toResize.size()<<" symbols were resized twice: ";
-		for(const auto &item : toResize)
+		for(const DataForSymToResize &item : toResize)
 			cout<<item.symCode<<", ";
 		cout<<endl;
 	}
@@ -537,7 +537,7 @@ void FontEngine::setFontSz(unsigned fontSz_) {
 	cout<<"Count of remaining symbols is "<<symsCont->getSyms().size()<<endl;
 }
 
-const string& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) const {
+const stringType& FontEngine::getEncoding(unsigned *pEncodingIndex/* = nullptr*/) const {
 	if(face == nullptr)
 		THROW_WITH_CONST_MSG(__FUNCTION__  " called before the completion of configuration.", logic_error);
 
@@ -575,7 +575,7 @@ double FontEngine::smallGlyphsCoverage() const {
 	return symsCont->getCoverageOfSmallGlyphs();
 }
 
-const string& FontEngine::fontFileName() const {
+const stringType& FontEngine::fontFileName() const {
 	return ss.getFontFile(); // don't throw if empty; simply denote that the user didn't select a font yet
 }
 

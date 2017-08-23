@@ -134,7 +134,7 @@ struct ResultFileManager {
 
 	inline bool detectedPreviouslyProcessedCase() const { return alreadyProcessedCase; }
 
-	ResultFileManager(const string &studiedCase,	///< unique id describing the transformation params
+	ResultFileManager(const stringType &studiedCase,	///< unique id describing the transformation params
 					  volatile bool &isCanceled_,	///< reference to the cancel flag
 					  Mat &result_,					///< reference to the result
 					  IActiveTimer &timer_			///< reference to the timer used for the current transformation
@@ -196,15 +196,15 @@ struct ResultFileManager {
 #if defined _DEBUG && !defined UNIT_TESTING
 /// In Debug mode (not UnitTesting), when the transformation wasn't canceled, log the parameters of the matches
 static void logDataForBestMatches(volatile bool &isCanceled,
-						   const string &studiedCase, unsigned sz, int h, int w, bool usesUnicode,
-						   const vector<vector<unique_ptr<IBestMatch>>> &draftMatches) {
+						   const stringType &studiedCase, unsigned sz, int h, int w, bool usesUnicode,
+						   const vector<vector<uniquePtr<IBestMatch>>> &draftMatches) {
 	if(isCanceled)
 		return;
 	TransformTrace tt(studiedCase, sz, usesUnicode); // log support (DEBUG mode only)
 	for(int r = 0; r<h; r += sz) {
-		auto &draftRow = draftMatches[(unsigned)r/sz];
+		const vector<uniquePtr<IBestMatch>> &draftRow = draftMatches[size_t((unsigned)r/sz)];
 		for(int c = 0; c<w; c += sz) {
-			const auto &draftMatch = *draftRow[(unsigned)c/sz];
+			const IBestMatch &draftMatch = *draftRow[size_t((unsigned)c/sz)];
 			tt.newEntry((unsigned)r, (unsigned)c, draftMatch); // log the data about best match (DEBUG mode only)
 		}
 	}
@@ -248,8 +248,8 @@ void Transformer::run() {
 
 	sz = cfg.getSS().getFontSz();
 	
-	std::shared_ptr<const ResizedImg> resizedImg =
-		std::make_shared<const ResizedImg>(img.original(), cfg.getIS(), sz); // throws when no image
+	std::sharedPtr<const ResizedImg> resizedImg =
+		std::makeShared<const ResizedImg>(img.original(), cfg.getIS(), sz); // throws when no image
 	const bool newResizedImg = ctrler.updateResizedImg(resizedImg);
 	const Mat &resizedVersion = resizedImg->get();
 	h = resizedVersion.rows; w = resizedVersion.cols;

@@ -61,11 +61,11 @@ extern const double MaxAvgProjErrForPartitionClustering;
 extern const double MaxRelMcOffsetForPartitionClustering;
 extern const double MaxDiffAvgPixelValForPartitionClustering;
 
-const string PartitionClustering::Name("Partition");
+const stringType PartitionClustering::Name("Partition");
 
 unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 										 vector<vector<unsigned>> &symsIndicesPerCluster,
-										 const string &fontType/* = ""*/) {
+										 const stringType &fontType/* = ""*/) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 	static TaskMonitor partitionClustering("partition clustering", *symsMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
@@ -77,7 +77,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 		if(tsp == nullptr)
 			THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after calling setTinySymsProvider()!", logic_error);
 
-		const auto &tinySyms = tsp->getTinySyms();
+		const VTinySyms &tinySyms = tsp->getTinySyms();
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 		static const double SqMaxRelMcOffsetForClustering =
 						MaxRelMcOffsetForPartitionClustering * MaxRelMcOffsetForPartitionClustering;
@@ -89,11 +89,11 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 #endif // _DEBUG && !UNIT_TESTING
 
 		const unsigned tinySymsCount = (unsigned)tinySyms.size();
-		rawClusters.clusterLabels.resize(tinySymsCount, -1);
+		vector<int> clusterLabels(tinySymsCount, -1);
 
 #ifndef AI_REVIEWER_CHECK // AI Reviewer might not parse correctly such lambda-s
-		rawClusters.clustersCount = (unsigned)partition(tinySyms, rawClusters.clusterLabels,
-											[&] (const TinySym &a, const TinySym &b) {
+		unsigned clustersCount = (unsigned)partition(tinySyms, clusterLabels,
+													 [&] (const TinySym &a, const TinySym &b) {
 #if !defined _DEBUG || defined UNIT_TESTING
 			if(!FastDistSymToClusterComputation) {
 				const double l1Dist = norm(a.getMat() - b.getMat(), NORM_L1);
@@ -131,7 +131,7 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 #undef CheckProjections
 
-			auto itA = a.getMat().begin<double>(), itAEnd = a.getMat().end<double>(),
+			MatConstIterator_<double> itA = a.getMat().begin<double>(), itAEnd = a.getMat().end<double>(),
 				itB = b.getMat().begin<double>();
 			for(double sumOfAbsDiffs = 0.; itA != itAEnd;) {
 				sumOfAbsDiffs += abs(*itA++ - *itB++);
@@ -185,14 +185,15 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 
 #else // AI_REVIEWER_CHECK defined
 		// Let AI Reviewer know that following methods were used within the lambda above
-		rawClusters.clustersCount = 0U;
+		unsigned clustersCount = 0U;
 		const TinySym &a = tinySyms[0ULL];
 		a.getMat(); a.getAvgPixVal(); a.getMc();
 		a.getVAvgProj(); a.getHAvgProj(); a.getBackslashDiagAvgProj(); a.getSlashDiagAvgProj();
 #endif // AI_REVIEWER_CHECK
 
+		rawClusters.reset(clustersCount, std::move(clusterLabels));
 		cout<<endl<<"All the "<<tinySymsCount<<" symbols of the charmap were clustered in "
-			<<rawClusters.clustersCount<<" groups"<<endl;
+			<<clustersCount<<" groups"<<endl;
 
 #if defined _DEBUG && !defined UNIT_TESTING
 		PRINTLN(countAvgPixDiff);
@@ -208,9 +209,9 @@ unsigned PartitionClustering::formGroups(const VSymData &symsToGroup,
 	}
 
 	// Adapt clusters for filtered cmap
-	symsIndicesPerCluster.assign(rawClusters.clustersCount, vector<unsigned>());
+	symsIndicesPerCluster.assign(rawClusters.getClustersCount(), vector<unsigned>());
 	for(unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
-		symsIndicesPerCluster[(size_t)rawClusters.clusterLabels
+		symsIndicesPerCluster[(size_t)rawClusters.getClusterLabels()
 			[symsToGroup[(size_t)i]->getSymIdx()]].		push_back(i);
 	const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster),
 							   [] (const vector<unsigned> &elem) { return elem.empty(); });

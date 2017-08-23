@@ -113,7 +113,7 @@ namespace {
 			extractNextFont returns true if there was another font to be handled.
 			In that case, it returns the font name and font file name within the parameters.
 			*/
-			bool extractNextFont(wstring &fontName, wstring &fontFileName) {
+			bool extractNextFont(wstringType &fontName, wstringType &fontFileName) {
 				DWORD lenFontName = longestNameLen+1, lenFontFileName = longestDataLen+2;
 				const LONG ret = RegEnumValue(fontsKey,
 										idx++, // which font index
@@ -143,10 +143,10 @@ namespace {
 		The font read from registry needs to contain the required name and also match bold&italic style.
 		Otherwise it will return false.
 		*/
-		static bool relevantFontName(const wstring &wCurFontName,
-									 const wstring &wFontName, bool isBold, bool isItalic) {
+		static bool relevantFontName(const wstringType &wCurFontName,
+									 const wstringType &wFontName, bool isBold, bool isItalic) {
 			const auto at = wCurFontName.find(wFontName); // fontName won't be necessary a prefix!!
-			if(at == wstring::npos)
+			if(at == wstringType::npos)
 				return false; // current font doesn't contain the desired prefix
 
 			// Bold and Italic fonts typically append such terms to their key name.
@@ -157,26 +157,26 @@ namespace {
 			static match_results<wstring::const_iterator> match;
 	#pragma warning ( default : WARN_THREAD_UNSAFE )
 
-			const wstring wSuffixCurFontName =
+			const wstringType wSuffixCurFontName =
 				wCurFontName.substr(at+wFontName.length()); // extract the suffix
 
-			if(isBold != regex_search(wSuffixCurFontName, match, rexBold))
+			if(isBold != regex_search((wstring)wSuffixCurFontName, match, rexBold))
 				return false; // current font has different Bold status than expected
 
-			if(isItalic != regex_search(wSuffixCurFontName, match, rexItalic))
+			if(isItalic != regex_search((wstring)wSuffixCurFontName, match, rexItalic))
 				return false; // current font has different Italic status than expected
 
 			return true;
 		}
 
 		/// Ensures the obtained font file name represents a valid path
-		static string refineFontFileName(const wstring &wCurFontFileName) {
-			path curFontFile(string(BOUNDS(wCurFontFileName)));
+		static stringType refineFontFileName(const wstringType &wCurFontFileName) {
+			path curFontFile(stringType(BOUNDS(wCurFontFileName)));
 			if(!curFontFile.has_parent_path()) {
 				// The fonts are typically installed within c:\Windows\Fonts
 	#pragma warning ( disable : WARN_DEPRECATED WARN_THREAD_UNSAFE )
 				static const path typicalFontsDir =
-					path(string(getenv("SystemRoot"))).append("Fonts");
+					path(stringType(getenv("SystemRoot"))).append("Fonts");
 	#pragma warning ( default : WARN_DEPRECATED WARN_THREAD_UNSAFE )
 
 				path temp(typicalFontsDir);
@@ -192,7 +192,7 @@ namespace {
 		}
 
 		/// When ambiguous results, lets the user select the correct one.
-		static string extractResult(map<string, string> &choices) {
+		static stringType extractResult(map<stringType, stringType> &choices) {
 			assert(!choices.empty());
 
 			const size_t choicesCount = choices.size();
@@ -220,10 +220,10 @@ namespace {
 		Unfortunately, the provided fontName isn't decorated with Bold and/or Italic at all,
 		so isBold and isItalic parameters were necessary, too.
 		*/
-		static string pathFor(const string &fontName, bool isBold, bool isItalic) {
-			wstring wCurFontName, wCurFontFileName;
-			map<string, string> choices;
-			wstring wFontName(CBOUNDS(fontName));
+		static stringType pathFor(const stringType &fontName, bool isBold, bool isItalic) {
+			wstringType wCurFontName, wCurFontFileName;
+			map<stringType, stringType> choices;
+			wstringType wFontName(CBOUNDS(fontName));
 
 			RegistryHelper rh;
 			while(rh.extractNextFont(wCurFontName, wCurFontFileName))
@@ -250,7 +250,7 @@ OpenSave::OpenSave(const TCHAR * const title, const TCHAR * const filter,
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = nullptr; // no owner
-	fNameBuf[0] = '\0';
+	fNameBuf[0ULL] = '\0';
 	ofn.lpstrFile = fNameBuf;
 	ofn.nMaxFile = sizeof(fNameBuf);
 	ofn.lpstrFilter = filter;
@@ -279,7 +279,7 @@ bool OpenSave::promptForUserChoice() {
 			return false;
 		}
 	}
-	const wstring wResult(ofn.lpstrFile);
+	const wstringType wResult(ofn.lpstrFile);
 	result.assign(CBOUNDS(wResult));
 	return true;
 }
@@ -314,7 +314,7 @@ bool SelectFont::promptForUserChoice() {
 		
 	isBold = (cf.nFontType & 0x100) || (lf.lfWeight > FW_MEDIUM); // There are fonts with only a Medium style (no Regular one)
 	isItalic = (cf.nFontType & 0x200) || (lf.lfItalic != (BYTE)0);
-	const wstring wResult(lf.lfFaceName);
+	const wstringType wResult(lf.lfFaceName);
 	result.assign(CBOUNDS(wResult));
 
 	cout<<"Selected ";

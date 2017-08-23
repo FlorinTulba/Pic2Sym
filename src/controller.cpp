@@ -62,27 +62,27 @@
 
 using namespace std;
 
-std::shared_ptr<const IUpdateSymSettings> Controller::getUpdateSymSettings() const {
+std::sharedPtr<const IUpdateSymSettings> Controller::getUpdateSymSettings() const {
 	return updateSymSettings;
 }
 
-std::shared_ptr<const IGlyphsProgressTracker> Controller::getGlyphsProgressTracker() const {
+std::sharedPtr<const IGlyphsProgressTracker> Controller::getGlyphsProgressTracker() const {
 	return glyphsProgressTracker;
 }
 
-std::shared_ptr<IPicTransformProgressTracker> Controller::getPicTransformProgressTracker() {
+std::sharedPtr<IPicTransformProgressTracker> Controller::getPicTransformProgressTracker() {
 	return picTransformProgressTracker;
 }
 
-std::shared_ptr<const IPresentCmap> Controller::getPresentCmap() const {
+std::sharedPtr<const IPresentCmap> Controller::getPresentCmap() const {
 	return presentCmap;
 }
 
-std::shared_ptr<const ISelectSymbols> Controller::getSelectSymbols() const {
+std::sharedPtr<const ISelectSymbols> Controller::getSelectSymbols() const {
 	return selectSymbols;
 }
 
-std::shared_ptr<IControlPanelActions> Controller::getControlPanelActions() {
+std::sharedPtr<IControlPanelActions> Controller::getControlPanelActions() {
 	return controlPanelActions;
 }
 

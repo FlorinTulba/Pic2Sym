@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #include "boost_filesystem_path.h"
 
@@ -60,7 +60,7 @@ class AppStart {
 
 public:
 	/// Setting the directory of the executed application provided as parameter
-	static void determinedBy(const std::string &appFile);
+	static void determinedBy(const std::stringType &appFile);
 
 	/// @return the location of the executed application
 	static const boost::filesystem::path& dir();

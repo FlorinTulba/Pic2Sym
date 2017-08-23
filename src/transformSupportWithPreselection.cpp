@@ -62,7 +62,7 @@ TransformSupportWithPreselection::TransformSupportWithPreselection(MatchEngine &
 																   const IMatchSettings &matchSettings_,
 																   Mat &resized_,
 																   Mat &resizedBlurred_,
-																   vector<vector<unique_ptr<IBestMatch>>> &draftMatches_,
+																   vector<vector<uniquePtr<IBestMatch>>> &draftMatches_,
 																   MatchSupport &matchSupport_) :
 	TransformSupport(me_, matchSettings_, resized_, resizedBlurred_, draftMatches_),
 	matchSupport(dynamic_cast<MatchSupportWithPreselection&>(matchSupport_)) {}
@@ -99,16 +99,16 @@ void TransformSupportWithPreselection::approxRow(int r, int width, unsigned patc
 												 Mat &result) {
 	const int row = r * (int)patchSz;
 	const Range rowRange(row, row + (int)patchSz);
-	auto &draftMatchesRow = draftMatches[(size_t)r];
-	auto &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
+	const vector<uniquePtr<IBestMatch>> &draftMatchesRow = draftMatches[(size_t)r];
+	const vector<uniquePtr<IBestMatch>> &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
 
 	TopCandidateMatches tcm(ShortListLength);
 	MatchProgressWithPreselection mpwp(tcm);
 
 	for(int c = 0, patchColumn = 0; c < width; c += (int)patchSz, ++patchColumn) {
 		// Skip patches who appear rather uniform either in tiny or normal format
-		auto &draftMatch = *draftMatchesRow[(size_t)patchColumn];
-		auto &draftMatchTiny = *draftMatchesRowTiny[(size_t)patchColumn];
+		IBestMatch &draftMatch = *draftMatchesRow[(size_t)patchColumn];
+		IBestMatch &draftMatchTiny = *draftMatchesRowTiny[(size_t)patchColumn];
 		if(checkUnifPatch(draftMatchTiny) || checkUnifPatch(draftMatch)) {
 			manageUnifPatch(matchSettings, result, patchSz, draftMatch, rowRange, c);
 			continue;
@@ -122,7 +122,7 @@ void TransformSupportWithPreselection::approxRow(int r, int width, unsigned patc
 
 		if(me.improvesBasedOnBatch(fromSymIdx, upperSymIdx, draftMatchTiny, mpwp)) {
 			tcm.prepareReport();
-			auto &&shortList = tcm.getShortList();
+			CandidatesShortList &&shortList = tcm.getShortList();
 
 			// Examine shortList on actual patches and symbols, not tiny ones
 			if(matchSupport.improvesBasedOnBatchShortList(std::move(shortList), draftMatch))

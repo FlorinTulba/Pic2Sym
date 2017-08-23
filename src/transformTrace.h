@@ -46,21 +46,19 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 #include <fstream>
 
 #pragma warning ( pop )
 
 struct IBestMatch; // forward declaration
 
-/**
-Facilitates the tracing process during the transformation of an image.
-*/
+/// Facilitates the tracing process during the transformation of an image.
 class TransformTrace {
 protected:
-	const std::string &studiedCase;	///< used to establish the name of the generated trace file
+	const std::stringType &studiedCase;	///< used to establish the name of the generated trace file
 
-	std::wofstream ofs;				///< trace file stream
+	std::wofstream wofs;				///< trace file stream
 
 	const unsigned sz;		///< symbol size
 
@@ -70,7 +68,7 @@ protected:
 
 public:
 	/// Opens a trace file stream and initializes required fields
-	TransformTrace(const std::string &studiedCase_, unsigned sz_, bool isUnicode_);
+	TransformTrace(const std::stringType &studiedCase_, unsigned sz_, bool isUnicode_);
 	TransformTrace(const TransformTrace&) = delete;
 	void operator=(const TransformTrace&) = delete;
 	~TransformTrace(); ///< closes the trace stream

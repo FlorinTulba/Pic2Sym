@@ -88,9 +88,6 @@ struct ITinySym /*abstract*/ : virtual ISymData {
 	/// Inverse diagonal projection divided by TinySymDiagsCount
 	virtual const cv::Mat& getSlashDiagAvgProj() const = 0;
 
-	/// Updates only several relevant fields to make this tiny symbol more similar to sym given a certain weight
-	virtual void shiftTowards(const ITinySym &sym, double weight) = 0;
-
 	virtual ~ITinySym() = 0 {}
 };
 

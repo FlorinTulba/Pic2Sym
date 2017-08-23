@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <memory>
+#include "std_memory.h"
 #include <vector>
 
 #include <opencv2/core/core.hpp>
@@ -104,7 +104,7 @@ Match manager based on the enabled matching aspects:
 class MatchAssessor /*abstract*/ {
 protected:
 	/// The available matching aspects, enabled or not
-	const std::vector<std::shared_ptr<MatchAspect>> *availAspects = nullptr;
+	const std::vector<std::sharedPtr<MatchAspect>> *availAspects = nullptr;
 
 	// matching aspects
 	std::vector<const MatchAspect*> enabledAspects;	///< the enabled aspects
@@ -119,7 +119,7 @@ protected:
 public:
 	virtual ~MatchAssessor() = 0 {}
 
-	MatchAssessor& availableAspects(const std::vector<std::shared_ptr<MatchAspect>> &availAspects_);
+	MatchAssessor& availableAspects(const std::vector<std::sharedPtr<MatchAspect>> &availAspects_);
 
 	void newlyEnabledMatchAspect();		///< increments enabledAspectsCount
 	void newlyDisabledMatchAspect();	///< decrements enabledAspectsCount

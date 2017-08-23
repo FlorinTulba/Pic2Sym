@@ -50,7 +50,7 @@
 using namespace std;
 using namespace cv;
 
-BulkySymsFilter::BulkySymsFilter(unique_ptr<ISymFilter> nextFilter_/* = nullptr*/) :
+BulkySymsFilter::BulkySymsFilter(uniquePtr<ISymFilter> nextFilter_/* = nullptr*/) :
 		TSymFilter(2U, "bulky symbols", std::move(nextFilter_)) {}
 
 bool BulkySymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc) {

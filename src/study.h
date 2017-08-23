@@ -41,7 +41,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #pragma warning ( pop )
 
@@ -61,7 +61,7 @@ The Unit Testing project can use this function, as well:
 - instead of prompting the user, the function would return false, unless
 - the context parameter is found within a customizable set of contexts dynamically controlling which branches to take
 */
-bool prompt(const std::string &question, const std::string &context);
+bool prompt(const std::stringType &question, const std::stringType &context);
 
 #ifndef UNIT_TESTING // Next 2 functions are used only within main.cpp
 

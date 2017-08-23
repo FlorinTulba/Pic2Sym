@@ -190,7 +190,7 @@ public:
 			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
 
 	/// A clone with different symIdx
-	std::unique_ptr<const SymData> clone(size_t symIdx_) const;
+	std::uniquePtr<const SymData> clone(size_t symIdx_) const;
 #endif // UNIT_TESTING defined
 
 protected:

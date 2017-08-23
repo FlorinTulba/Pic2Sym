@@ -51,7 +51,7 @@
 class Img : public IBasicImgData {
 protected:
 	boost::filesystem::path imgPath;	///< path of current image
-	std::string imgName;				///< stem part of the image file name
+	std::stringType imgName;				///< stem part of the image file name
 	cv::Mat source;						///< the original image
 	bool color = false;					///< color / grayscale
 
@@ -62,7 +62,7 @@ public: // Providing reset(Mat) as public for Unit Testing
 
 public:
 	/// setting a new source image. Returns false for invalid images
-	bool reset(const std::string &picName);
+	bool reset(const std::stringType &picName);
 
 	/// @return absolute path of the image file name
 	const boost::filesystem::path& absPath() const { return imgPath; }
@@ -72,7 +72,7 @@ public:
 	bool isColor() const override final { return color; }	///< color / grayscale image
 
 	/// @return the stem of the image file name
-	const std::string& name() const override final { return imgName; }
+	const std::stringType& name() const override final { return imgName; }
 };
 
 #endif // H_IMG

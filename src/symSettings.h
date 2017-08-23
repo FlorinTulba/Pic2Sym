@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <string>
+#include "std_string.h"
 
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/archive/binary_oarchive.hpp>
@@ -57,8 +57,8 @@
 /// Parameters concerning the symbols set used for approximating patches.
 class SymSettings : public ISymSettings {
 protected:
-	std::string fontFile;	///< the file containing the used font family with the desired style
-	std::string encoding;	///< the particular encoding of the used cmap
+	std::stringType fontFile;	///< the file containing the used font family with the desired style
+	std::stringType encoding;	///< the particular encoding of the used cmap
 	unsigned fontSz;		///< size of the symbols
 
 public:
@@ -76,7 +76,11 @@ public:
 		SymSettings defSettings(*this); // create as copy of previous values
 
 		// read user default match settings
-		ar >> defSettings.fontFile >> defSettings.encoding >> defSettings.fontSz;
+		string newFontFile, newEncoding;
+		ar >> newFontFile >> newEncoding >> defSettings.fontSz;
+
+		defSettings.fontFile = newFontFile;
+		defSettings.encoding = newEncoding;
 
 		// these show message when there are changes
 		setFontFile(defSettings.fontFile);
@@ -87,7 +91,7 @@ public:
 	/// Saves *this to ar
 	template<class Archive>
 	void save(Archive &ar, const unsigned) const {
-		ar << fontFile << encoding << fontSz;
+		ar << (string)fontFile << (string)encoding << fontSz;
 	}
 
 #ifndef AI_REVIEWER_CHECK
@@ -104,17 +108,17 @@ public:
 	/// Report if these settings are initialized or not
 	bool initialized() const override;
 
-	const std::string& getFontFile() const override final { return fontFile; }
-	void setFontFile(const std::string &fontFile_) override;
+	const std::stringType& getFontFile() const override final { return fontFile; }
+	void setFontFile(const std::stringType &fontFile_) override;
 
-	const std::string& getEncoding() const override final { return encoding; }
-	void setEncoding(const std::string &encoding_) override;
+	const std::stringType& getEncoding() const override final { return encoding; }
+	void setEncoding(const std::stringType &encoding_) override;
 
 	const unsigned& getFontSz() const override final { return fontSz; }
 	void setFontSz(unsigned fontSz_) override;
 
 	/// @return a copy of these settings
-	std::unique_ptr<ISymSettings> clone() const override;
+	std::uniquePtr<ISymSettings> clone() const override;
 
 	bool operator==(const SymSettings &other) const;
 	bool operator!=(const SymSettings &other) const;
