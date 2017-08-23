@@ -42,7 +42,7 @@
 #include "symData.h"
 #include "clusterDataBase.h"
 
-struct SymsSupport; // Forward declaration
+struct ISymsSupport; // forward declaration
 
 #pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
 
@@ -73,7 +73,7 @@ public:
 	*/
 	ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 				const std::vector<unsigned> &clusterSymIndices,
-				SymsSupport &symsSupport);
+				ISymsSupport &symsSupport);
 
 	ClusterData(ClusterData &&other);
 

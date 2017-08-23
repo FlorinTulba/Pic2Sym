@@ -107,8 +107,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	fitGlyphToBox(bm, bb, leftBound, topBound, sz, // input params
 				  rows_, cols_, left_, top_, diffLeft, diffRight, diffTop, diffBottom); // output params
 
-	rows = (unsigned char)rows_;
-	cols = (unsigned char)cols_;
+	knownSize(rows_, cols_);
 
 	if(rows_ > 0 && cols_ > 0) {
 		pixels.resize(size_t(rows_ * cols_));
@@ -122,8 +121,7 @@ PixMapSym::PixMapSym(unsigned long symCode_,		// the symbol code
 	left_ -= bb.xMin;
 	top_ = (sz-1) - (bb.yMax-top_);
 
-	left = (unsigned char)left_;
-	top = (unsigned char)top_;
+	knownPosition(top_, left_);
 
 	computeMcAndAvgPixVal((unsigned)sz, maxGlyphSum, pixels, rows, cols, left, top, consec, revConsec,
 						  mc, avgPixVal, &colSums, &rowSums);
@@ -178,6 +176,16 @@ bool PixMapSym::operator==(const PixMapSym &other) const {
 		rows == other.rows && cols == other.cols &&
 		mc == other.mc &&
 		equal(CBOUNDS(pixels), cbegin(other.pixels));
+}
+
+void PixMapSym::knownSize(int rows_, int cols_) {
+	rows = (unsigned char)rows_;
+	cols = (unsigned char)cols_;
+}
+
+void PixMapSym::knownPosition(int top_, int left_) {
+	top = (unsigned char)top_;
+	left = (unsigned char)left_;
 }
 
 const Point2d& PixMapSym::getMc() const { return mc; }

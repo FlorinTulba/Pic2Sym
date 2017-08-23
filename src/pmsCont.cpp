@@ -131,6 +131,31 @@ void PmsCont::reset(unsigned fontSz_/* = 0U*/, unsigned symsCount/* = 0U*/) {
 	revConsec = revConsec.t();
 }
 
+bool PmsCont::exactBlank(unsigned height, unsigned width) {
+	if(height > 0U && width > 0U)
+		return false;
+
+	++blanks;
+	return true;
+}
+
+bool PmsCont::nearBlank(const IPixMapSym &pms) {
+	if(pms.getAvgPixVal() > EPS && pms.getAvgPixVal() < OneMinEPS)
+		return false;
+	
+	++blanks;
+	return true;
+}
+
+bool PmsCont::isDuplicate(const IPixMapSym &pms) {
+	for(const uniquePtr<const IPixMapSym> &prevPms : syms)
+		if(dynamic_cast<const PixMapSym&>(pms) == dynamic_cast<const PixMapSym&>(*prevPms)) {
+			++duplicates;
+			return true;
+		}
+	return false;
+}
+
 void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) {
 	assert(!ready); // method shouldn't be called after setAsReady without reset-ing
 	
@@ -138,24 +163,18 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 	const unsigned height = b.rows, width = b.width;
 
 	// Skip Space characters
-	if(height==0U || width==0U) {
-		++blanks;
+	if(exactBlank(height, width))
 		return;
-	}
 
 	uniquePtr<const PixMapSym> pms = makeUnique<const PixMapSym>(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
 											(int)fontSz, maxGlyphSum, consec, revConsec, bb);
-	if(pms->getAvgPixVal() < EPS || pms->getAvgPixVal() > OneMinEPS) { // discard disguised Space characters
-		++blanks;
+	// discard disguised Space characters
+	if(nearBlank(*pms))
 		return;
-	}
 
 	// Exclude duplicates, as well
-	for(const uniquePtr<const IPixMapSym> &prevPms : syms)
-		if(*pms == dynamic_cast<const PixMapSym&>(*prevPms)) {
-			++duplicates;
-			return;
-		}
+	if(isDuplicate(*pms))
+		return;
 
 	sfc.setBoundingBox(height, width);
 
@@ -197,7 +216,7 @@ void PmsCont::setAsReady() {
 	});
 
 #else // AI_REVIEWER_CHECK defined
-	syms[0]->getAvgPixVal();
+	syms[0ULL]->getAvgPixVal();
 #endif // AI_REVIEWER_CHECK
 
 	coverageOfSmallGlyphs = (*itToNthGlyphSum)->getAvgPixVal();

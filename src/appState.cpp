@@ -171,13 +171,13 @@ namespace {
 
 	/// Group of parameters for update*SettingDemand() functions
 	struct UpdateSettingsParams {
-		ControlPanel &cp;
+		IControlPanel &cp;
 		volatile AppStateType &appState;
 		set<const cv::String> &slidersRestoringValue;
 		const cv::String * const pLuckySliderName;
 		const String &controlName;
 
-		UpdateSettingsParams(ControlPanel &cp_,
+		UpdateSettingsParams(IControlPanel &cp_,
 							 volatile AppStateType &appState_,
 							 set<const cv::String> &slidersRestoringValue_,
 							 const cv::String * const pLuckySliderName_,

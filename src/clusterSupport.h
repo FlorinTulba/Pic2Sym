@@ -50,8 +50,8 @@
 #pragma warning ( pop )
 
 // Forward declarations
-class ClusterEngine;
-struct SymsSupport;
+struct IClusterProcessing;
+struct ISymsSupport;
 
 /// Interface for ClustersSupport
 struct IClustersSupport /*abstract*/ {
@@ -80,13 +80,13 @@ For PreselectionByTinySyms == true, the clusters include tiny symbols.
 */
 class ClustersSupport : public IClustersSupport {
 protected:
-	ClusterEngine &ce;		///< clusters manager
-	const std::uniquePtr<SymsSupport> ss;	///< helper for symbols
+	IClusterProcessing &ce;		///< clusters manager
+	const std::uniquePtr<ISymsSupport> ss;	///< helper for symbols
 	VSymData &symsSet;		///< set of most information on each symbol
 
 public:
 	/// Base constructor
-	ClustersSupport(ClusterEngine &ce_, std::uniquePtr<SymsSupport> ss_, VSymData &symsSet_);
+	ClustersSupport(IClusterProcessing &ce_, std::uniquePtr<ISymsSupport> ss_, VSymData &symsSet_);
 
 	ClustersSupport(const ClustersSupport&) = delete;
 	ClustersSupport(ClustersSupport&&) = delete;
@@ -104,7 +104,7 @@ public:
 	Computes the cluster representatives and marks the limits between the symbols for different clusters.
 	*/
 	void delimitGroups(std::vector<std::vector<unsigned>> &symsIndicesPerCluster,
-							   VClusterData &clusters, std::set<unsigned> &clusterOffsets) override;
+					   VClusterData &clusters, std::set<unsigned> &clusterOffsets) override;
 
 	/// Returns the rearranged symsSet or its tiny correspondent version when PreselectionByTinySyms == true.
 	const VSymData& clusteredSyms() const override;

@@ -52,8 +52,8 @@
 using namespace std;
 
 ClustersSupportWithPreselection::ClustersSupportWithPreselection(ITinySymsProvider &tsp_, 
-																 ClusterEngine &ce_, 
-																 uniquePtr<SymsSupport> ss_,
+																 IClusterProcessing &ce_,
+																 uniquePtr<ISymsSupport> ss_,
 																 VSymData &symsSet_) :
 	ClustersSupport(ce_, move(ss_), symsSet_), tsp(tsp_) {}
 

@@ -87,6 +87,9 @@ protected:
 	double lastUserNotifiedProgress = 0.;		///< last value of job's progress reported to the user
 	double lastUserNotifiedElapsedTime = 0.;	///< last elapsed time reported to the user
 
+	/// Prepares the monitor for a new timing using timer_
+	void getReady(Timer &timer_) override;
+
 public:
 	/**
 	Provides the job with its name, a notifier that informs the user about the progress and

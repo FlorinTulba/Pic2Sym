@@ -51,8 +51,8 @@ protected:
 
 public:
 	/// Besides the parameters from the base constructor, it also needs tsp_ to get the tiny symbols
-	ClustersSupportWithPreselection(ITinySymsProvider &tsp_, ClusterEngine &ce_,
-									std::uniquePtr<SymsSupport> ss_, VSymData &symsSet_);
+	ClustersSupportWithPreselection(ITinySymsProvider &tsp_, IClusterProcessing &ce_,
+									std::uniquePtr<ISymsSupport> ss_, VSymData &symsSet_);
 
 	ClustersSupportWithPreselection(const ClustersSupportWithPreselection&) = delete;
 	ClustersSupportWithPreselection(ClustersSupportWithPreselection&&) = delete;

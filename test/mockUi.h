@@ -85,7 +85,20 @@ public:
 
 struct ActionPermit {};
 
-class ControlPanel {
+/// Interface of ControlPanel
+struct IControlPanel /*abstract*/ {
+	virtual void restoreSliderValue(...) = 0;
+	virtual std::uniquePtr<ActionPermit> actionDemand(...) = 0;
+	virtual void updateEncodingsCount(...) = 0;
+	virtual bool encMaxHack() const = 0;
+	virtual void updateSymSettings(...) = 0;
+	virtual void updateImgSettings(...) = 0;
+	virtual void updateMatchSettings(...) = 0;
+
+	virtual ~IControlPanel() = 0 {}
+};
+
+class ControlPanel : public IControlPanel {
 public:
 	ControlPanel(...) {}
 	void updateEncodingsCount(...) {}

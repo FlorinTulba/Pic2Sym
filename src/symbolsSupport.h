@@ -49,11 +49,24 @@
 
 struct ISymData; // Forward declaration
 
+/// Interface for SymsSupport* types (blurring and computing cluster representatives)
+struct ISymsSupport /*abstract*/ {
+	/// @return the value of PreselectionByTinySyms
+	virtual bool usingTinySymbols() const = 0;
+
+	/// Generates clusters with normal / tiny format, depending on PreselectionByTinySyms
+	virtual void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
+											  int symSz, double invClusterSz,
+											  cv::Mat &synthesizedSym, cv::Mat &negSym) const = 0;
+
+	virtual ~ISymsSupport() = 0 {}
+};
+
 /**
 Helpful for blurring and computing cluster representatives.
 Polymorphic as function of the value of PreselectionByTinySyms.
 */
-struct SymsSupport {
+struct SymsSupport : public ISymsSupport {
 	/// Base class constructor
 	SymsSupport() {}
 
@@ -62,15 +75,13 @@ struct SymsSupport {
 	void operator=(const SymsSupport&) = delete;
 	void operator=(SymsSupport&&) = delete;
 
-	virtual ~SymsSupport() {}
-
 	/// @return the value of PreselectionByTinySyms
-	virtual bool usingTinySymbols() const;
+	bool usingTinySymbols() const override;
 
 	/// Generates clusters with normal / tiny format, depending on PreselectionByTinySyms
-	virtual void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
-											  int symSz, double invClusterSz,
-											  cv::Mat &synthesizedSym, cv::Mat &negSym) const;
+	void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
+									  int symSz, double invClusterSz,
+									  cv::Mat &synthesizedSym, cv::Mat &negSym) const override;
 };
 
 #endif // H_SYMBOLS_SUPPORT

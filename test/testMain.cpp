@@ -43,6 +43,7 @@
 #include "controller.h"
 #include "pixMapSym.h"
 #include "matchEngine.h"
+#include "clusterEngine.h"
 #include "fontEngine.h"
 #include "transform.h"
 #include "settingsBase.h"
@@ -328,7 +329,7 @@ Img& ControlPanelActions::getImg() {
 	GET_FIELD(Img);
 }
 
-ControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
+IControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
 

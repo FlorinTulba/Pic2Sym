@@ -80,6 +80,9 @@ protected:
 
 	bool removable = false;	///< when set to true, the symbol will appear as marked (inversed) in the cmap viewer
 
+	void knownSize(int rows_, int cols_);		///< provide symbol box size
+	void knownPosition(int top_, int left_);	///< provide symbol box position
+
 public:
 	/**
 	Processes a FT_Bitmap object to store a faithful representation of the symCode

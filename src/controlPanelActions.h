@@ -49,7 +49,7 @@ class Transformer;
 class Img;
 class CmapInspect;
 class Comparator;
-class ControlPanel;
+struct IControlPanel;
 
 /// Implementation for the actions triggered by the controls from Control Panel
 class ControlPanelActions : public IControlPanelActions {
@@ -61,7 +61,7 @@ protected:
 	Transformer &t;
 	Img &img;			///< original image to process after resizing
 	Comparator &comp;	///< view for comparing original & result
-	ControlPanel &cp;	///< the configuration view
+	IControlPanel &cp;	///< the configuration view
 	std::sharedPtr<CmapInspect> &pCmi;
 
 	// Validation flags
@@ -79,7 +79,7 @@ protected:
 
 public:
 	static Img& getImg();
-	ControlPanel& getControlPanel(ISettingsRW &cfg_);
+	IControlPanel& getControlPanel(ISettingsRW &cfg_);
 
 	ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
 						FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,

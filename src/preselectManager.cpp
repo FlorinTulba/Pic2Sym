@@ -61,48 +61,48 @@ const IPreselManager& IPreselManager::concrete() {
 }
 
 uniquePtr<IClustersSupport> PreselectionOn::createClusterSupport(ITinySymsProvider &tsp,
-																 ClusterEngine &ce,
+																 IClusterProcessing &ce,
 																 VSymData &symsSet) const {
 	return makeUnique<ClustersSupportWithPreselection>(tsp, ce,
 														makeUnique<SymsSupportWithPreselection>(),
 														symsSet);
 }
 
-uniquePtr<MatchSupport> PreselectionOn::createMatchSupport(CachedData &cd,
+uniquePtr<IMatchSupport> PreselectionOn::createMatchSupport(CachedData &cd,
 															VSymData &symsSet,
 															MatchAssessor &matchAssessor,
 															const IMatchSettings &matchSettings) const {
 	return makeUnique<MatchSupportWithPreselection>(cd, symsSet, matchAssessor, matchSettings);
 }
 
-uniquePtr<TransformSupport> PreselectionOn::createTransformSupport(MatchEngine &me,
+uniquePtr<ITransformSupport> PreselectionOn::createTransformSupport(MatchEngine &me,
 																	const IMatchSettings &matchSettings,
 																	Mat &resized,
 																	Mat &resizedBlurred,
 																	vector<vector<uniquePtr<IBestMatch>>> &draftMatches,
-																	MatchSupport &matchSupport) const {
+																	IMatchSupport &matchSupport) const {
 	return makeUnique<TransformSupportWithPreselection>(me, matchSettings, resized, resizedBlurred,
 														 draftMatches, matchSupport);
 }
 
 uniquePtr<IClustersSupport> PreselectionOff::createClusterSupport(ITinySymsProvider&,
-																  ClusterEngine &ce,
+																  IClusterProcessing &ce,
 																  VSymData &symsSet) const {
 	return makeUnique<ClustersSupport>(ce, makeUnique<SymsSupport>(), symsSet);
 }
 
-uniquePtr<MatchSupport> PreselectionOff::createMatchSupport(CachedData &cd,
+uniquePtr<IMatchSupport> PreselectionOff::createMatchSupport(CachedData &cd,
 															 VSymData&,
 															 MatchAssessor&,
 															 const IMatchSettings&) const {
 	return makeUnique<MatchSupport>(cd);
 }
 
-uniquePtr<TransformSupport> PreselectionOff::createTransformSupport(MatchEngine &me,
+uniquePtr<ITransformSupport> PreselectionOff::createTransformSupport(MatchEngine &me,
 																	 const IMatchSettings &matchSettings,
 																	 Mat &resized,
 																	 Mat &resizedBlurred,
 																	 vector<vector<uniquePtr<IBestMatch>>> &draftMatches,
-																	 MatchSupport&) const {
+																	 IMatchSupport&) const {
 	return makeUnique<TransformSupport>(me, matchSettings, resized, resizedBlurred, draftMatches);
 }

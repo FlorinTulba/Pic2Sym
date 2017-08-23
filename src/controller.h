@@ -56,7 +56,6 @@ struct ISettings;
 struct ISettingsRW;
 struct ISymSettings;
 class Img;
-class ControlPanel;
 class AbsJobMonitor;
 struct ITransformCompletion;
 class Transformer;

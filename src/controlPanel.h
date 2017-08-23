@@ -61,6 +61,25 @@ struct IfImgSettings;
 struct IMatchSettings;
 class SliderConverter;
 
+/// Interface of ControlPanel
+struct IControlPanel /*abstract*/ {
+	virtual void restoreSliderValue(const cv::String &trName, const std::stringType &errText) = 0;
+
+	/// Authorizes the action of the control whose name is provided as parameter.
+	/// When the action isn't allowed returns nullptr.
+	virtual std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName) = 0;
+
+	virtual void updateEncodingsCount(unsigned uniqueEncodings) = 0;	///< puts also the slider on 0
+	virtual bool encMaxHack() const = 0;		///< used for the hack above
+
+	/// updates font size & encoding sliders, if necessary
+	virtual void updateSymSettings(unsigned encIdx, unsigned fontSz_) = 0;
+	virtual void updateImgSettings(const IfImgSettings &is) = 0; ///< updates sliders concerning IfImgSettings items
+	virtual void updateMatchSettings(const IMatchSettings &ms) = 0; ///< updates sliders concerning IMatchSettings items
+
+	virtual ~IControlPanel() = 0 {}
+};
+
 /**
 Configures the transformation settings, chooses which image to process and with which cmap.
 
@@ -72,7 +91,7 @@ Thus, range 0..1 could also mean there's only one value (0) and the 1 will be ig
 Furthermore, range 0..x can be invalid if the actual range is [x+1 .. y].
 In this latter case an error message will report the problem and the user needs to correct it.
 */
-class ControlPanel {
+class ControlPanel : public IControlPanel {
 protected:
 	/**
 	Map between:
@@ -149,19 +168,19 @@ public:
 		  been consumed and now the restoration of the previous value can finally proceed
 		  at the termination of this thread
 	*/
-	void restoreSliderValue(const cv::String &trName, const std::stringType &errText);
+	void restoreSliderValue(const cv::String &trName, const std::stringType &errText) override;
 
 	/// Authorizes the action of the control whose name is provided as parameter.
 	/// When the action isn't allowed returns nullptr.
-	std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName);
+	std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName) override;
 
-	void updateEncodingsCount(unsigned uniqueEncodings);	///< puts also the slider on 0
-	bool encMaxHack() const { return updatingEncMax; }		///< used for the hack above
+	void updateEncodingsCount(unsigned uniqueEncodings) override;	///< puts also the slider on 0
+	bool encMaxHack() const override final { return updatingEncMax; }		///< used for the hack above
 
 	/// updates font size & encoding sliders, if necessary
-	void updateSymSettings(unsigned encIdx, unsigned fontSz_);
-	void updateImgSettings(const IfImgSettings &is); ///< updates sliders concerning IfImgSettings items
-	void updateMatchSettings(const IMatchSettings &ms); ///< updates sliders concerning IMatchSettings items
+	void updateSymSettings(unsigned encIdx, unsigned fontSz_) override;
+	void updateImgSettings(const IfImgSettings &is) override; ///< updates sliders concerning IfImgSettings items
+	void updateMatchSettings(const IMatchSettings &ms) override; ///< updates sliders concerning IMatchSettings items
 };
 
 #endif // H_CONTROL_PANEL

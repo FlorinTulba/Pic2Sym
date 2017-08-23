@@ -70,6 +70,11 @@ unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) {
 	return seqIdxOfNewActivity;
 }
 
+void JobMonitor::getReady(Timer &timer_) {
+	AbsJobMonitor::getReady(timer_);
+	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = 0.;
+}
+
 void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer &timer_) {
 	const size_t totalContribItems = totalContribValues.size();
 	details.resize(totalContribItems);
@@ -88,9 +93,7 @@ void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer
 
 	assert(abs(contribStart - 1.) < EPS);
 
-	aborted = false;
-	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = progress_ = 0.;
-	timer = &timer_;
+	getReady(timer_);
 }
 
 void JobMonitor::taskAdvanced(double taskProgress, unsigned taskSeqId) {

@@ -40,7 +40,6 @@
 #define H_MATCH_ENGINE
 
 #include "fontEngine.h"
-#include "clusterEngine.h"
 #include "cachedData.h"
 
 #pragma warning ( push, 0 )
@@ -52,7 +51,8 @@
 // Forward declarations
 struct IBestMatch;
 struct ISettings;
-class MatchSupport;
+struct IMatchSupport;
+struct IClusterEngine;
 class MatchAspect;
 class MatchAssessor;
 class MatchProgress;
@@ -78,10 +78,10 @@ public:
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
 protected:
-	ClusterEngine ce;				///< clusters manager
+	std::uniquePtr<IClusterEngine> ce;			///< clusters manager
 
 	// Keep this below the fields, as it depends on them
-	std::uniquePtr<MatchSupport> matchSupport; ///< cached data management
+	std::uniquePtr<IMatchSupport> matchSupport; ///< cached data management
 
 	std::vector<std::sharedPtr<MatchAspect>> availAspects;	///< all the available aspects
 
@@ -96,7 +96,7 @@ public:
 
 	const MatchAssessor& assessor() const; ///< access to the const methods of the matchAssessor
 
-	MatchSupport& support(); ///< access to matchSupport
+	IMatchSupport& support(); ///< access to matchSupport
 
 	void updateSymbols();	///< using different charmap - also useful for displaying these changes
 	void getReady();		///< called before a series of improvesBasedOnBatch

@@ -133,7 +133,7 @@ Img& ControlPanelActions::getImg() {
 	GET_FIELD_NO_ARGS(Img);
 }
 
-ControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
+IControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
 	GET_FIELD(ControlPanel, *this, cfg_);
 }
 

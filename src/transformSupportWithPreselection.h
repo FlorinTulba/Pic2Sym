@@ -49,7 +49,7 @@
 
 // Forward declarations
 struct IBestMatch;
-class MatchSupport;
+struct IMatchSupport;
 class MatchSupportWithPreselection;
 
 /**
@@ -64,11 +64,11 @@ protected:
 	MatchSupportWithPreselection &matchSupport;	///< match support
 
 public:
-	/// Requires an additional MatchSupport parameter compared to the base constructor
+	/// Requires an additional IMatchSupport parameter compared to the base constructor
 	TransformSupportWithPreselection(MatchEngine &me_, const IMatchSettings &matchSettings_,
 									 cv::Mat &resized_, cv::Mat &resizedBlurred_,
 									 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches_,
-									 MatchSupport &matchSupport_);
+									 IMatchSupport &matchSupport_);
 
 	TransformSupportWithPreselection(const TransformSupportWithPreselection&) = delete;
 	TransformSupportWithPreselection(TransformSupportWithPreselection&&) = delete;

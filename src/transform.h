@@ -64,7 +64,7 @@ class Timer;
 class TaskMonitor;
 struct IBestMatch;
 struct IBasicImgData;
-class TransformSupport;
+struct ITransformSupport;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
 class Transformer : public ITransformCompletion {
@@ -86,7 +86,7 @@ protected:
 	std::vector<std::vector<std::uniquePtr<IBestMatch>>> draftMatches;	///< temporary best matches
 
 	// Keep this after previous fields, as it depends on them
-	std::uniquePtr<TransformSupport> transformSupport;	///< initializes and updates draft matches
+	std::uniquePtr<ITransformSupport> transformSupport;	///< initializes and updates draft matches
 
 	double durationS = 0.;		///< transformation duration in seconds
 

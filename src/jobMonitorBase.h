@@ -60,6 +60,13 @@ protected:
 
 	bool aborted = false;				///< set if the job was aborted
 
+	/// Prepares the monitor for a new timing using timer_
+	virtual void getReady(Timer &timer_) {
+		timer = &timer_;
+		progress_ = 0.;
+		aborted = false;
+	}
+
 public:
 	AbsJobMonitor(const std::stringType &monitoredJob) : monitoredJob_(monitoredJob) {}
 	void operator=(const AbsJobMonitor&) = delete;

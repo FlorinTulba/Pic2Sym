@@ -53,11 +53,30 @@ struct IBestMatch;
 struct IMatchSettings;
 class MatchEngine;
 
+/// Interface for TransformSupport* classes (Initializing and updating draft matches)
+struct ITransformSupport /*abstract*/ {
+	/// Initializes the drafts when a new image needs to be approximated
+	virtual void initDrafts(bool isColor, unsigned patchSz,
+							unsigned patchesPerCol, unsigned patchesPerRow) = 0;
+
+	/// Resets the drafts when current image needs to be approximated in a different context
+	virtual void resetDrafts(unsigned patchesPerCol) = 0;
+
+	/**
+	Approximates row r of patches of size patchSz from an image with given width.
+	It checks only the symbols with indices in range [fromSymIdx, upperSymIdx).
+	*/
+	virtual void approxRow(int r, int width, unsigned patchSz,
+						   unsigned fromSymIdx, unsigned upperSymIdx, cv::Mat &result) = 0;
+
+	virtual ~ITransformSupport() = 0 {}
+};
+
 /**
 Initializes and updates draft matches.
 When PreselectionByTinySyms == true, it perform those tasks also for tiny symbols.
 */
-class TransformSupport {
+class TransformSupport : public ITransformSupport {
 protected:
 	/// Initializes a row of a draft when a new image needs to be approximated
 	static void initDraftRow(std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draft,
@@ -95,20 +114,18 @@ public:
 	void operator=(const TransformSupport&) = delete;
 	void operator=(TransformSupport&&) = delete;
 
-	virtual ~TransformSupport() {}
-
 	/// Initializes the drafts when a new image needs to be approximated
-	virtual void initDrafts(bool isColor, unsigned patchSz, unsigned patchesPerCol, unsigned patchesPerRow);
+	void initDrafts(bool isColor, unsigned patchSz, unsigned patchesPerCol, unsigned patchesPerRow) override;
 
 	/// Resets the drafts when current image needs to be approximated in a different context
-	virtual void resetDrafts(unsigned patchesPerCol);
+	void resetDrafts(unsigned patchesPerCol) override;
 
 	/**
 	Approximates row r of patches of size patchSz from an image with given width.
 	It checks only the symbols with indices in range [fromSymIdx, upperSymIdx).
 	*/
-	virtual void approxRow(int r, int width, unsigned patchSz,
-						   unsigned fromSymIdx, unsigned upperSymIdx, cv::Mat &result);
+	void approxRow(int r, int width, unsigned patchSz,
+				   unsigned fromSymIdx, unsigned upperSymIdx, cv::Mat &result) override;
 };
 
 #endif // H_TRANSFORM_SUPPORT

@@ -43,6 +43,7 @@
 #include "symFilterBase.h"
 
 struct IController; // forward declaration
+struct IPixMapSym;
 
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont : public IPmsCont {
@@ -72,6 +73,15 @@ protected:
 	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
 
 	bool ready = false;				///< is container ready to provide useful data?
+
+	/// If a symbol has a side equal to 0, it is a blank => increment blanks and return true
+	bool exactBlank(unsigned height, unsigned width);
+	
+	/// If a symbol contains almost only white pixels it is nearly blank => increment blanks and return true
+	bool nearBlank(const IPixMapSym &pms);
+
+	/// Is the symbol an exact duplicate of one which is already in the syms container? If yes, increment duplicates and return true
+	bool isDuplicate(const IPixMapSym &pms);
 
 public:
 	PmsCont(IController &ctrler_);

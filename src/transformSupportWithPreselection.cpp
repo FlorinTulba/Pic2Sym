@@ -63,7 +63,7 @@ TransformSupportWithPreselection::TransformSupportWithPreselection(MatchEngine &
 																   Mat &resized_,
 																   Mat &resizedBlurred_,
 																   vector<vector<uniquePtr<IBestMatch>>> &draftMatches_,
-																   MatchSupport &matchSupport_) :
+																   IMatchSupport &matchSupport_) :
 	TransformSupport(me_, matchSettings_, resized_, resizedBlurred_, draftMatches_),
 	matchSupport(dynamic_cast<MatchSupportWithPreselection&>(matchSupport_)) {}
 

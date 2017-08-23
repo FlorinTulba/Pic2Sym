@@ -49,6 +49,7 @@
 #include "transformSupport.h"
 #include "symbolsSupport.h"
 #include "matchSupport.h"
+#include "clusterEngine.h"
 #include "clusterSupport.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"

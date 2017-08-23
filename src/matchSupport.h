@@ -67,8 +67,19 @@ public:
 	virtual void remarkedMatch(unsigned /*symIdx*/, double /*score*/) {}
 };
 
+/// Interface for MatchSupport* classes (support for the MatchEngine and Transformer classes reflecting the preselection mode)
+struct IMatchSupport /*abstract*/ {
+	/// cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
+	virtual const CachedData& cachedData() const = 0;
+
+	/// update cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
+	virtual void updateCachedData(unsigned fontSz, const FontEngine &fe) = 0;
+
+	virtual ~IMatchSupport() = 0 {}
+};
+
 /// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
-class MatchSupport {
+class MatchSupport : public IMatchSupport {
 protected:
 	CachedData& cd;	///< cached data corresponding to normal size symbols
 
@@ -81,13 +92,11 @@ public:
 	void operator=(const MatchSupport&) = delete;
 	void operator=(MatchSupport&&) = delete;
 
-	virtual ~MatchSupport() {}
-
 	/// cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
-	virtual const CachedData& cachedData() const;
+	const CachedData& cachedData() const override;
 
 	/// update cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
-	virtual void updateCachedData(unsigned fontSz, const FontEngine &fe);
+	void updateCachedData(unsigned fontSz, const FontEngine &fe) override;
 };
 
 #endif // H_MATCH_SUPPORT

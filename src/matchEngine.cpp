@@ -132,7 +132,7 @@ namespace {
 MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_),
 			matchAssessor(specializedInstance(availAspects)),
-			ce(fe_, symsSet),
+			ce(makeUnique<ClusterEngine>(fe_, symsSet)),
 			matchSupport(IPreselManager::concrete().createMatchSupport(
 				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
 	std::sharedPtr<MatchAspect> aspect;
@@ -180,8 +180,8 @@ void MatchEngine::updateSymbols() {
 
 	fieldsComputations.taskDone();
 
-	ce.support().groupSyms(fe.getFontType());
-	cmP.reset(symsSet, ce.getSymsIndicesPerCluster());
+	ce->support().groupSyms(fe.getFontType());
+	cmP.reset(symsSet, ce->getSymsIndicesPerCluster());
 
 	symsIdReady = idForSymsToUse; // ready to use the new cmap&size
 }
@@ -198,7 +198,7 @@ const MatchAssessor& MatchEngine::assessor() const {
 	return matchAssessor;
 }
 
-MatchSupport& MatchEngine::support() {
+IMatchSupport& MatchEngine::support() {
 	assert(matchSupport);
 	return *matchSupport;
 }
@@ -211,7 +211,7 @@ void MatchEngine::getReady() {
 }
 
 const bool& MatchEngine::isClusteringUseful() const {
-	return ce.worthGrouping();
+	return ce->worthGrouping();
 }
 
 bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx,
@@ -221,7 +221,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 	assert(upperSymIdx <= getSymsCount());
 
 	const CachedData &cd = matchSupport->cachedData();
-	const VSymData &inspectedSet = ce.support().clusteredSyms();
+	const VSymData &inspectedSet = ce->support().clusteredSyms();
 
 	const Mat &toApprox = draftMatch.getPatch().matrixToApprox();
 	const uniquePtr<IMatchParamsRW> &mp = draftMatch.refParams();
@@ -231,12 +231,12 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 	double score;
 	bool betterMatchFound = false;
-	if(ce.worthGrouping()) { // Matching is performed first with clusters and only afterwards with individual symbols
+	if(ce->worthGrouping()) { // Matching is performed first with clusters and only afterwards with individual symbols
 		unsigned fromCluster, firstSymIdxWithinFromCluster, lastCluster, lastSymIdxWithinLastCluster;
-		locateIdx(ce.getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
-		locateIdx(ce.getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
+		locateIdx(ce->getClusterOffsets(), fromSymIdx, fromCluster, firstSymIdxWithinFromCluster);
+		locateIdx(ce->getClusterOffsets(), upperSymIdx-1, lastCluster, lastSymIdxWithinLastCluster);
 
-		const VClusterData &clusters = ce.getClusters();
+		const VClusterData &clusters = ce->getClusters();
 		const bool previouslyQualified = (clusters[(size_t)fromCluster]->getSz() > 1U) &&
 						(draftMatch.getLastPromisingNontrivialCluster() == fromCluster);
 
@@ -332,7 +332,7 @@ bool MatchEngine::improvesBasedOnBatch(unsigned fromSymIdx, unsigned upperSymIdx
 
 MatchEngine& MatchEngine::useSymsMonitor(AbsJobMonitor &symsMonitor_) {
 	symsMonitor = &symsMonitor_;
-	ce.useSymsMonitor(symsMonitor_);
+	ce->useSymsMonitor(symsMonitor_);
 	return *this;
 }
 

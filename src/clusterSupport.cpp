@@ -50,7 +50,7 @@
 
 using namespace std;
 
-ClustersSupport::ClustersSupport(ClusterEngine &ce_, uniquePtr<SymsSupport> ss_, VSymData &symsSet_) :
+ClustersSupport::ClustersSupport(IClusterProcessing &ce_, uniquePtr<ISymsSupport> ss_, VSymData &symsSet_) :
 	ce(ce_), ss(move(ss_)), symsSet(symsSet_) {}
 
 void ClustersSupport::groupSyms(const stringType &fontType/* = ""*/) {

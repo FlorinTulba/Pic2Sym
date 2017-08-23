@@ -44,7 +44,7 @@ using namespace cv;
 
 ClusterData::ClusterData(const VSymData &symsSet, unsigned idxOfFirstSym_,
 						 const vector<unsigned> &clusterSymIndices,
-						 SymsSupport &symsSupport) : SymData(),
+						 ISymsSupport &symsSupport) : SymData(),
 		 idxOfFirstSym(idxOfFirstSym_), sz((unsigned)clusterSymIndices.size()) {
 	assert(!clusterSymIndices.empty() && !symsSet.empty());
 	const double invClusterSz = 1./sz;
