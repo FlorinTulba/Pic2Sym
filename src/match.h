@@ -40,29 +40,20 @@
 #define H_MATCH
 
 #include "matchSettingsBase.h"
-#include "cachedData.h"
 
 #pragma warning ( push, 0 )
 
-#include "std_string.h"
 #include <vector>
+
+#include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
 
 // Forward declarations
-struct IMatchParams;
-struct IMatchParamsRW;
 struct ISymData;
-
-/// Interface providing assessMatch method for MatchAspect classes and also for MatchEngine
-struct IMatch /*abstract*/ {
-	/// scores the match between a gray patch and a symbol
-	virtual double assessMatch(const cv::Mat &patch,
-							   const ISymData &symData,
-							   const CachedData &cachedData,
-							   IMatchParamsRW &mp) const = 0;
-	virtual ~IMatch() = 0 {}
-};
+class CachedData;
+struct IMatchParamsRW;
+struct IMatchParams;
 
 /**
 Base class for all considered aspects of matching.
@@ -72,7 +63,7 @@ objects should be created only by the MatchAspectsFactory class.
 
 UNIT_TESTING should still have the constructors of the derived classes as public.
 */
-class MatchAspect /*abstract*/ : public IMatch {
+class MatchAspect /*abstract*/ {
 protected:
 	/// Provides a list of names of the already registered aspects
 	static std::vector<const std::stringType>& registeredAspects();
@@ -103,11 +94,11 @@ protected:
 public:
 	virtual ~MatchAspect() = 0 {}
 
-	/// Scores the match between a gray patch and a symbol based on current aspect (IMatch override)
+	/// Scores the match between a gray patch and a symbol based on current aspect (Template method)
 	double assessMatch(const cv::Mat &patch,
 					   const ISymData &symData,
 					   const CachedData &cachedData,
-					   IMatchParamsRW &mp) const override final; // Template method (reason to set it final)
+					   IMatchParamsRW &mp) const;
 
 	/// Computing max score of a this MatchAspect
 	double maxScore(const CachedData &cachedData) const;
@@ -128,18 +119,18 @@ public:
 /// Definitions of 'NAME', 'nameRegistrator' and name() are provided by REGISTERED_MATCH_ASPECT.
 #define REGISTER_MATCH_ASPECT(AspectName) \
 	public: \
-		const std::stringType& name() const override;		/** provides aspect's name */ \
+		const std::stringType& name() const override;	/** provides aspect's name */ \
 	\
 	protected: \
-		static const std::stringType NAME;					/** aspect's name */ \
+		static const std::stringType NAME;				/** aspect's name */ \
 		static const NameRegistrator nameRegistrator;	/** Instance that registers this Aspect */ \
-		/** '_Ref_count_obj' helps 'makeShared' create the object to point to */ \
+		/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
 		friend class std::_Ref_count_obj<AspectName>
 
 /// Place this call in a SOURCE file, to define the entities declared by REGISTER_MATCH_ASPECT
 /// This is the definition of 'nameRegistrator'.
 #define REGISTERED_MATCH_ASPECT(AspectName) \
-	const std::stringType					AspectName::NAME(#AspectName); \
+	const std::stringType				AspectName::NAME(#AspectName); \
 	const AspectName::NameRegistrator	AspectName::nameRegistrator(#AspectName); \
 	\
 	const std::stringType& AspectName::name() const { return NAME; }
@@ -152,16 +143,19 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 
 	/// Class Details
 	class <NewAspect> : public MatchAspect {
-	public:
-		/// scores the match between a gray patch and a symbol based on current aspect
-		double assessMatch(const cv::Mat &patch,
-						   const ISymData &symData,
-						   IMatchParamsRW &mp,
-						   const CachedData &cachedData) const override; // IMatch override
-
-	#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
 	protected:
-	#endif // UNIT_TESTING defined
+		double score(const IMatchParams &mp, const CachedData &cachedData) const override;
+		void fillRequiredMatchParams(const cv::Mat &patch,
+									const ISymData &symData,
+									const CachedData &cachedData,
+									IMatchParamsRW &mp) const override;
+
+	public:
+		double relativeComplexity() const override;
+
+#ifndef UNIT_TESTING // UNIT_TESTING needs the constructors as public
+	protected:
+#endif // UNIT_TESTING defined
 		/// Constructor Details
 		<NewAspect>(const IMatchSettings &ms);
 
@@ -176,7 +170,6 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 	add the line below to 'MatchAspectsFactory::create()'.
 
 	HANDLE_MATCH_ASPECT(<NewAspect>);
-
 */
 
 #endif // H_MATCH

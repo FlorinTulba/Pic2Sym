@@ -195,7 +195,9 @@ void PmsCont::appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, 
 
 	syms.push_back(std::move(pms));
 
+#ifndef UNIT_TESTING
 	ctrler.display1stPageIfFull(syms);
+#endif // UNIT_TESTING not defined
 }
 
 void PmsCont::setAsReady() {

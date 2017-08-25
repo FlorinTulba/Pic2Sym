@@ -39,53 +39,18 @@
 #ifndef H_TIMING
 #define H_TIMING
 
-#include "misc.h"
+#include "timingBase.h"
 
 #pragma warning ( push, 0 )
 
-#include "std_string.h"
 #include "std_memory.h"
 #include <chrono>
 #include <vector>
 
 #pragma warning ( pop )
 
-// Timing jobs:
-/// Interface for any observer of a timer (see below the Timer class)
-struct ITimerActions /*abstract*/ {
-	virtual void onStart() {}	///< action to be performed when the timer is started
-
-	/// action to be performed when the timer is paused
-	/// @param elapsedS time elapsed this far in seconds
-	virtual void onPause(double elapsedS) { UNREFERENCED_PARAMETER(elapsedS); }
-
-	virtual void onResume() {}	///< action to be performed when the timer is resumed
-
-	/// action to be performed when the timer is released/deleted
-	/// @param elapsedS total elapsed time in seconds
-	virtual void onRelease(double elapsedS) { UNREFERENCED_PARAMETER(elapsedS); }
-
-	/// action to be performed when the timer is canceled
-	/// @param reason explanation for cancellation
-	virtual void onCancel(const std::stringType &reason = "") { UNREFERENCED_PARAMETER(reason); }
-
-	virtual ~ITimerActions() = 0 {}
-};
-
-/// Commands for an alive Timer: pause/resume and cancel
-struct IActiveTimer /*abstract*/ {
-	virtual void pause() = 0;			///< pauses the timer and reports duration to all observers
-	virtual void resume() = 0;			///< resumes the timer
-
-	/// Cancels a timing task.
-	/// @param reason explanation for cancellation
-	virtual void cancel(const std::stringType &reason = "The task was canceled") = 0;
-
-	virtual ~IActiveTimer() = 0 {}
-};
-
 /// Timer class
-class Timer : public IActiveTimer {
+class Timer : public ITimerResult, public IActiveTimer {
 protected:
 	const std::vector<std::sharedPtr<ITimerActions>> observers; ///< to be notified
 
@@ -116,7 +81,7 @@ public:
 
 	virtual ~Timer();				///< if not canceled / released, reports duration to all observers
 
-	double elapsed() const;			///< reports elapsed seconds
+	double elapsed() const override;///< reports elapsed seconds
 
 	void invalidate();				///< prevents further use of this timer
 

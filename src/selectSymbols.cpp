@@ -41,10 +41,10 @@
 #include "appStart.h"
 #include "pixMapSymBase.h" 
 #include "symDataBase.h"
-#include "matchEngine.h"
+#include "matchEngineBase.h"
 #include "settingsBase.h"
 #include "symsSerialization.h"
-#include "cmapPerspective.h"
+#include "cmapPerspectiveBase.h"
 #include "views.h"
 
 #pragma warning ( push, 0 )
@@ -60,9 +60,9 @@ using namespace std;
 using namespace boost::filesystem;
 
 SelectSymbols::SelectSymbols(const IController &ctrler_,
-							 const MatchEngine &me_,
-							 const CmapPerspective &cmP_,
-							 const std::sharedPtr<CmapInspect> &pCmi_) :
+							 const IMatchEngine &me_,
+							 const ICmapPerspective &cmP_,
+							 const std::sharedPtr<ICmapInspect> &pCmi_) :
 	ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
 
 #ifndef UNIT_TESTING

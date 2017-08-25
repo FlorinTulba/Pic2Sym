@@ -37,8 +37,8 @@
  ***********************************************************************************************/
 
 #include "clusterSupport.h"
-#include "symbolsSupport.h"
-#include "clusterEngine.h"
+#include "symbolsSupportBase.h"
+#include "clusterProcessingBase.h"
 #include "clusterData.h"
 #include "misc.h"
 

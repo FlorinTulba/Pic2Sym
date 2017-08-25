@@ -45,12 +45,23 @@
 
 #pragma warning ( pop )
 
-// Forward declarations
-class MatchEngine;
-class FontEngine;
+struct IFontEngine; // forward declaration
 
 /// Cached data for computing match parameters and evaluating match aspects
-struct CachedData {
+class CachedData {
+protected:
+	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
+
+	double sz_1;				///< double version of sz - 1
+
+#ifdef UNIT_TESTING // Unit testing needs to be able to change smallGlyphsCoverage
+public:
+#endif // UNIT_TESTING defined
+	double smallGlyphsCoverage;	///< max density for symbols considered small
+
+public:
+	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
+
 	/// Constants about maximum standard deviations for foreground/background or edges
 	struct MaxSdev {
 		/**
@@ -89,19 +100,16 @@ struct CachedData {
 		static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
 	};
 
-	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
-
-	double sz_1;				///< double version of sz - 1
-	double smallGlyphsCoverage;	///< max density for symbols considered small
-
-	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
-
 	CachedData(bool forTinySyms_ = false);
 	void operator=(const CachedData&) = delete;
 
-	void update(unsigned sz_, const FontEngine &fe_);
-	void update(const FontEngine &fe_);
+	void update(unsigned sz_, const IFontEngine &fe_);
+	void update(const IFontEngine &fe_);
 	void useNewSymSize(unsigned sz_);
+
+	inline const cv::Mat& getConsec() const { return consec; }
+	inline double getSz_1() const { return sz_1; }
+	inline double getSmallGlyphsCoverage() const { return smallGlyphsCoverage; }
 };
 
 #endif // H_CACHED_DATA

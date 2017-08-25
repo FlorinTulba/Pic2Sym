@@ -39,31 +39,22 @@
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
-#include "fontEngine.h"
+#include "matchEngineBase.h"
+#include "symDataBase.h"
 #include "cachedData.h"
 
-#pragma warning ( push, 0 )
-
-#include <vector>
-
-#pragma warning ( pop )
-
 // Forward declarations
-struct IBestMatch;
 struct ISettings;
-struct IMatchSupport;
 struct IClusterEngine;
-class MatchAspect;
-class MatchAssessor;
-class MatchProgress;
-class CmapPerspective;
+struct ICmapPerspective;
+struct IFontEngine;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
-class MatchEngine {
+class MatchEngine : public IMatchEngine {
 protected:
 	const ISettings &cfg;		///< settings for the engine
-	FontEngine &fe;				///< symbols set manager
-	CmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
+	IFontEngine &fe;				///< symbols set manager
+	ICmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
@@ -86,35 +77,35 @@ protected:
 	std::vector<std::sharedPtr<MatchAspect>> availAspects;	///< all the available aspects
 
 public:
-	MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_);
+	MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspective &cmP_);
 	MatchEngine(const MatchEngine&) = delete;
 	void operator=(const MatchEngine&) = delete;
 
-	std::stringType getIdForSymsToUse(); ///< type of the symbols determined by fe & cfg
+	std::stringType getIdForSymsToUse() override; ///< type of the symbols determined by fe & cfg
 
-	unsigned getSymsCount() const;	///< to be displayed in CmapView's status bar
+	unsigned getSymsCount() const override;	///< to be displayed in CmapView's status bar
 
-	const MatchAssessor& assessor() const; ///< access to the const methods of the matchAssessor
+	const MatchAssessor& assessor() const override; ///< access to the const methods of the matchAssessor
 
-	IMatchSupport& support(); ///< access to matchSupport
+	IMatchSupport& support() override; ///< access to matchSupport
 
-	void updateSymbols();	///< using different charmap - also useful for displaying these changes
-	void getReady();		///< called before a series of improvesBasedOnBatch
+	void updateSymbols() override;	///< using different charmap - also useful for displaying these changes
+	void getReady() override;		///< called before a series of improvesBasedOnBatch
 
 	/// @return true if a new better match is found within the new batch of symbols
 	bool improvesBasedOnBatch(unsigned fromSymIdx,			///< start of the batch
 							  unsigned upperSymIdx,			///< end of the batch (exclusive)
 							  IBestMatch &draftMatch,		///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
 							  MatchProgress &matchProgress	///< observer notified for each new improved match
-							  ) const;
+							  ) const override;
 
-	bool usesUnicode() const; ///< Unicode glyphs are logged as symbols, the rest as their code
+	bool usesUnicode() const override; ///< Unicode glyphs are logged as symbols, the rest as their code
 
-	const bool& isClusteringUseful() const; ///< Clustering should be avoided when the obtained clusters are really small
+	const bool& isClusteringUseful() const override; ///< Clustering should be avoided when the obtained clusters are really small
 
-	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_);		///< setting the symbols monitor
+	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) override;		///< setting the symbols monitor
 
-	const std::vector<std::sharedPtr<MatchAspect>>& availMatchAspects() const;	///< all the available aspects
+	const std::vector<std::sharedPtr<MatchAspect>>& availMatchAspects() const override;	///< all the available aspects
 };
 
 #endif // H_MATCH_ENGINE

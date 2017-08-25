@@ -51,6 +51,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "testMain.h"
 #include "selectBranch.h"
 #include "preselectSyms.h"
+#include "scoreThresholds.h"
 #include "preselectionHelper.h"
 #include "fileIterationHelper.h"
 #include "misc.h"
@@ -66,9 +67,11 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include "matchAspects.h"
 #include "matchAssessment.h"
 #include "matchSupportWithPreselection.h"
+#include "matchProgressWithPreselection.h"
 #include "structuralSimilarity.h"
 #include "blur.h"
 #include "controlPanelActionsBase.h"
+#include "symData.h"
 
 #pragma warning ( push, 0 )
 
@@ -276,7 +279,7 @@ namespace ut {
 			emptyD = Mat(sz, sz, CV_64FC1, Scalar(0.));
 			fullUc = Mat(sz, sz, CV_8UC1, Scalar(255U));
 			cd.useNewSymSize(sz);
-			consec = cd.consec;
+			consec = cd.getConsec().clone();
 
 			randInitPatch();
 
@@ -520,7 +523,7 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 	Settings s(ms);
 	::Controller c(s);
 	std::shared_ptr<IControlPanelActions> cpa = c.getControlPanelActions();
-	::MatchEngine &me = c.getMatchEngine(s);
+	::MatchEngine &me = dynamic_cast<::MatchEngine&>(c.getMatchEngine(s));
 
 	cpa->newFontFamily(fontFamily);
 	cpa->newFontEncoding(encoding);
@@ -1605,7 +1608,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.getSymDensity());
 		BOOST_TEST(*mp.getSymDensity() == 0., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 1.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
+		BOOST_TEST(res == 1.-cd.getSmallGlyphsCoverage(), test_tools::tolerance(1e-4));
 	}
 
 	AutoTestCase1(CheckLargerSymAspect_InferiorLimitOfLargeSymbols_QualifiesAsLarge, SuiteSuffix);
@@ -1622,7 +1625,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.getSymDensity());
-		BOOST_TEST(*mp.getSymDensity() == cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
+		BOOST_TEST(*mp.getSymDensity() == cd.getSmallGlyphsCoverage(), test_tools::tolerance(1e-4));
 		BOOST_TEST(res == 1., test_tools::tolerance(1e-4));
 	}
 
@@ -1641,7 +1644,7 @@ FixtureTestSuiteSuffix(MatchAspectsFixt<UsePreselection>, MatchAspects_Tests, Su
 		res = ls.assessMatch(NOT_RELEVANT_MAT, sd, cd, mp);
 		BOOST_REQUIRE(mp.getSymDensity());
 		BOOST_TEST(*mp.getSymDensity() == 1., test_tools::tolerance(1e-4));
-		BOOST_TEST(res == 2.-cd.smallGlyphsCoverage, test_tools::tolerance(1e-4));
+		BOOST_TEST(res == 2.-cd.getSmallGlyphsCoverage(), test_tools::tolerance(1e-4));
 	}
 BOOST_AUTO_TEST_SUITE_END() // MatchAspects_Tests
 

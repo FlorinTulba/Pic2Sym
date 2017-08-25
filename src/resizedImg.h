@@ -39,16 +39,12 @@
 #ifndef H_RESIZED_IMG
 #define H_RESIZED_IMG
 
-#pragma warning ( push, 0 )
-
-#include <opencv2/core/core.hpp>
-
-#pragma warning ( pop )
+#include "resizedImgBase.h"
 
 struct IfImgSettings; // forward declaration
 
 /// ResizedImg is the version of the original image which is ready to be transformed
-class ResizedImg {
+class ResizedImg : public IResizedImg {
 protected:
 	cv::Mat res;			///< the resized image
 
@@ -63,7 +59,7 @@ public:
 	ResizedImg(const cv::Mat &source, const IfImgSettings &is, unsigned patchSz_);
 	void operator=(const ResizedImg&) = delete;
 
-	const cv::Mat& get() const { return res; }
+	const cv::Mat& get() const override final { return res; }
 
 	bool operator==(const ResizedImg &other) const;
 	bool operator!=(const ResizedImg &other) const { return !(*this == other); }

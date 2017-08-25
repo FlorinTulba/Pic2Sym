@@ -40,18 +40,28 @@
 #define H_SYM_FILTER_CACHE
 
 /// Cached values to be used during glyph filtering
-struct SymFilterCache {
+class SymFilterCache {
+protected:
 	// values about the font, no matter its bounding box
-	unsigned szU;		///< font size as unsigned
-	unsigned areaU;		///< font area as unsigned
-	double szD;			///< font size as double
-	double areaD;		///< font area as double
-	void setFontSz(unsigned sz);
+	unsigned szU = 0U;		///< font size as unsigned
+	double areaD = 0.;		///< font area as double
 
 	// values about the bounding box of the font
-	unsigned bbAreaU;	///< area of the bounding box as unsigned
-	unsigned bbAreaD;	///< area of the bounding box as double
-	void setBoundingBox(unsigned height, unsigned width);
+	double bbAreaD = 0U;	///< area of the bounding box as double
+
+public:
+	inline unsigned getSzU() const { return szU; }
+	inline double getAreaD() const { return areaD; }
+	inline double getBbAreaD() const { return bbAreaD; }
+
+	inline void setFontSz(unsigned sz) {
+		szU = sz;
+		areaD = szU * szU;
+	}
+
+	inline void setBoundingBox(unsigned height, unsigned width) {
+		bbAreaD = height * width;
+	}
 };
 
 #endif // H_SYM_FILTER_CACHE

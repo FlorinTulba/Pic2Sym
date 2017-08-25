@@ -38,6 +38,7 @@
 
 #include "transform.h"
 #include "controllerBase.h"
+#include "matchEngineBase.h"
 #include "matchAssessment.h"
 #include "settingsBase.h"
 #include "symSettingsBase.h"
@@ -47,8 +48,7 @@
 #include "resizedImg.h"
 #include "patchBase.h"
 #include "preselectManager.h"
-#include "transformSupport.h"
-#include "preselectSyms.h"
+#include "transformSupportBase.h"
 #include "match.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
@@ -57,6 +57,7 @@
 #include "ompTrace.h"
 #include "appStart.h"
 #include "timing.h"
+#include "symsLoadingFailure.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -220,7 +221,7 @@ extern const double BlurStandardDeviation;
 extern const bool ParallelizeTr_PatchRowLoops;
 
 Transformer::Transformer(IController &ctrler_,
-						 const ISettings &cfg_, MatchEngine &me_, IBasicImgData &img_) :
+						 const ISettings &cfg_, IMatchEngine &me_, IBasicImgData &img_) :
 	ctrler(ctrler_), ptpt(ctrler_.getPicTransformProgressTracker()),
 	cfg(cfg_), me(me_), img(img_),
 	transformSupport(IPreselManager::concrete().createTransformSupport(

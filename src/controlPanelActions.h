@@ -43,12 +43,12 @@
 
 // Forward declarations
 struct ISettingsRW;
-class FontEngine;
+struct IFontEngine;
 class MatchAssessor;
-class Transformer;
+struct ITransformer;
 class Img;
-class CmapInspect;
-class Comparator;
+struct ICmapInspect;
+struct IComparator;
 struct IControlPanel;
 
 /// Implementation for the actions triggered by the controls from Control Panel
@@ -56,13 +56,13 @@ class ControlPanelActions : public IControlPanelActions {
 protected:
 	IController &ctrler;
 	ISettingsRW &cfg;
-	FontEngine &fe;
+	IFontEngine &fe;
 	MatchAssessor &ma;
-	Transformer &t;
+	ITransformer &t;
 	Img &img;			///< original image to process after resizing
-	Comparator &comp;	///< view for comparing original & result
+	IComparator &comp;	///< view for comparing original & result
 	IControlPanel &cp;	///< the configuration view
-	std::sharedPtr<CmapInspect> &pCmi;
+	std::sharedPtr<ICmapInspect> &pCmi;
 
 	// Validation flags
 	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
@@ -82,8 +82,8 @@ public:
 	IControlPanel& getControlPanel(ISettingsRW &cfg_);
 
 	ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
-						FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,
-						Comparator &comp_, std::sharedPtr<CmapInspect> &pCmi_);
+						IFontEngine &fe_, const MatchAssessor &ma_, ITransformer &t_,
+						IComparator &comp_, std::sharedPtr<ICmapInspect> &pCmi_);
 
 	void operator=(const ControlPanelActions&) = delete;
 

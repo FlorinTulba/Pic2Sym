@@ -49,15 +49,6 @@
 
 using namespace std;
 
-void SymFilterCache::setFontSz(unsigned sz) {
-	szD = szU = sz;
-	areaD = areaU = szU * szU;
-}
-
-void SymFilterCache::setBoundingBox(unsigned height, unsigned width) {
-	bbAreaD = bbAreaU = height * width;
-}
-
 map<unsigned, const stringType> SymFilter::filterTypes;
 
 SymFilter::SymFilter(unsigned filterId_, const stringType &filterName,

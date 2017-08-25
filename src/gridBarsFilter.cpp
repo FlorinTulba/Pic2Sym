@@ -119,7 +119,7 @@ static bool acceptableProfile(const Mat &narrowGlyph,	///< bounding box (BB) reg
 			(cv::min)(thisRowCol, prevData, intersMin);
 			if(countNonZero(intersMin) < cnzPrevData) return false;
 
-		} else if(rowColProj >= sfc.szU-crossClearance) {
+		} else if(rowColProj >= sfc.getSzU()-crossClearance) {
 			if(++diffsAfterCenter > 1U) return false;
 
 			// Even when different, the 2 rows/columns must have non-zero elements in same columns/rows
@@ -242,14 +242,14 @@ bool GridBarsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &s
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
 	// At least one side of the bounding box needs to be larger than half sz
-	if(max(pms.getRows(), pms.getCols()) < (sfc.szU>>1))
+	if(max(pms.getRows(), pms.getCols()) < (sfc.getSzU()>>1))
 		return false;
 
 	Mat narrowGlyph = pms.asNarrowMat();
 	Mat glyphBin = (narrowGlyph > 0U);
 
-	const unsigned crossClearance = (unsigned)max(1, int(sfc.szU/3U - 1U)),
-			crossWidth = sfc.szU - (crossClearance << 1); // more than 1/3 from font size
+	const unsigned crossClearance = (unsigned)max(1, int(sfc.getSzU()/3U - 1U)),
+			crossWidth = sfc.getSzU() - (crossClearance << 1); // more than 1/3 from font size
 	const int minPixelsCenter = int(crossWidth - 1U) | 1, // crossWidth when odd, or crossWidth-1 when even
 			minPixelsBranch = int((crossClearance << 1) / 3), // 2/3*crossClearance
 			minPixels = 2 * minPixelsBranch + minPixelsCenter; // center + 2 branches
@@ -259,8 +259,8 @@ bool GridBarsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &s
 		return false;
 
 	// Exclude glyphs that touch pixels outside the main cross
-	const Mat glyph = pms.toMat(sfc.szU);
-	const Range topOrLeft(0, (int)crossClearance), rightOrBottom(int(sfc.szU-crossClearance), (int)sfc.szU),
+	const Mat glyph = pms.toMat(sfc.getSzU());
+	const Range topOrLeft(0, (int)crossClearance), rightOrBottom(int(sfc.getSzU()-crossClearance), (int)sfc.getSzU()),
 				center((int)crossClearance, int(crossClearance + crossWidth));
 	if(countNonZero(Mat(glyph, topOrLeft, topOrLeft)) > 0) 
 		return false;
@@ -299,7 +299,7 @@ bool GridBarsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &s
 
 	// Making sure glyphBin is entitled to represent narrowGlyph
 	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
-				sfc.szU - 1U - pms.getTop(), pms.getRows() - 1U, pms.getRowSums(), &Mat::row))
+				sfc.getSzU() - 1U - pms.getTop(), pms.getRows() - 1U, pms.getRowSums(), &Mat::row))
 		return false;
 	if(!acceptableProfile(narrowGlyph, sfc, crossClearance,
 				pms.getLeft(), pms.getCols() - 1U, pms.getColSums(), &Mat::col))
@@ -310,7 +310,7 @@ bool GridBarsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &s
 	static const Scalar BlackFrame(0U);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	const int maskSz = max(3, (((int)sfc.szU>>2) | 1)), frameSz = maskSz>>1;
+	const int maskSz = max(3, (((int)sfc.getSzU()>>2) | 1)), frameSz = maskSz>>1;
 	const Mat mask(maskSz, maskSz, CV_8UC1, Scalar(1U));
 	Mat glyphBinAux(pms.getRows() + 2*frameSz, pms.getCols() + 2*frameSz, CV_8UC1, Scalar(0U)),
 		destRegion(glyphBinAux, Range(frameSz, pms.getRows()+frameSz), Range(frameSz, pms.getCols()+frameSz)),

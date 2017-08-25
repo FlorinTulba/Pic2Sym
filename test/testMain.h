@@ -83,7 +83,8 @@ namespace ut {
 	};
 
 	/// Mock MatchEngine
-	struct MatchEngine {};
+	struct IMatchEngine { virtual ~IMatchEngine() = 0 {} };
+	class MatchEngine : public IMatchEngine {};
 
 	/// Fixture to be used before every test
 	struct Fixt {

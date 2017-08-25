@@ -64,7 +64,7 @@ bool BulkySymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &
 	static map<int, Mat> circleMasks;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	if(min(pms.getRows(), pms.getCols()) < (unsigned)compErMaskSide(sfc.szU))
+	if(min(pms.getRows(), pms.getCols()) < (unsigned)compErMaskSide(sfc.getSzU()))
 		return false;
 
 	if(circleMasks.empty()) {
@@ -83,12 +83,12 @@ bool BulkySymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &
 		return max(3, (((int)fontSz/6) | 1));
 	};
 	static const Point defAnchor(-1, -1);
-	morphologyEx(narrowGlyph, processed, MORPH_CLOSE, circleMasks[compCloseMaskSide(sfc.szU)],
+	morphologyEx(narrowGlyph, processed, MORPH_CLOSE, circleMasks[compCloseMaskSide(sfc.getSzU())],
 				defAnchor, 1, BORDER_CONSTANT, Scalar(0.));
 */
 
 	// Erode with a large disk to detect large filled areas.
-	erode(narrowGlyph, processed, circleMasks[compErMaskSide(sfc.szU)]);
+	erode(narrowGlyph, processed, circleMasks[compErMaskSide(sfc.getSzU())]);
 
 	const bool result = countNonZero(processed > 45) > 0;
 	return result;

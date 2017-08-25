@@ -43,9 +43,22 @@
 #	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
 #endif // UNIT_TESTING not defined
 
-class CvWin /*abstract*/ {
+#include "warnings.h"
+
+struct ICvWin /*abstract*/ {
+	virtual void setTitle(...) const = 0;
+	virtual void setOverlay(...) const = 0;
+	virtual void setStatus(...) const = 0;
+	virtual void setPos(...) const = 0;
+	virtual void permitResize(...) const = 0;
+	virtual void resize(...) const = 0;
+
+	virtual ~ICvWin() = 0 {}
+};
+
+class CvWin /*abstract*/ : public virtual ICvWin {
 protected:
-	CvWin(...) {}
+	CvWin() {}
 
 public:
 	void setTitle(...) const {}
@@ -56,19 +69,46 @@ public:
 	void resize(...) const {}
 };
 
-class Comparator : public CvWin {
+struct IComparator : virtual ICvWin {
+	virtual void setReference(...) = 0;
+	virtual void setResult(...) = 0;
+
+	virtual ~IComparator() = 0 {}
+};
+
+struct ICmapInspect /*abstract*/ : virtual ICvWin {
+	virtual unsigned getCellSide() const = 0;
+	virtual unsigned getSymsPerRow() const = 0;
+	virtual unsigned getSymsPerPage() const = 0;
+	virtual unsigned getPageIdx() const = 0;
+	virtual bool isBrowsable() const = 0;
+	virtual void setBrowsable(...) = 0;
+
+	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
+	virtual void showUnofficial1stPage(...) = 0;
+
+	virtual void clear() = 0;								///< clears the grid, the status bar and updates required fields
+
+	virtual void updatePagesCount(...) = 0;	///< puts also the slider on 0
+	virtual void updateGrid() = 0;							///< Changing font size must update also the grid
+
+	virtual void showPage(...) = 0;			///< displays page 'pageIdx'
+
+	virtual ~ICmapInspect() = 0 {}
+};
+
+#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
+class Comparator : public CvWin, public virtual IComparator {
 public:
-	Comparator(...) : CvWin(nullptr) {}
 	static void updateTransparency(...) {}
 	void setReference(...) {}
 	void setResult(...) {}
-	using CvWin::resize; // to remain visible after declaring an overload below
-	void resize(int, int) const {}
+	void resize(...) const {}
 };
 
-class CmapInspect : public CvWin {
+class CmapInspect : public CvWin, public virtual ICmapInspect {
 public:
-	CmapInspect(...) : CvWin(nullptr) {}
+	CmapInspect(...) : CvWin() {}
 	static void updatePageIdx(...) {}
 	void updatePagesCount(...) {}
 	void updateGrid() {}
@@ -79,9 +119,10 @@ public:
 	unsigned getSymsPerPage() const { return 0U; }
 	unsigned getPageIdx() const { return 0U; }
 	bool isBrowsable() const { return false; }
-	void setBrowsable(bool = true) {}
+	void setBrowsable(...) {}
 	void showUnofficial1stPage(...) {}
 };
+#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
 
 struct ActionPermit {};
 

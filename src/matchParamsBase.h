@@ -55,7 +55,7 @@
 
 // Forward declarations
 struct ISymData;
-struct CachedData;
+class CachedData;
 struct IMatchParamsRW;
 
 /// Base class (Read-only version) for the relevant parameters during patch&glyph matching

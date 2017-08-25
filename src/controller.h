@@ -50,17 +50,18 @@
 #pragma warning ( pop )
 
 // Forward declarations
-class FontEngine;
-class MatchEngine;
+struct IFontEngine;
+struct IMatchEngine;
 struct ISettings;
 struct ISettingsRW;
 struct ISymSettings;
 class Img;
 class AbsJobMonitor;
 struct ITransformCompletion;
-class Transformer;
-class Comparator;
-class CmapInspect;
+struct ITransformer;
+struct IComparator;
+struct ICmapInspect;
+struct ISelectSymbols;
 
 /// Manager of the views and data.
 class Controller : public IController {
@@ -90,15 +91,15 @@ protected:
 
 	// Data
 	/// pointer to the resized version of most recent image that had to be transformed
-	std::sharedPtr<const ResizedImg> resizedImg;
-	FontEngine &fe;		///< font engine
+	std::sharedPtr<const IResizedImg> resizedImg;
+	IFontEngine &fe;		///< font engine
 	ISettingsRW &cfg;	///< the settings for the transformations
-	MatchEngine &me;	///< matching engine
+	IMatchEngine &me;	///< matching engine
 	ITransformCompletion &t;	///< results of the transformation
 
 	// Views
-	Comparator &comp;					///< view for comparing original & result
-	std::sharedPtr<CmapInspect> pCmi;	///< view for inspecting the used cmap
+	IComparator &comp;					///< view for comparing original & result
+	std::sharedPtr<ICmapInspect> pCmi;	///< view for inspecting the used cmap
 
 	/// Allows saving a selection of symbols pointed within the charmap viewer
 	std::sharedPtr<const ISelectSymbols> selectSymbols;
@@ -121,10 +122,10 @@ protected:
 public: // Providing get<field> as public for Unit Testing
 #endif // UNIT_TESTING defined
 	// Methods for initialization
-	static Comparator& getComparator();
-	FontEngine& getFontEngine(const ISymSettings &ss_) const;
-	MatchEngine& getMatchEngine(const ISettings &cfg_);
-	Transformer& getTransformer(const ISettings &cfg_);
+	static IComparator& getComparator();
+	IFontEngine& getFontEngine(const ISymSettings &ss_) const;
+	IMatchEngine& getMatchEngine(const ISettings &cfg_);
+	ITransformer& getTransformer(const ISettings &cfg_);
 
 public:
 	Controller(ISettingsRW &s);	///< Initializes controller with ISettingsRW object s
@@ -136,7 +137,7 @@ public:
 	std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
 	std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
 	std::sharedPtr<const IPresentCmap> getPresentCmap() const override;
-	std::sharedPtr<const ISelectSymbols> getSelectSymbols() const override;
+	void createCmapInspect() override;
 	std::sharedPtr<IControlPanelActions> getControlPanelActions() override;
 
 	/// Waits for the user to press ESC and confirm he wants to leave
@@ -147,7 +148,7 @@ public:
 	void symbolsChanged() override;	///< triggered by new font family / encoding / size
 
 	/// Returns true if transforming a new image or the last one, but under other image parameters
-	bool updateResizedImg(std::sharedPtr<const ResizedImg> resizedImg_) override;
+	bool updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) override;
 
 	/**
 	Shows a 'Please wait' window and reports progress.
@@ -172,10 +173,12 @@ public:
 	/// Reports the duration of loading symbols / transforming images
 	void reportDuration(const std::stringType &text, double durationS) const override;
 
+	void showResultedImage(double completionDurationS) override; ///< Displays the resulted image
+
+#ifndef UNIT_TESTING
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	void display1stPageIfFull(const VPixMapSym &syms) override;
-
-	void showResultedImage(double completionDurationS) override; ///< Displays the resulted image
+#endif // UNIT_TESTING not defined
 };
 
 #endif // H_CONTROLLER

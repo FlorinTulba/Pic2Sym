@@ -40,7 +40,6 @@
 #define H_PRESENT_CMAP
 
 #include "presentCmapBase.h"
-#include "cmapPerspective.h"
 
 // Forward declarations
 struct IController;
@@ -49,17 +48,17 @@ struct IController;
 class PresentCmap : public IPresentCmap {
 protected:
 	const IController &ctrler;
-	const CmapPerspective &cmP;
+	const ICmapPerspective &cmP;
 	const bool *clustersNotIgnored = nullptr; /// pointer to the boolean ClusterEngine::worthy
 
 public:
 	PresentCmap(const IController &ctrler_,
-				const CmapPerspective &cmP_);
+				const ICmapPerspective &cmP_);
 	
 	void operator=(const PresentCmap&) = delete;
 
 	/// Getting the fonts to fill currently displayed page
-	CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
+	ICmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const override;
 
 	/// Allows visualizing the symbol clusters within the Cmap View
 	const std::set<unsigned>& getClusterOffsets() const override;

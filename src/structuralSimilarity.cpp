@@ -41,6 +41,7 @@
 #include "blurBase.h"
 #include "matchParams.h"
 #include "symDataBase.h"
+#include "cachedData.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )

@@ -39,12 +39,12 @@
 #ifndef H_TRANSFORM
 #define H_TRANSFORM
 
-#include "matchEngine.h"
-#include "transformCompletion.h"
+#include "transformBase.h"
 
 #pragma warning ( push, 0 )
 
 #include "std_string.h"
+#include "std_memory.h"
 #include <vector>
 
 #include <opencv2/core/core.hpp>
@@ -60,21 +60,22 @@ extern const unsigned SymsBatch_defaultSz;
 // Forward declarations
 struct ISettings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
-class Timer;
 class TaskMonitor;
 struct IBestMatch;
 struct IBasicImgData;
 struct ITransformSupport;
+struct IMatchEngine;
+struct IController;
 
 /// Transformer allows images to be approximated as a table of colored symbols from font files.
-class Transformer : public ITransformCompletion {
+class Transformer : public ITransformer {
 protected:
 	IController &ctrler;	///< controller
 	std::sharedPtr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
 	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
 
 	const ISettings &cfg;		///< general configuration
-	MatchEngine &me;			///< approximating patches
+	IMatchEngine &me;			///< approximating patches
 	IBasicImgData &img;			///< basic information about the current image to process
 
 	cv::Mat result;				///< the result of the transformation
@@ -117,25 +118,25 @@ protected:
 
 public:
 	Transformer(IController &ctrler_, const ISettings &cfg_,
-				MatchEngine &me_, IBasicImgData &img_);
+				IMatchEngine &me_, IBasicImgData &img_);
 	Transformer(const Transformer&) = delete;
 	void operator=(const Transformer&) = delete;
 
 	const cv::Mat& getResult() const override final { return result; }
 	void setDuration(double durationS_) override { durationS = durationS_; }
 
-	inline double duration() const { return durationS; }
+	inline double duration() const override final { return durationS; }
 
 	/**
 	Updates symsBatchSz.
 	@param symsBatchSz_ the value to set. If 0 is provided, batching symbols
 		gets disabled for the rest of the transformation, ignoring any new slider positions.
 	*/
-	void setSymsBatchSize(int symsBatchSz_);
+	void setSymsBatchSize(int symsBatchSz_) override;
 
-	void run();	///< applies the configured transformation onto current/new image
+	void run() override;	///< applies the configured transformation onto current/new image
 
-	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_); ///< setting the transformation monitor
+	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_) override; ///< setting the transformation monitor
 };
 
 #endif // H_TRANSFORM

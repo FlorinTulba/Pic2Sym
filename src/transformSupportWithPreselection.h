@@ -65,7 +65,7 @@ protected:
 
 public:
 	/// Requires an additional IMatchSupport parameter compared to the base constructor
-	TransformSupportWithPreselection(MatchEngine &me_, const IMatchSettings &matchSettings_,
+	TransformSupportWithPreselection(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 									 cv::Mat &resized_, cv::Mat &resizedBlurred_,
 									 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches_,
 									 IMatchSupport &matchSupport_);

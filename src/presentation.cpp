@@ -36,6 +36,8 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
+#include "comparatorBase.h"
+#include "cmapInspectBase.h"
 #include "controller.h"
 #include "fontEngine.h"
 #include "transform.h"
@@ -52,11 +54,13 @@
 #include "matchSettings.h"
 #include "jobMonitor.h"
 #include "progressNotifier.h"
+#include "matchEngine.h"
 #include "matchParamsBase.h"
 #include "matchAssessment.h"
 #include "structuralSimilarity.h"
 #include "updateSymsActions.h"
 #include "views.h"
+#include "symsLoadingFailure.h"
 #include "presentCmap.h"
 
 #pragma warning ( push, 0 )
@@ -458,6 +462,12 @@ void Controller::symbolsChanged() {
 		viewSymWeightsHistogram(fe.symsSet());
 }
 
+#ifndef UNIT_TESTING
+
+Controller::~Controller() {
+	destroyAllWindows();
+}
+
 void Controller::display1stPageIfFull(const VPixMapSym &syms) {
 	if((unsigned)syms.size() != pCmi->getSymsPerPage())
 		return;
@@ -476,12 +486,6 @@ void Controller::display1stPageIfFull(const VPixMapSym &syms) {
 				delete matSyms;
 			}
 		).detach(); // termination doesn't matter
-}
-
-#ifndef UNIT_TESTING
-
-Controller::~Controller() {
-	destroyAllWindows();
 }
 
 void Controller::handleRequests() {
@@ -545,11 +549,12 @@ void Controller::reportDuration(const std::stringType &text, double durationS) c
 	pCmi->setOverlay(cmapOverlayText, 3000);
 }
 
-bool Controller::updateResizedImg(std::sharedPtr<const ResizedImg> resizedImg_) {
+bool Controller::updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) {
 	if(!resizedImg_)
 		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
 
-	const bool result = !resizedImg || (*resizedImg != *resizedImg_);
+	const bool result = !resizedImg ||
+		(dynamic_cast<const ResizedImg&>(*resizedImg) != dynamic_cast<const ResizedImg&>(*resizedImg_));
 
 	if(result)
 		resizedImg = resizedImg_;
@@ -721,14 +726,14 @@ namespace {
 
 } // anonymous namespace
 
-void CmapInspect::populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
+void CmapInspect::populateGrid(const ICmapPerspective::VPSymDataCItPair &itPair,
 							   const set<unsigned> &clusterOffsets,
 							   unsigned idxOfFirstSymFromPage) {
-	CmapPerspective::VPSymDataCIt it = itPair.first, itEnd = itPair.second;
+	ICmapPerspective::VPSymDataCIt it = itPair.first, itEnd = itPair.second;
 	::populateGrid(it, itEnd,
 #ifndef AI_REVIEWER_CHECK
-				   (NegSymExtractor<CmapPerspective::VPSymDataCIt>) // conversion
-				   [](const CmapPerspective::VPSymDataCIt &iter) -> Mat {
+				   (NegSymExtractor<ICmapPerspective::VPSymDataCIt>) // conversion
+				   [](const ICmapPerspective::VPSymDataCIt &iter) -> Mat {
 						if((*iter)->isRemovable())
 							return 255U - (*iter)->getNegSym();
 						return (*iter)->getNegSym();
@@ -883,7 +888,7 @@ void CmapPerspective::reset(const VSymData &symsSet,
 	}
 }
 
-CmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(unsigned from, unsigned count) const {
+ICmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(unsigned from, unsigned count) const {
 	const auto sz = pSyms.size();
 	const VPSymDataCIt itEnd = pSyms.cend();
 	if((size_t)from >= sz)

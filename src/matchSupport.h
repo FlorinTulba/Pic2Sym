@@ -39,44 +39,7 @@
 #ifndef H_MATCH_SUPPORT
 #define H_MATCH_SUPPORT
 
-// Forward declarations
-struct CachedData;
-class FontEngine;
-
-/**
-Type for a polymorphic parameter to be passed to MatchEngine::improvesBasedOnBatch.
-The type is adjusted based on the value of PreselectionByTinySyms.
-Each time the method finds a better match, it calls remarkedMatch from this class.
-*/
-class MatchProgress {
-public:
-	/// Base class constructor
-	MatchProgress() {}
-
-	MatchProgress(const MatchProgress&) = delete;
-	MatchProgress(MatchProgress&&) = delete;
-	void operator=(const MatchProgress&) = delete;
-	void operator=(MatchProgress&&) = delete;
-
-	virtual ~MatchProgress() {}
-
-	/**
-	For PreselectionByTinySyms == false, it does nothing.
-	For PreselectionByTinySyms == true, it checks if the new match is worth placing on the short candidate list.
-	*/
-	virtual void remarkedMatch(unsigned /*symIdx*/, double /*score*/) {}
-};
-
-/// Interface for MatchSupport* classes (support for the MatchEngine and Transformer classes reflecting the preselection mode)
-struct IMatchSupport /*abstract*/ {
-	/// cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
-	virtual const CachedData& cachedData() const = 0;
-
-	/// update cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
-	virtual void updateCachedData(unsigned fontSz, const FontEngine &fe) = 0;
-
-	virtual ~IMatchSupport() = 0 {}
-};
+#include "matchSupportBase.h"
 
 /// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
 class MatchSupport : public IMatchSupport {
@@ -96,7 +59,7 @@ public:
 	const CachedData& cachedData() const override;
 
 	/// update cached data corresponding to normal size symbols or for the tiny symbols when PreselectionByTinySyms == true
-	void updateCachedData(unsigned fontSz, const FontEngine &fe) override;
+	void updateCachedData(unsigned fontSz, const IFontEngine &fe) override;
 };
 
 #endif // H_MATCH_SUPPORT

@@ -38,17 +38,19 @@
 
 #include "matchEngine.h"
 #include "matchAssessment.h"
+#include "scoreThresholds.h"
 #include "clusterEngine.h"
 #include "matchAspectsFactory.h"
 #include "matchParamsBase.h"
 #include "patchBase.h"
 #include "bestMatchBase.h"
 #include "preselectManager.h"
-#include "preselectSyms.h"
-#include "symbolsSupport.h"
+#include "fontEngineBase.h"
+#include "symbolsSupportBase.h"
 #include "clusterSupport.h"
-#include "matchSupport.h"
-#include "cmapPerspective.h"
+#include "matchSupportBase.h"
+#include "matchProgress.h"
+#include "cmapPerspectiveBase.h"
 #include "settingsBase.h"
 #include "symSettingsBase.h"
 #include "jobMonitorBase.h"
@@ -106,10 +108,10 @@ namespace {
 
 	/// Checks if the provided symbol range within the current cluster contains a better match
 	bool checkRangeWithinCluster(unsigned fromIdx, unsigned lastIdx,
-								 const MatchEngine &me, const Mat &toApprox,
+								 const IMatchEngine &me, const Mat &toApprox,
 								 const VSymData &symsSet,
 								 const CachedData &cd,
-								 ScoreThresholds &scoresToBeatBySyms,
+								 IScoreThresholds &scoresToBeatBySyms,
 								 IBestMatch &draftMatch) {
 		bool betterMatchFound = false;
 		const MatchAssessor &assessor = me.assessor();
@@ -129,7 +131,7 @@ namespace {
 	}
 } // anonymous namespace
 
-MatchEngine::MatchEngine(const ISettings &cfg_, FontEngine &fe_, CmapPerspective &cmP_) :
+MatchEngine::MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_),
 			matchAssessor(specializedInstance(availAspects)),
 			ce(makeUnique<ClusterEngine>(fe_, symsSet)),

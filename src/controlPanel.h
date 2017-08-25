@@ -36,7 +36,10 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#ifndef UNIT_TESTING
+#ifdef UNIT_TESTING
+#include "../test/mockUi.h"
+
+#else // UNIT_TESTING not defined
 
 #ifndef H_CONTROL_PANEL
 #define H_CONTROL_PANEL

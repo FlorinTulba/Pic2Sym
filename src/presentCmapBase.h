@@ -39,7 +39,7 @@
 #ifndef H_PRESENT_CMAP_BASE
 #define H_PRESENT_CMAP_BASE
 
-#include "cmapPerspective.h"
+#include "cmapPerspectiveBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -50,7 +50,7 @@
 /// Provides read-only access to Cmap data.
 struct IPresentCmap /*abstract*/ {
 	/// Getting the fonts to fill currently displayed page
-	virtual CmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
+	virtual ICmapPerspective::VPSymDataCItPair getFontFaces(unsigned from, unsigned maxCount) const = 0;
 
 	/// Allows visualizing the symbol clusters within the Cmap View
 	virtual const std::set<unsigned>& getClusterOffsets() const = 0;

@@ -50,7 +50,7 @@ public:
 	JobMonitor(...) : AbsJobMonitor("") {}
 	void operator=(const JobMonitor&) = delete;
 
-	void setTasksDetails(const std::vector<double>&, Timer&) override {}
+	void setTasksDetails(const std::vector<double>&, ITimerResult&) override {}
 	unsigned monitorNewTask(AbsTaskMonitor&) override { return 0U; }
 	void taskAdvanced(double, unsigned) override {}
 	void taskDone(unsigned) override {}

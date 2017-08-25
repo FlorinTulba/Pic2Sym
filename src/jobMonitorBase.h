@@ -48,20 +48,20 @@
 
 // Forward declarations
 class AbsTaskMonitor;
-class Timer;
+struct ITimerResult;
 
 /// Abstract class for monitoring progress of a given job
 class AbsJobMonitor /*abstract*/ {
 protected:
 	const std::stringType monitoredJob_;	///< name of the job
-	Timer *timer = nullptr;				///< timer for reporting elapsed and estimated remaining time
+	ITimerResult *timer = nullptr;			///< timer for reporting elapsed and estimated remaining time
 
 	double progress_ = 0.;				///< actual known job's progress
 
 	bool aborted = false;				///< set if the job was aborted
 
 	/// Prepares the monitor for a new timing using timer_
-	virtual void getReady(Timer &timer_) {
+	virtual void getReady(ITimerResult &timer_) {
 		timer = &timer_;
 		progress_ = 0.;
 		aborted = false;
@@ -83,7 +83,7 @@ public:
 
 	The parameter timer_ is the associated timer for reporting elapsed and estimated remaining time
 	*/
-	virtual void setTasksDetails(const std::vector<double> &totalContribValues, Timer &timer_) = 0;
+	virtual void setTasksDetails(const std::vector<double> &totalContribValues, ITimerResult &timer_) = 0;
 
 	/**
 	At the start of each task of a given job, the user must create a

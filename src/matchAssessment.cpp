@@ -38,61 +38,13 @@
 
 #include "matchAssessment.h"
 #include "matchAspects.h"
+#include "scoreThresholdsBase.h"
 #include "misc.h"
 
 using namespace std;
 using namespace cv;
 
 extern const double EnableSkipAboveMatchRatio;
-
-ScoreThresholds::ScoreThresholds() {}
-
-ScoreThresholds::ScoreThresholds(double multiplier, const ScoreThresholds &references) :
-			total(multiplier*references.total), intermediaries(references.intermediaries.size()) {
-	const size_t factorsCount = references.intermediaries.size();
-	for(size_t i = 0ULL; i < factorsCount; ++i)
-		intermediaries[i] = multiplier * references.intermediaries[i];
-}
-
-double ScoreThresholds::overall() const {
-	return total;
-}
-
-double ScoreThresholds::operator[](size_t idx) const {
-	assert(idx < intermediaries.size());
-	return intermediaries[idx];
-}
-
-bool ScoreThresholds::representsInferiorMatch() const {
-	return intermediaries.empty();
-}
-
-void ScoreThresholds::inferiorMatch() {
-	if(!intermediaries.empty())
-		intermediaries.clear();
-}
-
-void ScoreThresholds::update(double totalScore) {
-	total = totalScore;
-}
-
-void ScoreThresholds::update(double totalScore, const std::vector<double> &multipliers) {
-	total = totalScore;
-	const size_t factorsCount = multipliers.size();
-	if(intermediaries.size() != factorsCount)
-		intermediaries.resize(factorsCount);
-	for(size_t i = 0ULL; i < factorsCount; ++i)
-		intermediaries[i] = totalScore * multipliers[i];
-}
-
-void ScoreThresholds::update(double multiplier, const ScoreThresholds &references) {
-	total = multiplier * references.total;
-	const size_t factorsCount = references.intermediaries.size();
-	if(intermediaries.size() != factorsCount)
-		intermediaries.resize(factorsCount);
-	for(size_t i = 0ULL; i < factorsCount; ++i)
-		intermediaries[i] = multiplier * references.intermediaries[i];
-}
 
 MatchAssessor& MatchAssessor::availableAspects(const vector<std::sharedPtr<MatchAspect>> &availAspects_) {
 	availAspects = &availAspects_;
@@ -137,7 +89,7 @@ void MatchAssessor::getReady(const CachedData &/*cachedData*/) {
 }
 
 bool MatchAssessor::isBetterMatch(const Mat &patch, const ISymData &symData, const CachedData &cd,
-								  const ScoreThresholds &scoresToBeat,
+								  const IScoreThresholds &scoresToBeat,
 								  IMatchParamsRW &mp, double &score) const {
 	// There is at least one enabled match aspect,
 	// since Controller::performTransformation() prevents further calls when there are no enabled aspects.
@@ -151,7 +103,7 @@ bool MatchAssessor::isBetterMatch(const Mat &patch, const ISymData &symData, con
 
 MatchAssessorNoSkip::MatchAssessorNoSkip() : MatchAssessor() {}
 
-void MatchAssessorNoSkip::scoresToBeat(double draftScore, ScoreThresholds &scoresToBeat) const {
+void MatchAssessorNoSkip::scoresToBeat(double draftScore, IScoreThresholds &scoresToBeat) const {
 	scoresToBeat.update(draftScore);
 }
 
@@ -204,7 +156,7 @@ void MatchAssessorSkip::getReady(const CachedData &cachedData) {
 		* EnableSkipAboveMatchRatio; // setting the threshold as a % from the ideal score
 }
 
-void MatchAssessorSkip::scoresToBeat(double draftScore, ScoreThresholds &scoresToBeat) const {
+void MatchAssessorSkip::scoresToBeat(double draftScore, IScoreThresholds &scoresToBeat) const {
 	if(draftScore < thresholdDraftScore) { // For bad matches intermediary results won't be used
 		scoresToBeat.inferiorMatch();
 		scoresToBeat.update(draftScore);
@@ -214,7 +166,7 @@ void MatchAssessorSkip::scoresToBeat(double draftScore, ScoreThresholds &scoresT
 }
 
 bool MatchAssessorSkip::isBetterMatch(const Mat &patch, const ISymData &symData, const CachedData &cd,
-									  const ScoreThresholds &scoresToBeat,
+									  const IScoreThresholds &scoresToBeat,
 									  IMatchParamsRW &mp, double &score) const {
 #ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
 #pragma omp atomic

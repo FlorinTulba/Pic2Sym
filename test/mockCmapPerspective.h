@@ -53,7 +53,20 @@
 // Forward declarations
 struct ISymData;
 
-class CmapPerspective {
+struct ICmapPerspective /*abstract*/ {
+	// Displaying the symbols requires dividing them into pages (ranges using iterators)
+	typedef std::vector<const ISymData*> VPSymData;
+	typedef VPSymData::const_iterator VPSymDataCIt;
+	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
+
+	virtual void reset(...) = 0;
+	virtual VPSymDataCItPair getSymsRange(...) const = 0;
+	virtual const std::set<unsigned>& getClusterOffsets() const = 0;
+
+	virtual ~ICmapPerspective() = 0 {}
+};
+
+class CmapPerspective : public ICmapPerspective {
 public:
 	// Displaying the symbols requires dividing them into pages (ranges using iterators)
 	typedef std::vector<const ISymData*> VPSymData;
@@ -67,9 +80,9 @@ public:
 	void operator=(const CmapPerspective&) = delete;
 	void operator=(CmapPerspective&&) = delete;
 
-	void reset(...);
-	VPSymDataCItPair getSymsRange(...) const;
-	const std::set<unsigned>& getClusterOffsets() const;
+	void reset(...) override;
+	VPSymDataCItPair getSymsRange(...) const override;
+	const std::set<unsigned>& getClusterOffsets() const override;
 };
 
 #endif // H_MOCK_CMAP_PERSPECTIVE

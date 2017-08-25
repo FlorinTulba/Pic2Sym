@@ -48,10 +48,10 @@
 using namespace std;
 
 PresentCmap::PresentCmap(const IController &ctrler_,
-						 const CmapPerspective &cmP_) :
+						 const ICmapPerspective &cmP_) :
 	ctrler(ctrler_), cmP(cmP_) {}
 
-CmapPerspective::VPSymDataCItPair PresentCmap::getFontFaces(unsigned from, unsigned maxCount) const {
+ICmapPerspective::VPSymDataCItPair PresentCmap::getFontFaces(unsigned from, unsigned maxCount) const {
 	return cmP.getSymsRange(from, maxCount);
 }
 

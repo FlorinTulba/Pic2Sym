@@ -51,7 +51,7 @@
 #include "imgSettingsBase.h"
 #include "matchSettings.h"
 #include "img.h"
-#include "resizedImg.h"
+#include "resizedImgBase.h"
 #include "patch.h"
 #include "transformSupport.h"
 #include "symbolsSupport.h"
@@ -354,19 +354,19 @@ bool ControlPanelActions::newImage(const Mat &imgMat) {
 	return result;
 }
 
-Comparator& Controller::getComparator() {
+IComparator& Controller::getComparator() {
 	GET_FIELD(Comparator);
 }
 
-FontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
+IFontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
+IMatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
 	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
 }
 
-Transformer& Controller::getTransformer(const ISettings &cfg_) {
+ITransformer& Controller::getTransformer(const ISettings &cfg_) {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
 }
 
@@ -390,7 +390,7 @@ void Controller::updateStatusBarCmapInspect(unsigned, const string&, bool) const
 
 void Controller::reportDuration(const string&, double) const {}
 
-bool Controller::updateResizedImg(std::shared_ptr<const ResizedImg>) {
+bool Controller::updateResizedImg(std::shared_ptr<const IResizedImg>) {
 	return true;
 }
 
@@ -405,12 +405,12 @@ void SelectSymbols::enlistSymbolForInvestigation(const ISymData&) const {}
 void SelectSymbols::symbolsReadyToInvestigate() const {}
 
 namespace {
-	CmapPerspective::VPSymDataCIt dummyIt;
-	CmapPerspective::VPSymDataCItPair dummyFontFaces(dummyIt, dummyIt);
+	ICmapPerspective::VPSymDataCIt dummyIt;
+	ICmapPerspective::VPSymDataCItPair dummyFontFaces(dummyIt, dummyIt);
 	set<unsigned> dummyClusterOffsets;
 } // anonymous namespace
 
-CmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(...) const {
+ICmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(...) const {
 	return dummyFontFaces;
 }
 

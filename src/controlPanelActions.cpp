@@ -39,7 +39,8 @@
 #include "controlPanelActions.h"
 #include "controlPanel.h"
 #include "matchAssessment.h"
-#include "transform.h"
+#include "transformBase.h"
+#include "fontEngineBase.h"
 #include "dlgs.h"
 #include "misc.h"
 #include "settings.h"
@@ -47,7 +48,9 @@
 #include "imgSettings.h"
 #include "matchSettings.h"
 #include "tinySymsProvider.h"
-#include "views.h"
+#include "symsLoadingFailure.h"
+#include "comparatorBase.h"
+#include "cmapInspectBase.h"
 #include "img.h"
 
 #pragma warning ( push, 0 )
@@ -75,8 +78,8 @@ using namespace boost::filesystem;
 using namespace boost::archive;
 
 ControlPanelActions::ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
-										 FontEngine &fe_, const MatchAssessor &ma_, Transformer &t_,
-										 Comparator &comp_, std::sharedPtr<CmapInspect> &pCmi_) :
+										 IFontEngine &fe_, const MatchAssessor &ma_, ITransformer &t_,
+										 IComparator &comp_, std::sharedPtr<ICmapInspect> &pCmi_) :
 	ctrler(ctrler_), cfg(cfg_), fe(fe_),
 	ma(const_cast<MatchAssessor&>(ma_)), // match aspects might get enabled/disabled by the corresponding sliders 
 	t(t_), img(getImg()),
@@ -356,9 +359,10 @@ bool ControlPanelActions::_newFontFamily(const stringType &fontFile, bool forceU
 
 	if(!fontFamilyOk) {
 		fontFamilyOk = true;
-		if(!pCmi)
-			pCmi = std::makeShared<CmapInspect>(
-				ctrler.getPresentCmap(), ctrler.getSelectSymbols(), ctrler.getFontSize());
+		if(!pCmi) {
+			ctrler.createCmapInspect();
+			assert(pCmi);
+		}
 	}
 
 	return true;

@@ -39,7 +39,13 @@
 #ifndef H_CONTROLLER_BASE
 #define H_CONTROLLER_BASE
 
+#ifndef UNIT_TESTING
 #include "pixMapSymBase.h"
+
+#else // UNIT_TESTING defined
+#include "std_memory.h"
+
+#endif // UNIT_TESTING
 
 #pragma warning ( push, 0 )
 
@@ -52,9 +58,8 @@ struct IUpdateSymSettings;
 struct IGlyphsProgressTracker;
 struct IPicTransformProgressTracker;
 struct IPresentCmap;
-struct ISelectSymbols;
 struct IControlPanelActions;
-class ResizedImg;
+struct IResizedImg;
 
 /// Base interface for the Controller
 struct IController /*abstract*/ {
@@ -64,7 +69,7 @@ struct IController /*abstract*/ {
 	virtual std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const = 0;
 	virtual std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() = 0;
 	virtual std::sharedPtr<const IPresentCmap> getPresentCmap() const = 0;
-	virtual std::sharedPtr<const ISelectSymbols> getSelectSymbols() const = 0;
+	virtual void createCmapInspect() = 0;
 	virtual std::sharedPtr<IControlPanelActions> getControlPanelActions() = 0;
 
 	virtual const unsigned& getFontSize() const = 0; ///< font size determines grid size
@@ -73,7 +78,7 @@ struct IController /*abstract*/ {
 	virtual void symbolsChanged() = 0;
 
 	/// Returns true if transforming a new image or the last one, but under other image parameters
-	virtual bool updateResizedImg(std::sharedPtr<const ResizedImg> resizedImg_) = 0;
+	virtual bool updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) = 0;
 
 	/**
 	Shows a 'Please wait' window and reports progress.
@@ -99,10 +104,12 @@ struct IController /*abstract*/ {
 	/// Reports the duration of loading symbols / transforming images
 	virtual void reportDuration(const std::stringType &text, double durationS) const = 0;
 
+	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
+
+#ifndef UNIT_TESTING
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
 	virtual void display1stPageIfFull(const VPixMapSym &syms) = 0;
-
-	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
+#endif // UNIT_TESTING not defined
 };
 
 #endif // H_CONTROLLER_BASE

@@ -39,28 +39,7 @@
 #ifndef H_SYMBOLS_SUPPORT
 #define H_SYMBOLS_SUPPORT
 
-#pragma warning ( push, 0 )
-
-#include <vector>
-
-#include <opencv2/core/core.hpp>
-
-#pragma warning ( pop )
-
-struct ISymData; // Forward declaration
-
-/// Interface for SymsSupport* types (blurring and computing cluster representatives)
-struct ISymsSupport /*abstract*/ {
-	/// @return the value of PreselectionByTinySyms
-	virtual bool usingTinySymbols() const = 0;
-
-	/// Generates clusters with normal / tiny format, depending on PreselectionByTinySyms
-	virtual void computeClusterRepresentative(const std::vector<const ISymData*> &clusterSyms,
-											  int symSz, double invClusterSz,
-											  cv::Mat &synthesizedSym, cv::Mat &negSym) const = 0;
-
-	virtual ~ISymsSupport() = 0 {}
-};
+#include "symbolsSupportBase.h"
 
 /**
 Helpful for blurring and computing cluster representatives.

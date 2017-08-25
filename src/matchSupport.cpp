@@ -38,7 +38,7 @@
 
 #include "matchSupport.h"
 #include "cachedData.h"
-#include "fontEngine.h"
+#include "fontEngineBase.h"
 
 using namespace std;
 
@@ -48,6 +48,6 @@ const CachedData& MatchSupport::cachedData() const {
 	return cd;
 }
 
-void MatchSupport::updateCachedData(unsigned fontSz, const FontEngine &fe) {
+void MatchSupport::updateCachedData(unsigned fontSz, const IFontEngine &fe) {
 	cd.update(fontSz, fe);
 }

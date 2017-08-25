@@ -39,38 +39,19 @@
 #ifndef H_TRANSFORM_SUPPORT
 #define H_TRANSFORM_SUPPORT
 
+#include "transformSupportBase.h"
+
 #pragma warning ( push, 0 )
 
 #include "std_memory.h"
 #include <vector>
-
-#include <opencv2/core/core.hpp>
 
 #pragma warning ( pop )
 
 // Forward declarations
 struct IBestMatch;
 struct IMatchSettings;
-class MatchEngine;
-
-/// Interface for TransformSupport* classes (Initializing and updating draft matches)
-struct ITransformSupport /*abstract*/ {
-	/// Initializes the drafts when a new image needs to be approximated
-	virtual void initDrafts(bool isColor, unsigned patchSz,
-							unsigned patchesPerCol, unsigned patchesPerRow) = 0;
-
-	/// Resets the drafts when current image needs to be approximated in a different context
-	virtual void resetDrafts(unsigned patchesPerCol) = 0;
-
-	/**
-	Approximates row r of patches of size patchSz from an image with given width.
-	It checks only the symbols with indices in range [fromSymIdx, upperSymIdx).
-	*/
-	virtual void approxRow(int r, int width, unsigned patchSz,
-						   unsigned fromSymIdx, unsigned upperSymIdx, cv::Mat &result) = 0;
-
-	virtual ~ITransformSupport() = 0 {}
-};
+struct IMatchEngine;
 
 /**
 Initializes and updates draft matches.
@@ -97,7 +78,7 @@ protected:
 	/// Determines if a given patch is worth approximating (Uniform patches don't make sense approximating)
 	static bool checkUnifPatch(IBestMatch &draftMatch);
 
-	MatchEngine &me;					///< match engine
+	IMatchEngine &me;					///< match engine
 	const IMatchSettings &matchSettings;	///< match settings
 	cv::Mat &resized;					///< resized version of the original
 	cv::Mat &resizedBlurred;			///< blurred version of the resized original
@@ -105,7 +86,7 @@ protected:
 
 public:
 	/// Base constructor
-	TransformSupport(MatchEngine &me_, const IMatchSettings &matchSettings_,
+	TransformSupport(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 					 cv::Mat &resized_, cv::Mat &resizedBlurred_,
 					 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches_);
 

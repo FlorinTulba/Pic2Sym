@@ -44,23 +44,16 @@
 #ifndef H_VIEWS
 #define H_VIEWS
 
-#include "matchEngine.h"
-#include "updateSymsActions.h"
-#include "cmapPerspective.h"
-
-#pragma warning ( push, 0 )
-
-#include <atomic>
-
-#include <opencv2/core.hpp>
-
-#pragma warning ( pop )
+#include "comparatorBase.h"
+#include "cmapInspectBase.h"
+#include "cmapPerspectiveBase.h"
+#include "warnings.h"
 
 /**
 CvWin - base class for Comparator & CmapInspect from below.
 Allows setting title, overlay, status, location, size and resizing properties.
 */
-class CvWin /*abstract*/ {
+class CvWin /*abstract*/ : public virtual ICvWin {
 protected:
 	const cv::String winName;	///< window's handle
 	cv::Mat content;			///< what to display 
@@ -71,25 +64,23 @@ protected:
 public:
 	virtual ~CvWin() = 0 {}
 
-	void setTitle(const std::stringType &title) const;
-	void setOverlay(const std::stringType &overlay, int timeoutMs = 0) const;
-	void setStatus(const std::stringType &status, int timeoutMs = 0) const;
+	void setTitle(const std::stringType &title) const override;
+	void setOverlay(const std::stringType &overlay, int timeoutMs = 0) const override;
+	void setStatus(const std::stringType &status, int timeoutMs = 0) const override;
 
-	void setPos(int x, int y) const;
-	virtual void permitResize(bool allow = true) const;
-	void resize(int w, int h) const;
+	void setPos(int x, int y) const override;
+	void permitResize(bool allow = true) const override;
+	void resize(int w, int h) const override;
 };
 
-extern const int Comparator_trackMax;
-extern const double Comparator_defaultTransparency;
-
+#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
 /**
 View which permits comparing the original image with the transformed one.
 
 A slider adjusts the transparency of the resulted image,
 so that the original can be more or less visible.
 */
-class Comparator : public CvWin {
+class Comparator : public CvWin, public virtual IComparator {
 protected:
 	static const cv::Mat noImage;				///< image to display initially (not for processing)
 
@@ -104,26 +95,28 @@ public:
 
 	static void updateTransparency(int newTransp, void *userdata); ///< slider's callback
 
-	void setReference(const cv::Mat &reference_);
+	void setReference(const cv::Mat &reference_) override;
 	void setResult(const cv::Mat &result_,
 				   int transparency =
-						(int)round(Comparator_defaultTransparency * Comparator_trackMax));
+						(int)round(Comparator_defaultTransparency * Comparator_trackMax)) override;
 	
-	using CvWin::resize; // to remain visible after declaring an overload below
-	void resize() const;
+	using CvWin::resize; // to remain visible after declaring the overload below
+	void resize() const override;
 };
+#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
 
 // Forward declarations
 struct IPresentCmap;
 struct ISelectSymbols;
 
+#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
 /**
 Class for displaying the symbols from the current charmap (cmap).
 
 When there are lots of symbols, they are divided into pages which
 can be browsed using the page slider.
 */
-class CmapInspect : public CvWin {
+class CmapInspect : public CvWin, public virtual ICmapInspect {
 protected:
 	std::sharedPtr<const IPresentCmap> cmapPresenter;	///< presents the cmap window
 	std::sharedPtr<const ISelectSymbols> symsSelector;	///< allows saving a selection of symbols
@@ -149,7 +142,7 @@ protected:
 	cv::Mat createGrid();			///< generates the grid that separates the glyphs
 
 	/// content = grid + glyphs for current page specified by a pair of iterators
-	void populateGrid(const CmapPerspective::VPSymDataCItPair &itPair,
+	void populateGrid(const ICmapPerspective::VPSymDataCItPair &itPair,
 					  const std::set<unsigned> &clusterOffsets,
 					  unsigned idxOfFirstSymFromPage);
 
@@ -161,25 +154,26 @@ public:
 
 	static void updatePageIdx(int newPage, void *userdata); ///< slider's callback
 
-	unsigned getCellSide() const { return cellSide; }
-	unsigned getSymsPerRow() const { return symsPerRow; }
-	unsigned getSymsPerPage() const { return symsPerPage; }
-	unsigned getPageIdx() const { return (unsigned)page; }
-	bool isBrowsable() const { return readyToBrowse; }
-	void setBrowsable(bool readyToBrowse_ = true) { readyToBrowse = readyToBrowse_; }
+	unsigned getCellSide() const override final { return cellSide; }
+	unsigned getSymsPerRow() const override final { return symsPerRow; }
+	unsigned getSymsPerPage() const override final { return symsPerPage; }
+	unsigned getPageIdx() const override final { return (unsigned)page; }
+	bool isBrowsable() const override final { return readyToBrowse; }
+	void setBrowsable(bool readyToBrowse_ = true) override final { readyToBrowse = readyToBrowse_; }
 
 	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
 	void showUnofficial1stPage(std::vector<const cv::Mat> &symsOn1stPage,
 							   std::atomic_flag &updating1stCmapPage,
-							   LockFreeQueue &updateSymsActionsQueue);
+							   LockFreeQueue &updateSymsActionsQueue) override;
 
-	void clear();								///< clears the grid, the status bar and updates required fields
+	void clear() override;								///< clears the grid, the status bar and updates required fields
 
-	void updatePagesCount(unsigned cmapSize);	///< puts also the slider on 0
-	void updateGrid();							///< Changing font size must update also the grid
+	void updatePagesCount(unsigned cmapSize) override;	///< puts also the slider on 0
+	void updateGrid() override;							///< Changing font size must update also the grid
 
-	void showPage(unsigned pageIdx);			///< displays page 'pageIdx'
+	void showPage(unsigned pageIdx) override;			///< displays page 'pageIdx'
 };
+#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
 
 #endif // H_VIEWS
 

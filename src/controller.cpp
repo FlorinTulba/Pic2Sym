@@ -39,6 +39,7 @@
 #include "controller.h"
 #include "settingsBase.h"
 #include "symSettingsBase.h"
+#include "fontEngine.h"
 #include "matchEngine.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
@@ -46,10 +47,9 @@
 #include "views.h"
 #include "imgBasicData.h"
 #include "transform.h"
-#include "transformSupport.h"
-#include "symbolsSupport.h"
+#include "transformSupportBase.h"
 #include "matchSupport.h"
-#include "clusterEngine.h"
+#include "clusterEngineBase.h"
 #include "clusterSupport.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"
@@ -79,8 +79,8 @@ std::sharedPtr<const IPresentCmap> Controller::getPresentCmap() const {
 	return presentCmap;
 }
 
-std::sharedPtr<const ISelectSymbols> Controller::getSelectSymbols() const {
-	return selectSymbols;
+void Controller::createCmapInspect() {
+	pCmi.reset(new CmapInspect(presentCmap, selectSymbols, getFontSize()));
 }
 
 std::sharedPtr<IControlPanelActions> Controller::getControlPanelActions() {
@@ -119,19 +119,19 @@ const unsigned& Controller::getFontSize() const {
 	return field
 #endif // AI_REVIEWER_CHECK
 
-Comparator& Controller::getComparator() {
+IComparator& Controller::getComparator() {
 	GET_FIELD_NO_ARGS(Comparator);
 }
 
-FontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
+IFontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 	GET_FIELD(FontEngine, *this, ss_);
 }
 
-MatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
+IMatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
 	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
 }
 
-Transformer& Controller::getTransformer(const ISettings &cfg_) {
+ITransformer& Controller::getTransformer(const ISettings &cfg_) {
 	GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_),
 			  (IBasicImgData&)ControlPanelActions::getImg());
 }

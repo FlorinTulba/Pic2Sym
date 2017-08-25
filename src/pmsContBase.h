@@ -50,7 +50,7 @@
 
 #pragma warning ( pop )
 
-struct SymFilterCache; // forward declaration
+class SymFilterCache; // forward declaration
 
 /// Base for the container holding PixMapSym-s of same size
 struct IPmsCont /*abstract*/ {

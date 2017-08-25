@@ -36,10 +36,16 @@
     <ClInclude Include="src\clusterData.h" />
     <ClInclude Include="src\clusterDataBase.h" />
     <ClInclude Include="src\clusterEngine.h" />
+    <ClInclude Include="src\clusterEngineBase.h" />
+    <ClInclude Include="src\clusterProcessingBase.h" />
     <ClInclude Include="src\clusterSerialization.h" />
     <ClInclude Include="src\clusterSupport.h" />
+    <ClInclude Include="src\clusterSupportBase.h" />
     <ClInclude Include="src\clusterSupportWithPreselection.h" />
+    <ClInclude Include="src\cmapInspectBase.h" />
     <ClInclude Include="src\cmapPerspective.h" />
+    <ClInclude Include="src\cmapPerspectiveBase.h" />
+    <ClInclude Include="src\comparatorBase.h" />
     <ClInclude Include="src\compressOption.h" />
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
@@ -47,14 +53,19 @@
     <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
+    <ClInclude Include="src\fontEngineBase.h" />
     <ClInclude Include="src\fontErrorsHelper.h" />
     <ClInclude Include="src\glyphsProgressTrackerBase.h" />
     <ClInclude Include="src\imgBasicData.h" />
     <ClInclude Include="src\imgSettingsBase.h" />
     <ClInclude Include="src\matchAssessment.h" />
+    <ClInclude Include="src\matchEngineBase.h" />
     <ClInclude Include="src\matchParamsBase.h" />
+    <ClInclude Include="src\matchProgress.h" />
+    <ClInclude Include="src\matchProgressWithPreselection.h" />
     <ClInclude Include="src\matchSettingsBase.h" />
     <ClInclude Include="src\matchSupport.h" />
+    <ClInclude Include="src\matchSupportBase.h" />
     <ClInclude Include="src\matchSupportWithPreselection.h" />
     <ClInclude Include="src\ompTraceSwitch.h" />
     <ClInclude Include="src\patchBase.h" />
@@ -64,9 +75,13 @@
     <ClInclude Include="src\pmsContBase.h" />
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
+    <ClInclude Include="src\preselectSymsBase.h" />
     <ClInclude Include="src\presentCmap.h" />
     <ClInclude Include="src\presentCmapBase.h" />
     <ClInclude Include="src\resizedImg.h" />
+    <ClInclude Include="src\resizedImgBase.h" />
+    <ClInclude Include="src\scoreThresholds.h" />
+    <ClInclude Include="src\scoreThresholdsBase.h" />
     <ClInclude Include="src\selectSymbols.h" />
     <ClInclude Include="src\selectSymbolsBase.h" />
     <ClInclude Include="src\serializer.h" />
@@ -107,6 +122,7 @@
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symbolsSupport.h" />
+    <ClInclude Include="src\symbolsSupportBase.h" />
     <ClInclude Include="src\symbolsSupportWithPreselection.h" />
     <ClInclude Include="src\symDataBase.h" />
     <ClInclude Include="src\symFilterBase.h" />
@@ -115,17 +131,21 @@
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\symSettingsBase.h" />
+    <ClInclude Include="src\symsLoadingFailure.h" />
     <ClInclude Include="src\symsSerialization.h" />
     <ClInclude Include="src\taskMonitor.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
     <ClInclude Include="src\timing.h" />
+    <ClInclude Include="src\timingBase.h" />
     <ClInclude Include="src\tinySym.h" />
     <ClInclude Include="src\tinySymBase.h" />
     <ClInclude Include="src\tinySymsDataSerialization.h" />
     <ClInclude Include="src\tinySymsProvider.h" />
     <ClInclude Include="src\transform.h" />
+    <ClInclude Include="src\transformBase.h" />
     <ClInclude Include="src\transformCompletion.h" />
     <ClInclude Include="src\transformSupport.h" />
+    <ClInclude Include="src\transformSupportBase.h" />
     <ClInclude Include="src\transformSupportWithPreselection.h" />
     <ClInclude Include="src\transformTrace.h" />
     <ClInclude Include="src\ttsasClustering.h" />
@@ -134,6 +154,7 @@
     <ClInclude Include="src\updateSymSettings.h" />
     <ClInclude Include="src\updateSymSettingsBase.h" />
     <ClInclude Include="src\views.h" />
+    <ClInclude Include="src\viewsBase.h" />
     <ClInclude Include="src\warnings.h" />
   </ItemGroup>
   <ItemGroup>
@@ -163,6 +184,7 @@
     <ClCompile Include="src\gridBarsFilter.cpp" />
     <ClCompile Include="src\matchAspectsFactory.cpp" />
     <ClCompile Include="src\matchAssessment.cpp" />
+    <ClCompile Include="src\matchProgressWithPreselection.cpp" />
     <ClCompile Include="src\matchSupport.cpp" />
     <ClCompile Include="src\matchSupportWithPreselection.cpp" />
     <ClCompile Include="src\noClustering.cpp" />
@@ -185,6 +207,7 @@
     <ClCompile Include="src\presentCmap.cpp" />
     <ClCompile Include="src\propsReader.cpp" />
     <ClCompile Include="src\resizedImg.cpp" />
+    <ClCompile Include="src\scoreThresholds.cpp" />
     <ClCompile Include="src\selectSymbols.cpp" />
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
@@ -197,6 +220,7 @@
     <ClCompile Include="src\symData.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
+    <ClCompile Include="src\symsLoadingFailure.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\fontErrorsHelper.cpp" />

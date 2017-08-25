@@ -41,47 +41,15 @@
 
 #include "tinySym.h"
 
-#pragma warning ( push, 0 )
-
-#include "std_string.h"
-
-#pragma warning ( pop )
-
-/// Base exception class for easier catching and handling failures while loading normal / tiny symbols
-struct SymsLoadingFailure /*abstract*/ : std::runtime_error {
-	explicit SymsLoadingFailure(const std::stringType &_Message);
-	explicit SymsLoadingFailure(const char *_Message);
-
-	void informUser(const std::stringType &msg) const; ///< informs the user about the problem
-
-protected:
-	~SymsLoadingFailure() = 0 {}
-};
-
-/// Distinct exception class for easier catching and handling failures while loading tiny symbols
-struct TinySymsLoadingFailure : SymsLoadingFailure {
-	explicit TinySymsLoadingFailure(const std::stringType &_Message);
-	explicit TinySymsLoadingFailure(const char *_Message);
-};
-
-/// Distinct exception class for easier catching and handling failures while loading normal symbols
-struct NormalSymsLoadingFailure : SymsLoadingFailure {
-	explicit NormalSymsLoadingFailure(const std::stringType &_Message);
-	explicit NormalSymsLoadingFailure(const char *_Message);
-};
-
 /// Allows providing tiny symbols both from FontEngine and from UnitTesting
 struct ITinySymsProvider /*abstract*/ {
-	ITinySymsProvider() {}
-	ITinySymsProvider(const ITinySymsProvider&) = delete;
-	void operator=(const ITinySymsProvider&) = delete;
-	virtual ~ITinySymsProvider() = 0 {}
-
 	/// Return a list of tiny symbols from current cmap
 	virtual const VTinySyms& getTinySyms() = 0;
 
 	/// Releases tiny symbols data
 	virtual void disposeTinySyms() = 0;
+
+	virtual ~ITinySymsProvider() = 0 {}
 };
 
 #endif // H_TINY_SYMS_PROVIDER

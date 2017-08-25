@@ -495,6 +495,69 @@
     <ClInclude Include="adaptedIncludes\std_string.h">
       <Filter>Header Files\Testing</Filter>
     </ClInclude>
+    <ClInclude Include="src\clusterProcessingBase.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterEngineBase.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterSupportBase.h">
+      <Filter>Header Files\Charmap\Clustering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symbolsSupportBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symsLoadingFailure.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scoreThresholdsBase.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scoreThresholds.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchProgress.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchProgressWithPreselection.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSupportBase.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\preselectSymsBase.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformSupportBase.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\timingBase.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resizedImgBase.h">
+      <Filter>Header Files\Controller\TransformEngine\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="src\viewsBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\comparatorBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cmapInspectBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cmapPerspectiveBase.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchEngineBase.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fontEngineBase.h">
+      <Filter>Header Files\Charmap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformBase.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -727,6 +790,15 @@
     </ClCompile>
     <ClCompile Include="src\resizedImg.cpp">
       <Filter>Source Files\Controller\TransformEngine\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symsLoadingFailure.cpp">
+      <Filter>Source Files\Charmap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scoreThresholds.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchProgressWithPreselection.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

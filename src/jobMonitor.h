@@ -88,7 +88,7 @@ protected:
 	double lastUserNotifiedElapsedTime = 0.;	///< last elapsed time reported to the user
 
 	/// Prepares the monitor for a new timing using timer_
-	void getReady(Timer &timer_) override;
+	void getReady(ITimerResult &timer_) override;
 
 public:
 	/**
@@ -106,7 +106,7 @@ public:
 
 	The parameter timer_ is the associated timer for reporting elapsed and estimated remaining time
 	*/
-	void setTasksDetails(const std::vector<double> &totalContribValues, Timer &timer_) override;
+	void setTasksDetails(const std::vector<double> &totalContribValues, ITimerResult &timer_) override;
 
 	/**
 	At the start of each task of a given job, the user must create a

@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "cachedData.h"
-#include "fontEngine.h"
+#include "fontEngineBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -158,11 +158,11 @@ void CachedData::useNewSymSize(unsigned sz_) {
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
 }
 
-void CachedData::update(const FontEngine &fe_) {
+void CachedData::update(const IFontEngine &fe_) {
 	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
 }
 
-void CachedData::update(unsigned sz_, const FontEngine &fe_) {
+void CachedData::update(unsigned sz_, const IFontEngine &fe_) {
 	useNewSymSize(sz_);
 	update(fe_);
 }

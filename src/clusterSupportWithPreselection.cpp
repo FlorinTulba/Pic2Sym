@@ -39,7 +39,7 @@
 #include "clusterSupportWithPreselection.h"
 #include "symbolsSupportWithPreselection.h"
 #include "tinySymsProvider.h"
-#include "clusterEngine.h"
+#include "clusterProcessingBase.h"
 #include "clusterData.h"
 #include "misc.h"
 

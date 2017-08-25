@@ -52,9 +52,9 @@
 
 // Forward declarations
 struct IController;
-class MatchEngine;
-class CmapPerspective;
-class CmapInspect;
+struct IMatchEngine;
+struct ICmapPerspective;
+struct ICmapInspect;
 
 /// Allows saving a selection of symbols pointed within the charmap viewer
 class SelectSymbols : public ISelectSymbols {
@@ -65,17 +65,17 @@ protected:
 	/// Useful while exploring ways to filter-out various symbols from charmaps.
 	mutable std::list<const cv::Mat> symsToInvestigate;
 
-	const MatchEngine &me;
+	const IMatchEngine &me;
 
-	const CmapPerspective &cmP;	///< reorganized symbols to be visualized within the cmap viewer
+	const ICmapPerspective &cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
-	const std::sharedPtr<CmapInspect> &pCmi;
+	const std::sharedPtr<ICmapInspect> &pCmi;
 
 public:
 	SelectSymbols(const IController &ctrler_,
-				  const MatchEngine &me_,
-				  const CmapPerspective &cmP_,
-				  const std::sharedPtr<CmapInspect> &pCmi_);
+				  const IMatchEngine &me_,
+				  const ICmapPerspective &cmP_,
+				  const std::sharedPtr<ICmapInspect> &pCmi_);
 
 	void operator=(const SelectSymbols&) = delete;
 

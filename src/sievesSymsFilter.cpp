@@ -64,7 +64,7 @@ namespace {
 		// threshold ratio between 1/4 of the symbol sum and the sum of each quadrant
 		static const double SumQuarterThreshold = 1.5364;
 
-		double sumBrightGlyph = (toInvert ? (1. - pms.getAvgPixVal()) : pms.getAvgPixVal()) * sfc.areaD;
+		double sumBrightGlyph = (toInvert ? (1. - pms.getAvgPixVal()) : pms.getAvgPixVal()) * sfc.getAreaD();
 
 		// Ignore central lines when sz is odd
 		if(lastSzBit != 0U) {
@@ -258,7 +258,7 @@ bool SievesSymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache 
 	if(!isEnabled())
 		THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only for enabled filters!", logic_error);
 
-	const unsigned sz = sfc.szU,		// symbol size
+	const unsigned sz = sfc.getSzU(),		// symbol size
 				halfSz = sz >> 1U,		// floor(sz/2.)
 				lastSzBit = sz & 1U;	// 1 for odd sz, 0 for even sz
 

@@ -37,11 +37,12 @@
  ***********************************************************************************************/
 
 #include "transformSupport.h"
-#include "matchEngine.h"
+#include "matchEngineBase.h"
 #include "matchParamsBase.h"
 #include "patch.h"
 #include "bestMatch.h"
 #include "matchSupport.h"
+#include "matchProgress.h"
 
 using namespace std;
 using namespace cv;
@@ -91,7 +92,7 @@ bool TransformSupport::checkUnifPatch(IBestMatch &draftMatch) {
 	return !draftMatch.getPatch().nonUniform();
 }
 
-TransformSupport::TransformSupport(MatchEngine &me_, const IMatchSettings &matchSettings_,
+TransformSupport::TransformSupport(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 								   Mat &resized_, Mat &resizedBlurred_,
 								   vector<vector<uniquePtr<IBestMatch>>> &draftMatches_) :
 	me(me_), matchSettings(matchSettings_),

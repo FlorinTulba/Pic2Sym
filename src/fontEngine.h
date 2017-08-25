@@ -39,13 +39,10 @@
 #ifndef H_FONT_ENGINE
 #define H_FONT_ENGINE
 
-#include "pixMapSymBase.h"
-#include "pmsContBase.h"
-#include "tinySymsProvider.h"
+#include "fontEngineBase.h"
 
 #pragma warning ( push, 0 )
 
-#include "std_string.h"
 #include <set>
 
 #include "boost_filesystem_path.h"
@@ -58,10 +55,10 @@ struct IController;
 struct IUpdateSymSettings;
 struct IPresentCmap;
 struct ISymSettings;
-class AbsJobMonitor;
+struct IPmsCont;
 
 /// FontEngine class wraps some necessary FreeType functionality.
-class FontEngine : public ITinySymsProvider {
+class FontEngine : public IFontEngine {
 protected:
 	std::sharedPtr<const IUpdateSymSettings> symSettingsUpdater;		///< symbol settings updating aspect of the Controller
 	std::sharedPtr<const IPresentCmap> cmapPresenter;					///< cmap presenting aspect of the Controller
@@ -118,24 +115,24 @@ public:
 	void operator=(const FontEngine&) = delete;
 	~FontEngine();
 
-	void invalidateFont();	///< When unable to process a font type, invalidate it completely
+	void invalidateFont() override;	///< When unable to process a font type, invalidate it completely
 
-	bool newFont(const std::stringType &fontFile_);		///< Tries to use the font from 'fontFile_'
-	void setFontSz(unsigned fontSz_);				///< Sets the desired font height in pixels
+	bool newFont(const std::stringType &fontFile_) override;///< Tries to use the font from 'fontFile_'
+	void setFontSz(unsigned fontSz_) override;				///< Sets the desired font height in pixels
 
-	bool setEncoding(const std::stringType &encName, bool forceUpdate = false);	///< Sets an encoding by name
+	bool setEncoding(const std::stringType &encName, bool forceUpdate = false) override;	///< Sets an encoding by name
 	bool setNthUniqueEncoding(unsigned idx);		///< Switches to nth unique encoding
 
-	unsigned upperSymsCount() const;				///< upper bound of symbols count in the cmap
-	const VPixMapSym& symsSet() const;				///< get the symsSet
-	double smallGlyphsCoverage() const;				///< get coverageOfSmallGlyphs
+	unsigned upperSymsCount() const override;				///< upper bound of symbols count in the cmap
+	const VPixMapSym& symsSet() const override;				///< get the symsSet
+	double smallGlyphsCoverage() const override;			///< get coverageOfSmallGlyphs
 
-	const std::stringType& fontFileName() const;		///< font name provided by Font Dialog
-	unsigned uniqueEncodings() const;				///< Returns the count of unique encodings
-	const std::stringType& getEncoding(unsigned *pEncodingIndex = nullptr) const; ///< get encoding
-	FT_String* getFamily() const;					///< get font family
-	FT_String* getStyle() const;					///< get font style
-	std::stringType getFontType();						///< type of the symbols, independent of font size
+	const std::stringType& fontFileName() const override;	///< font name provided by Font Dialog
+	unsigned uniqueEncodings() const override;				///< Returns the count of unique encodings
+	const std::stringType& getEncoding(unsigned *pEncodingIndex = nullptr) const override; ///< get encoding
+	FT_String* getFamily() const override;					///< get font family
+	FT_String* getStyle() const override;					///< get font style
+	std::stringType getFontType() override;					///< type of the symbols, independent of font size
 
 	/// (Creates/Loads and) Returns(/Saves) the small versions of all the symbols from current cmap
 	const VTinySyms& getTinySyms() override;
@@ -148,7 +145,7 @@ public:
 	static bool isTinySymsDataSavedOnDisk(const std::stringType &fontType, 
 										  boost::filesystem::path &tinySymsDataFile);
 
-	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_); ///< setting the symbols monitor
+	FontEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) override; ///< setting the symbols monitor
 };
 
 #endif // H_FONT_ENGINE

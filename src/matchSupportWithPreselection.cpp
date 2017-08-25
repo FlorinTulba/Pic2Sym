@@ -37,8 +37,8 @@
  ***********************************************************************************************/
 
 #include "matchSupportWithPreselection.h"
-#include "preselectSyms.h"
 #include "matchAssessment.h"
+#include "scoreThresholds.h"
 #include "matchParamsBase.h"
 #include "patchBase.h"
 #include "bestMatchBase.h"
@@ -47,13 +47,6 @@
 using namespace std;
 
 extern unsigned TinySymsSz();
-
-MatchProgressWithPreselection::MatchProgressWithPreselection(TopCandidateMatches &tcm_) :
-	tcm(tcm_) {}
-
-void MatchProgressWithPreselection::remarkedMatch(unsigned symIdx, double score) {
-	tcm.checkCandidate(symIdx, score);
-}
 
 MatchSupportWithPreselection::MatchSupportWithPreselection(CachedData &cd_, VSymData &symsSet_,
 														   MatchAssessor &matchAssessor_,
@@ -67,7 +60,7 @@ const CachedData& MatchSupportWithPreselection::cachedData() const {
 	return cdPresel;
 }
 
-void MatchSupportWithPreselection::updateCachedData(unsigned fontSz, const FontEngine &fe) {
+void MatchSupportWithPreselection::updateCachedData(unsigned fontSz, const IFontEngine &fe) {
 	MatchSupport::updateCachedData(fontSz, fe);
 	cdPresel.update(fe);
 }

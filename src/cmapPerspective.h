@@ -44,26 +44,14 @@
 #ifndef H_CMAP_PERSPECTIVE
 #define H_CMAP_PERSPECTIVE
 
-#include "symDataBase.h"
-
-#pragma warning ( push, 0 )
-
-#include <set>
-
-#pragma warning ( pop )
+#include "cmapPerspectiveBase.h"
 
 /**
 Ensures the symbols from the Cmap Viewer appear sorted by cluster size and then by average pixels sum.
 This arrangement of the symbols is true even when the clusters will be ignored
 while transforming images.
 */
-class CmapPerspective {
-public:
-	// Displaying the symbols requires dividing them into pages (ranges using iterators)
-	typedef std::vector<const ISymData*> VPSymData;
-	typedef VPSymData::const_iterator VPSymDataCIt;
-	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
-
+class CmapPerspective : public ICmapPerspective {
 protected:
 	VPSymData pSyms;					///< vector of pointers towards the symbols from symsSet
 	std::set<unsigned> clusterOffsets;	///< offsets of the clusters, considering pSyms
@@ -81,13 +69,13 @@ public:
 	symsSet and symsIndicesPerCluster_.
 	*/
 	void reset(const VSymData &symsSet,
-			   const std::vector<std::vector<unsigned>> &symsIndicesPerCluster_);
+			   const std::vector<std::vector<unsigned>> &symsIndicesPerCluster_) override;
 
 	/// Needed to display the cmap - returns a pair of symsSet iterators
-	VPSymDataCItPair getSymsRange(unsigned from, unsigned count) const;
+	VPSymDataCItPair getSymsRange(unsigned from, unsigned count) const override;
 
 	/// Offsets of the clusters, considering pSyms
-	const std::set<unsigned>& getClusterOffsets() const;
+	const std::set<unsigned>& getClusterOffsets() const override;
 };
 
 #endif // H_CMAP_PERSPECTIVE

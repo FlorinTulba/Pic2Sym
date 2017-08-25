@@ -296,7 +296,7 @@ The threshold x is provided by smallGlyphsCoverage.
 Returns < 1 for glyphs under threshold;   >= 1 otherwise
 */
 double LargerSym::score(const IMatchParams &mp, const CachedData &cachedData) const {
-	return pow(mp.getSymDensity().value() + 1. - cachedData.smallGlyphsCoverage, k);
+	return pow(mp.getSymDensity().value() + 1. - cachedData.getSmallGlyphsCoverage(), k);
 }
 
 void LargerSym::fillRequiredMatchParams(const Mat&,

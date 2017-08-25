@@ -38,10 +38,11 @@
 
 #include "transformSupportWithPreselection.h"
 #include "preselectSyms.h"
-#include "matchEngine.h"
+#include "matchEngineBase.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
 #include "matchSupportWithPreselection.h"
+#include "matchProgressWithPreselection.h"
 
 #pragma warning ( push, 0 )
 
@@ -58,7 +59,7 @@ extern const unsigned ShortListLength;
 extern unsigned TinySymsSz();
 static const unsigned TinySymsSize = TinySymsSz();
 
-TransformSupportWithPreselection::TransformSupportWithPreselection(MatchEngine &me_, 
+TransformSupportWithPreselection::TransformSupportWithPreselection(IMatchEngine &me_, 
 																   const IMatchSettings &matchSettings_,
 																   Mat &resized_,
 																   Mat &resizedBlurred_,

@@ -222,9 +222,6 @@
     <ClCompile Include="src\selectSymbols.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
-    <ClCompile Include="src\controlPanelActions.cpp">
-      <Filter>Source Files\Pic2Sym</Filter>
-    </ClCompile>
     <ClCompile Include="src\settings.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
@@ -238,6 +235,18 @@
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
     <ClCompile Include="src\resizedImg.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\symsLoadingFailure.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scoreThresholds.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matchProgressWithPreselection.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\controlPanelActions.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
   </ItemGroup>
@@ -300,9 +309,6 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\controllerBase.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\controlPanelActions.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\extBoxBlur.h">
@@ -515,9 +521,6 @@
     <ClInclude Include="src\selectSymbolsBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\controlPanelActionsBase.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\settingsBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -585,6 +588,75 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="adaptedIncludes\std_string.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\controlPanelActions.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\controlPanelActionsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterEngineBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterProcessingBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\clusterSupportBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cmapInspectBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cmapPerspectiveBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\comparatorBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fontEngineBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchEngineBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchProgress.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchProgressWithPreselection.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matchSupportBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\preselectSymsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resizedImgBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scoreThresholds.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scoreThresholdsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symbolsSupportBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\symsLoadingFailure.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\timingBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\transformSupportBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\viewsBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>

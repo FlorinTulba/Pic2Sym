@@ -52,7 +52,7 @@
 
 // Forward declarations
 struct ITinySymsProvider;
-struct CachedData;
+class CachedData;
 struct IMatchSettings;
 struct IBestMatch;
 struct IClustersSupport;
@@ -60,7 +60,7 @@ struct IMatchSupport;
 struct ITransformSupport;
 struct IClusterProcessing;
 class MatchAssessor;
-class MatchEngine;
+struct IMatchEngine;
 
 /// Abstract factory controlled by PreselectionByTinySyms
 struct IPreselManager /*abstract*/ {
@@ -73,7 +73,7 @@ struct IPreselManager /*abstract*/ {
 															 VSymData &symsSet,
 															 MatchAssessor &matchAssessor,
 															 const IMatchSettings &matchSettings) const = 0;
-	virtual std::uniquePtr<ITransformSupport> createTransformSupport(MatchEngine &me,
+	virtual std::uniquePtr<ITransformSupport> createTransformSupport(IMatchEngine &me,
 																	 const IMatchSettings &matchSettings,
 																	 cv::Mat &resized,
 																	 cv::Mat &resizedBlurred,
@@ -81,52 +81,6 @@ struct IPreselManager /*abstract*/ {
 																	 IMatchSupport &matchSupport) const = 0;
 
 	virtual ~IPreselManager() = 0 {}
-};
-
-/// PreselectionByTinySyms is true
-struct PreselectionOn : IPreselManager {
-	PreselectionOn() = default;
-	PreselectionOn(const PreselectionOn&) = delete;
-	PreselectionOn(PreselectionOn&&) = delete;
-	void operator=(const PreselectionOn&) = delete;
-	void operator=(PreselectionOn&&) = delete;
-
-	std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
-														  IClusterProcessing &ce,
-														  VSymData &symsSet) const override;
-	std::uniquePtr<IMatchSupport> createMatchSupport(CachedData &cd,
-													 VSymData &symsSet,
-													 MatchAssessor &matchAssessor,
-													 const IMatchSettings &matchSettings) const override;
-	std::uniquePtr<ITransformSupport> createTransformSupport(MatchEngine &me,
-															 const IMatchSettings &matchSettings,
-															 cv::Mat &resized,
-															 cv::Mat &resizedBlurred,
-															 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
-															 IMatchSupport &matchSupport) const override;
-};
-
-/// PreselectionByTinySyms is false
-struct PreselectionOff : IPreselManager {
-	PreselectionOff() = default;
-	PreselectionOff(const PreselectionOff&) = delete;
-	PreselectionOff(PreselectionOff&&) = delete;
-	void operator=(const PreselectionOff&) = delete;
-	void operator=(PreselectionOff&&) = delete;
-
-	std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
-														  IClusterProcessing &ce,
-														  VSymData &symsSet) const override;
-	std::uniquePtr<IMatchSupport> createMatchSupport(CachedData &cd,
-													 VSymData &symsSet,
-													 MatchAssessor &matchAssessor,
-													 const IMatchSettings &matchSettings) const override;
-	std::uniquePtr<ITransformSupport> createTransformSupport(MatchEngine &me,
-															 const IMatchSettings &matchSettings,
-															 cv::Mat &resized,
-															 cv::Mat &resizedBlurred,
-															 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
-															 IMatchSupport &matchSupport) const override;
 };
 
 #endif // H_PRESELECT_MANAGER

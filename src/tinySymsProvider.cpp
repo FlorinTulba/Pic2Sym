@@ -37,6 +37,7 @@
  ***********************************************************************************************/
 
 #include "tinySym.h"
+#include "symsLoadingFailure.h"
 #include "pixMapSym.h"
 #include "fontEngine.h"
 #include "fontErrorsHelper.h"
@@ -58,31 +59,6 @@ using namespace cv;
 using namespace boost::filesystem;
 
 extern unsigned TinySymsSz();
-extern const stringType CannotLoadFontErrSuffix;
-
-SymsLoadingFailure::SymsLoadingFailure(const stringType& _Message) :
-	runtime_error(_Message.c_str()) {}
-
-SymsLoadingFailure::SymsLoadingFailure(const char *_Message) :
-	runtime_error(_Message) {}
-
-void SymsLoadingFailure::informUser(const stringType &msg) const {
-	ostringstream oss;
-	oss<<msg<<CannotLoadFontErrSuffix;
-	infoMsg(oss.str(), "Manageable Error");
-}
-
-TinySymsLoadingFailure::TinySymsLoadingFailure(const stringType& _Message) :
-	SymsLoadingFailure(_Message.c_str()) {}
-
-TinySymsLoadingFailure::TinySymsLoadingFailure(const char *_Message) :
-	SymsLoadingFailure(_Message) {}
-
-NormalSymsLoadingFailure::NormalSymsLoadingFailure(const stringType& _Message) :
-	SymsLoadingFailure(_Message.c_str()) {}
-
-NormalSymsLoadingFailure::NormalSymsLoadingFailure(const char *_Message) :
-	SymsLoadingFailure(_Message) {}
 
 #ifndef UNIT_TESTING // isTinySymsDataSavedOnDisk will have a different implementation in UnitTesting
 

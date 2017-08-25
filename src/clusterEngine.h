@@ -39,58 +39,16 @@
 #ifndef H_CLUSTER_ENGINE
 #define H_CLUSTER_ENGINE
 
-#include "clusterDataBase.h"
+#include "clusterEngineBase.h"
 #include "clusterAlg.h"
 
 #pragma warning ( push, 0 )
-
-#include "std_memory.h"
-#include <set>
 
 #include "boost_filesystem_path.h"
 
 #pragma warning ( pop )
 
-// Forward declarations
-class AbsJobMonitor;
-struct ITinySymsProvider;
-struct IClustersSupport;
-
-/// The cluster processing interface of the ClusterEngine used within ClusterSupport*
-struct IClusterProcessing /*abstract*/ {
-	/**
-	Clusters symsSet & tinySymsSet into clusters, while clusterOffsets reports where each cluster starts.
-	When using the tiny symbols preselection, the clusters will contain tiny symbols.
-	@param symsSet original symbols to be clustered
-	@param fontType allows checking for previously conducted clustering of current font type; empty for various unit tests
-	*/
-	virtual void process(VSymData &symsSet, const std::stringType &fontType = "") = 0;
-
-	virtual unsigned getClustersCount() const = 0;
-
-	virtual ~IClusterProcessing() = 0 {}
-};
-
-/// Interface for the ClusterEngine
-struct IClusterEngine /*abstract*/ : IClusterProcessing {
-	virtual const bool& worthGrouping() const = 0;
-	virtual const std::vector<std::vector<unsigned>>& getSymsIndicesPerCluster() const = 0;
-
-	/**
-	The clustered symbols. When using the tiny symbols preselection, the clusters will contain tiny symbols.
-	Use it only if worthGrouping() returns true.
-	@return clusters
-	*/
-	virtual const VClusterData& getClusters() const = 0;
-	virtual const std::set<unsigned>& getClusterOffsets() const = 0; ///< returns clusterOffsets ; use it only if worthGrouping() returns true
-
-	virtual IClusterEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) = 0; ///< setting the symbols monitor
-
-	virtual IClustersSupport& support() = 0; ///< access to clusterSupport
-	virtual const IClustersSupport& support() const = 0; ///< access to clusterSupport
-
-	virtual ~IClusterEngine() = 0 {}
-};
+struct ITinySymsProvider; // forward declaration
 
 /// Clusters a set of symbols
 class ClusterEngine : public IClusterEngine {

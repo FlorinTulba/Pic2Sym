@@ -37,7 +37,7 @@
  ***********************************************************************************************/
 
 #include "clusterData.h"
-#include "symbolsSupport.h"
+#include "symbolsSupportBase.h"
 
 using namespace std;
 using namespace cv;

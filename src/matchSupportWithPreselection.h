@@ -53,30 +53,8 @@
 struct IBestMatch;
 class MatchAssessor;
 struct IMatchSettings;
-class TopCandidateMatches;
 typedef unsigned CandidateId;
 typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
-
-/**
-Type for a polymorphic parameter to be passed to MatchEngine::improvesBasedOnBatch.
-Each time the method finds a better match, it calls remarkedMatch from this class.
-*/
-class MatchProgressWithPreselection : public MatchProgress {
-protected:
-	TopCandidateMatches &tcm;	///< engine that appends/removes from the candidates short list
-
-public:
-	/// Registers the engine that appends/removes from the candidates short list
-	MatchProgressWithPreselection(TopCandidateMatches &tcm_);
-
-	MatchProgressWithPreselection(const MatchProgressWithPreselection&) = delete;
-	MatchProgressWithPreselection(MatchProgressWithPreselection&&) = delete;
-	void operator=(const MatchProgressWithPreselection&) = delete;
-	void operator=(MatchProgressWithPreselection&&) = delete;
-
-	/// Checks if the new match is worth placing on the short candidate list.
-	void remarkedMatch(unsigned /*symIdx*/, double /*score*/) override;
-};
 
 /// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
 class MatchSupportWithPreselection : public MatchSupport {
@@ -101,7 +79,7 @@ public:
 	const CachedData& cachedData() const override;
 
 	/// update cached data corresponding to the tiny size symbols
-	void updateCachedData(unsigned fontSz, const FontEngine &fe) override;
+	void updateCachedData(unsigned fontSz, const IFontEngine &fe) override;
 
 	/// @return true if a new better match is found within this short list
 	bool improvesBasedOnBatchShortList(CandidatesShortList &&shortList,	///< most promising candidates from current batch of symbols

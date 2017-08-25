@@ -41,7 +41,7 @@
 #include "jobMonitor.h"
 #include "taskMonitorBase.h"
 #include "progressNotifier.h"
-#include "timing.h"
+#include "timingBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -70,12 +70,12 @@ unsigned JobMonitor::monitorNewTask(AbsTaskMonitor &newActivity) {
 	return seqIdxOfNewActivity;
 }
 
-void JobMonitor::getReady(Timer &timer_) {
+void JobMonitor::getReady(ITimerResult &timer_) {
 	AbsJobMonitor::getReady(timer_);
 	lastUserNotifiedProgress = lastUserNotifiedElapsedTime = 0.;
 }
 
-void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, Timer &timer_) {
+void JobMonitor::setTasksDetails(const vector<double> &totalContribValues, ITimerResult &timer_) {
 	const size_t totalContribItems = totalContribValues.size();
 	details.resize(totalContribItems);
 

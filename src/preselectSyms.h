@@ -39,25 +39,19 @@
 #ifndef H_PRESELECT_SYMS
 #define H_PRESELECT_SYMS
 
+#include "preselectSymsBase.h"
+
 #pragma warning ( push, 0 )
 
-#include <vector>
 #include <queue>
-#include <stack>
 
 #pragma warning ( pop )
-
-/// Id of the 'candidate' symbol (index in vector&lt;ISymData&gt;)
-typedef unsigned CandidateId;
-
-///< Selected 'candidate' symbols to compete within final selection, ordered by their estimated potential
-typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
 
 /**
 Obtaining the top n candidate matches close-enough to or better than
 the previous best known match.
 */
-class TopCandidateMatches {
+class TopCandidateMatches : public ITopCandidateMatches {
 protected:
 	/// Interface for the data for a candidate who enters the short list
 	struct ICandidate /*abstract*/ {
@@ -111,19 +105,19 @@ public:
 	TopCandidateMatches(unsigned shortListLength = 1U,
 						double origThreshScore = 0.);
 
-	void reset(double origThreshScore); ///< clears the short list and establishes a new threshold score
+	void reset(double origThreshScore) override; ///< clears the short list and establishes a new threshold score
 
 	/// Attempts to put a new candidate on the short list. Returns false if his score is not good enough.
-	bool checkCandidate(unsigned candidateIdx, double score);
+	bool checkCandidate(unsigned candidateIdx, double score) override;
 
 	/// Closes the selection process and orders the short list by score.
-	void prepareReport();
+	void prepareReport() override;
 
 	/// Checking if there's at least one candidate on the short list during or after the selection
-	bool foundAny() const;
+	bool foundAny() const override;
 
 	/// Providing a copy of the sorted short list (without the scores) at the end of the selection
-	CandidatesShortList getShortList() const;
+	CandidatesShortList getShortList() const override;
 };
 
 #endif // H_PRESELECT_SYMS

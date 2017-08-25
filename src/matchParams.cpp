@@ -253,12 +253,12 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	patchSum = *sum(patch).val;
 
 	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
-	mcX = temp.dot(cachedData.consec);
+	mcX = temp.dot(cachedData.getConsec());
 
 	reduce(patch, temp, 1, CV_REDUCE_SUM);	// sum all columns
-	mcY = temp.t().dot(cachedData.consec);
+	mcY = temp.t().dot(cachedData.getConsec());
 
-	mcPatch = Point2d(mcX, mcY) / (patchSum * cachedData.sz_1);
+	mcPatch = Point2d(mcX, mcY) / (patchSum * cachedData.getSz_1());
 	assert(mcPatch->x > -EPS && mcPatch->x < EPSp1());
 	assert(mcPatch->y > -EPS && mcPatch->y < EPSp1());
 }
