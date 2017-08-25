@@ -49,8 +49,14 @@
 
 #pragma warning ( pop )
 
-/// Timer class
-class Timer : public ITimerResult, public IActiveTimer {
+/**
+ActiveTimer class:
+- realization of IActiveTimer
+- one of the 2 base classes of Timer
+
+Timer becomes a `Concentrator class` if it realizes alone both IActiveTimer and ITimerResult.
+*/
+class ActiveTimer /*abstract*/ : public IActiveTimer {
 protected:
 	const std::vector<std::sharedPtr<ITimerActions>> observers; ///< to be notified
 
@@ -63,6 +69,38 @@ protected:
 	bool paused = false;	///< true as long as not paused
 	bool valid = true;		///< true as long as not canceled / released
 
+	/// Initializes lastStart and notifies all observers
+	ActiveTimer(const std::vector<std::sharedPtr<ITimerActions>> &observers_);
+
+	ActiveTimer(std::sharedPtr<ITimerActions> observer); ///< initializes lastStart and notifies the observer
+
+	/**
+	This class relies on automatic destructor calling, so duplicates mean 2 destructor calls.
+	There has to be only 1 notifier, so ActiveTimer cannot have copies.
+	So, there'll be ONLY the move constructor controlling the destruction of the source object!
+	*/
+	ActiveTimer(ActiveTimer &&other);
+	ActiveTimer(const ActiveTimer&) = delete;
+	void operator=(const ActiveTimer&) = delete;
+	void operator=(ActiveTimer&&) = delete;
+
+public:
+	virtual ~ActiveTimer();		///< if not canceled / released, reports duration to all observers
+
+	void invalidate();			///< prevents further use of this timer
+
+	virtual void release();		///< stops the timer and reports duration to all observers
+
+	void pause() override;		///< pauses the timer and reports duration to all observers
+	void resume() override;		///< resumes the timer
+
+	/// Cancels a timing task.
+	/// @param reason explanation for cancellation
+	void cancel(const std::stringType &reason = "The task was canceled") override;
+};
+
+/// Timer class
+class Timer : public ActiveTimer, public ITimerResult {
 public:
 	/// Initializes lastStart and notifies all observers
 	Timer(const std::vector<std::sharedPtr<ITimerActions>> &observers_);
@@ -79,20 +117,7 @@ public:
 	void operator=(const Timer&) = delete;
 	void operator=(Timer&&) = delete;
 
-	virtual ~Timer();				///< if not canceled / released, reports duration to all observers
-
-	double elapsed() const override;///< reports elapsed seconds
-
-	void invalidate();				///< prevents further use of this timer
-
-	virtual void release();			///< stops the timer and reports duration to all observers
-
-	void pause() override;			///< pauses the timer and reports duration to all observers
-	void resume() override;			///< resumes the timer
-
-	/// Cancels a timing task.
-	/// @param reason explanation for cancellation
-	void cancel(const std::stringType &reason = "The task was canceled") override;
+	double elapsed() const override;	///< reports elapsed duration depending on valid & paused
 };
 
 #endif // H_TIMING

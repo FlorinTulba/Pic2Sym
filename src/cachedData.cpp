@@ -150,7 +150,9 @@ const double CachedData::MassCenters::invComplPrefMaxMcDist() {
 
 CachedData::CachedData(bool forTinySyms_/* = false*/) : forTinySyms(forTinySyms_) {}
 
-void CachedData::useNewSymSize(unsigned sz_) {
+CachedDataRW::CachedDataRW(bool forTinySyms_/* = false*/) : CachedData(forTinySyms_) {}
+
+void CachedDataRW::useNewSymSize(unsigned sz_) {
 	const double szd = (double)sz_;
 	sz_1 = szd - 1.;
 
@@ -158,11 +160,11 @@ void CachedData::useNewSymSize(unsigned sz_) {
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
 }
 
-void CachedData::update(const IFontEngine &fe_) {
+void CachedDataRW::update(const IFontEngine &fe_) {
 	smallGlyphsCoverage = fe_.smallGlyphsCoverage();
 }
 
-void CachedData::update(unsigned sz_, const IFontEngine &fe_) {
+void CachedDataRW::update(unsigned sz_, const IFontEngine &fe_) {
 	useNewSymSize(sz_);
 	update(fe_);
 }

@@ -71,15 +71,15 @@ struct ITimerActions /*abstract*/ {
 
 /// Getting the duration of a job
 struct ITimerResult /*abstract*/ {
-	virtual double elapsed() const = 0;	///< reports elapsed seconds
+	virtual double elapsed() const = 0;	///< reports elapsed duration depending on valid & paused
 
 	virtual ~ITimerResult() = 0 {}
 };
 
 /// Commands for an alive Timer: pause/resume and cancel
 struct IActiveTimer /*abstract*/ {
-	virtual void pause() = 0;			///< pauses the timer and reports duration to all observers
-	virtual void resume() = 0;			///< resumes the timer
+	virtual void pause() = 0;	///< pauses the timer and reports duration to all observers
+	virtual void resume() = 0;	///< resumes the timer
 
 	/// Cancels a timing task.
 	/// @param reason explanation for cancellation

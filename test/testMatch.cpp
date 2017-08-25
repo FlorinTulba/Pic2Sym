@@ -240,7 +240,7 @@ namespace ut {
 		Mat fullUc;		///< sz x sz matrix filled with 255 (unsigned char)
 		Mat invHalfD255;///< sz x sz matrix vertically split in 2. One half white, the other black
 		Mat consec;		///< 0 .. sz-1 consecutive double values
-		CachedData cd;	///< cached data based on sz
+		CachedDataRW cd;	///< cached data based on sz
 		Mat randUc;		///< sz x sz random unsigned chars
 		Mat randD1;		///< sz x sz random doubles (0 .. 1)
 		Mat randD255;	///< sz x sz random doubles (0 .. 255)
@@ -304,7 +304,7 @@ namespace ut {
 		unsigned area;	///< sz^2 (Use getter within tests)
 
 	protected:
-		CachedData cd;		///< cached data that can be changed during tests
+		CachedDataRW cd;		///< cached data that can be changed during tests
 		MatchSettings ms;	///< determines which aspect is tested
 
 	public:

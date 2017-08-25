@@ -41,14 +41,16 @@
 
 #include "matchSupportBase.h"
 
+class CachedDataRW; // forward declaration
+
 /// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
 class MatchSupport : public IMatchSupport {
 protected:
-	CachedData& cd;	///< cached data corresponding to normal size symbols
+	CachedDataRW& cd;	///< cached data corresponding to normal size symbols
 
 public:
 	/// Base class constructor
-	MatchSupport(CachedData &cd_);
+	MatchSupport(CachedDataRW &cd_);
 	
 	MatchSupport(const MatchSupport&) = delete;
 	MatchSupport(MatchSupport&&) = delete;

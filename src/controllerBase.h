@@ -65,21 +65,20 @@ struct IResizedImg;
 struct IController /*abstract*/ {
 	virtual ~IController() = 0 {}
 
+	// Called by ControlPanelActions
+	virtual void symbolsChanged() = 0;	///< Triggered by new font family / encoding / size
+	virtual void createCmapInspect() = 0;
+
+	// Called by FontEngine
 	virtual std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const = 0;
+	virtual std::sharedPtr<const IPresentCmap> getPresentCmap() const = 0;
+
+	// New group of methods
 	virtual std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const = 0;
 	virtual std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() = 0;
-	virtual std::sharedPtr<const IPresentCmap> getPresentCmap() const = 0;
-	virtual void createCmapInspect() = 0;
-	virtual std::sharedPtr<IControlPanelActions> getControlPanelActions() = 0;
-
 	virtual const unsigned& getFontSize() const = 0; ///< font size determines grid size
-
-	/// Triggered by new font family / encoding / size
-	virtual void symbolsChanged() = 0;
-
 	/// Returns true if transforming a new image or the last one, but under other image parameters
 	virtual bool updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) = 0;
-
 	/**
 	Shows a 'Please wait' window and reports progress.
 
@@ -88,6 +87,7 @@ struct IController /*abstract*/ {
 	@param async allows showing the window asynchronously
 	*/
 	virtual void hourGlass(double progress, const std::stringType &title = "", bool async = false) const = 0;
+	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
 
 	/**
 	Updates the status bar from the charmap inspector window.
@@ -104,7 +104,7 @@ struct IController /*abstract*/ {
 	/// Reports the duration of loading symbols / transforming images
 	virtual void reportDuration(const std::stringType &text, double durationS) const = 0;
 
-	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
+	virtual std::sharedPtr<IControlPanelActions> getControlPanelActions() = 0;
 
 #ifndef UNIT_TESTING
 	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 

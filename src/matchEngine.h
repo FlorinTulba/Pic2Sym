@@ -65,7 +65,7 @@ protected:
 public:
 #endif // UNIT_TESTING defined
 	VSymData symsSet;				///< set of most information on each symbol
-	CachedData cachedData;			///< data precomputed by getReady before performing the matching series
+	CachedDataRW cachedData;		///< data precomputed by matchSupport before performing the matching series
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
 protected:

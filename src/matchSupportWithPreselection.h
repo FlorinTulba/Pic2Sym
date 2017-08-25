@@ -59,14 +59,14 @@ typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
 /// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
 class MatchSupportWithPreselection : public MatchSupport {
 protected:
-	CachedData cdPresel;				///< cached data corresponding to tiny size symbols
+	CachedDataRW cdPresel;				///< cached data corresponding to tiny size symbols
 	VSymData &symsSet;					///< the set of normal-size symbols
 	MatchAssessor &matchAssessor;		///< match manager based on the enabled matching aspects
 	const IMatchSettings &matchSettings;///< match settings
 
 public:
 	/// Filling in the rest of the data required when PreselectionByTinySyms == true
-	MatchSupportWithPreselection(CachedData &cd_, VSymData &symsSet_,
+	MatchSupportWithPreselection(CachedDataRW &cd_, VSymData &symsSet_,
 								 MatchAssessor &matchAssessor_,
 								 const IMatchSettings &matchSettings_);
 

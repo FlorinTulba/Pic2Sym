@@ -52,7 +52,7 @@
 
 // Forward declarations
 struct ITinySymsProvider;
-class CachedData;
+class CachedDataRW;
 struct IMatchSettings;
 struct IBestMatch;
 struct IClustersSupport;
@@ -69,7 +69,7 @@ struct IPreselManager /*abstract*/ {
 	virtual std::uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
 																  IClusterProcessing &ce,
 																  VSymData &symsSet) const = 0;
-	virtual std::uniquePtr<IMatchSupport> createMatchSupport(CachedData &cd,
+	virtual std::uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
 															 VSymData &symsSet,
 															 MatchAssessor &matchAssessor,
 															 const IMatchSettings &matchSettings) const = 0;

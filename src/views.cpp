@@ -175,7 +175,7 @@ void CmapInspect::showPage(unsigned pageIdx) {
 }
 
 void CmapInspect::updatePageIdx(int newPage, void *userdata) {
-	CmapInspect *pCmi = reinterpret_cast<CmapInspect*>(userdata);
+	ICmapInspect *pCmi = reinterpret_cast<ICmapInspect*>(userdata);
 	pCmi->showPage((unsigned)newPage);
 }
 

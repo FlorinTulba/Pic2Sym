@@ -42,7 +42,7 @@
 
 using namespace std;
 
-MatchSupport::MatchSupport(CachedData &cd_) : cd(cd_) {}
+MatchSupport::MatchSupport(CachedDataRW &cd_) : cd(cd_) {}
 
 const CachedData& MatchSupport::cachedData() const {
 	return cd;

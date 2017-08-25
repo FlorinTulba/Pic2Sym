@@ -41,32 +41,88 @@
 using namespace std;
 using namespace std::chrono;
 
-Timer::Timer(const vector<std::sharedPtr<ITimerActions>> &observers_) :
+ActiveTimer::ActiveTimer(const vector<std::sharedPtr<ITimerActions>> &observers_) :
 		observers(observers_), lastStart(high_resolution_clock::now()), elapsedS(0.) {
 	for(sharedPtr<ITimerActions> observer : observers)
 		observer->onStart();
 }
 
-Timer::Timer(std::sharedPtr<ITimerActions> observer) :
-		Timer(vector<std::sharedPtr<ITimerActions>> { observer }) {}
+ActiveTimer::ActiveTimer(std::sharedPtr<ITimerActions> observer) :
+		ActiveTimer(vector<std::sharedPtr<ITimerActions>> { observer }) {}
 
-Timer::Timer(Timer &&other) :
+ActiveTimer::ActiveTimer(ActiveTimer &&other) :
 		observers(std::move(const_cast<vector<std::sharedPtr<ITimerActions>>&>(other.observers))),
 		lastStart(other.lastStart), elapsedS(other.elapsedS),
 		paused(other.paused), valid(other.valid) {
 	other.valid = false;
 }
 
-Timer::~Timer() {
+ActiveTimer::~ActiveTimer() {
 	if(!valid)
 		return;
 
 	release();
 }
 
-void Timer::invalidate() {
+void ActiveTimer::invalidate() {
 	valid = false;
 }
+
+void ActiveTimer::cancel(const stringType &reason/* = "The task was canceled"*/) {
+	if(!valid)
+		return;
+
+	valid = false;
+
+	for(sharedPtr<ITimerActions> observer : observers)
+		observer->onCancel(reason);
+}
+
+void ActiveTimer::pause() {
+	if(!valid || paused)
+		return;
+
+	elapsedS += high_resolution_clock::now() - lastStart;
+
+	paused = true;
+
+	for(sharedPtr<ITimerActions> observer : observers)
+		observer->onPause(elapsedS.count());
+}
+
+void ActiveTimer::resume() {
+	if(!valid || !paused)
+		return;
+
+	paused = false;
+
+	lastStart = high_resolution_clock::now();
+
+	for(sharedPtr<ITimerActions> observer : observers)
+		observer->onResume();
+}
+
+void ActiveTimer::release() {
+	if(!valid)
+		return;
+
+	valid = false;
+
+	if(!paused)
+		elapsedS += high_resolution_clock::now() - lastStart;
+
+	for(sharedPtr<ITimerActions> observer : observers)
+		observer->onRelease(elapsedS.count());
+}
+
+Timer::Timer(const vector<std::sharedPtr<ITimerActions>> &observers_) :
+	ActiveTimer(observers_) {}
+
+Timer::Timer(std::sharedPtr<ITimerActions> observer) :
+	ActiveTimer(observer) {}
+
+Timer::Timer(Timer &&other) :
+	ActiveTimer(move(other)) {}
 
 double Timer::elapsed() const {
 	if(!valid)
@@ -79,51 +135,4 @@ double Timer::elapsed() const {
 	durationToReport += high_resolution_clock::now() - lastStart;
 
 	return durationToReport.count();
-}
-
-void Timer::cancel(const stringType &reason/* = "The task was canceled"*/) {
-	if(!valid)
-		return;
-
-	valid = false;
-
-	for(sharedPtr<ITimerActions> observer : observers)
-		observer->onCancel(reason);
-}
-
-void Timer::pause() {
-	if(!valid || paused)
-		return;
-
-	elapsedS += high_resolution_clock::now() - lastStart;
-
-	paused = true;
-
-	for(sharedPtr<ITimerActions> observer : observers)
-		observer->onPause(elapsedS.count());
-}
-
-void Timer::resume() {
-	if(!valid || !paused)
-		return;
-
-	paused = false;
-
-	lastStart = high_resolution_clock::now();
-
-	for(sharedPtr<ITimerActions> observer : observers)
-		observer->onResume();
-}
-
-void Timer::release() {
-	if(!valid)
-		return;
-
-	valid = false;
-
-	if(!paused)
-		elapsedS += high_resolution_clock::now() - lastStart;
-
-	for(sharedPtr<ITimerActions> observer : observers)
-		observer->onRelease(elapsedS.count());
 }

@@ -61,7 +61,7 @@ struct PreselectionOn : IPreselManager {
 														   makeUnique<SymsSupportWithPreselection>(),
 														   symsSet);
 	}
-	uniquePtr<IMatchSupport> createMatchSupport(CachedData &cd,
+	uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
 												VSymData &symsSet,
 												MatchAssessor &matchAssessor,
 												const IMatchSettings &matchSettings) const {
@@ -91,7 +91,7 @@ struct PreselectionOff : IPreselManager {
 													 VSymData &symsSet) const {
 		return makeUnique<ClustersSupport>(ce, makeUnique<SymsSupport>(), symsSet);
 	}
-	uniquePtr<IMatchSupport> createMatchSupport(CachedData &cd,
+	uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
 												VSymData&,
 												MatchAssessor&,
 												const IMatchSettings&) const {

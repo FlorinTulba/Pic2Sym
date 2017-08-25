@@ -50,9 +50,8 @@ struct IFontEngine; // forward declaration
 /// Cached data for computing match parameters and evaluating match aspects
 class CachedData {
 protected:
-	cv::Mat consec;				///< row matrix with consecutive elements: 0..sz-1
-
-	double sz_1;				///< double version of sz - 1
+	cv::Mat consec;		///< row matrix with consecutive elements: 0..sz-1
+	double sz_1;		///< double version of sz - 1
 
 #ifdef UNIT_TESTING // Unit testing needs to be able to change smallGlyphsCoverage
 public:
@@ -60,7 +59,7 @@ public:
 	double smallGlyphsCoverage;	///< max density for symbols considered small
 
 public:
-	const bool forTinySyms;		///< Are all these values used for tiny symbols or normal ones?
+	const bool forTinySyms;	///< Are all these values used for tiny symbols or for normal symbols?
 
 	/// Constants about maximum standard deviations for foreground/background or edges
 	struct MaxSdev {
@@ -103,13 +102,21 @@ public:
 	CachedData(bool forTinySyms_ = false);
 	void operator=(const CachedData&) = delete;
 
-	void update(unsigned sz_, const IFontEngine &fe_);
-	void update(const IFontEngine &fe_);
-	void useNewSymSize(unsigned sz_);
-
+	// Getters which need to be fast, so inline,
+	// instead of virtual realizations of a read-only interface of this cached information
 	inline const cv::Mat& getConsec() const { return consec; }
 	inline double getSz_1() const { return sz_1; }
 	inline double getSmallGlyphsCoverage() const { return smallGlyphsCoverage; }
+};
+
+/// CachedData with modifiers
+class CachedDataRW : public CachedData {
+public:
+	CachedDataRW(bool forTinySyms_ = false);
+
+	void update(unsigned sz_, const IFontEngine &fe_);
+	void update(const IFontEngine &fe_);
+	void useNewSymSize(unsigned sz_);
 };
 
 #endif // H_CACHED_DATA

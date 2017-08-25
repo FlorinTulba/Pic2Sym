@@ -48,7 +48,7 @@ using namespace std;
 
 extern unsigned TinySymsSz();
 
-MatchSupportWithPreselection::MatchSupportWithPreselection(CachedData &cd_, VSymData &symsSet_,
+MatchSupportWithPreselection::MatchSupportWithPreselection(CachedDataRW &cd_, VSymData &symsSet_,
 														   MatchAssessor &matchAssessor_,
 														   const IMatchSettings &matchSettings_) :
 		MatchSupport(cd_), cdPresel(true), symsSet(symsSet_),
