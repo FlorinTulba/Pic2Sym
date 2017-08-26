@@ -58,7 +58,20 @@ struct ISymData;
 class CachedData;
 struct IMatchParamsRW;
 
-/// Base class (Read-only version) for the relevant parameters during patch&glyph matching
+/**
+Base class (Read-only version) for the relevant parameters during patch&glyph matching.
+
+AI Reviewer detected segregation & split personality in this interface.
+
+Indeed, the fields & methods concerning mass centers (getMc*) are used only in
+GravitationalSmoothness and DirectionalSmoothness, apart from the Unit tests.
+However, those references of IMatchParams appear within the parameter list of
+several methods overriding corresponding methods from MatchAspect.
+So, after introducing a new interface for getMc* methods derived from IMatchParams,
+the interface would be returned by a dynamic_cast<new_interface&>(param_of_type_IMatchParams).
+
+This makes the interface separation less appealing.
+*/
 struct IMatchParams /*abstract*/ {
 	// These params are computed only once, if necessary, when approximating the patch
 	virtual const boost::optional<cv::Point2d>& getMcPatch() const = 0;		///< mass center for the patch (range 0..1 x 0..1)

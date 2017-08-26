@@ -61,19 +61,19 @@ struct IPresentCmap;
 struct IControlPanelActions;
 struct IResizedImg;
 
-/// Base interface for the Controller
+/// Base interface for the Controller.
 struct IController /*abstract*/ {
 	virtual ~IController() = 0 {}
 
-	// Called by ControlPanelActions
+	// Group 1: 2 methods called so far only by ControlPanelActions
 	virtual void symbolsChanged() = 0;	///< Triggered by new font family / encoding / size
-	virtual void createCmapInspect() = 0;
+	virtual void ensureExistenceCmapInspect() = 0;
 
-	// Called by FontEngine
+	// Group 2: 2 methods called so far only by FontEngine
 	virtual std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const = 0;
-	virtual std::sharedPtr<const IPresentCmap> getPresentCmap() const = 0;
+	virtual const std::sharedPtr<const IPresentCmap>& getPresentCmap() const = 0;
 
-	// New group of methods
+	// Last group of methods used by many different clients without an obvious pattern
 	virtual std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const = 0;
 	virtual std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() = 0;
 	virtual const unsigned& getFontSize() const = 0; ///< font size determines grid size

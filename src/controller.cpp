@@ -75,12 +75,13 @@ std::sharedPtr<IPicTransformProgressTracker> Controller::getPicTransformProgress
 	return picTransformProgressTracker;
 }
 
-std::sharedPtr<const IPresentCmap> Controller::getPresentCmap() const {
+const std::sharedPtr<const IPresentCmap>& Controller::getPresentCmap() const {
 	return presentCmap;
 }
 
-void Controller::createCmapInspect() {
-	pCmi.reset(new CmapInspect(presentCmap, selectSymbols, getFontSize()));
+void Controller::ensureExistenceCmapInspect() {
+	if(!pCmi)
+		pCmi.reset(new CmapInspect(presentCmap, selectSymbols, getFontSize()));
 }
 
 std::sharedPtr<IControlPanelActions> Controller::getControlPanelActions() {

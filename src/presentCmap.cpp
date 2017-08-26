@@ -48,8 +48,9 @@
 using namespace std;
 
 PresentCmap::PresentCmap(const IController &ctrler_,
-						 const ICmapPerspective &cmP_) :
-	ctrler(ctrler_), cmP(cmP_) {}
+						 const ICmapPerspective &cmP_,
+						 const bool &refClustersHandled) :
+	ctrler(ctrler_), cmP(cmP_), refClustersNotIgnored(refClustersHandled) {}
 
 ICmapPerspective::VPSymDataCItPair PresentCmap::getFontFaces(unsigned from, unsigned maxCount) const {
 	return cmP.getSymsRange(from, maxCount);
@@ -59,14 +60,8 @@ const set<unsigned>& PresentCmap::getClusterOffsets() const {
 	return cmP.getClusterOffsets();
 }
 
-bool PresentCmap::markClustersAsUsed(const bool *clustersNotIgnored_/* = nullptr*/) {
-	if(clustersNotIgnored_ != nullptr)
-		clustersNotIgnored = clustersNotIgnored_;
-
-	if(clustersNotIgnored != nullptr)
-		return *clustersNotIgnored;
-
-	return false; // default mode: clusters not used
+bool PresentCmap::areClustersUsed() const {
+	return refClustersNotIgnored;
 }
 
 void PresentCmap::showUnofficialSymDetails(unsigned symsCount) const {

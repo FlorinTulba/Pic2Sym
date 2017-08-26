@@ -317,16 +317,18 @@ Controller::Controller(ISettingsRW &s) :
 			std::makeShared<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
 			Transform_ProgressReportsIncrement)),
 		cmP(),
-		presentCmap(std::makeShared<const PresentCmap>(*this, cmP)),
-		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)), cfg(s),
+		presentCmap(std::makeShared<const PresentCmap>(*this, cmP,
+			getMatchEngine(s).isClusteringUseful())),
+		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
+		cfg(s),
 		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		comp(getComparator()),
 		pCmi(),
 		selectSymbols(std::makeShared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
 		controlPanelActions(std::makeShared<ControlPanelActions>(*this, s,
-			getFontEngine(s.getSS()), getMatchEngine(s).assessor(), getTransformer(s), getComparator(), pCmi)) {
-	const_cast<IPresentCmap*>(presentCmap.get())->markClustersAsUsed(&me.isClusteringUseful());
+			getFontEngine(s.getSS()), getMatchEngine(s).assessor(),
+			getTransformer(s), getComparator(), pCmi)) {
 
 	comp.setPos(0, 0);
 	comp.permitResize(false);
@@ -413,9 +415,9 @@ void Controller::symbolsChanged() {
 		updatingSymbols.clear(); // signal task completion
 	}).detach(); // termination captured by updatingSymbols flag
 
-	IUpdateSymsAction *action = nullptr;
 #ifndef AI_REVIEWER_CHECK // AI Reviewer might not tackle the following lambda as expected
 	auto performRegisteredActions = [&] { // lambda used twice below
+		IUpdateSymsAction *action = nullptr;
 		while(updateSymsActionsQueue.pop(action)) { // perform available actions
 #pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
 			try {
@@ -440,6 +442,7 @@ void Controller::symbolsChanged() {
 
 #else // AI_REVIEWER_CHECK defined
 	// AI Reviewer needs to be aware of the methods called within previous lambda
+	IUpdateSymsAction *action = nullptr;
 	updateSymsActionsQueue.pop(action);
 	action->perform();
 
@@ -742,7 +745,7 @@ void CmapInspect::populateGrid(const ICmapPerspective::VPSymDataCItPair &itPair,
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
 				   content, grid, (int)fontSz,
-				   !const_cast<IPresentCmap*>(cmapPresenter.get())->markClustersAsUsed(),
+				   !cmapPresenter->areClustersUsed(),
 				   clusterOffsets, idxOfFirstSymFromPage);
 }
 
@@ -758,7 +761,7 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
 				   *unofficial, grid, (int)fontSz,
-				   !const_cast<IPresentCmap*>(cmapPresenter.get())->markClustersAsUsed());
+				   !cmapPresenter->areClustersUsed());
 
 	symsOn1stPage.clear(); // discard values now
 

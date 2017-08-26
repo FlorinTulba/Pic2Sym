@@ -49,11 +49,19 @@ class PresentCmap : public IPresentCmap {
 protected:
 	const IController &ctrler;
 	const ICmapPerspective &cmP;
-	const bool *clustersNotIgnored = nullptr; /// pointer to the boolean ClusterEngine::worthy
+
+	/**
+	Reference to the bool ClusterEngine::worthy (via MatchEngine::isClusteringUseful())
+
+	The viewer presents the identified clusters even when they're not used during the image transformation.
+	In that case, the splits between the clusters use dashed line instead of a filled line.
+	*/
+	const bool &refClustersNotIgnored;
 
 public:
 	PresentCmap(const IController &ctrler_,
-				const ICmapPerspective &cmP_);
+				const ICmapPerspective &cmP_,
+				const bool &refClustersHandled);
 	
 	void operator=(const PresentCmap&) = delete;
 
@@ -66,9 +74,8 @@ public:
 	/**
 	The viewer presents the identified clusters even when they're not used during the image transformation.
 	In that case, the splits between the clusters use dashed line instead of a filled line.
-	When the parameter is not nullptr, the method is a setter; Otherwise it is a getter.
 	*/
-	bool markClustersAsUsed(const bool *clustersNotIgnored_ = nullptr) override;
+	bool areClustersUsed() const override final;
 
 	/// Updates the Cmap View status bar with the details about the symbols
 	void showUnofficialSymDetails(unsigned symsCount) const override;

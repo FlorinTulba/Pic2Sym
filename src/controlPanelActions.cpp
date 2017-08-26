@@ -359,10 +359,9 @@ bool ControlPanelActions::_newFontFamily(const stringType &fontFile, bool forceU
 
 	if(!fontFamilyOk) {
 		fontFamilyOk = true;
-		if(!pCmi) {
-			ctrler.createCmapInspect();
-			assert(pCmi);
-		}
+
+		ctrler.ensureExistenceCmapInspect();
+		assert(pCmi);
 	}
 
 	return true;

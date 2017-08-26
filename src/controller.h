@@ -63,7 +63,57 @@ struct IComparator;
 struct ICmapInspect;
 struct ISelectSymbols;
 
-/// Manager of the views and data.
+/**
+Base interface for the Controller.
+
+There appear now 3 segregated groups of classes (as reported by AI Reviewer).
+
+The realization of most of these methods involves many overlapping fields
+and in the future some of the methods might:
+- get split / merged
+- be used by unexpected / different clients
+
+Furthermore, 2 of the observed groups of methods contain only 2 methods each, which is negligible.
+
+
+To still address the segregation, here would be some options:
+
+A.	For a fast implementation, good adaptability to unforeseen factors
+	and with a small cost of creating a `Concentrator class`:
+
+		IController could inherit 2 new parallel interfaces,
+		say IControllerSupportForCPA and IControllerSupportForFE
+		of the 2 smallest groups of methods (for ControlPanelActions and for FontEngine).
+		
+	These interfaces can be split / merged / extended or changed rather easily.
+
+B.	A more complex implementation and rather inflexible to unforeseen factors
+	but without the `Concentrator class` issue:
+
+		Separating IController into inheritance layers:
+
+		- IControllerCore - to contain the 3rd (largest) group of methods.
+		  Its implementation would encapsulate as protected most fields (which are strictly required)
+		  from the existing Controller class
+
+		- IControllerLayer1 - to contain the methods from say group 1.
+		  Its implementation would be on top of the core class and might not need any new fields
+
+		- IControllerLayer2 - to contain the methods from the remaining group.
+		  Its implementation would be on top of the previous layer and
+		  will encapsulate any remaining required field
+
+	This `vertical` approach might later involve costly operations:
+	- moving fields around between layers, plus splitting methods between layers
+	- switching layers
+
+C.	Aggregation of 2 providers for the interfaces for the 2 smallest groups of methods.
+	The interface provider of group 2 needs only 2 fields from Controller.
+	The interface provider of group 1 needs either to be a friend of Controller or
+	to receive all the required fields in the constructor.
+
+	This approach is nothing more than `Feature Envy` and brings high maintenance costs.
+*/
 class Controller : public IController {
 protected:
 	/// Responsible of updating symbol settings
@@ -93,9 +143,9 @@ protected:
 	/// pointer to the resized version of most recent image that had to be transformed
 	std::sharedPtr<const IResizedImg> resizedImg;
 	IFontEngine &fe;		///< font engine
-	ISettingsRW &cfg;	///< the settings for the transformations
-	IMatchEngine &me;	///< matching engine
-	ITransformCompletion &t;	///< results of the transformation
+	ISettingsRW &cfg;		///< the settings for the transformations
+	IMatchEngine &me;		///< matching engine
+	ITransformCompletion &t;///< results of the transformation
 
 	// Views
 	IComparator &comp;					///< view for comparing original & result
@@ -133,19 +183,23 @@ public:
 	void operator=(const Controller&) = delete;
 	~Controller();				///< destroys the windows
 
-	std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const override;
-	std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
-	std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
-	std::sharedPtr<const IPresentCmap> getPresentCmap() const override;
-	void createCmapInspect() override;
-	std::sharedPtr<IControlPanelActions> getControlPanelActions() override;
-
 	/// Waits for the user to press ESC and confirm he wants to leave
 	static void handleRequests();
 
-	const unsigned& getFontSize() const override; ///< font size determines grid size
-
+	// Group 1: 2 methods called so far only by ControlPanelActions
+	void ensureExistenceCmapInspect() override;
 	void symbolsChanged() override;	///< triggered by new font family / encoding / size
+
+	// Group 2: 2 methods called so far only by FontEngine
+	std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const override;
+	const std::sharedPtr<const IPresentCmap>& getPresentCmap() const override;
+
+	// Last group of methods used by many different clients without an obvious pattern
+	std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
+	std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
+	std::sharedPtr<IControlPanelActions> getControlPanelActions() override;
+
+	const unsigned& getFontSize() const override; ///< font size determines grid size
 
 	/// Returns true if transforming a new image or the last one, but under other image parameters
 	bool updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) override;

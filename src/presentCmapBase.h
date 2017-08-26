@@ -58,9 +58,8 @@ struct IPresentCmap /*abstract*/ {
 	/**
 	The viewer presents the identified clusters even when they're not used during the image transformation.
 	In that case, the splits between the clusters use dashed line instead of a filled line.
-	When the parameter is not nullptr, the method is a setter; Otherwise it is a getter.
 	*/
-	virtual bool markClustersAsUsed(const bool *clustersNotIgnored_ = nullptr) = 0;
+	virtual bool areClustersUsed() const = 0;
 
 	/// Updates the Cmap View status bar with the details about the symbols
 	virtual void showUnofficialSymDetails(unsigned symsCount) const = 0;
