@@ -85,15 +85,18 @@ public:
 	@throw ptree_bad_data when prop exists, but it cannot be converted to type T
 	*/
 	template<typename T>
-	T read(const std::stringType &prop) const {
+	const T read(const std::stringType &prop) const {
 #ifndef AI_REVIEWER_CHECK
 		try {
-			return std::move(props.get<T>((string)prop));
+			return std::move(props.get<T>(prop));
 		} catch(boost::property_tree::ptree_bad_path&) {
 			cerr<<"Property '"<<prop<<"' is missing from '"<<propsFile<<"' !"<<endl;
 		} catch(boost::property_tree::ptree_bad_data&) {
 			cerr<<"Property '"<<prop<<"' cannot be converted to its required type!"<<endl;
 		}
+#else // AI_REVIEWER_CHECK defined
+		// AI Reviewer can skip the logic around boost::property_tree::* 
+		propsFile; // member field referred in the chunk above - to be counted
 #endif // AI_REVIEWER_CHECK
 		throw;
 	}

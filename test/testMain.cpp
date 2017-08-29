@@ -62,6 +62,9 @@
 #include "selectSymbols.h"
 #include "cmapPerspective.h"
 #include "controlPanelActions.h"
+#include "updateSymSettingsBase.h"
+#include "presentCmapBase.h"
+#include "jobMonitorBase.h"
 #include "views.h"
 
 #pragma warning ( push, 0 )
@@ -172,7 +175,7 @@ namespace ut {
 	} // anonymous namespace
 
 	void showMismatches(const string &testTitle,
-						const vector<unique_ptr<BestMatch>> &mismatches) {
+						const vector<const unique_ptr<BestMatch>> &mismatches) {
 		if(mismatches.empty())
 			return;
 		
@@ -232,7 +235,7 @@ namespace ut {
 	}
 
 	void showMisfiltered(const string &testTitle,
-						 const vector<std::shared_ptr<PixMapSym>> &misfiltered) {
+						 const vector<const std::unique_ptr<const IPixMapSym>> &misfiltered) {
 		if(misfiltered.empty())
 			return;
 
@@ -317,10 +320,10 @@ MatchSettings::MatchSettings() {}
 
 #define GET_FIELD(FieldType, ...) \
 	__pragma( warning( disable : WARN_THREAD_UNSAFE ) ) \
-	static std::shared_ptr<FieldType> pField; \
+	static std::unique_ptr<FieldType> pField; \
 	__pragma( warning( default : WARN_THREAD_UNSAFE ) ) \
 	if(ut::Controller::init##FieldType || !pField) { \
-		pField = std::make_shared<FieldType>(__VA_ARGS__); \
+		pField = std::make_unique<FieldType>(__VA_ARGS__); \
 		ut::Controller::init##FieldType = false; \
 	} \
 	return *pField
@@ -390,9 +393,7 @@ void Controller::updateStatusBarCmapInspect(unsigned, const string&, bool) const
 
 void Controller::reportDuration(const string&, double) const {}
 
-bool Controller::updateResizedImg(std::shared_ptr<const IResizedImg>) {
-	return true;
-}
+bool Controller::updateResizedImg(const IResizedImg&) { return true; }
 
 void Controller::showResultedImage(double) {}
 

@@ -104,51 +104,50 @@ extern const wstringType ControlPanel_aboutText;
 extern const wstringType ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
-const map<const String*, std::sharedPtr<const SliderConverter>>& ControlPanel::slidersConverters() {
+const map<const String*, const std::uniquePtr<const SliderConverter>>& 
+ControlPanel::slidersConverters() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static std::sharedPtr<const map<const String*, std::sharedPtr<const SliderConverter>>> result;
+	static map<const String*, const std::uniquePtr<const SliderConverter>> result;
 	static bool initialized = false;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 	if(!initialized) {
-		result = std::makeShared<const map<const String*, std::sharedPtr<const SliderConverter>>>(
-			std::move(map<const String*, std::sharedPtr<const SliderConverter>> {
-				{ &ControlPanel_structuralSimTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_StructuralSim_maxSlider, ControlPanel_Converter_StructuralSim_maxReal)) },
+		result.emplace(&ControlPanel_structuralSimTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_StructuralSim_maxSlider, ControlPanel_Converter_StructuralSim_maxReal)));
+		result.emplace(&ControlPanel_underGlyphCorrectnessTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
+		result.emplace(&ControlPanel_glyphEdgeCorrectnessTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
+		result.emplace(&ControlPanel_asideGlyphCorrectnessTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
+		result.emplace(&ControlPanel_moreContrastTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Contrast_maxSlider, ControlPanel_Converter_Contrast_maxReal)));
+		result.emplace(&ControlPanel_gravityTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Gravity_maxSlider, ControlPanel_Converter_Gravity_maxReal)));
+		result.emplace(&ControlPanel_directionTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Direction_maxSlider, ControlPanel_Converter_Direction_maxReal)));
+		result.emplace(&ControlPanel_largerSymTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_LargerSym_maxSlider, ControlPanel_Converter_LargerSym_maxReal)));
 
-				{ &ControlPanel_underGlyphCorrectnessTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
-
-				{ &ControlPanel_glyphEdgeCorrectnessTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
-
-				{ &ControlPanel_asideGlyphCorrectnessTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)) },
-
-				{ &ControlPanel_moreContrastTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Contrast_maxSlider, ControlPanel_Converter_Contrast_maxReal)) },
-
-				{ &ControlPanel_gravityTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Gravity_maxSlider, ControlPanel_Converter_Gravity_maxReal)) },
-
-				{ &ControlPanel_directionTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_Direction_maxSlider, ControlPanel_Converter_Direction_maxReal)) },
-
-				{ &ControlPanel_largerSymTrName,
-					std::makeShared<ProportionalSliderValue>(std::makeUnique<const ProportionalSliderValue::Params>(
-					ControlPanel_Converter_LargerSym_maxSlider, ControlPanel_Converter_LargerSym_maxReal)) }
-				
-				}));
 		initialized = true;
 	}
 
-	return *result;
+	return result;
 }
 
 void ControlPanel::updateMatchSettings(const IMatchSettings &ms) {

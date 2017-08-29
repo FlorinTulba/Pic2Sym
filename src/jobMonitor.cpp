@@ -53,9 +53,10 @@
 
 using namespace std;
 
-JobMonitor::JobMonitor(const stringType &monitoredActivity, std::sharedPtr<IProgressNotifier> userNotifier_,
+JobMonitor::JobMonitor(const stringType &monitoredActivity,
+					   std::uniquePtr<IProgressNotifier> userNotifier_,
 					   double minProgressForUserNotifications_) :
-		AbsJobMonitor(monitoredActivity), notifier(userNotifier_),
+		AbsJobMonitor(monitoredActivity), notifier(move(userNotifier_)),
 
 		// Slightly diminish the threshold for how often to notify the progress of the job to the user
 		minProgressForNotifications(minProgressForUserNotifications_ - EPS) {

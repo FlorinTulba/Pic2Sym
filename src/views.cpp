@@ -169,12 +169,13 @@ void CmapInspect::showPage(unsigned pageIdx) {
 		setTrackbarPos(CmapInspect_pageTrackName, winName, (int)pageIdx); // => page = pageIdx
 
 	const unsigned idxOfFirstSymFromPage = symsPerPage*pageIdx;
-	populateGrid(cmapPresenter->getFontFaces(idxOfFirstSymFromPage, symsPerPage),
-				 cmapPresenter->getClusterOffsets(), idxOfFirstSymFromPage);
+	populateGrid(cmapPresenter.getFontFaces(idxOfFirstSymFromPage, symsPerPage),
+				 cmapPresenter.getClusterOffsets(), idxOfFirstSymFromPage);
 	imshow(winName, content);
 }
 
 void CmapInspect::updatePageIdx(int newPage, void *userdata) {
+	// The caller ensures userdata is a `ICmapInspect*`, not a `CmapInspect*`
 	ICmapInspect *pCmi = reinterpret_cast<ICmapInspect*>(userdata);
 	pCmi->showPage((unsigned)newPage);
 }

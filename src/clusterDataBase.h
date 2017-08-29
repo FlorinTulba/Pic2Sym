@@ -60,6 +60,6 @@ struct IClusterData /*abstract*/ : virtual ISymData {
 };
 
 /// VClusterData - vector with most information about each cluster
-typedef std::vector<std::uniquePtr<const IClusterData>> VClusterData;
+typedef std::vector<const std::uniquePtr<const IClusterData>> VClusterData;
 
 #endif // H_CLUSTER_DATA_BASE

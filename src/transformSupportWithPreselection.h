@@ -60,14 +60,17 @@ class TransformSupportWithPreselection : public TransformSupport {
 protected:
 	cv::Mat resizedForTinySyms;	///< resized version of the original used by tiny symbols preselection
 	cv::Mat resBlForTinySyms;	///< blurred version of the resized used by tiny symbols preselection
-	std::vector<std::vector<std::uniquePtr<IBestMatch>>> draftMatchesForTinySyms; ///< temporary best matches used by tiny symbols preselection
+
+	/// temporary best matches used by tiny symbols preselection
+	std::vector<std::vector<const std::uniquePtr<IBestMatch>>> draftMatchesForTinySyms;
+
 	MatchSupportWithPreselection &matchSupport;	///< match support
 
 public:
 	/// Requires an additional IMatchSupport parameter compared to the base constructor
 	TransformSupportWithPreselection(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 									 cv::Mat &resized_, cv::Mat &resizedBlurred_,
-									 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches_,
+									 std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draftMatches_,
 									 IMatchSupport &matchSupport_);
 
 	TransformSupportWithPreselection(const TransformSupportWithPreselection&) = delete;

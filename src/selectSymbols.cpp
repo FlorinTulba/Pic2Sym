@@ -62,7 +62,7 @@ using namespace boost::filesystem;
 SelectSymbols::SelectSymbols(const IController &ctrler_,
 							 const IMatchEngine &me_,
 							 const ICmapPerspective &cmP_,
-							 const std::sharedPtr<ICmapInspect> &pCmi_) :
+							 const std::uniquePtr<ICmapInspect> &pCmi_) :
 	ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
 
 #ifndef UNIT_TESTING

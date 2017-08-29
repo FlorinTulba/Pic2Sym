@@ -71,7 +71,7 @@ struct PreselectionOn : IPreselManager {
 														const IMatchSettings &matchSettings,
 														Mat &resized,
 														Mat &resizedBlurred,
-														vector<vector<uniquePtr<IBestMatch>>> &draftMatches,
+														vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
 														IMatchSupport &matchSupport) const {
 		return makeUnique<TransformSupportWithPreselection>(me, matchSettings, resized, resizedBlurred,
 															draftMatches, matchSupport);
@@ -101,7 +101,7 @@ struct PreselectionOff : IPreselManager {
 														const IMatchSettings &matchSettings,
 														Mat &resized,
 														Mat &resizedBlurred,
-														vector<vector<uniquePtr<IBestMatch>>> &draftMatches,
+														vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
 														IMatchSupport&) const {
 		return makeUnique<TransformSupport>(me, matchSettings, resized, resizedBlurred, draftMatches);
 	}

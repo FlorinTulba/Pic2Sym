@@ -62,7 +62,7 @@ namespace { // Anonymous namespace
 		/// Action to be performed when the timer is released/deleted
 		/// @param elapsedS total elapsed time in seconds
 		void onRelease(double elapsedS) override {
-			ctrler.getGlyphsProgressTracker()->updateSymsDone(elapsedS);
+			ctrler.getGlyphsProgressTracker().updateSymsDone(elapsedS);
 		}
 	};
 } // Anonymous namespace

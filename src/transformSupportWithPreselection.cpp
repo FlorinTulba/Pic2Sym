@@ -63,7 +63,7 @@ TransformSupportWithPreselection::TransformSupportWithPreselection(IMatchEngine 
 																   const IMatchSettings &matchSettings_,
 																   Mat &resized_,
 																   Mat &resizedBlurred_,
-																   vector<vector<uniquePtr<IBestMatch>>> &draftMatches_,
+																   vector<vector<const uniquePtr<IBestMatch>>> &draftMatches_,
 																   IMatchSupport &matchSupport_) :
 	TransformSupport(me_, matchSettings_, resized_, resizedBlurred_, draftMatches_),
 	matchSupport(dynamic_cast<MatchSupportWithPreselection&>(matchSupport_)) {}
@@ -100,8 +100,8 @@ void TransformSupportWithPreselection::approxRow(int r, int width, unsigned patc
 												 Mat &result) {
 	const int row = r * (int)patchSz;
 	const Range rowRange(row, row + (int)patchSz);
-	const vector<uniquePtr<IBestMatch>> &draftMatchesRow = draftMatches[(size_t)r];
-	const vector<uniquePtr<IBestMatch>> &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
+	const vector<const uniquePtr<IBestMatch>> &draftMatchesRow = draftMatches[(size_t)r];
+	const vector<const uniquePtr<IBestMatch>> &draftMatchesRowTiny = draftMatchesForTinySyms[(size_t)r];
 
 	TopCandidateMatches tcm(ShortListLength);
 	MatchProgressWithPreselection mpwp(tcm);

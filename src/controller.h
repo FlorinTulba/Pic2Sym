@@ -117,18 +117,18 @@ C.	Aggregation of 2 providers for the interfaces for the 2 smallest groups of me
 class Controller : public IController {
 protected:
 	/// Responsible of updating symbol settings
-	std::sharedPtr<const IUpdateSymSettings> updateSymSettings;
+	std::uniquePtr<const IUpdateSymSettings> updateSymSettings;
 	
 	/// Responsible for keeping track of the symbols loading process
-	std::sharedPtr<const IGlyphsProgressTracker> glyphsProgressTracker;
+	std::uniquePtr<const IGlyphsProgressTracker> glyphsProgressTracker;
 
 	/// Responsible for monitoring the progress during an image transformation
-	std::sharedPtr<IPicTransformProgressTracker> picTransformProgressTracker;
+	std::uniquePtr<IPicTransformProgressTracker> picTransformProgressTracker;
 
 
 	// Control of displayed progress
-	std::sharedPtr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
-	std::sharedPtr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
+	std::uniquePtr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
+	std::uniquePtr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
 
 	CmapPerspective cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
@@ -137,11 +137,11 @@ protected:
 	Needed by 'fe' from below.
 	Uses 'me' from below and 'cmP' from above
 	*/
-	std::sharedPtr<const IPresentCmap> presentCmap;
+	std::uniquePtr<const IPresentCmap> presentCmap;
 
 	// Data
 	/// pointer to the resized version of most recent image that had to be transformed
-	std::sharedPtr<const IResizedImg> resizedImg;
+	std::uniquePtr<const IResizedImg> resizedImg;
 	IFontEngine &fe;		///< font engine
 	ISettingsRW &cfg;		///< the settings for the transformations
 	IMatchEngine &me;		///< matching engine
@@ -149,13 +149,13 @@ protected:
 
 	// Views
 	IComparator &comp;					///< view for comparing original & result
-	std::sharedPtr<ICmapInspect> pCmi;	///< view for inspecting the used cmap
+	std::uniquePtr<ICmapInspect> pCmi;	///< view for inspecting the used cmap
 
 	/// Allows saving a selection of symbols pointed within the charmap viewer
-	std::sharedPtr<const ISelectSymbols> selectSymbols;
+	std::uniquePtr<const ISelectSymbols> selectSymbols;
 
 	/// Responsible for the actions triggered by the controls from Control Panel
-	std::sharedPtr<IControlPanelActions> controlPanelActions;
+	std::uniquePtr<IControlPanelActions> controlPanelActions;
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;
@@ -163,7 +163,7 @@ protected:
 	std::atomic_flag updating1stCmapPage;	///< controls concurrent attempts to update 1st page
 	/// Stores the events occurred while updating the symbols.
 	/// queue requires template param with trivial destructor and assign operator,
-	/// so sharedPtr isn't useful here
+	/// so smart pointers aren't useful here
 
 	const std::stringType textForCmapStatusBar(unsigned upperSymsCount = 0U) const; ///< status bar with font information
 	const std::stringType textHourGlass(const std::stringType &prefix, double progress) const; ///< progress
@@ -191,18 +191,18 @@ public:
 	void symbolsChanged() override;	///< triggered by new font family / encoding / size
 
 	// Group 2: 2 methods called so far only by FontEngine
-	std::sharedPtr<const IUpdateSymSettings> getUpdateSymSettings() const override;
-	const std::sharedPtr<const IPresentCmap>& getPresentCmap() const override;
+	const IUpdateSymSettings& getUpdateSymSettings() const override;
+	const std::uniquePtr<const IPresentCmap>& getPresentCmap() const override; // the ref to uniquePtr solves a circular dependency inside the constructor
 
 	// Last group of methods used by many different clients without an obvious pattern
-	std::sharedPtr<const IGlyphsProgressTracker> getGlyphsProgressTracker() const override;
-	std::sharedPtr<IPicTransformProgressTracker> getPicTransformProgressTracker() override;
-	std::sharedPtr<IControlPanelActions> getControlPanelActions() override;
+	const IGlyphsProgressTracker& getGlyphsProgressTracker() const override;
+	IPicTransformProgressTracker& getPicTransformProgressTracker() override;
+	IControlPanelActions& getControlPanelActions() override;
 
 	const unsigned& getFontSize() const override; ///< font size determines grid size
 
 	/// Returns true if transforming a new image or the last one, but under other image parameters
-	bool updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) override;
+	bool updateResizedImg(const IResizedImg &resizedImg_) override;
 
 	/**
 	Shows a 'Please wait' window and reports progress.

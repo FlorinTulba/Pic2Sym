@@ -93,6 +93,6 @@ struct IPixMapSym /*abstract*/ {
 };
 
 /// Vector of IPixMapSym objects
-typedef std::vector<std::uniquePtr<const IPixMapSym>> VPixMapSym;
+typedef std::vector<const std::uniquePtr<const IPixMapSym>> VPixMapSym;
 
 #endif // H_PIXMAP_SYM_BASE

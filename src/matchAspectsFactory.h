@@ -50,8 +50,8 @@
 /// Creates any known MatchAspect by its name
 struct MatchAspectsFactory {
 	/// Creates aspect 'aspectName' passing to it a IMatchSettings parameter
-	static std::sharedPtr<MatchAspect> create(const std::stringType &aspectName,
-											   const IMatchSettings &ms);
+	static std::uniquePtr<const MatchAspect> create(const std::stringType &aspectName,
+													const IMatchSettings &ms);
 };
 
 #endif // H_MATCH_ASPECTS_FACTORY

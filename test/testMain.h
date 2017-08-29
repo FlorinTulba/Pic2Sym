@@ -101,7 +101,7 @@ namespace ut {
 	@param mismatches vector of BestMatch objects
 	*/
 	void showMismatches(const std::string &testTitle,
-						const std::vector<std::unique_ptr<BestMatch>> &mismatches);
+						const std::vector<const std::unique_ptr<BestMatch>> &mismatches);
 }
 
 #endif // H_TEST_MAIN

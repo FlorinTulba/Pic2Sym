@@ -43,11 +43,12 @@
 
 using namespace std;
 
-std::sharedPtr<MatchAspect> MatchAspectsFactory::create(const stringType &aspectName,
-														 const IMatchSettings &ms) {
+std::uniquePtr<const MatchAspect> MatchAspectsFactory::create(const stringType &aspectName,
+														const IMatchSettings &ms) {
 #define HANDLE_MATCH_ASPECT(Aspect) \
 	if(aspectName.compare(#Aspect) == 0) \
-		return std::makeShared<Aspect>(ms)
+		/* makeUnique<Aspect>(ms) won't work below! */ \
+		return std::uniquePtr<Aspect>(new Aspect(ms))
 
 	HANDLE_MATCH_ASPECT(StructuralSimilarity);
 	HANDLE_MATCH_ASPECT(FgMatch);

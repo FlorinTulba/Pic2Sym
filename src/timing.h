@@ -58,7 +58,8 @@ Timer becomes a `Concentrator class` if it realizes alone both IActiveTimer and 
 */
 class ActiveTimer /*abstract*/ : public IActiveTimer {
 protected:
-	const std::vector<std::sharedPtr<ITimerActions>> observers; ///< to be notified
+	/// Observers to be notified, which outlive this Timer or are `kept alive` until its destruction (due to sharedPtr)
+	const std::vector<std::sharedPtr<ITimerActions>> observers;
 
 	/// the moment when computation started / was resumed last time
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;

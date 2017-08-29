@@ -187,15 +187,15 @@ namespace ut {
 	}
 
 	/**
-	Creates 2 shared_ptr to 2 symbol data objects.
+	Creates 2 unique_ptr to 2 symbol data objects.
 
 	@param sz patch side length
-	@param sdWithHorizEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 rows mid height define a horizontal edge mask
-	@param sdWithVertEdgeMask symbol data shared_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
+	@param sdWithHorizEdgeMask symbol data unique_ptr for a glyph whose vertical halves are white and black. The 2 rows mid height define a horizontal edge mask
+	@param sdWithVertEdgeMask symbol data unique_ptr for a glyph whose vertical halves are white and black. The 2 columns mid width define a vertical edge mask, which simply instructs where to look for edges within this glyph. It doesn't correspond with the actual horizontal edge of the glyph, but it will check the patches for a vertical edge.
 	*/
 	void updateSymDataOfHalfFullGlyphs(unsigned sz,
-									   std::shared_ptr<SymData> &sdWithHorizEdgeMask, 
-									   std::shared_ptr<SymData> &sdWithVertEdgeMask) {
+									   std::unique_ptr<SymData> &sdWithHorizEdgeMask, 
+									   std::unique_ptr<SymData> &sdWithVertEdgeMask) {
 		// 2 rows mid height
 		Mat horBeltUc = Mat(sz, sz, CV_8UC1, Scalar(0U)); horBeltUc.rowRange(sz/2-1, sz/2+1) = 255U;
 
@@ -210,7 +210,7 @@ namespace ut {
 		Mat invHalfUc = 255U - halfUc;
 
 		// A glyph half 0, half 255
-		sdWithHorizEdgeMask = std::make_shared<SymData>(
+		sdWithHorizEdgeMask = std::make_unique<SymData>(
 				NOT_RELEVANT_UL,	// glyph code (not relevant here)
 				NOT_RELEVANT_SZ,	// symbol index (not relevant here)
 				0., // min glyph value (0..1 range)
@@ -227,7 +227,7 @@ namespace ut {
 				invHalfUc);
 		
 		// copy sdWithHorizEdgeMask and adapt it for vert. edge
-		sdWithVertEdgeMask = std::make_shared<SymData>(*sdWithHorizEdgeMask);
+		sdWithVertEdgeMask = std::make_unique<SymData>(*sdWithHorizEdgeMask);
 		sdWithVertEdgeMask->masks[ISymData::EDGE_MASK_IDX] = verBeltUc;
 	}
 
@@ -244,7 +244,7 @@ namespace ut {
 		Mat randUc;		///< sz x sz random unsigned chars
 		Mat randD1;		///< sz x sz random doubles (0 .. 1)
 		Mat randD255;	///< sz x sz random doubles (0 .. 255)
-		std::shared_ptr<SymData> sdWithHorizEdgeMask, sdWithVertEdgeMask;
+		std::unique_ptr<SymData> sdWithHorizEdgeMask, sdWithVertEdgeMask;
 
 		/// Random initialization of randUc and computing corresponding randD1 and randD255
 		void randInitPatch() {
@@ -268,8 +268,8 @@ namespace ut {
 		const Mat& getRandD255() const { return randD255; }
 		const Mat& getInvHalfD255() const { return invHalfD255; }
 		const CachedData& getCd() const { return cd; }
-		const std::shared_ptr<SymData> getSdWithHorizEdgeMask() const { return sdWithHorizEdgeMask; }
-		const std::shared_ptr<SymData> getSdWithVertEdgeMask() const { return sdWithVertEdgeMask; }
+		const SymData& getSdWithHorizEdgeMask() const { return *sdWithHorizEdgeMask; }
+		const SymData& getSdWithVertEdgeMask() const { return *sdWithVertEdgeMask; }
 		unsigned getSz() const { return sz; }
 
 		/// Updates sz, cd, consec and the matrices empty, random and full
@@ -522,11 +522,11 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 
 	Settings s(ms);
 	::Controller c(s);
-	std::shared_ptr<IControlPanelActions> cpa = c.getControlPanelActions();
+	IControlPanelActions &cpa = c.getControlPanelActions();
 	::MatchEngine &me = dynamic_cast<::MatchEngine&>(c.getMatchEngine(s));
 
-	cpa->newFontFamily(fontFamily);
-	cpa->newFontEncoding(encoding);
+	cpa.newFontFamily(fontFamily);
+	cpa.newFontEncoding(encoding);
 
 	// default font size is 10 - normally at most 10% errors
 	//c.newFontSize(40U); // apparently larger fonts produce less errors (for 40 rarely any)
@@ -536,7 +536,7 @@ DataTestCase(CheckAlteredCmap_UsingAspects_ExpectLessThan3or55PercentErrors, Sui
 	VSymData::const_iterator it = cbegin(me.symsSet), itEnd = cend(me.symsSet);
 	const unsigned symsCount = (unsigned)distance(it, itEnd),
 					SymsBatchSz = 25U;
-	vector<unique_ptr<BestMatch>> mismatches;
+	vector<const unique_ptr<BestMatch>> mismatches;
 	const auto &assessor = me.assessor();
 	for(unsigned idx = 0U; it != itEnd; ++idx, ++it) {
 		const Mat &negGlyph = (*it)->getNegSym(); // byte 0..255
@@ -679,33 +679,33 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 	}
 
 	AutoTestCase1(ComputeSymDensity_SuperiorHalfOfPatchFull_0dot5, SuiteSuffix);
-		mp.computeSymDensity(*getSdWithHorizEdgeMask());
+		mp.computeSymDensity(getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getSymDensity());
 		BOOST_TEST(*mp.getSymDensity() == 0.5, test_tools::tolerance(1e-4));
 	}
 
 	AutoTestCase1(CheckParams_UniformPatchHorizontalEdge_GlyphConvergesToPatch, SuiteSuffix);
-		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithHorizEdgeMask());
+		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), getSdWithHorizEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_UniformPatchVerticalEdge_GlyphConvergesToPatch, SuiteSuffix);
-		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), *getSdWithVertEdgeMask());
+		checkParams_UniformPatch_GlyphConvergesToPatch(getSz(), getCd(), getSdWithVertEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_TestedGlyphWithHorizontalEdgeIsInverseOfPatch_GlyphConvergesToPatch, SuiteSuffix);
-		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithHorizEdgeMask());
+		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), getSdWithHorizEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_TestedGlyphWithVerticalEdgeIsInverseOfPatch_GlyphConvergesToPatch, SuiteSuffix);
-		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), *getSdWithVertEdgeMask());
+		checkParams_TestedGlyphIsInverseOfPatch_GlyphConvergesToPatch(getSz(), getInvHalfD255(), getCd(), getSdWithVertEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_TestHalfFullGlypWithHorizontalEdgehOnDimmerPatch_GlyphLoosesContrast, SuiteSuffix);
-		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithHorizEdgeMask());
+		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), getSdWithHorizEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_TestHalfFullGlypWithVerticalEdgehOnDimmerPatch_GlyphLoosesContrast, SuiteSuffix);
-		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), *getSdWithVertEdgeMask());
+		checkParams_TestHalfFullGlyphOnDimmerPatch_GlyphLoosesContrast(getSz(), getEmptyD(), getCd(), getSdWithVertEdgeMask());
 	}
 
 	AutoTestCase1(CheckParams_RowValuesSameAsRowIndices_PredictedParams, SuiteSuffix);
@@ -723,7 +723,7 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 		expectedSdev = sqrt(expectedSdev / (getSz()/2));
 		Mat expectedPatchApprox(getSz(), getSz(), CV_64FC1, Scalar(expectedBg));
 		expectedPatchApprox.rowRange(0, getSz()/2) = expectedFgAndSdevHorEdge;
-		mp.computePatchApprox(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computePatchApprox(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getPatchApprox());
 		minMaxIdx(mp.getPatchApprox().value()-expectedPatchApprox, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
@@ -732,34 +732,34 @@ FixtureTestSuiteSuffix(MatchParamsFixt<UsePreselection>, MeanSdevMassCenterCompu
 		BOOST_REQUIRE(mp.getMcPatch());
 		BOOST_TEST(mp.getMcPatch()->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatch()->y == (2*getSz()-1) / (3. * (getSz()-1)), test_tools::tolerance(1e-4));
-		mp.computeFg(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computeFg(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getFg());
 		BOOST_TEST(*mp.getFg() == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
-		mp.computeBg(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computeBg(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getBg());
 		BOOST_TEST(*mp.getBg() == expectedBg, test_tools::tolerance(1e-4));
-		mp.computeSdevFg(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computeSdevFg(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getSdevFg());
 		BOOST_TEST(*mp.getSdevFg() == expectedSdev, test_tools::tolerance(1e-4));
-		mp.computeSdevBg(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computeSdevBg(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getSdevBg());
 		BOOST_TEST(*mp.getSdevBg() == expectedSdev, test_tools::tolerance(1e-4));
-		mp.computeMcPatchApprox(szBandsD255, *getSdWithHorizEdgeMask(), getCd());
+		mp.computeMcPatchApprox(szBandsD255, getSdWithHorizEdgeMask(), getCd());
 		BOOST_REQUIRE(mp.getMcPatchApprox());
 		BOOST_TEST(mp.getMcPatchApprox()->x == .5, test_tools::tolerance(1e-4));
 		BOOST_TEST(mp.getMcPatchApprox()->y == (*mp.getFg() * *mp.getFg() + *mp.getBg() * *mp.getBg()) / pow(getSz()-1U, 2), test_tools::tolerance(1e-4));
-		mp.computeSdevEdge(szBandsD255, *getSdWithHorizEdgeMask());
+		mp.computeSdevEdge(szBandsD255, getSdWithHorizEdgeMask());
 		BOOST_REQUIRE(mp.getSdevEdge());
 		BOOST_TEST(*mp.getSdevEdge() == expectedFgAndSdevHorEdge, test_tools::tolerance(1e-4));
 		
 		// Do some tests also for a glyph with a vertical edge
 		mp.reset();
-		mp.computePatchApprox(szBandsD255, *getSdWithVertEdgeMask());
+		mp.computePatchApprox(szBandsD255, getSdWithVertEdgeMask());
 		BOOST_REQUIRE(mp.getPatchApprox());
 		minMaxIdx(mp.getPatchApprox().value()-expectedPatchApprox, &minV, &maxV);
 		BOOST_TEST(minV == 0., test_tools::tolerance(1e-4));
 		BOOST_TEST(maxV == 0., test_tools::tolerance(1e-4));
-		mp.computeSdevEdge(szBandsD255, *getSdWithVertEdgeMask());
+		mp.computeSdevEdge(szBandsD255, getSdWithVertEdgeMask());
 		BOOST_REQUIRE(mp.getSdevEdge());
 		BOOST_TEST(*mp.getSdevEdge() == expectedSdev, test_tools::tolerance(1e-4));
 	}

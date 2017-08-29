@@ -46,7 +46,7 @@ using namespace cv;
 
 extern const double EnableSkipAboveMatchRatio;
 
-MatchAssessor& MatchAssessor::availableAspects(const vector<std::sharedPtr<MatchAspect>> &availAspects_) {
+MatchAssessor& MatchAssessor::availableAspects(const vector<const std::uniquePtr<const MatchAspect>> &availAspects_) {
 	availAspects = &availAspects_;
 	return *this;
 }
@@ -64,7 +64,7 @@ void MatchAssessor::newlyDisabledMatchAspect() {
 void MatchAssessor::updateEnabledMatchAspectsCount() {
 	enabledAspectsCount = 0ULL;
 	if(availAspects != nullptr) {
-		for(sharedPtr<MatchAspect> pAspect : *availAspects)
+		for(const uniquePtr<const MatchAspect> &pAspect : *availAspects)
 			if(pAspect->enabled())
 				++enabledAspectsCount;
 	}
@@ -79,7 +79,7 @@ size_t MatchAssessor::enabledMatchAspectsCount() const {
 void MatchAssessor::getReady(const CachedData &/*cachedData*/) {
 	enabledAspects.clear();
 	if(availAspects != nullptr) {
-		for(sharedPtr<MatchAspect> pAspect : *availAspects)
+		for(const uniquePtr<const MatchAspect> &pAspect : *availAspects)
 			if(pAspect->enabled())
 				enabledAspects.push_back(&*pAspect);
 	}

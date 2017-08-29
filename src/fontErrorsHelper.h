@@ -46,6 +46,6 @@
 
 #pragma warning ( pop )
 
-extern const std::vector<const std::stringType> FtErrors;
+extern const std::vector<const std::stringType> &FtErrors;
 
 #endif // H_FONT_ERRORS_HELPER

@@ -60,12 +60,12 @@ When PreselectionByTinySyms == true, it perform those tasks also for tiny symbol
 class TransformSupport : public ITransformSupport {
 protected:
 	/// Initializes a row of a draft when a new image needs to be approximated
-	static void initDraftRow(std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draft,
+	static void initDraftRow(std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draft,
 							 int r, unsigned patchesPerRow,
 							 const cv::Mat &res, const cv::Mat &resBlurred, int patchSz, bool isColor);
 
 	/// Resets a row of a draft when current image needs to be approximated in a different context
-	static void resetDraftRow(std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draft, int r);
+	static void resetDraftRow(std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draft, int r);
 
 	/// Update the visualized draft
 	static void patchImproved(cv::Mat &result, unsigned sz, const IBestMatch &draftMatch, 
@@ -79,16 +79,18 @@ protected:
 	static bool checkUnifPatch(IBestMatch &draftMatch);
 
 	IMatchEngine &me;					///< match engine
-	const IMatchSettings &matchSettings;	///< match settings
+	const IMatchSettings &matchSettings;///< match settings
 	cv::Mat &resized;					///< resized version of the original
 	cv::Mat &resizedBlurred;			///< blurred version of the resized original
-	std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches;	///< temporary best matches
+
+	/// temporary best matches
+	std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draftMatches;
 
 public:
 	/// Base constructor
 	TransformSupport(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 					 cv::Mat &resized_, cv::Mat &resizedBlurred_,
-					 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches_);
+					 std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draftMatches_);
 
 	TransformSupport(const TransformSupport&) = delete;
 	TransformSupport(TransformSupport&&) = delete;

@@ -71,13 +71,13 @@ bool ClusterIO::loadFrom(const stringType &path) {
 		return false;
 	}
 
-#ifndef AI_REVIEWER_CHECK
 	ClusterIO draftClusters; // load clusters in a draft object
+#ifndef AI_REVIEWER_CHECK
 	if(false == load<binary_iarchive>(ifs, path, draftClusters))
 		return false;
+#endif // AI_REVIEWER_CHECK
 
 	*this = std::move(draftClusters);
-#endif // AI_REVIEWER_CHECK
 
 	return true;
 }

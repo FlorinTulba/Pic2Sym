@@ -174,13 +174,13 @@ namespace {
 
 	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
 	struct PicTransformProgressNotifier : IProgressNotifier {
-		std::sharedPtr<const IPicTransformProgressTracker> performer;
+		const IPicTransformProgressTracker &performer;
 
-		PicTransformProgressNotifier(std::sharedPtr<const IPicTransformProgressTracker>performer_) : performer(performer_) {}
+		PicTransformProgressNotifier(const IPicTransformProgressTracker &performer_) : performer(performer_) {}
 		void operator=(const PicTransformProgressNotifier&) = delete;
 
 		void notifyUser(const std::stringType&, double progress) override {
-			performer->reportTransformationProgress(progress);
+			performer.reportTransformationProgress(progress);
 		}
 	};
 
@@ -307,17 +307,17 @@ extern const double SymbolsProcessing_ProgressReportsIncrement;
 
 #pragma warning( disable : WARN_BASE_INIT_USING_THIS )
 Controller::Controller(ISettingsRW &s) :
-		updateSymSettings(std::makeShared<const UpdateSymSettings>(s.refSS())),
-		glyphsProgressTracker(std::makeShared<const GlyphsProgressTracker>(*this)),
-		picTransformProgressTracker(std::makeShared<PicTransformProgressTracker>(*this)),
-		glyphsUpdateMonitor(std::makeShared<JobMonitor>("Processing glyphs",
-			std::makeShared<SymsUpdateProgressNotifier>(*this),
+		updateSymSettings(std::makeUnique<const UpdateSymSettings>(s.refSS())),
+		glyphsProgressTracker(std::makeUnique<const GlyphsProgressTracker>(*this)),
+		picTransformProgressTracker(std::makeUnique<PicTransformProgressTracker>(*this)),
+		glyphsUpdateMonitor(std::makeUnique<JobMonitor>("Processing glyphs",
+			std::makeUnique<SymsUpdateProgressNotifier>(*this),
 			SymbolsProcessing_ProgressReportsIncrement)),
-		imgTransformMonitor(std::makeShared<JobMonitor>("Transforming image",
-			std::makeShared<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
+		imgTransformMonitor(std::makeUnique<JobMonitor>("Transforming image",
+			std::makeUnique<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
 			Transform_ProgressReportsIncrement)),
 		cmP(),
-		presentCmap(std::makeShared<const PresentCmap>(*this, cmP,
+		presentCmap(std::makeUnique<const PresentCmap>(*this, cmP,
 			getMatchEngine(s).isClusteringUseful())),
 		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
 		cfg(s),
@@ -325,8 +325,8 @@ Controller::Controller(ISettingsRW &s) :
 		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
 		comp(getComparator()),
 		pCmi(),
-		selectSymbols(std::makeShared<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
-		controlPanelActions(std::makeShared<ControlPanelActions>(*this, s,
+		selectSymbols(std::makeUnique<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
+		controlPanelActions(std::makeUnique<ControlPanelActions>(*this, s,
 			getFontEngine(s.getSS()), getMatchEngine(s).assessor(),
 			getTransformer(s), getComparator(), pCmi)) {
 
@@ -552,15 +552,13 @@ void Controller::reportDuration(const std::stringType &text, double durationS) c
 	pCmi->setOverlay(cmapOverlayText, 3000);
 }
 
-bool Controller::updateResizedImg(std::sharedPtr<const IResizedImg> resizedImg_) {
-	if(!resizedImg_)
-		THROW_WITH_CONST_MSG("Provided nullptr param to " __FUNCTION__, invalid_argument);
-
+bool Controller::updateResizedImg(const IResizedImg &resizedImg_) {
+	const ResizedImg &paramVal = dynamic_cast<const ResizedImg&>(resizedImg_);
 	const bool result = !resizedImg ||
-		(dynamic_cast<const ResizedImg&>(*resizedImg) != dynamic_cast<const ResizedImg&>(*resizedImg_));
+		(dynamic_cast<const ResizedImg&>(*resizedImg) != paramVal);
 
 	if(result)
-		resizedImg = resizedImg_;
+		resizedImg = makeUnique<ResizedImg>(paramVal);
 	comp.setReference(resizedImg->get());
 	if(result)
 		comp.resize();
@@ -745,7 +743,7 @@ void CmapInspect::populateGrid(const ICmapPerspective::VPSymDataCItPair &itPair,
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
 				   content, grid, (int)fontSz,
-				   !cmapPresenter->areClustersUsed(),
+				   !cmapPresenter.areClustersUsed(),
 				   clusterOffsets, idxOfFirstSymFromPage);
 }
 
@@ -761,7 +759,7 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 				   fnNegSymExtractor,
 #endif // AI_REVIEWER_CHECK
 				   *unofficial, grid, (int)fontSz,
-				   !cmapPresenter->areClustersUsed());
+				   !cmapPresenter.areClustersUsed());
 
 	symsOn1stPage.clear(); // discard values now
 
@@ -781,16 +779,25 @@ void CmapInspect::showUnofficial1stPage(vector<const Mat> &symsOn1stPage,
 	}
 }
 
-CmapInspect::CmapInspect(std::sharedPtr<const IPresentCmap> cmapPresenter_,
-						 std::sharedPtr<const ISelectSymbols> symsSelector_,
+CmapInspect::CmapInspect(const IPresentCmap &cmapPresenter_,
+						 const ISelectSymbols &symsSelector_,
 						 const unsigned &fontSz_) :
 		CvWin(CmapInspectWinName),
 		cmapPresenter(cmapPresenter_), symsSelector(symsSelector_), fontSz(fontSz_) {
-	content = grid = createGrid();
 	extern const String CmapInspect_pageTrackName;
+	content = grid = createGrid();
+
+	/*
+	`CmapInspect::updatePageIdx` from below needs to work with a `void*` of actual type `ICmapInspect*`.
+	But, passing `reinterpret_cast<void*>(this)` will fail, since `this` is a `CmapInspect*`
+	and the actual address of `(ICmapInspect*)this` is different from `this`
+	because `ICmapInspect` isn't the top inherited interface.
+	*/
+	void * const thisAsICmapInspectPtr = reinterpret_cast<void*>((ICmapInspect*)this);
+
 	createTrackbar(CmapInspect_pageTrackName, winName, &page, 1, &CmapInspect::updatePageIdx,
-				   reinterpret_cast<void*>(this));
-	CmapInspect::updatePageIdx(page, reinterpret_cast<void*>(this)); // mandatory
+				   thisAsICmapInspectPtr);
+	CmapInspect::updatePageIdx(page, thisAsICmapInspectPtr); // mandatory call
 
 	setPos(424, 0);			// Place cmap window on x axis between 424..1064
 	permitResize(false);	// Ensure the user sees the symbols exactly their size
@@ -813,11 +820,11 @@ CmapInspect::CmapInspect(std::sharedPtr<const IPresentCmap> cmapPresenter_,
 			if(nullptr != psd)
 				pss->enlistSymbolForInvestigation(*psd);
 		}
-	}, reinterpret_cast<void*>(const_cast<ISelectSymbols*>(symsSelector.get())));
+	}, reinterpret_cast<void*>(const_cast<ISelectSymbols*>(&symsSelector)));
 
 #else // AI_REVIEWER_CHECK defined
 	// Let AI Reviewer know that following methods were used within the lambda above
-	ISelectSymbols *pss = const_cast<ISelectSymbols*>(symsSelector.get());
+	ISelectSymbols *pss = const_cast<ISelectSymbols*>(&symsSelector);
 	const ISymData *psd = pss->pointedSymbol(0, 0);
 	pss->displaySymCode(psd->getCode());
 	pss->symbolsReadyToInvestigate();

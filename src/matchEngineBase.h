@@ -42,8 +42,6 @@
 #pragma warning ( push, 0 )
 
 #include "std_string.h"
-#include "std_memory.h"
-#include <vector>
 
 #pragma warning ( pop )
 
@@ -80,8 +78,6 @@ struct IMatchEngine /*abstract*/ {
 	virtual const bool& isClusteringUseful() const = 0; ///< Clustering should be avoided when the obtained clusters are really small
 
 	virtual IMatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) = 0;		///< setting the symbols monitor
-
-	virtual const std::vector<std::sharedPtr<MatchAspect>>& availMatchAspects() const = 0;	///< all the available aspects
 
 	virtual ~IMatchEngine() = 0 {}
 };

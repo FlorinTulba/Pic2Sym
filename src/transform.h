@@ -71,7 +71,7 @@ struct IController;
 class Transformer : public ITransformer {
 protected:
 	IController &ctrler;	///< controller
-	std::sharedPtr<IPicTransformProgressTracker> ptpt;	///< image transformation management from the controller
+	IPicTransformProgressTracker &ptpt;	///< image transformation management from the controller
 	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
 
 	const ISettings &cfg;		///< general configuration
@@ -84,7 +84,8 @@ protected:
 	cv::Mat resized;			///< resized version of the original
 	cv::Mat resizedBlurred;		///< blurred version of the resized original
 
-	std::vector<std::vector<std::uniquePtr<IBestMatch>>> draftMatches;	///< temporary best matches
+	/// temporary best matches
+	std::vector<std::vector<const std::uniquePtr<IBestMatch>>> draftMatches;
 
 	// Keep this after previous fields, as it depends on them
 	std::uniquePtr<ITransformSupport> transformSupport;	///< initializes and updates draft matches

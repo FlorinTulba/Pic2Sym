@@ -118,8 +118,8 @@ can be browsed using the page slider.
 */
 class CmapInspect : public CvWin, public virtual ICmapInspect {
 protected:
-	std::sharedPtr<const IPresentCmap> cmapPresenter;	///< presents the cmap window
-	std::sharedPtr<const ISelectSymbols> symsSelector;	///< allows saving a selection of symbols
+	const IPresentCmap &cmapPresenter;	///< presents the cmap window
+	const ISelectSymbols &symsSelector;	///< allows saving a selection of symbols
 
 	cv::Mat grid;				///< the symbols' `hive`
 	int page = 0;				///< page slider position
@@ -147,8 +147,8 @@ protected:
 					  unsigned idxOfFirstSymFromPage);
 
 public:
-	CmapInspect(std::sharedPtr<const IPresentCmap> cmapPresenter_,
-				std::sharedPtr<const ISelectSymbols> symsSelector_,
+	CmapInspect(const IPresentCmap &cmapPresenter_,
+				const ISelectSymbols& symsSelector_,
 				const unsigned &fontSz_);
 	void operator=(const CmapInspect&) = delete;
 

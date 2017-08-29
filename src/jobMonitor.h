@@ -68,7 +68,7 @@ protected:
 					contribStart(contribStart_), totalContrib(totalContrib_) {}
 	};
 
-	std::sharedPtr<IProgressNotifier> notifier;	///< needed for reporting the progress of the job to the user
+	const std::uniquePtr<IProgressNotifier> notifier; ///< needed for reporting the progress of the job to the user
 	double minProgressForNotifications;	///< how frequent should be the user notifications (ex.: 0.05 for reporting only every 5%)
 
 	/**
@@ -95,7 +95,7 @@ public:
 	Provides the job with its name, a notifier that informs the user about the progress and
 	the minimum threshold for how frequent the user notifications should be issued.
 	*/
-	JobMonitor(const std::stringType &monitoredActivity, std::sharedPtr<IProgressNotifier> userNotifier_,
+	JobMonitor(const std::stringType &monitoredActivity, std::uniquePtr<IProgressNotifier> userNotifier_,
 			   double minProgressForUserNotifications_);
 	void operator=(const JobMonitor&) = delete;
 

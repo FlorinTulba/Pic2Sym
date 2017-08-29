@@ -54,6 +54,7 @@ struct ISymData;
 class CachedData;
 struct IMatchParamsRW;
 struct IMatchParams;
+struct MatchAspectsFactory;
 
 /**
 Base class for all considered aspects of matching.
@@ -124,8 +125,8 @@ public:
 	protected: \
 		static const std::stringType NAME;				/** aspect's name */ \
 		static const NameRegistrator nameRegistrator;	/** Instance that registers this Aspect */ \
-		/** '_Ref_count_obj' helps 'make_shared' create the object to point to */ \
-		friend class std::_Ref_count_obj<AspectName>
+		/** static method 'MatchAspectsFactory::create(...)` creates unique_ptr<AspectName> */ \
+		friend struct MatchAspectsFactory;
 
 /// Place this call in a SOURCE file, to define the entities declared by REGISTER_MATCH_ASPECT
 /// This is the definition of 'nameRegistrator'.

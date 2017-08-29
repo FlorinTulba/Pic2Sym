@@ -60,8 +60,8 @@ struct IPmsCont;
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine : public IFontEngine {
 protected:
-	std::sharedPtr<const IUpdateSymSettings> symSettingsUpdater;		///< symbol settings updating aspect of the Controller
-	const std::sharedPtr<const IPresentCmap> &cmapPresenter;					///< cmap presenting aspect of the Controller
+	const IUpdateSymSettings& symSettingsUpdater;				///< symbol settings updating aspect of the Controller
+	const std::uniquePtr<const IPresentCmap> &cmapPresenter;	///< cmap presenting aspect of the Controller
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;

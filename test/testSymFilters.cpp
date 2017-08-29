@@ -92,7 +92,7 @@ namespace ut {
 	@param misfiltered vector of pointers to misfiltered PixMapSym objects
 	*/
 	void showMisfiltered(const string &testTitle,
-						 const vector<std::shared_ptr<PixMapSym>> &misfiltered);
+						 const vector<const std::unique_ptr<const IPixMapSym>> &misfiltered);
 
 	/**
 	TestSymFilter performs unit testing for symbol filter of class SymFilterType.
@@ -127,7 +127,7 @@ namespace ut {
 			loadSymsSelection(pathForCateg, symsToTest);
 
 			const unsigned symsCount = (unsigned)symsToTest.size();
-			vector<std::shared_ptr<PixMapSym>> wrongCateg; // keep pointers to miscategorized symbols
+			vector<const std::unique_ptr<const IPixMapSym>> wrongCateg; // keep pointers to miscategorized symbols
 
 			// compute max-span consec and revConsec needed below by SymFilterCache objects
 			extern const unsigned Settings_MAX_FONT_SIZE;
@@ -141,14 +141,14 @@ namespace ut {
 				SymFilterCache sfc; sfc.setFontSz(rows); sfc.setBoundingBox(rows, rows);
 
 				const vector<unsigned char> symData(BOUNDS_FOR_ITEM_TYPE(symMat, unsigned char));
-				std::shared_ptr<PixMapSym> pms =
-					std::make_shared<PixMapSym>(symData,
+				std::unique_ptr<const PixMapSym> pms =
+					std::make_unique<const PixMapSym>(symData,
 						consec.colRange(Range(0, rows)), // take only rows values from [rev]consec
 						revConsec.rowRange(Range(Settings_MAX_FONT_SIZE-rows, Settings_MAX_FONT_SIZE)));
 
 				const bool isDisposable = filteringEnabled && SymFilterType::isDisposable(*pms, sfc);
 				if(disposableCateg != isDisposable)
-					wrongCateg.push_back(pms); // found new miscategorized symbol
+					wrongCateg.push_back(std::move(pms)); // found new miscategorized symbol
 			}
 
 			if(wrongCateg.empty())

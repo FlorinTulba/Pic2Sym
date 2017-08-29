@@ -37,15 +37,10 @@
  ***********************************************************************************************/
 
 #include "fontErrorsHelper.h"
-#include "warnings.h"
-
-/// Pair describing a FreeType error - the code and the string message
-struct FtError {
-	const char* msg;	///< error message
-	int code;			///< error code
-};
 
 #ifndef AI_REVIEWER_CHECK
+
+#include "warnings.h"
 
 #pragma warning ( push, 0 )
 
@@ -62,42 +57,52 @@ struct FtError {
 
 #endif // AI_REVIEWER_CHECK not defined
 
-static std::vector<const std::stringType>&& initFtErrors() {
+namespace {
+
+	/// Pair describing a FreeType error - the code and the string message
+	struct FtError {
+		const char* msg;	///< error message
+		int code;			///< error code
+	};
+
+	/// Initializes the vector of FreeType error strings
+	static const std::vector<const std::stringType>& initFtErrors() {
+#pragma warning ( disable : WARN_THREAD_UNSAFE )
+		static std::vector<const std::stringType> _FtErrors;
+		static bool initilized = false;
+#pragma warning ( default : WARN_THREAD_UNSAFE )
 
 #ifndef AI_REVIEWER_CHECK
-	const FtError ft_errors[] =
+		if(!initilized) {
+			const FtError ft_errors[] =
 #pragma warning ( push, 0 )
 #	include FT_ERRORS_H
 #pragma warning ( pop )
 
-	int maxErrCode = INT_MIN;
-	for(const FtError &err : ft_errors) {
-		if(err.code > maxErrCode)
-			maxErrCode = err.code;
-	}
+			int maxErrCode = INT_MIN;
+			for(const FtError &err : ft_errors) {
+				if(err.code > maxErrCode)
+					maxErrCode = err.code;
+			}
 
-	using namespace std;
+			_FtErrors.resize(size_t(maxErrCode + 1));
 
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static vector<const stringType> _FtErrors(size_t(maxErrCode + 1));
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+			for(const FtError &err : ft_errors) {
+				if(err.msg != nullptr)
+					_FtErrors[(size_t)err.code] = err.msg;
+			}
 
-	for(const FtError &err : ft_errors) {
-		if(err.msg != nullptr)
-			_FtErrors[(size_t)err.code] = err.msg;
-	}
+			for(int i = 0; i <= maxErrCode; ++i) {
+				if(_FtErrors[(size_t)i].empty())
+					_FtErrors[(size_t)i] = std::to_string(i);
+			}
 
-	for(int i = 0; i <= maxErrCode; ++i) {
-		if(_FtErrors[(size_t)i].empty())
-			_FtErrors[(size_t)i] = to_string(i);
-	}
-
-	return std::move(_FtErrors);
-
-#else // AI_REVIEWER_CHECK defined
-	return std::move(std::vector<const std::stringType>());
+			initilized = true;
+		}
 #endif // AI_REVIEWER_CHECK
-}
 
-using namespace std;
-const vector<const stringType> FtErrors(initFtErrors());
+		return _FtErrors;
+	}
+} // anonymous namespace
+
+const std::vector<const std::stringType> &FtErrors = initFtErrors();

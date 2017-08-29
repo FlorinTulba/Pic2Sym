@@ -115,6 +115,6 @@ struct ISymData /*abstract*/ {
 };
 
 /// VSymData - vector with most information about each symbol
-typedef std::vector<std::uniquePtr<const ISymData>> VSymData;
+typedef std::vector<const std::uniquePtr<const ISymData>> VSymData;
 
 #endif // H_SYM_DATA_BASE

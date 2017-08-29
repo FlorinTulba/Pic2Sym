@@ -50,14 +50,14 @@ using namespace cv;
 extern const bool UsingOMP;
 static MatchProgress dummy;
 
-void TransformSupport::initDraftRow(vector<vector<uniquePtr<IBestMatch>>> &draft,
+void TransformSupport::initDraftRow(vector<vector<const uniquePtr<IBestMatch>>> &draft,
 									int r, unsigned patchesPerRow,
 									const Mat &res, const Mat &resBlurred,
 									int patchSz, bool isColor) {
 	const int row = r * patchSz;
 	const Range rowRange(row, row + patchSz);
 
-	vector<uniquePtr<IBestMatch>> &draftMatchesRow = draft[(size_t)r]; draftMatchesRow.reserve(patchesPerRow);
+	vector<const uniquePtr<IBestMatch>> &draftMatchesRow = draft[(size_t)r]; draftMatchesRow.reserve(patchesPerRow);
 	for(int c = 0, cLim = (int)patchesPerRow * patchSz; c < cLim; c += patchSz) {
 		const Range colRange(c, c+patchSz);
 		const Mat patch(res, rowRange, colRange),
@@ -68,9 +68,9 @@ void TransformSupport::initDraftRow(vector<vector<uniquePtr<IBestMatch>>> &draft
 	}
 }
 
-void TransformSupport::resetDraftRow(vector<vector<uniquePtr<IBestMatch>>> &draft, int r) {
-	vector<uniquePtr<IBestMatch>> &draftMatchesRow = draft[(size_t)r];
-	for(uniquePtr<IBestMatch> &draftMatch : draftMatchesRow)
+void TransformSupport::resetDraftRow(vector<vector<const uniquePtr<IBestMatch>>> &draft, int r) {
+	vector<const uniquePtr<IBestMatch>> &draftMatchesRow = draft[(size_t)r];
+	for(const uniquePtr<IBestMatch> &draftMatch : draftMatchesRow)
 		draftMatch->reset(); // leave nothing but the Patch field
 }
 
@@ -94,7 +94,7 @@ bool TransformSupport::checkUnifPatch(IBestMatch &draftMatch) {
 
 TransformSupport::TransformSupport(IMatchEngine &me_, const IMatchSettings &matchSettings_,
 								   Mat &resized_, Mat &resizedBlurred_,
-								   vector<vector<uniquePtr<IBestMatch>>> &draftMatches_) :
+								   vector<vector<const uniquePtr<IBestMatch>>> &draftMatches_) :
 	me(me_), matchSettings(matchSettings_),
 	resized(resized_), resizedBlurred(resizedBlurred_),
 	draftMatches(draftMatches_) {}
@@ -120,7 +120,7 @@ void TransformSupport::approxRow(int r, int width, unsigned patchSz,
 								 unsigned fromSymIdx, unsigned upperSymIdx, Mat &result) {
 	const int row = r * (int)patchSz;
 	const Range rowRange(row, row + (int)patchSz);
-	const vector<uniquePtr<IBestMatch>> &draftMatchesRow = draftMatches[(size_t)r];
+	const vector<const uniquePtr<IBestMatch>> &draftMatchesRow = draftMatches[(size_t)r];
 
 	for(int c = 0, patchColumn = 0; c < width; c += (int)patchSz, ++patchColumn) {
 		// Skip patches who appear rather uniform

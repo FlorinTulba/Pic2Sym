@@ -77,7 +77,7 @@ struct IPreselManager /*abstract*/ {
 																	 const IMatchSettings &matchSettings,
 																	 cv::Mat &resized,
 																	 cv::Mat &resizedBlurred,
-																	 std::vector<std::vector<std::uniquePtr<IBestMatch>>> &draftMatches,
+																	 std::vector<std::vector<const std::uniquePtr<IBestMatch>>> &draftMatches,
 																	 IMatchSupport &matchSupport) const = 0;
 
 	virtual ~IPreselManager() = 0 {}

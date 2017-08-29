@@ -45,28 +45,28 @@ namespace { // Anonymous namespace
 	/// Actions for start & stop chronometer while timing the approximation of the picture
 	class TimerActions : public ITimerActions {
 	protected:
-		std::sharedPtr<IPicTransformProgressTracker> ptpt;
+		IPicTransformProgressTracker &ptpt;
 
 	public:
-		TimerActions(std::sharedPtr<IPicTransformProgressTracker> ptpt_) : ptpt(ptpt_) {}
+		TimerActions(IPicTransformProgressTracker &ptpt_) : ptpt(ptpt_) {}
 		void operator=(const TimerActions&) = delete;
 
 		/// Action to be performed when the timer is started
 		void onStart() override {
-			ptpt->reportTransformationProgress(0.);
+			ptpt.reportTransformationProgress(0.);
 		}
 
 		/// action to be performed when the timer is released/deleted
 		/// @param elapsedS total elapsed time in seconds
 		void onRelease(double elapsedS) override {
-			ptpt->reportTransformationProgress(1.);
-			ptpt->presentTransformationResults(elapsedS);
+			ptpt.reportTransformationProgress(1.);
+			ptpt.presentTransformationResults(elapsedS);
 		}
 
 		/// action to be performed when the timer is canceled
 		/// @param reason explanation for cancellation
 		void onCancel(const std::stringType &reason = "") override {
-			ptpt->reportTransformationProgress(1., true);
+			ptpt.reportTransformationProgress(1., true);
 			infoMsg(reason);
 		}
 	};

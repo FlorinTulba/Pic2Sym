@@ -79,7 +79,7 @@ using namespace boost::archive;
 
 ControlPanelActions::ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
 										 IFontEngine &fe_, const MatchAssessor &ma_, ITransformer &t_,
-										 IComparator &comp_, std::sharedPtr<ICmapInspect> &pCmi_) :
+										 IComparator &comp_, const std::uniquePtr<ICmapInspect> &pCmi_) :
 	ctrler(ctrler_), cfg(cfg_), fe(fe_),
 	ma(const_cast<MatchAssessor&>(ma_)), // match aspects might get enabled/disabled by the corresponding sliders 
 	t(t_), img(getImg()),
@@ -147,7 +147,7 @@ IControlPanel& ControlPanelActions::getControlPanel(ISettingsRW &cfg_) {
 
 void ControlPanelActions::restoreUserDefaultMatchSettings() {
 	extern const cv::String ControlPanel_restoreDefaultsLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_restoreDefaultsLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_restoreDefaultsLabel);
 	if(nullptr == permit)
 		return;
 
@@ -161,7 +161,7 @@ void ControlPanelActions::restoreUserDefaultMatchSettings() {
 
 void ControlPanelActions::setUserDefaultMatchSettings() const {
 	extern const cv::String ControlPanel_saveAsDefaultsLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_saveAsDefaultsLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_saveAsDefaultsLabel);
 	if(nullptr == permit)
 		return;
 
@@ -172,7 +172,7 @@ void ControlPanelActions::setUserDefaultMatchSettings() const {
 
 bool ControlPanelActions::loadSettings(const stringType &from/* = ""*/) {
 	extern const cv::String ControlPanel_loadSettingsLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_loadSettingsLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_loadSettingsLabel);
 	if(nullptr == permit)
 		return false;
 
@@ -254,7 +254,7 @@ bool ControlPanelActions::loadSettings(const stringType &from/* = ""*/) {
 
 void ControlPanelActions::saveSettings() const {
 	extern const cv::String ControlPanel_saveSettingsLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_saveSettingsLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_saveSettingsLabel);
 	if(nullptr == permit)
 		return;
 
@@ -302,7 +302,7 @@ unsigned ControlPanelActions::getFontEncodingIdx() const {
 
 bool ControlPanelActions::newImage(const stringType &imgPath, bool silent/* = false*/) {
 	extern const cv::String ControlPanel_selectImgLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_selectImgLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_selectImgLabel);
 	if(nullptr == permit)
 		return false;
 
@@ -369,7 +369,7 @@ bool ControlPanelActions::_newFontFamily(const stringType &fontFile, bool forceU
 
 void ControlPanelActions::newFontFamily(const stringType &fontFile) {
 	extern const cv::String ControlPanel_selectFontLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_selectFontLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_selectFontLabel);
 	if(nullptr == permit)
 		return;
 
@@ -399,7 +399,7 @@ void ControlPanelActions::newFontEncoding(int encodingIdx) {
 		return;
 
 	extern const cv::String ControlPanel_encodingTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_encodingTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_encodingTrName);
 	if(nullptr == permit)
 		return;
 
@@ -470,7 +470,7 @@ bool ControlPanelActions::_newFontSize(int fontSz, bool forceUpdate/* = false*/)
 
 void ControlPanelActions::newFontSize(int fontSz) {
 	extern const cv::String ControlPanel_fontSzTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_fontSzTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_fontSzTrName);
 	if(nullptr == permit)
 		return;
 
@@ -490,7 +490,7 @@ void ControlPanelActions::newFontSize(int fontSz) {
 
 void ControlPanelActions::newSymsBatchSize(int symsBatchSz) {
 	extern const cv::String ControlPanel_symsBatchSzTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_symsBatchSzTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_symsBatchSzTrName);
 	if(nullptr == permit)
 		return;
 
@@ -501,7 +501,7 @@ void ControlPanelActions::newHmaxSyms(int maxSymbols) {
 	extern const cv::String ControlPanel_outWTrName;
 	extern const unsigned Settings_MIN_H_SYMS;
 
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_outWTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_outWTrName);
 	if(nullptr == permit)
 		return;
 
@@ -522,7 +522,7 @@ void ControlPanelActions::newVmaxSyms(int maxSymbols) {
 	extern const cv::String ControlPanel_outHTrName;
 	extern const unsigned Settings_MIN_V_SYMS;
 
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_outHTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_outHTrName);
 	if(nullptr == permit)
 		return;
 
@@ -541,7 +541,7 @@ void ControlPanelActions::newVmaxSyms(int maxSymbols) {
 
 void ControlPanelActions::setResultMode(bool hybrid) {
 	extern const cv::String ControlPanel_hybridResultTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_hybridResultTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_hybridResultTrName);
 	if(nullptr == permit)
 		return;
 
@@ -550,7 +550,7 @@ void ControlPanelActions::setResultMode(bool hybrid) {
 
 void ControlPanelActions::newThreshold4BlanksFactor(unsigned threshold) {
 	extern const cv::String ControlPanel_thresh4BlanksTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_thresh4BlanksTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_thresh4BlanksTrName);
 	if(nullptr == permit)
 		return;
 
@@ -570,7 +570,7 @@ void ControlPanelActions::newThreshold4BlanksFactor(unsigned threshold) {
 
 void ControlPanelActions::newContrastFactor(double k) {
 	extern const cv::String ControlPanel_moreContrastTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_moreContrastTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_moreContrastTrName);
 	if(nullptr == permit)
 		return;
 
@@ -579,7 +579,7 @@ void ControlPanelActions::newContrastFactor(double k) {
 
 void ControlPanelActions::newStructuralSimilarityFactor(double k) {
 	extern const cv::String ControlPanel_structuralSimTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_structuralSimTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_structuralSimTrName);
 	if(nullptr == permit)
 		return;
 
@@ -588,7 +588,7 @@ void ControlPanelActions::newStructuralSimilarityFactor(double k) {
 
 void ControlPanelActions::newUnderGlyphCorrectnessFactor(double k) {
 	extern const cv::String ControlPanel_underGlyphCorrectnessTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_underGlyphCorrectnessTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_underGlyphCorrectnessTrName);
 	if(nullptr == permit)
 		return;
 
@@ -597,7 +597,7 @@ void ControlPanelActions::newUnderGlyphCorrectnessFactor(double k) {
 
 void ControlPanelActions::newAsideGlyphCorrectnessFactor(double k) {
 	extern const cv::String ControlPanel_asideGlyphCorrectnessTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_asideGlyphCorrectnessTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_asideGlyphCorrectnessTrName);
 	if(nullptr == permit)
 		return;
 
@@ -606,7 +606,7 @@ void ControlPanelActions::newAsideGlyphCorrectnessFactor(double k) {
 
 void ControlPanelActions::newGlyphEdgeCorrectnessFactor(double k) {
 	extern const cv::String ControlPanel_glyphEdgeCorrectnessTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_glyphEdgeCorrectnessTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_glyphEdgeCorrectnessTrName);
 	if(nullptr == permit)
 		return;
 
@@ -615,7 +615,7 @@ void ControlPanelActions::newGlyphEdgeCorrectnessFactor(double k) {
 
 void ControlPanelActions::newDirectionalSmoothnessFactor(double k) {
 	extern const cv::String ControlPanel_directionTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_directionTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_directionTrName);
 	if(nullptr == permit)
 		return;
 
@@ -624,7 +624,7 @@ void ControlPanelActions::newDirectionalSmoothnessFactor(double k) {
 
 void ControlPanelActions::newGravitationalSmoothnessFactor(double k) {
 	extern const cv::String ControlPanel_gravityTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_gravityTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_gravityTrName);
 	if(nullptr == permit)
 		return;
 
@@ -633,7 +633,7 @@ void ControlPanelActions::newGravitationalSmoothnessFactor(double k) {
 
 void ControlPanelActions::newGlyphWeightFactor(double k) {
 	extern const cv::String ControlPanel_largerSymTrName;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_largerSymTrName);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_largerSymTrName);
 	if(nullptr == permit)
 		return;
 
@@ -644,7 +644,7 @@ void ControlPanelActions::newGlyphWeightFactor(double k) {
 
 bool ControlPanelActions::performTransformation(double *durationS/* = nullptr*/) {
 	extern const cv::String ControlPanel_transformImgLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_transformImgLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_transformImgLabel);
 	if(nullptr == permit)
 		return false;
 
@@ -661,7 +661,7 @@ bool ControlPanelActions::performTransformation(double *durationS/* = nullptr*/)
 
 void ControlPanelActions::showAboutDlg(const stringType &title, const wstringType &content) {
 	extern const String ControlPanel_aboutLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_aboutLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_aboutLabel);
 	if(nullptr == permit)
 		return;
 
@@ -671,7 +671,7 @@ void ControlPanelActions::showAboutDlg(const stringType &title, const wstringTyp
 
 void ControlPanelActions::showInstructionsDlg(const stringType &title, const wstringType &content) {
 	extern const String ControlPanel_instructionsLabel;
-	const uniquePtr<ActionPermit> permit = cp.actionDemand(ControlPanel_instructionsLabel);
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_instructionsLabel);
 	if(nullptr == permit)
 		return;
 

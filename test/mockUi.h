@@ -129,7 +129,7 @@ struct ActionPermit {};
 /// Interface of ControlPanel
 struct IControlPanel /*abstract*/ {
 	virtual void restoreSliderValue(...) = 0;
-	virtual std::uniquePtr<ActionPermit> actionDemand(...) = 0;
+	virtual std::unique_ptr<const ActionPermit> actionDemand(...) = 0;
 	virtual void updateEncodingsCount(...) = 0;
 	virtual bool encMaxHack() const = 0;
 	virtual void updateSymSettings(...) = 0;
@@ -147,7 +147,7 @@ public:
 	void updateMatchSettings(...) {}
 	void updateImgSettings(...) {}
 	void updateSymSettings(...) {}
-	std::unique_ptr<ActionPermit> actionDemand(...) { return std::move(std::make_unique<ActionPermit>()); }
+	std::unique_ptr<const ActionPermit> actionDemand(...) { return std::move(std::make_unique<const ActionPermit>()); }
 	void restoreSliderValue(...) {}
 };
 

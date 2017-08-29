@@ -135,22 +135,22 @@ namespace {
 
 		Settings s;
 		Controller c(s);
-		std::sharedPtr<IControlPanelActions> cpa = c.getControlPanelActions();
+		IControlPanelActions &cpa = c.getControlPanelActions();
 
-		if(!cpa->loadSettings(settingsPath)) {
+		if(!cpa.loadSettings(settingsPath)) {
 			cerr<<caseName<<"\tCouldn't load settings from `"<<settingsPath<<'`'<<endl;
 			return;
 		}
 
-		if(!cpa->newImage(imgPath, true)) {
+		if(!cpa.newImage(imgPath, true)) {
 			cerr<<caseName<<"\tCouldn't load the image `"<<imgPath<<'`'<<endl;
 			return;
 		}
 
-		cpa->newSymsBatchSize(0); // ensure no drafts
+		cpa.newSymsBatchSize(0); // ensure no drafts
 
 		double durationS;
-		if(!cpa->performTransformation(&durationS)) {
+		if(!cpa.performTransformation(&durationS)) {
 			cerr<<caseName<<"\tCouldn't start the transformation!"<<endl;
 			return;
 		}

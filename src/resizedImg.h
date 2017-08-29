@@ -57,6 +57,7 @@ public:
 	- The image must preserve its original aspect ratio and cannot become larger
 	*/
 	ResizedImg(const cv::Mat &source, const IfImgSettings &is, unsigned patchSz_);
+	ResizedImg(const ResizedImg&) = default;
 	void operator=(const ResizedImg&) = delete;
 
 	const cv::Mat& get() const override final { return res; }

@@ -203,7 +203,7 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) {
 	symsCount = 0U;
 	symsUnableToLoad.clear();
 
-	symSettingsUpdater->newFontEncoding(encName);
+	symSettingsUpdater.newFontEncoding(encName);
 
 	return true;
 }
@@ -275,7 +275,7 @@ bool FontEngine::newFont(const stringType &fontFile_) {
 	
 	setFace(face_, fontPath.string());
 	
-	symSettingsUpdater->newFontFile(fontFile_);
+	symSettingsUpdater.newFontFile(fontFile_);
 
 	return true;
 }

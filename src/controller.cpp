@@ -40,6 +40,7 @@
 #include "settingsBase.h"
 #include "symSettingsBase.h"
 #include "fontEngine.h"
+#include "match.h"
 #include "matchEngine.h"
 #include "matchParamsBase.h"
 #include "bestMatchBase.h"
@@ -53,6 +54,8 @@
 #include "clusterSupport.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"
+#include "presentCmapBase.h"
+#include "selectSymbolsBase.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -63,29 +66,34 @@
 
 using namespace std;
 
-std::sharedPtr<const IUpdateSymSettings> Controller::getUpdateSymSettings() const {
-	return updateSymSettings;
+const IUpdateSymSettings& Controller::getUpdateSymSettings() const {
+	assert(updateSymSettings);
+	return *updateSymSettings;
 }
 
-std::sharedPtr<const IGlyphsProgressTracker> Controller::getGlyphsProgressTracker() const {
-	return glyphsProgressTracker;
+const IGlyphsProgressTracker& Controller::getGlyphsProgressTracker() const {
+	assert(glyphsProgressTracker);
+	return *glyphsProgressTracker;
 }
 
-std::sharedPtr<IPicTransformProgressTracker> Controller::getPicTransformProgressTracker() {
-	return picTransformProgressTracker;
+IPicTransformProgressTracker& Controller::getPicTransformProgressTracker() {
+	assert(picTransformProgressTracker);
+	return *picTransformProgressTracker;
 }
 
-const std::sharedPtr<const IPresentCmap>& Controller::getPresentCmap() const {
+const std::uniquePtr<const IPresentCmap>& Controller::getPresentCmap() const {
+	// no assert(presentCmap) as this method is also called during Controller's construction within a cyclic dependency while the presentCmap is initialized
 	return presentCmap;
 }
 
 void Controller::ensureExistenceCmapInspect() {
 	if(!pCmi)
-		pCmi.reset(new CmapInspect(presentCmap, selectSymbols, getFontSize()));
+		pCmi.reset(new CmapInspect(*presentCmap, *selectSymbols, getFontSize()));
 }
 
-std::sharedPtr<IControlPanelActions> Controller::getControlPanelActions() {
-	return controlPanelActions;
+IControlPanelActions& Controller::getControlPanelActions() {
+	assert(controlPanelActions);
+	return *controlPanelActions;
 }
 
 const unsigned& Controller::getFontSize() const {

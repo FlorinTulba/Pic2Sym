@@ -65,7 +65,7 @@ Match manager based on the enabled matching aspects:
 class MatchAssessor /*abstract*/ {
 protected:
 	/// The available matching aspects, enabled or not
-	const std::vector<std::sharedPtr<MatchAspect>> *availAspects = nullptr;
+	const std::vector<const std::uniquePtr<const MatchAspect>> *availAspects = nullptr;
 
 	// matching aspects
 	std::vector<const MatchAspect*> enabledAspects;	///< the enabled aspects
@@ -80,7 +80,7 @@ protected:
 public:
 	virtual ~MatchAssessor() = 0 {}
 
-	MatchAssessor& availableAspects(const std::vector<std::sharedPtr<MatchAspect>> &availAspects_);
+	MatchAssessor& availableAspects(const std::vector<const std::uniquePtr<const MatchAspect>> &availAspects_);
 
 	void newlyEnabledMatchAspect();		///< increments enabledAspectsCount
 	void newlyDisabledMatchAspect();	///< decrements enabledAspectsCount

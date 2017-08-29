@@ -82,7 +82,7 @@ extern unsigned TinySymsSz();
 namespace {
 	/// Returns a configured instance of MatchAssessorNoSkip or MatchAssessorSkip,
 	/// depending on UseSkipMatchAspectsHeuristic
-	MatchAssessor& specializedInstance(const vector<std::sharedPtr<MatchAspect>> &availAspects_) {
+	MatchAssessor& specializedInstance(const vector<const std::uniquePtr<const MatchAspect>> &availAspects_) {
 		if(UseSkipMatchAspectsHeuristic) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
 			static MatchAssessorSkip instSkip;
@@ -137,7 +137,6 @@ MatchEngine::MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspecti
 			ce(makeUnique<ClusterEngine>(fe_, symsSet)),
 			matchSupport(IPreselManager::concrete().createMatchSupport(
 				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
-	std::sharedPtr<MatchAspect> aspect;
 	for(const stringType &aspectName: MatchAspect::aspectNames())
 		availAspects.push_back(MatchAspectsFactory::create(aspectName, cfg_.getMS()));
 
@@ -169,11 +168,11 @@ void MatchEngine::updateSymbols() {
 	for(int i = 0; i<symsCount; ++i) {
 		ompPrintf(PrepareMoreGlyphsAtOnce, "glyph %d", i);
 
-		// Computing SymData fields separately, to keep the critical emplace from below as short as possible
+		// Computing SymData fields separately, to keep the critical push_back from below as short as possible
 		uniquePtr<const ISymData> newSym = makeUnique<const SymData>(*rawSyms[(size_t)i], sz, false);
 
 #pragma omp critical // ordered instead of critical would be useful only for debugging
-		symsSet.emplace_back(move(newSym));
+		symsSet.push_back(move(newSym));
 
 		// #pragma omp master not allowed in for
 		if(omp_get_thread_num() == 0)
@@ -190,10 +189,6 @@ void MatchEngine::updateSymbols() {
 
 unsigned MatchEngine::getSymsCount() const {
 	return (unsigned)symsSet.size();
-}
-
-const vector<std::sharedPtr<MatchAspect>>& MatchEngine::availMatchAspects() const {
-	return availAspects;
 }
 
 const MatchAssessor& MatchEngine::assessor() const { 

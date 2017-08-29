@@ -69,13 +69,13 @@ protected:
 
 	const ICmapPerspective &cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
-	const std::sharedPtr<ICmapInspect> &pCmi;
+	const std::uniquePtr<ICmapInspect> &pCmi;	///< viewer of the Cmap
 
 public:
 	SelectSymbols(const IController &ctrler_,
 				  const IMatchEngine &me_,
 				  const ICmapPerspective &cmP_,
-				  const std::sharedPtr<ICmapInspect> &pCmi_);
+				  const std::uniquePtr<ICmapInspect> &pCmi_);
 
 	void operator=(const SelectSymbols&) = delete;
 

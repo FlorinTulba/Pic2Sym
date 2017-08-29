@@ -74,7 +74,7 @@ protected:
 	// Keep this below the fields, as it depends on them
 	std::uniquePtr<IMatchSupport> matchSupport; ///< cached data management
 
-	std::vector<std::sharedPtr<MatchAspect>> availAspects;	///< all the available aspects
+	std::vector<const std::uniquePtr<const MatchAspect>> availAspects;	///< all the available aspects
 
 public:
 	MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspective &cmP_);
@@ -104,8 +104,6 @@ public:
 	const bool& isClusteringUseful() const override; ///< Clustering should be avoided when the obtained clusters are really small
 
 	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) override;		///< setting the symbols monitor
-
-	const std::vector<std::sharedPtr<MatchAspect>>& availMatchAspects() const override;	///< all the available aspects
 };
 
 #endif // H_MATCH_ENGINE

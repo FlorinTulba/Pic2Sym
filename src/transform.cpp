@@ -198,12 +198,12 @@ struct ResultFileManager {
 /// In Debug mode (not UnitTesting), when the transformation wasn't canceled, log the parameters of the matches
 static void logDataForBestMatches(volatile bool &isCanceled,
 						   const stringType &studiedCase, unsigned sz, int h, int w, bool usesUnicode,
-						   const vector<vector<uniquePtr<IBestMatch>>> &draftMatches) {
+						   const vector<vector<const uniquePtr<IBestMatch>>> &draftMatches) {
 	if(isCanceled)
 		return;
 	TransformTrace tt(studiedCase, sz, usesUnicode); // log support (DEBUG mode only)
 	for(int r = 0; r<h; r += sz) {
-		const vector<uniquePtr<IBestMatch>> &draftRow = draftMatches[size_t((unsigned)r/sz)];
+		const vector<const uniquePtr<IBestMatch>> &draftRow = draftMatches[size_t((unsigned)r/sz)];
 		for(int c = 0; c<w; c += sz) {
 			const IBestMatch &draftMatch = *draftRow[size_t((unsigned)c/sz)];
 			tt.newEntry((unsigned)r, (unsigned)c, draftMatch); // log the data about best match (DEBUG mode only)
@@ -235,13 +235,13 @@ void Transformer::run() {
 	static TaskMonitor preparations("preparations of the timer, image, symbol sets and result", *transformMonitor);
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
-	Timer timer = ptpt->createTimerForImgTransform();
+	Timer timer = ptpt.createTimerForImgTransform();
 
 	try {
 		me.updateSymbols(); // throws for invalid cmap/size
 	} catch(TinySymsLoadingFailure &tslf) {
 		timer.invalidate();
-		ptpt->transformFailedToStart();
+		ptpt.transformFailedToStart();
 		tslf.informUser("Couldn't load the tiny versions of the selected font, "
 						"thus the transformation was aborted!");
 		return;
@@ -249,10 +249,9 @@ void Transformer::run() {
 
 	sz = cfg.getSS().getFontSz();
 	
-	std::sharedPtr<const ResizedImg> resizedImg =
-		std::makeShared<const ResizedImg>(img.original(), cfg.getIS(), sz); // throws when no image
+	const ResizedImg resizedImg(img.original(), cfg.getIS(), sz); // throws when no image
 	const bool newResizedImg = ctrler.updateResizedImg(resizedImg);
-	const Mat &resizedVersion = resizedImg->get();
+	const Mat &resizedVersion = resizedImg.get();
 	h = resizedVersion.rows; w = resizedVersion.cols;
 	updateStudiedCase(h, w);
 
@@ -267,7 +266,7 @@ void Transformer::run() {
 	symsCount = me.getSymsCount();
 
 	result = resizedBlurred.clone(); // initialize the result with a simple blur. Mandatory clone!
-	ptpt->presentTransformationResults(); // show the blur as draft result
+	ptpt.presentTransformationResults(); // show the blur as draft result
 
 	const double preparationsDuration = timer.elapsed(),
 
@@ -371,7 +370,7 @@ void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMon
 	// will display the result (final draft) and it will also report
 	// either the transformation duration or the fact that the transformation was canceled.
 	if(upperIdx < symsCount)
-		ptpt->presentTransformationResults();
+		ptpt.presentTransformationResults();
 }
 
 void Transformer::setSymsBatchSize(int symsBatchSz_) {

@@ -70,7 +70,7 @@ struct IControlPanel /*abstract*/ {
 
 	/// Authorizes the action of the control whose name is provided as parameter.
 	/// When the action isn't allowed returns nullptr.
-	virtual std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName) = 0;
+	virtual std::uniquePtr<const ActionPermit> actionDemand(const cv::String &controlName) = 0;
 
 	virtual void updateEncodingsCount(unsigned uniqueEncodings) = 0;	///< puts also the slider on 0
 	virtual bool encMaxHack() const = 0;		///< used for the hack above
@@ -101,7 +101,10 @@ protected:
 	- the addresses of the names of the sliders corresponding to the matching aspects
 	- the slider to/from value converter for each such slider
 	*/
-	static const std::map<const cv::String*, std::sharedPtr<const SliderConverter>>& slidersConverters();
+	static const std::map<
+						const cv::String*,
+						const std::uniquePtr<const SliderConverter>>&
+		slidersConverters();
 
 	IControlPanelActions &performer;	///< the delegate responsible to perform selected actions
 	const ISettings &cfg;				///< the settings, required to (re)initialize the sliders
@@ -175,7 +178,7 @@ public:
 
 	/// Authorizes the action of the control whose name is provided as parameter.
 	/// When the action isn't allowed returns nullptr.
-	std::uniquePtr<ActionPermit> actionDemand(const cv::String &controlName) override;
+	std::uniquePtr<const ActionPermit> actionDemand(const cv::String &controlName) override;
 
 	void updateEncodingsCount(unsigned uniqueEncodings) override;	///< puts also the slider on 0
 	bool encMaxHack() const override final { return updatingEncMax; }		///< used for the hack above

@@ -62,7 +62,7 @@ protected:
 	Img &img;			///< original image to process after resizing
 	IComparator &comp;	///< view for comparing original & result
 	IControlPanel &cp;	///< the configuration view
-	std::sharedPtr<ICmapInspect> &pCmi;
+	const std::uniquePtr<ICmapInspect> &pCmi;	///< viewer of the Cmap
 
 	// Validation flags
 	bool imageOk = false;		///< is there an image to be transformed (not set yet, so false)
@@ -83,7 +83,7 @@ public:
 
 	ControlPanelActions(IController &ctrler_, ISettingsRW &cfg_,
 						IFontEngine &fe_, const MatchAssessor &ma_, ITransformer &t_,
-						IComparator &comp_, std::sharedPtr<ICmapInspect> &pCmi_);
+						IComparator &comp_, const std::uniquePtr<ICmapInspect> &pCmi_);
 
 	void operator=(const ControlPanelActions&) = delete;
 
