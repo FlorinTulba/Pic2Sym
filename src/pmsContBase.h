@@ -43,7 +43,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <map>
+#include <unordered_map>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -60,7 +60,7 @@ struct IPmsCont /*abstract*/ {
 	virtual unsigned getDuplicatesCount() const = 0;///< how many duplicate symbols were within the charmap
 
 	/// Associations: filterId - count of detected syms
-	virtual const std::map<unsigned, unsigned>& getRemovableSymsByCateg() const = 0;
+	virtual const std::unordered_map<unsigned, unsigned>& getRemovableSymsByCateg() const = 0;
 
 	/// Max ratio for small symbols of glyph area / containing area
 	virtual double getCoverageOfSmallGlyphs() const = 0;

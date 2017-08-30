@@ -44,7 +44,7 @@
 #pragma warning ( push, 0 )
 
 #include "std_string.h"
-#include <map>
+#include <unordered_map>
 
 #pragma warning ( pop )
 
@@ -96,7 +96,8 @@ that will be initialized in varConfig.cpp unit like this:
 class BlurEngine : public IBlurEngine {
 protected:
 	/// Mapping type between blurTypes and corresponding configured blur instances
-	typedef std::map<const std::stringType, const IBlurEngine*> ConfiguredInstances;
+	typedef std::unordered_map<const std::stringType, const IBlurEngine*, std::hash<std::stringType>>
+		ConfiguredInstances;
 
 	/**
 	Derived classes register themselves like: configuredInstances().insert(blurType, configuredInst)

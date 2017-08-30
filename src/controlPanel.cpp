@@ -104,10 +104,10 @@ extern const wstringType ControlPanel_aboutText;
 extern const wstringType ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
-const map<const String*, const std::uniquePtr<const SliderConverter>>& 
+const unordered_map<const String*, const std::uniquePtr<const SliderConverter>>& 
 ControlPanel::slidersConverters() {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static map<const String*, const std::uniquePtr<const SliderConverter>> result;
+	static unordered_map<const String*, const std::uniquePtr<const SliderConverter>> result;
 	static bool initialized = false;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 	if(!initialized) {

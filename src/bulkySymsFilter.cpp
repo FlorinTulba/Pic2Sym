@@ -61,7 +61,7 @@ bool BulkySymsFilter::isDisposable(const IPixMapSym &pms, const SymFilterCache &
 	static const auto compErMaskSide = [] (unsigned fontSz) {
 		return max(3, (((int)fontSz/2) | 1));
 	};
-	static map<int, Mat> circleMasks;
+	static unordered_map<int, Mat> circleMasks;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 	if(min(pms.getRows(), pms.getCols()) < (unsigned)compErMaskSide(sfc.getSzU()))

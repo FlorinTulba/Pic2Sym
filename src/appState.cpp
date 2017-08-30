@@ -43,8 +43,8 @@
 
 #pragma warning ( push, 0 )
 
-#include <set>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 #include <sstream>
 #include <atomic>
 
@@ -79,20 +79,20 @@ extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 
 namespace {
-	const set<const String*> independentActions {
+	const unordered_set<const String*> independentActions {
 		&ControlPanel_aboutLabel,
 		&ControlPanel_instructionsLabel,
 		&ControlPanel_symsBatchSzTrName
 	};
 	const auto itEndIndepActions = independentActions.cend();
 
-	const set<const String*> imgSettingsSliders {
+	const unordered_set<const String*> imgSettingsSliders {
 		&ControlPanel_outWTrName,
 		&ControlPanel_outHTrName
 	};
 	const auto itEndImgSettSliders = imgSettingsSliders.cend();
 
-	const set<const String*> matchAspectsSliders {
+	const unordered_set<const String*> matchAspectsSliders {
 		&ControlPanel_hybridResultTrName,
 		&ControlPanel_structuralSimTrName,
 		&ControlPanel_underGlyphCorrectnessTrName,
@@ -107,7 +107,7 @@ namespace {
 	const auto itEndMatchAspSliders = matchAspectsSliders.cend();
 
 	// Pairs like: pointer to control's name plus a boolean stating whether the control is a slider or not
-	const map<const String*, bool> symSettingsControls {
+	const unordered_map<const String*, bool> symSettingsControls {
 		{ &ControlPanel_selectFontLabel, false },
 		{ &ControlPanel_encodingTrName, true },
 		{ &ControlPanel_fontSzTrName, true }
@@ -173,14 +173,14 @@ namespace {
 	struct UpdateSettingsParams {
 		IControlPanel &cp;
 		volatile AppStateType &appState;
-		set<const cv::String> &slidersRestoringValue;
-		const cv::String * const pLuckySliderName;
+		unordered_set<const String, hash<stringType>> &slidersRestoringValue;
+		const String * const pLuckySliderName;
 		const String &controlName;
 
 		UpdateSettingsParams(IControlPanel &cp_,
 							 volatile AppStateType &appState_,
-							 set<const cv::String> &slidersRestoringValue_,
-							 const cv::String * const pLuckySliderName_,
+							 unordered_set<const String, hash<stringType>> &slidersRestoringValue_,
+							 const String * const pLuckySliderName_,
 							 const String &controlName_) :
 			cp(cp_), appState(appState_), slidersRestoringValue(slidersRestoringValue_),
 			pLuckySliderName(pLuckySliderName_), controlName(controlName_) {}

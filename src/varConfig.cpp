@@ -46,7 +46,7 @@
 
 #pragma warning ( push, 0 )
 
-#include <set>
+#include <unordered_set>
 
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/algorithm/string/replace.hpp>
@@ -175,30 +175,34 @@ namespace {
 	/// Checks that the provided value for a configuration item is within a given set of accepted values.
 	template<class Type>
 	struct IsOneOf final : ConfigItemValidator<Type> {
-		IsOneOf(const set<Type> &allowedSet_) : allowedSet(allowedSet_), allowedSetStr(setAsString(allowedSet_)) {
+		IsOneOf(const unordered_set<Type> &allowedSet_) :
+				allowedSet(allowedSet_), allowedSetStr(setAsString(allowedSet_)) {
 			if(allowedSet_.empty())
 				THROW_WITH_CONST_MSG(__FUNCTION__ " should get a non-empty set of allowed values!", invalid_argument);
 		}
 		void operator=(const IsOneOf&) = delete;
 
 		void examine(const stringType &itemName, const Type &itemVal) const override final {
-			if(allowedSet.cend() == allowedSet.find(itemVal))
-				THROW_WITH_VAR_MSG("Configuration item '" + itemName +
-					"' needs to be among these values: " + allowedSetStr + "!", invalid_argument);
+			if(allowedSet.cend() == allowedSet.find(itemVal)) {
+				ostringstream oss;
+				oss<<"Configuration item '" << itemName
+					<<"' needs to be among these values: " << allowedSetStr << "!";
+				THROW_WITH_VAR_MSG(oss.str(), invalid_argument);
+			}
 		}
 
 	protected:
 		/// Helper to initialize allowedSetStr in initialization list
-		static const stringType setAsString(const set<Type> &allowedSet_) {
+		static const stringType setAsString(const unordered_set<Type> &allowedSet_) {
 			ostringstream oss;
 			for(const Type &v : allowedSet_)
-				oss<<(string)v<<", ";
+				oss<<v<<", ";
 			oss<<"\b\b ";
-			return oss.str();
+			return move(oss.str());
 		}
 
-		const set<Type> allowedSet;	///< allowed set of values
-		const stringType allowedSetStr;	///< same set in string format
+		const unordered_set<Type> allowedSet;	///< allowed set of values
+		const stringType allowedSetStr;			///< same set in string format
 	};
 
 	/// Checks that itemName's value (itemValue) is approved by all validators, in which case it returns it.

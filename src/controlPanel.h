@@ -50,8 +50,8 @@
 
 #include "std_string.h"
 #include "std_memory.h"
-#include <set>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 
 #include <opencv2/core/core.hpp>
 
@@ -101,7 +101,7 @@ protected:
 	- the addresses of the names of the sliders corresponding to the matching aspects
 	- the slider to/from value converter for each such slider
 	*/
-	static const std::map<
+	static const std::unordered_map<
 						const cv::String*,
 						const std::uniquePtr<const SliderConverter>>&
 		slidersConverters();
@@ -110,7 +110,7 @@ protected:
 	const ISettings &cfg;				///< the settings, required to (re)initialize the sliders
 
 	/// pointers to the names of the sliders that are undergoing value restoration
-	std::set<const cv::String> slidersRestoringValue;
+	std::unordered_set<const cv::String, std::hash<std::stringType>> slidersRestoringValue;
 
 	/**
 	When performing Load All Settings or only Load Match Aspects Settings, the corresponding sliders

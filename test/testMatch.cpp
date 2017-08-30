@@ -79,7 +79,7 @@ It's simpler than duplicating each test or using the BOOST_DATA_TEST_CASE approa
 #include <algorithm>
 #include <numeric>
 #include <iterator>
-#include <set>
+#include <unordered_set>
 
 #include <boost/optional/optional.hpp>
 #include <boost/optional/optional_io.hpp>
@@ -149,7 +149,7 @@ namespace ut {
 		int noise;
 		const unsigned twiceMaxAmplitude = ((unsigned)maxAmplitude0255)<<1;
 		int prevVal, below, above, newVal;
-		set<unsigned> affected;
+		unordered_set<unsigned> affected;
 		unsigned linearized;
 		div_t pos; // coordinate inside the Mat, expressed as quotient and remainder of linearized
 		for(int i = 0; i<affectedCount; ++i) {

@@ -62,7 +62,7 @@ protected:
 	*symFilter
 	*/
 	std::uniquePtr<ISymFilter> symFilter = std::makeUnique<DefSymFilter>();
-	std::map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
+	std::unordered_map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
 
 	double maxGlyphSum;				///< max sum of a glyph's pixels
 	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
@@ -92,7 +92,7 @@ public:
 	unsigned getFontSz() const override;
 	unsigned getBlanksCount() const override;
 	unsigned getDuplicatesCount() const override;
-	const std::map<unsigned, unsigned>& getRemovableSymsByCateg() const override;
+	const std::unordered_map<unsigned, unsigned>& getRemovableSymsByCateg() const override;
 	double getCoverageOfSmallGlyphs() const override;
 	const VPixMapSym& getSyms() const override;
 

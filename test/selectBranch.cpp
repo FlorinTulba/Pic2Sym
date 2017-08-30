@@ -41,7 +41,7 @@
 using namespace std;
 
 namespace ut {
-	set<string> forcedBranches {
+	unordered_set<string> forcedBranches {
 		// Add here each context name that need to force certain branches.
 		// The tests can further add / remove such context while they are running.
 	};

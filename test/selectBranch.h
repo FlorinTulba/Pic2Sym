@@ -41,12 +41,12 @@
 
 #include "study.h"
 
-#include <set>
+#include <unordered_set>
 
 namespace ut {
 	/// The names of the contexts that force certain branches from the code guarded by:
 	/// if((...) || prompt(question, context)) {desiredBranch;}
-	extern std::set<std::string> forcedBranches;
+	extern std::unordered_set<std::string> forcedBranches;
 }
 
 #endif // H_SELECT_BRANCH not defined

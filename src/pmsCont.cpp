@@ -90,7 +90,7 @@ unsigned PmsCont::getDuplicatesCount() const {
 	return duplicates;
 }
 
-const map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg() const {
+const unordered_map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg() const {
 	if(!ready)
 		THROW_WITH_CONST_MSG(__FUNCTION__  " cannot be called before setAsReady", logic_error);
 

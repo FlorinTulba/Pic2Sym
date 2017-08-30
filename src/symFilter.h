@@ -45,7 +45,7 @@
 
 #include "std_string.h"
 #include "std_memory.h"
-#include <map>
+#include <unordered_map>
 
 #pragma warning ( pop )
 
@@ -58,7 +58,7 @@ private: // SymFilter cannot be directly derived, except by the friend TSymFilte
 	template<class T> friend struct TSymFilter;
 
 	/// filterId - filterName associations
-	static std::map<unsigned, const std::stringType> filterTypes;
+	static std::unordered_map<unsigned, const std::stringType> filterTypes;
 
 	std::uniquePtr<ISymFilter> nextFilter;	///< null or a derivate from SymFilter
 	const unsigned filterId;				///< id of the filter

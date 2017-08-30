@@ -44,7 +44,7 @@
 #pragma warning ( push, 0 )
 
 #include <cassert>
-#include <map>
+#include <unordered_map>
 #include <regex>
 
 #include "boost_filesystem_operations.h"
@@ -192,17 +192,17 @@ namespace {
 		}
 
 		/// When ambiguous results, lets the user select the correct one.
-		static stringType extractResult(map<stringType, stringType> &choices) {
+		static stringType extractResult(unordered_map<stringType, stringType> &choices) {
 			assert(!choices.empty());
 
 			const size_t choicesCount = choices.size();
 			if(1ULL == choicesCount)
-				return choices.begin()->second;
+				return cbegin(choices)->second;
 
 			// More than 1 file suits the selected font and the user should choose the appropriate one
 			cout<<endl<<"More fonts within Windows Registry suit the selected Font type. Please select the appropriate one:"<<endl;
 			size_t idx = 0ULL;
-			for(const auto choice : choices)
+			for(const auto &choice : choices)
 				cout<<idx++<<" : "<<choice.first<<" -> "<<choice.second<<endl;
 
 			//idx is here choicesCount
@@ -211,7 +211,7 @@ namespace {
 				cin>>idx;
 			}
 
-			return next(choices.begin(), (ptrdiff_t)idx)->second;
+			return next(cbegin(choices), (ptrdiff_t)idx)->second;
 		}
 
 	public:
@@ -222,7 +222,7 @@ namespace {
 		*/
 		static stringType pathFor(const stringType &fontName, bool isBold, bool isItalic) {
 			wstringType wCurFontName, wCurFontFileName;
-			map<stringType, stringType> choices;
+			unordered_map<stringType, stringType> choices;
 			wstringType wFontName(CBOUNDS(fontName));
 
 			RegistryHelper rh;

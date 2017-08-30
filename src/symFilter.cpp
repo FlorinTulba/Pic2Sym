@@ -43,20 +43,20 @@
 
 #pragma warning ( push, 0 )
 
-#include <set>
+#include <unordered_set>
 
 #pragma warning ( pop )
 
 using namespace std;
 
-map<unsigned, const stringType> SymFilter::filterTypes;
+unordered_map<unsigned, const stringType> SymFilter::filterTypes;
 
 SymFilter::SymFilter(unsigned filterId_, const stringType &filterName,
 					 uniquePtr<ISymFilter> nextFilter_) : ISymFilter(),
 				nextFilter(nextFilter_ ? std::move(nextFilter_) : makeUnique<DefSymFilter>()),
 				filterId(filterId_) {
 #pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static set<const stringType> filterNames;
+	static unordered_set<const stringType, hash<stringType>> filterNames;
 #pragma warning ( default : WARN_THREAD_UNSAFE )
 
 #ifndef UNIT_TESTING

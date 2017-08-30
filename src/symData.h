@@ -45,7 +45,7 @@
 #pragma warning ( push, 0 )
 
 #ifdef UNIT_TESTING
-#	include <map>
+#	include <unordered_map>
 #endif // UNIT_TESTING defined
 
 #ifndef AI_REVIEWER_CHECK
@@ -183,7 +183,7 @@ public:
 	}
 
 #ifdef UNIT_TESTING
-	typedef std::map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
+	typedef std::unordered_map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
 	/// Constructor that allows filling only the relevant matrices from MatArray
 	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
