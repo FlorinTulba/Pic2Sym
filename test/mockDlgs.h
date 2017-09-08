@@ -53,7 +53,7 @@
 // Dlg is the base class for the standard Windows dialogs from below
 class Dlg /*abstract*/ {
 protected:
-	Dlg() {}
+	Dlg() = default;
 
 public:
 	bool promptForUserChoice() { return true; }

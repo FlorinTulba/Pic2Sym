@@ -38,6 +38,7 @@
 
 #include "picTransformProgressTracker.h"
 #include "controlPanelActions.h"
+#include "controllerBase.h"
 
 using namespace std;
 
@@ -81,7 +82,7 @@ Timer PicTransformProgressTracker::createTimerForImgTransform() const {
 #ifndef UNIT_TESTING
 
 void PicTransformProgressTracker::transformFailedToStart() {
-	(dynamic_cast<IControlPanelActions&>(ctrler)).invalidateFont();
+	ctrler.getControlPanelActions().invalidateFont();
 }
 
 void PicTransformProgressTracker::reportTransformationProgress(double progress, bool showDraft/* = false*/) const {

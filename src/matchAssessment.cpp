@@ -51,8 +51,6 @@ MatchAssessor& MatchAssessor::availableAspects(const vector<const std::uniquePtr
 	return *this;
 }
 
-MatchAssessor::MatchAssessor() {}
-
 void MatchAssessor::newlyEnabledMatchAspect() {
 	enabledAspectsCountM1 = enabledAspectsCount++;
 }

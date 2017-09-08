@@ -57,7 +57,7 @@ protected:
 	std::set<unsigned> clusterOffsets;	///< offsets of the clusters, considering pSyms
 
 public:
-	CmapPerspective() {}
+	CmapPerspective() = default;
 
 	CmapPerspective(const CmapPerspective&) = delete;
 	CmapPerspective(CmapPerspective&&) = delete;

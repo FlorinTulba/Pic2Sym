@@ -76,7 +76,7 @@ protected:
 	/// indices for each unique Encoding within cmaps array
 	boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
-	std::uniquePtr<IPmsCont> symsCont;				///< Container with the PixMapSym-s of current charmap
+	const std::uniquePtr<IPmsCont> symsCont;				///< Container with the PixMapSym-s of current charmap
 	std::unordered_set<FT_ULong> symsUnableToLoad;	///< indices of the symbols that couldn't be loaded
 
 	unsigned encodingIndex = 0U;	///< the index of the selected cmap within face's charmaps array

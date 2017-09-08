@@ -55,10 +55,10 @@ class SliderConvParams /*abstract*/ {
 protected:
 	int maxSlider; ///< largest slider value (at least 1)
 
-public:
-	/// Ensure a positive maxSlider field 
+	/// Ensure a positive maxSlider field
 	SliderConvParams(int maxSlider_) : maxSlider((maxSlider_<1) ? 1 : maxSlider_) {}
 
+public:
 	inline int getMaxSlider() const { return maxSlider; }
 
 	virtual ~SliderConvParams() = 0 {}
@@ -67,15 +67,15 @@ public:
 /// Base class for performing conversions from and to slider range
 class SliderConverter /*abstract*/ {
 protected:
-	std::uniquePtr<const SliderConvParams> sp; ///< parameters required for interpreting/generating slider values
+	const std::uniquePtr<const SliderConvParams> sp; ///< parameters required for interpreting/generating slider values
 
-public:
 	/// Take ownership of the parameter
 	SliderConverter(std::uniquePtr<const SliderConvParams> sp_) : sp(std::move(sp_)) {}
 
 	SliderConverter(const SliderConverter&) = delete;
 	void operator=(const SliderConverter&) = delete;
 
+public:
 	virtual double fromSlider(int sliderPos) const = 0;
 	virtual int toSlider(double actualValue) const = 0;
 

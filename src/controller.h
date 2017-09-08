@@ -40,7 +40,6 @@
 #define H_CONTROLLER
 
 #include "controllerBase.h"
-#include "cmapPerspective.h"
 #include "updateSymsActions.h"
 
 #pragma warning ( push, 0 )
@@ -55,12 +54,12 @@ struct IMatchEngine;
 struct ISettings;
 struct ISettingsRW;
 struct ISymSettings;
-class Img;
 class AbsJobMonitor;
 struct ITransformCompletion;
 struct ITransformer;
 struct IComparator;
 struct ICmapInspect;
+struct ICmapPerspective;
 struct ISelectSymbols;
 
 /**
@@ -117,27 +116,27 @@ C.	Aggregation of 2 providers for the interfaces for the 2 smallest groups of me
 class Controller : public IController {
 protected:
 	/// Responsible of updating symbol settings
-	std::uniquePtr<const IUpdateSymSettings> updateSymSettings;
+	const std::uniquePtr<const IUpdateSymSettings> updateSymSettings;
 	
 	/// Responsible for keeping track of the symbols loading process
-	std::uniquePtr<const IGlyphsProgressTracker> glyphsProgressTracker;
+	const std::uniquePtr<const IGlyphsProgressTracker> glyphsProgressTracker;
 
 	/// Responsible for monitoring the progress during an image transformation
-	std::uniquePtr<IPicTransformProgressTracker> picTransformProgressTracker;
+	const std::uniquePtr<IPicTransformProgressTracker> picTransformProgressTracker;
 
 
 	// Control of displayed progress
-	std::uniquePtr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
-	std::uniquePtr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
+	const std::uniquePtr<AbsJobMonitor> glyphsUpdateMonitor;	///< in charge of displaying the progress while updating the glyphs
+	const std::uniquePtr<AbsJobMonitor> imgTransformMonitor;	///< in charge of displaying the progress while transforming images
 
-	CmapPerspective cmP;	///< reorganized symbols to be visualized within the cmap viewer
+	const std::uniquePtr<ICmapPerspective> cmP;	///< reorganized symbols to be visualized within the cmap viewer
 
 	/**
 	Provides read-only access to Cmap data.
 	Needed by 'fe' from below.
 	Uses 'me' from below and 'cmP' from above
 	*/
-	std::uniquePtr<const IPresentCmap> presentCmap;
+	const std::uniquePtr<const IPresentCmap> presentCmap;
 
 	// Data
 	/// pointer to the resized version of most recent image that had to be transformed
@@ -152,10 +151,10 @@ protected:
 	std::uniquePtr<ICmapInspect> pCmi;	///< view for inspecting the used cmap
 
 	/// Allows saving a selection of symbols pointed within the charmap viewer
-	std::uniquePtr<const ISelectSymbols> selectSymbols;
+	const std::uniquePtr<const ISelectSymbols> selectSymbols;
 
 	/// Responsible for the actions triggered by the controls from Control Panel
-	std::uniquePtr<IControlPanelActions> controlPanelActions;
+	const std::uniquePtr<IControlPanelActions> controlPanelActions;
 
 	// synchronization items necessary while updating symbols
 	mutable LockFreeQueue updateSymsActionsQueue;

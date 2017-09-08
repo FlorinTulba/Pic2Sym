@@ -55,7 +55,7 @@ class ClusterEngine : public IClusterEngine {
 protected:
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
 	AbsJobMonitor *symsMonitor = nullptr;
-	std::uniquePtr<IClustersSupport> clusterSupport;	///< provided support from the preselection manager
+	const std::uniquePtr<IClustersSupport> clusterSupport;	///< provided support from the preselection manager
 
 	ClusterAlg &clustAlg;	///< algorithm used for clustering
 

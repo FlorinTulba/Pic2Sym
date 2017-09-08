@@ -73,7 +73,7 @@ protected:
 	size_t enabledAspectsCount = 0ULL;				///< count of the enabled aspects
 	size_t enabledAspectsCountM1 = (size_t)-1LL;	///< count of the enabled aspects minus 1
 
-	MatchAssessor();
+	MatchAssessor() = default;
 	MatchAssessor(const MatchAssessor&) = delete;
 	void operator=(const MatchAssessor&) = delete;
 

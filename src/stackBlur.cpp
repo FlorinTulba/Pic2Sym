@@ -75,7 +75,7 @@ class StackBlur::Impl {
 
 	unsigned r = 1U;	///< filter radius (valid range: 1..254)
 
-	Impl() {}
+	Impl() = default;
 
 	/// Reconfigure the filter through a new desired standard deviation
 	Impl& setSigma(double desiredSigma) {

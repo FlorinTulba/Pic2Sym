@@ -41,7 +41,14 @@
 
 #include "controlPanelActionsBase.h"
 
+#pragma warning ( push, 0 )
+
+#include "std_memory.h"
+
+#pragma warning ( pop )
+
 // Forward declarations
+struct IController;
 struct ISettingsRW;
 struct IFontEngine;
 class MatchAssessor;

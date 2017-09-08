@@ -64,7 +64,7 @@ class ExtBoxBlur::Impl {
 	double w;				///< values on the extension edges of the mask
 	double w1;				///< boxHeight - w
 
-	Impl() {}
+	Impl() = default;
 
 	/// Reconfigures the kernel
 	/// See http://www.mia.uni-saarland.de/Publications/gwosdek-ssvm11.pdf for details

@@ -47,7 +47,7 @@ Polymorphic as function of the value of PreselectionByTinySyms.
 */
 struct SymsSupport : public ISymsSupport {
 	/// Base class constructor
-	SymsSupport() {}
+	SymsSupport() = default;
 
 	SymsSupport(const SymsSupport&) = delete;
 	SymsSupport(SymsSupport&&) = delete;

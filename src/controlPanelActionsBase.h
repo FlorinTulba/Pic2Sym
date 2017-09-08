@@ -39,8 +39,6 @@
 #ifndef H_CONTROL_PANEL_ACTIONS_BASE
 #define H_CONTROL_PANEL_ACTIONS_BASE
 
-#include "controllerBase.h"
-
 #pragma warning ( push, 0 )
 
 #include "std_string.h"

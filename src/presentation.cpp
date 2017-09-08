@@ -43,7 +43,7 @@
 #include "transform.h"
 #include "imgBasicData.h"
 #include "resizedImg.h"
-#include "updateSymSettings.h"
+#include "updateSymSettingsBase.h"
 #include "glyphsProgressTracker.h"
 #include "picTransformProgressTracker.h"
 #include "selectSymbols.h"
@@ -52,8 +52,7 @@
 #include "imgSettingsBase.h"
 #include "symSettingsBase.h"
 #include "matchSettings.h"
-#include "jobMonitor.h"
-#include "progressNotifier.h"
+#include "jobMonitorBase.h"
 #include "matchEngine.h"
 #include "matchParamsBase.h"
 #include "matchAssessment.h"
@@ -61,7 +60,7 @@
 #include "updateSymsActions.h"
 #include "views.h"
 #include "symsLoadingFailure.h"
-#include "presentCmap.h"
+#include "presentCmapBase.h"
 
 #pragma warning ( push, 0 )
 
@@ -115,7 +114,6 @@ void viewMismatches(const stringType &testTitle, const Mat &mismatches) {
 	const stringType title(oss.str());
 
 	Comparator comp;
-	comp.setPos(0, 0);
 	comp.permitResize();
 	comp.resize(4+(int)ceil(cols*resizeFactor), 70+(int)ceil(rows*resizeFactor));
 	comp.setTitle(title.c_str());
@@ -157,65 +155,37 @@ void showUsage() {
 	pauseAfterError();
 }
 
-extern const stringType Controller_PREFIX_GLYPH_PROGRESS;
-
-namespace {
-	/// Adapter from IProgressNotifier to IGlyphsProgressTracker
-	struct SymsUpdateProgressNotifier : IProgressNotifier {
-		const IController &performer;
-
-		SymsUpdateProgressNotifier(const IController &performer_) : performer(performer_) {}
-		void operator=(const SymsUpdateProgressNotifier&) = delete;
-
-		void notifyUser(const std::stringType&, double progress) override {
-			performer.hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS, true); // async call
-		}
-	};
-
-	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
-	struct PicTransformProgressNotifier : IProgressNotifier {
-		const IPicTransformProgressTracker &performer;
-
-		PicTransformProgressNotifier(const IPicTransformProgressTracker &performer_) : performer(performer_) {}
-		void operator=(const PicTransformProgressNotifier&) = delete;
-
-		void notifyUser(const std::stringType&, double progress) override {
-			performer.reportTransformationProgress(progress);
-		}
-	};
-
-	/// Displays a histogram with the distribution of the weights of the symbols from the charmap
-	void viewSymWeightsHistogram(const VPixMapSym &theSyms) {
+/// Displays a histogram with the distribution of the weights of the symbols from the charmap
+static void viewSymWeightsHistogram(const VPixMapSym &theSyms) {
 #ifndef UNIT_TESTING
-		vector<double> symSums;
-		for(const uniquePtr<const IPixMapSym> &pms : theSyms)
-			symSums.push_back(pms->getAvgPixVal());
+	vector<double> symSums;
+	for(const uniquePtr<const IPixMapSym> &pms : theSyms)
+		symSums.push_back(pms->getAvgPixVal());
 
-		static const size_t MaxBinHeight = 256ULL;
-		const size_t binsCount = min(256ULL, symSums.size());
-		const double smallestSum = symSums.front(), largestSum = symSums.back(),
-			sumsSpan = largestSum - smallestSum;
-		vector<size_t> hist(binsCount, 0ULL);
-		const auto itBegin = symSums.cbegin();
-		ptrdiff_t prevCount = 0LL;
-		for(size_t bin = 0ULL; bin < binsCount; ++bin) {
-			const auto it = upper_bound(CBOUNDS(symSums), smallestSum + sumsSpan*(bin+1.)/binsCount);
-			const auto curCount = distance(itBegin, it);
-			hist[bin] = size_t(curCount - prevCount);
-			prevCount = curCount;
-		}
-		const double maxBinValue = (double)*max_element(CBOUNDS(hist));
-		for(size_t &binValue : hist)
-			binValue = (size_t)round(binValue * MaxBinHeight / maxBinValue);
-		Mat histImg((int)MaxBinHeight, (int)binsCount, CV_8UC1, Scalar(255U));
-		for(size_t bin = 0ULL; bin < binsCount; ++bin)
-			if(hist[bin] > 0ULL)
-				histImg.rowRange(int(MaxBinHeight-hist[bin]), (int)MaxBinHeight).col((int)bin) = 0U;
-		imshow("histogram", histImg);
-		waitKey(1);
-#endif // UNIT_TESTING not defined
+	static const size_t MaxBinHeight = 256ULL;
+	const size_t binsCount = min(256ULL, symSums.size());
+	const double smallestSum = symSums.front(), largestSum = symSums.back(),
+		sumsSpan = largestSum - smallestSum;
+	vector<size_t> hist(binsCount, 0ULL);
+	const auto itBegin = symSums.cbegin();
+	ptrdiff_t prevCount = 0LL;
+	for(size_t bin = 0ULL; bin < binsCount; ++bin) {
+		const auto it = upper_bound(CBOUNDS(symSums), smallestSum + sumsSpan*(bin+1.)/binsCount);
+		const auto curCount = distance(itBegin, it);
+		hist[bin] = size_t(curCount - prevCount);
+		prevCount = curCount;
 	}
-} // anonymous namespace
+	const double maxBinValue = (double)*max_element(CBOUNDS(hist));
+	for(size_t &binValue : hist)
+		binValue = (size_t)round(binValue * MaxBinHeight / maxBinValue);
+	Mat histImg((int)MaxBinHeight, (int)binsCount, CV_8UC1, Scalar(255U));
+	for(size_t bin = 0ULL; bin < binsCount; ++bin)
+		if(hist[bin] > 0ULL)
+			histImg.rowRange(int(MaxBinHeight-hist[bin]), (int)MaxBinHeight).col((int)bin) = 0U;
+	imshow("histogram", histImg);
+	waitKey(1);
+#endif // UNIT_TESTING not defined
+}
 
 stringType FontEngine::getFontType() {
 	ostringstream oss;
@@ -299,45 +269,6 @@ void MatchAssessorSkip::reportSkippedAspects() const {
 }
 
 #endif // MONITOR_SKIPPED_MATCHING_ASPECTS
-
-extern const String ControlPanel_aboutLabel;
-extern const String ControlPanel_instructionsLabel;
-extern const double Transform_ProgressReportsIncrement;
-extern const double SymbolsProcessing_ProgressReportsIncrement;
-
-#pragma warning( disable : WARN_BASE_INIT_USING_THIS )
-Controller::Controller(ISettingsRW &s) :
-		updateSymSettings(std::makeUnique<const UpdateSymSettings>(s.refSS())),
-		glyphsProgressTracker(std::makeUnique<const GlyphsProgressTracker>(*this)),
-		picTransformProgressTracker(std::makeUnique<PicTransformProgressTracker>(*this)),
-		glyphsUpdateMonitor(std::makeUnique<JobMonitor>("Processing glyphs",
-			std::makeUnique<SymsUpdateProgressNotifier>(*this),
-			SymbolsProcessing_ProgressReportsIncrement)),
-		imgTransformMonitor(std::makeUnique<JobMonitor>("Transforming image",
-			std::makeUnique<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
-			Transform_ProgressReportsIncrement)),
-		cmP(),
-		presentCmap(std::makeUnique<const PresentCmap>(*this, cmP,
-			getMatchEngine(s).isClusteringUseful())),
-		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
-		cfg(s),
-		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
-		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
-		comp(getComparator()),
-		pCmi(),
-		selectSymbols(std::makeUnique<const SelectSymbols>(*this, getMatchEngine(s), cmP, pCmi)),
-		controlPanelActions(std::makeUnique<ControlPanelActions>(*this, s,
-			getFontEngine(s.getSS()), getMatchEngine(s).assessor(),
-			getTransformer(s), getComparator(), pCmi)) {
-
-	comp.setPos(0, 0);
-	comp.permitResize(false);
-
-	extern const stringType Comparator_initial_title, Comparator_statusBar;
-	comp.setTitle(Comparator_initial_title);
-	comp.setStatus(Comparator_statusBar);
-}
-#pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
 const stringType Controller::textForCmapStatusBar(unsigned upperSymsCount/* = 0U*/) const {
 	assert(nullptr != fe.getFamily() && 0ULL < strlen(fe.getFamily()));
@@ -558,7 +489,7 @@ bool Controller::updateResizedImg(const IResizedImg &resizedImg_) {
 		(dynamic_cast<const ResizedImg&>(*resizedImg) != paramVal);
 
 	if(result)
-		resizedImg = makeUnique<ResizedImg>(paramVal);
+		resizedImg = makeUnique<const ResizedImg>(paramVal);
 	comp.setReference(resizedImg->get());
 	if(result)
 		comp.resize();
@@ -579,11 +510,18 @@ Comparator::Comparator() : CvWin("Pic2Sym") {
 
 	extern const int Comparator_trackMax;
 	extern const String Comparator_transpTrackName;
+	extern const stringType Comparator_initial_title, Comparator_statusBar;
 
 	createTrackbar(Comparator_transpTrackName, winName,
 				   &trackPos, Comparator_trackMax,
 				   &Comparator::updateTransparency, reinterpret_cast<void*>(this));
 	Comparator::updateTransparency(trackPos, reinterpret_cast<void*>(this)); // mandatory
+
+	// Default initial configuration
+	setPos(0, 0);
+	permitResize(false);
+	setTitle(Comparator_initial_title);
+	setStatus(Comparator_statusBar);
 }
 
 void Comparator::resize() const {

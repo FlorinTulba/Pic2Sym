@@ -54,7 +54,7 @@ protected:
 	double total = 0.;					///< the final threshold score
 
 public:
-	ScoreThresholds();
+	ScoreThresholds() = default;
 
 	/**
 	Used to set thresholds for clusters, which are the thresholds for the symbols (references)

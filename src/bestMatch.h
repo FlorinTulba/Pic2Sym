@@ -49,7 +49,7 @@ protected:
 
 	cv::Mat approx;							///< the approximation of the patch
 	
-	std::uniquePtr<IMatchParamsRW> params;	///< parameters of the match (none for blur-only approximations)
+	const std::uniquePtr<IMatchParamsRW> params;	///< parameters of the match (none for blur-only approximations)
 
 	/// Index within vector&lt;DerivedFrom_ISymData&gt; none if patch approximation is blur-based only.
 	boost::optional<unsigned> symIdx;

@@ -46,8 +46,6 @@
 
 using namespace std;
 
-ScoreThresholds::ScoreThresholds() {}
-
 ScoreThresholds::ScoreThresholds(double multiplier, const ScoreThresholds &references) :
 			total(multiplier*references.total), intermediaries(references.intermediaries.size()) {
 	const size_t factorsCount = references.intermediaries.size();

@@ -46,7 +46,7 @@ Helpful for blurring and computing cluster representatives.
 Polymorphic as function of the value of PreselectionByTinySyms.
 */
 struct SymsSupportWithPreselection : SymsSupport {
-	SymsSupportWithPreselection() {}
+	SymsSupportWithPreselection() : SymsSupport() {}
 
 	SymsSupportWithPreselection(const SymsSupportWithPreselection&) = delete;
 	SymsSupportWithPreselection(SymsSupportWithPreselection&&) = delete;

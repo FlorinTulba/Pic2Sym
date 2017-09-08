@@ -63,7 +63,7 @@ struct FontLocationFailure : std::runtime_error {
 class Dlg /*abstract*/ {
 protected:
 	std::stringType result = ""; ///< the result to be returned
-	Dlg() {}
+	Dlg() = default;
 	void operator=(const Dlg&) = delete;
 
 public:

@@ -50,9 +50,10 @@ class AbsTaskMonitor /*abstract*/ {
 protected:
 	const std::stringType monitoredTask_;	///< name of the monitored task
 
-public:
 	AbsTaskMonitor(const std::stringType &monitoredTask) : monitoredTask_(monitoredTask) {}
 	void operator=(const AbsTaskMonitor&) = delete;
+
+public:
 	virtual ~AbsTaskMonitor() = 0 {}
 
 	const std::stringType& monitoredTask() const { return monitoredTask_; } ///< name of the activity

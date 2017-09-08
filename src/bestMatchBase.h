@@ -42,11 +42,14 @@
 #pragma warning ( push, 0 )
 
 #if defined _DEBUG || defined UNIT_TESTING
+
 #include "std_string.h"
+
+#include <iostream>
+
 #endif // defined _DEBUG || defined UNIT_TESTING
 
 #include "std_memory.h"
-#include <iostream>
 
 #include <boost/optional/optional.hpp>
 
@@ -135,6 +138,8 @@ struct IBestMatch /*abstract*/ {
 	virtual ~IBestMatch() = 0 {}
 };
 
+#if defined _DEBUG || defined UNIT_TESTING
 std::wostream& operator<<(std::wostream &wos, const IBestMatch &bm);
+#endif // defined _DEBUG || defined UNIT_TESTING
 
 #endif // H_BEST_MATCH_BASE

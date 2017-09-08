@@ -60,7 +60,7 @@ extern const unsigned SymsBatch_defaultSz;
 // Forward declarations
 struct ISettings;		// global settings
 struct IPicTransformProgressTracker;	// data & views manager
-class TaskMonitor;
+class AbsTaskMonitor;
 struct IBestMatch;
 struct IBasicImgData;
 struct ITransformSupport;
@@ -88,7 +88,7 @@ protected:
 	std::vector<std::vector<const std::uniquePtr<IBestMatch>>> draftMatches;
 
 	// Keep this after previous fields, as it depends on them
-	std::uniquePtr<ITransformSupport> transformSupport;	///< initializes and updates draft matches
+	const std::uniquePtr<ITransformSupport> transformSupport;	///< initializes and updates draft matches
 
 	double durationS = 0.;		///< transformation duration in seconds
 
@@ -115,7 +115,7 @@ protected:
 						  unsigned patchesPerCol, unsigned patchesPerRow);
 
 	/// Improves the result by analyzing the symbols in range [fromIdx, upperIdx) under the supervision of imgTransformTaskMonitor
-	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor);
+	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx, AbsTaskMonitor &imgTransformTaskMonitor);
 
 public:
 	Transformer(IController &ctrler_, const ISettings &cfg_,

@@ -38,6 +38,7 @@
 
 #include "controlPanelActions.h"
 #include "controlPanel.h"
+#include "controllerBase.h"
 #include "matchAssessment.h"
 #include "transformBase.h"
 #include "fontEngineBase.h"

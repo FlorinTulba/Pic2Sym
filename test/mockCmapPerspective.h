@@ -73,7 +73,7 @@ public:
 	typedef VPSymData::const_iterator VPSymDataCIt;
 	typedef std::pair< VPSymDataCIt, VPSymDataCIt > VPSymDataCItPair;
 
-	CmapPerspective() {}
+	CmapPerspective() = default;
 
 	CmapPerspective(const CmapPerspective&) = delete;
 	CmapPerspective(CmapPerspective&&) = delete;

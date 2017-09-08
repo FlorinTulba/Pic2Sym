@@ -50,7 +50,7 @@ to allow providing dummy instances as parameter placeholder (for PreselectionByT
 class MatchProgress {
 public:
 	/// Base class constructor
-	MatchProgress() {}
+	MatchProgress() = default;
 
 	MatchProgress(const MatchProgress&) = delete;
 	MatchProgress(MatchProgress&&) = delete;

@@ -46,73 +46,74 @@
 using namespace std;
 using namespace cv;
 
-/// PreselectionByTinySyms is true
-struct PreselectionOn : IPreselManager {
-	PreselectionOn() = default;
-	PreselectionOn(const PreselectionOn&) = delete;
-	PreselectionOn(PreselectionOn&&) = delete;
-	void operator=(const PreselectionOn&) = delete;
-	void operator=(PreselectionOn&&) = delete;
-
-	uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
-													 IClusterProcessing &ce,
-													 VSymData &symsSet) const override {
-		return makeUnique<ClustersSupportWithPreselection>(tsp, ce,
-														   makeUnique<SymsSupportWithPreselection>(),
-														   symsSet);
-	}
-	uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
-												VSymData &symsSet,
-												MatchAssessor &matchAssessor,
-												const IMatchSettings &matchSettings) const {
-		return makeUnique<MatchSupportWithPreselection>(cd, symsSet, matchAssessor, matchSettings);
-	}
-	uniquePtr<ITransformSupport> createTransformSupport(IMatchEngine &me,
-														const IMatchSettings &matchSettings,
-														Mat &resized,
-														Mat &resizedBlurred,
-														vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
-														IMatchSupport &matchSupport) const {
-		return makeUnique<TransformSupportWithPreselection>(me, matchSettings, resized, resizedBlurred,
-															draftMatches, matchSupport);
-	}
-};
-
-/// PreselectionByTinySyms is false
-struct PreselectionOff : IPreselManager {
-	PreselectionOff() = default;
-	PreselectionOff(const PreselectionOff&) = delete;
-	PreselectionOff(PreselectionOff&&) = delete;
-	void operator=(const PreselectionOff&) = delete;
-	void operator=(PreselectionOff&&) = delete;
-
-	uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider&,
-													 IClusterProcessing &ce,
-													 VSymData &symsSet) const {
-		return makeUnique<ClustersSupport>(ce, makeUnique<SymsSupport>(), symsSet);
-	}
-	uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
-												VSymData&,
-												MatchAssessor&,
-												const IMatchSettings&) const {
-		return makeUnique<MatchSupport>(cd);
-	}
-	uniquePtr<ITransformSupport> createTransformSupport(IMatchEngine &me,
-														const IMatchSettings &matchSettings,
-														Mat &resized,
-														Mat &resizedBlurred,
-														vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
-														IMatchSupport&) const {
-		return makeUnique<TransformSupport>(me, matchSettings, resized, resizedBlurred, draftMatches);
-	}
-};
-
 extern const bool PreselectionByTinySyms;
 
 namespace {
+	/// PreselectionByTinySyms is true
+	struct PreselectionOn : IPreselManager {
+		PreselectionOn() = default;
+		PreselectionOn(const PreselectionOn&) = delete;
+		PreselectionOn(PreselectionOn&&) = delete;
+		void operator=(const PreselectionOn&) = delete;
+		void operator=(PreselectionOn&&) = delete;
+
+		uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider &tsp,
+														 IClusterProcessing &ce,
+														 VSymData &symsSet) const override {
+			return makeUnique<ClustersSupportWithPreselection>(tsp, ce,
+															   makeUnique<SymsSupportWithPreselection>(),
+															   symsSet);
+		}
+		uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
+													VSymData &symsSet,
+													MatchAssessor &matchAssessor,
+													const IMatchSettings &matchSettings) const override {
+			return makeUnique<MatchSupportWithPreselection>(cd, symsSet, matchAssessor, matchSettings);
+		}
+		uniquePtr<ITransformSupport> createTransformSupport(IMatchEngine &me,
+															const IMatchSettings &matchSettings,
+															Mat &resized,
+															Mat &resizedBlurred,
+															vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
+															IMatchSupport &matchSupport) const override {
+			return makeUnique<TransformSupportWithPreselection>(me, matchSettings, resized, resizedBlurred,
+																draftMatches, matchSupport);
+		}
+	};
+
 	PreselectionOn preselectionOn;
+
+	/// PreselectionByTinySyms is false
+	struct PreselectionOff : IPreselManager {
+		PreselectionOff() = default;
+		PreselectionOff(const PreselectionOff&) = delete;
+		PreselectionOff(PreselectionOff&&) = delete;
+		void operator=(const PreselectionOff&) = delete;
+		void operator=(PreselectionOff&&) = delete;
+
+		uniquePtr<IClustersSupport> createClusterSupport(ITinySymsProvider&,
+														 IClusterProcessing &ce,
+														 VSymData &symsSet) const override {
+			return makeUnique<ClustersSupport>(ce, makeUnique<SymsSupport>(), symsSet);
+		}
+		uniquePtr<IMatchSupport> createMatchSupport(CachedDataRW &cd,
+													VSymData&,
+													MatchAssessor&,
+													const IMatchSettings&) const override {
+			return makeUnique<MatchSupport>(cd);
+		}
+		uniquePtr<ITransformSupport> createTransformSupport(IMatchEngine &me,
+															const IMatchSettings &matchSettings,
+															Mat &resized,
+															Mat &resizedBlurred,
+															vector<vector<const uniquePtr<IBestMatch>>> &draftMatches,
+															IMatchSupport&) const override {
+			return makeUnique<TransformSupport>(me, matchSettings, resized, resizedBlurred, draftMatches);
+		}
+	};
+
 	PreselectionOff preselectionOff;
-}
+} // anonymous namespace
 
 const IPreselManager& IPreselManager::concrete() {
 	if(PreselectionByTinySyms)

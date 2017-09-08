@@ -51,7 +51,7 @@ class SymFilterCache;
 
 /// Interface used for filtering out some of the symbols from the charmap
 struct ISymFilter /*abstract*/ {
-	ISymFilter() {}
+	ISymFilter() = default;
 	ISymFilter(const ISymFilter&) = delete;
 	void operator=(const ISymFilter&) = delete;
 

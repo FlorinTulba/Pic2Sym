@@ -75,6 +75,8 @@ struct ClusterAlg /*abstract*/ {
 	virtual ~ClusterAlg() = 0 {}
 
 protected:
+	ClusterAlg() = default;
+
 	ITinySymsProvider *tsp = nullptr;	///< offers support for tiny symbols
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress

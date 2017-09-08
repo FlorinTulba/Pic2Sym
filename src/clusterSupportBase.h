@@ -39,7 +39,6 @@
 #ifndef H_CLUSTER_SUPPORT_BASE
 #define H_CLUSTER_SUPPORT_BASE
 
-#include "symDataBase.h"
 #include "clusterDataBase.h"
 
 #pragma warning ( push, 0 )

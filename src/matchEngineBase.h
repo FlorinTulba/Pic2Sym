@@ -48,7 +48,6 @@
 // Forward declarations
 struct IBestMatch;
 struct IMatchSupport;
-class MatchAspect;
 class MatchAssessor;
 class MatchProgress;
 class AbsJobMonitor;

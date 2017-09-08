@@ -39,6 +39,7 @@
 #include "controller.h"
 #include "settingsBase.h"
 #include "symSettingsBase.h"
+#include "updateSymSettings.h"
 #include "fontEngine.h"
 #include "match.h"
 #include "matchEngine.h"
@@ -46,7 +47,7 @@
 #include "bestMatchBase.h"
 #include "matchAssessment.h"
 #include "views.h"
-#include "imgBasicData.h"
+#include "resizedImgBase.h"
 #include "transform.h"
 #include "transformSupportBase.h"
 #include "matchSupport.h"
@@ -54,8 +55,13 @@
 #include "clusterSupport.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"
-#include "presentCmapBase.h"
-#include "selectSymbolsBase.h"
+#include "presentCmap.h"
+#include "cmapPerspective.h"
+#include "selectSymbols.h"
+#include "progressNotifier.h"
+#include "glyphsProgressTracker.h"
+#include "picTransformProgressTracker.h"
+#include "jobMonitor.h"
 #include "misc.h"
 
 #pragma warning ( push, 0 )
@@ -65,6 +71,62 @@
 #pragma warning ( pop )
 
 using namespace std;
+
+extern const double Transform_ProgressReportsIncrement;
+extern const double SymbolsProcessing_ProgressReportsIncrement;
+extern const stringType Controller_PREFIX_GLYPH_PROGRESS;
+
+namespace {
+	/// Adapter from IProgressNotifier to IGlyphsProgressTracker
+	struct SymsUpdateProgressNotifier : IProgressNotifier {
+		const IController &performer;
+
+		SymsUpdateProgressNotifier(const IController &performer_) : performer(performer_) {}
+		void operator=(const SymsUpdateProgressNotifier&) = delete;
+
+		void notifyUser(const std::stringType&, double progress) override {
+			performer.hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS, true); // async call
+		}
+	};
+
+	/// Adapter from IProgressNotifier to IPicTransformProgressTracker
+	struct PicTransformProgressNotifier : IProgressNotifier {
+		const IPicTransformProgressTracker &performer;
+
+		PicTransformProgressNotifier(const IPicTransformProgressTracker &performer_) : performer(performer_) {}
+		void operator=(const PicTransformProgressNotifier&) = delete;
+
+		void notifyUser(const std::stringType&, double progress) override {
+			performer.reportTransformationProgress(progress);
+		}
+	};
+} // anonymous namespace
+
+#pragma warning( disable : WARN_BASE_INIT_USING_THIS )
+Controller::Controller(ISettingsRW &s) :
+		updateSymSettings(std::makeUnique<const UpdateSymSettings>(s.refSS())),
+		glyphsProgressTracker(std::makeUnique<const GlyphsProgressTracker>(*this)),
+		picTransformProgressTracker(new PicTransformProgressTracker(*this)),
+		glyphsUpdateMonitor(new JobMonitor("Processing glyphs",
+			std::makeUnique<SymsUpdateProgressNotifier>(*this),
+			SymbolsProcessing_ProgressReportsIncrement)),
+		imgTransformMonitor(new JobMonitor("Transforming image",
+			std::makeUnique<PicTransformProgressNotifier>(getPicTransformProgressTracker()),
+			Transform_ProgressReportsIncrement)),
+		cmP(new CmapPerspective),
+		presentCmap(std::makeUnique<const PresentCmap>(*this, *cmP,
+			getMatchEngine(s).isClusteringUseful())),
+		fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
+		cfg(s),
+		me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
+		t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
+		comp(getComparator()),
+		pCmi(),
+		selectSymbols(std::makeUnique<const SelectSymbols>(*this, getMatchEngine(s), *cmP, pCmi)),
+		controlPanelActions(new ControlPanelActions(*this, s,
+			getFontEngine(s.getSS()), getMatchEngine(s).assessor(),
+			getTransformer(s), getComparator(), pCmi)) {}
+#pragma warning( default : WARN_BASE_INIT_USING_THIS )
 
 const IUpdateSymSettings& Controller::getUpdateSymSettings() const {
 	assert(updateSymSettings);
@@ -137,7 +199,7 @@ IFontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 }
 
 IMatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), *cmP);
 }
 
 ITransformer& Controller::getTransformer(const ISettings &cfg_) {

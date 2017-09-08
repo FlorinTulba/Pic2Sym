@@ -37,7 +37,6 @@
  ***********************************************************************************************/
 
 #include "pixMapSym.h"
-#include "presentCmap.h"
 #include "misc.h"
 
 using namespace std;

@@ -58,7 +58,7 @@ struct ICvWin /*abstract*/ {
 
 class CvWin /*abstract*/ : public virtual ICvWin {
 protected:
-	CvWin() {}
+	CvWin() = default;
 
 public:
 	void setTitle(...) const {}

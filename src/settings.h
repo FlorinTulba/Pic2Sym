@@ -69,9 +69,9 @@ struct IMatchSettings;
 /// Envelopes all parameters required for transforming images
 class Settings : public ISettingsRW {
 protected:
-	std::uniquePtr<ISymSettings> ss;		///< parameters concerning the symbols set used for approximating patches
-	std::uniquePtr<IfImgSettings> is;		///< contains max count of horizontal & vertical patches to process
-	std::uniquePtr<IMatchSettings> ms;		///< settings used during approximation process
+	const std::uniquePtr<ISymSettings> ss;		///< parameters concerning the symbols set used for approximating patches
+	const std::uniquePtr<IfImgSettings> is;		///< contains max count of horizontal & vertical patches to process
+	const std::uniquePtr<IMatchSettings> ms;		///< settings used during approximation process
 
 public:
 	/**

@@ -49,7 +49,7 @@
 
 /// Interface for reporting progress of a given job to the user
 struct IProgressNotifier /*abstract*/ {
-	IProgressNotifier() {}
+	IProgressNotifier() = default;
 	void operator=(const IProgressNotifier&) = delete;
 	virtual ~IProgressNotifier() = 0 {}
 

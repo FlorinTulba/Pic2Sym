@@ -55,13 +55,13 @@ struct SymFilter /*abstract*/ : ISymFilter {
 	static const std::stringType& filterName(unsigned filterId_);
 
 private: // SymFilter cannot be directly derived, except by the friend TSymFilter declared below
-	template<class T> friend struct TSymFilter;
+	template<class T> friend class TSymFilter;
 
 	/// filterId - filterName associations
 	static std::unordered_map<unsigned, const std::stringType> filterTypes;
 
-	std::uniquePtr<ISymFilter> nextFilter;	///< null or a derivate from SymFilter
-	const unsigned filterId;				///< id of the filter
+	const std::uniquePtr<ISymFilter> nextFilter;	///< DefSymFilter or a derivate from SymFilter
+	const unsigned filterId;						///< id of the filter
 
 	/**
 	Constructs a new SymFilter with the provided id and name, which both must be unique.
@@ -91,7 +91,8 @@ As a consequence, derived classes from TSymFilter must have 2 public methods wit
 	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc)
 */
 template<class DerivedFromTSymFilter>
-struct TSymFilter /*abstract*/ : SymFilter {
+class TSymFilter /*abstract*/ : public SymFilter {
+protected:
 	/**
 	Constructs a new TSymFilter with the provided id and name, which both must be unique.
 
@@ -108,6 +109,7 @@ struct TSymFilter /*abstract*/ : SymFilter {
 	TSymFilter(const TSymFilter&) = delete;
 	void operator=(const TSymFilter&) = delete;
 
+public:
 	/**
 	Returns the id of the filter which detected that the symbol exhibits some undesired features.
 

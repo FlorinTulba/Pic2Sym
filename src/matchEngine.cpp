@@ -134,7 +134,7 @@ namespace {
 MatchEngine::MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspective &cmP_) :
 			cfg(cfg_), fe(fe_), cmP(cmP_),
 			matchAssessor(specializedInstance(availAspects)),
-			ce(makeUnique<ClusterEngine>(fe_, symsSet)),
+			ce(new ClusterEngine(fe_, symsSet)),
 			matchSupport(IPreselManager::concrete().createMatchSupport(
 				cachedData, symsSet, matchAssessor, cfg_.getMS())) {
 	for(const stringType &aspectName: MatchAspect::aspectNames())

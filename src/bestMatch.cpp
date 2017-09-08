@@ -60,7 +60,7 @@ using namespace cv;
 
 BestMatch::BestMatch(const IPatch &patch_) :
 		patch(patch_.clone()),
-		params(patch_.nonUniform() ? makeUnique<MatchParams>() : nullptr) {
+		params(patch_.nonUniform() ? new MatchParams : nullptr) {
 	assert(patch);
 }
 

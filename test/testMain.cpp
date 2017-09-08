@@ -366,7 +366,7 @@ IFontEngine& Controller::getFontEngine(const ISymSettings &ss_) const {
 }
 
 IMatchEngine& Controller::getMatchEngine(const ISettings &cfg_) {
-	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), cmP);
+	GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), *cmP);
 }
 
 ITransformer& Controller::getTransformer(const ISettings &cfg_) {

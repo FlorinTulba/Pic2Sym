@@ -48,12 +48,13 @@ struct ISettings;
 struct IClusterEngine;
 struct ICmapPerspective;
 struct IFontEngine;
+class MatchAspect;
 
 /// MatchEngine finds best match for a patch based on current settings and symbols set.
 class MatchEngine : public IMatchEngine {
 protected:
 	const ISettings &cfg;		///< settings for the engine
-	IFontEngine &fe;				///< symbols set manager
+	IFontEngine &fe;			///< symbols set manager
 	ICmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
 
 	/// observer of the symbols' loading, filtering and clustering, who reports their progress
@@ -69,10 +70,10 @@ public:
 	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
 
 protected:
-	std::uniquePtr<IClusterEngine> ce;			///< clusters manager
+	const std::uniquePtr<IClusterEngine> ce;			///< clusters manager
 
 	// Keep this below the fields, as it depends on them
-	std::uniquePtr<IMatchSupport> matchSupport; ///< cached data management
+	const std::uniquePtr<IMatchSupport> matchSupport;	///< cached data management
 
 	std::vector<const std::uniquePtr<const MatchAspect>> availAspects;	///< all the available aspects
 

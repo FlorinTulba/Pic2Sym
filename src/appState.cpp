@@ -203,7 +203,7 @@ namespace {
 		// Authorize update of the sliders while loading settings without the casual checks.
 		// Only one slider must be authorized at a time, to reduce the chances of free rides.
 		if(usp.pLuckySliderName == &usp.controlName)
-			return std::move(makeUnique<const NoTraceActionPermit>());
+			return makeUnique<const NoTraceActionPermit>();
 
 		LockAppState lock;
 
@@ -217,7 +217,7 @@ namespace {
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(usp.appState, statesToSet));
+		return makeUnique<const NormalActionPermit>(usp.appState, statesToSet);
 	}
 
 	/// Shared body for the sliders updating the image settings
@@ -260,7 +260,7 @@ namespace {
 
 uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlName) {
 	if(independentActions.find(&controlName) != itEndIndepActions)
-		return std::move(makeUnique<const NoTraceActionPermit>());
+		return makeUnique<const NoTraceActionPermit>();
 
 	UpdateSettingsParams usp(*this, appState, slidersRestoringValue, pLuckySliderName, controlName);
 
@@ -291,7 +291,7 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 			return nullptr;
 		}
 
-		return std::move(makeUnique<const NormalActionPermit>(appState, ST(UpdateImg)));
+		return makeUnique<const NormalActionPermit>(appState, ST(UpdateImg));
 	}
 
 	if(&controlName == &ControlPanel_transformImgLabel) {
@@ -309,7 +309,7 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(appState, ST(ImgTransform)));
+		return makeUnique<const NormalActionPermit>(appState, ST(ImgTransform));
 	}
 	
 	if(&controlName == &ControlPanel_restoreDefaultsLabel) {
@@ -327,8 +327,8 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(appState,
-				ST(LoadMatchSettings) | ST(UpdateMatchSettings)));
+		return makeUnique<const NormalActionPermit>(appState,
+				ST(LoadMatchSettings) | ST(UpdateMatchSettings));
 	}
 	
 	if(&controlName == &ControlPanel_saveAsDefaultsLabel) {
@@ -344,7 +344,7 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(appState, ST(SaveMatchSettings)));
+		return makeUnique<const NormalActionPermit>(appState, ST(SaveMatchSettings));
 	}
 	
 	if(&controlName == &ControlPanel_loadSettingsLabel) {
@@ -362,9 +362,9 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(appState,
+		return makeUnique<const NormalActionPermit>(appState,
 				ST(LoadAllSettings) | ST(UpdateImgSettings)
-					| ST(UpdateSymSettings) | ST(UpdateMatchSettings)));
+					| ST(UpdateSymSettings) | ST(UpdateMatchSettings));
 	}
 	
 	if(&controlName == &ControlPanel_saveSettingsLabel) {
@@ -381,7 +381,7 @@ uniquePtr<const ActionPermit> ControlPanel::actionDemand(const String &controlNa
 
 			return nullptr;
 		}
-		return std::move(makeUnique<const NormalActionPermit>(appState, ST(SaveAllSettings)));
+		return makeUnique<const NormalActionPermit>(appState, ST(SaveAllSettings));
 	}
 	
 	THROW_WITH_VAR_MSG("No handling yet for " + controlName + " in " __FUNCTION__, domain_error);

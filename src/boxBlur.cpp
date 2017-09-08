@@ -61,7 +61,7 @@ class BoxBlur::Impl {
 	unsigned countWu = 0U;	///< the number of times to iterate the filter of width wu
 	unsigned iterations = 0U;	///< desired number of iterations (countWl + countWu)
 
-	Impl() {}
+	Impl() = default;
 
 	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
 	/// See http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf for details

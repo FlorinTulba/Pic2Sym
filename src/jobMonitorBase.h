@@ -67,10 +67,11 @@ protected:
 		aborted = false;
 	}
 
-public:
 	AbsJobMonitor(const std::stringType &monitoredJob) : monitoredJob_(monitoredJob) {}
 	void operator=(const AbsJobMonitor&) = delete;
-	virtual ~AbsJobMonitor() = 0 {};
+
+public:
+	virtual ~AbsJobMonitor() = 0 {}
 
 	const std::stringType& monitoredJob() const { return monitoredJob_; } ///< name of the job
 	double progress() const { return progress_; }	///< Overall progress of the job (0..1 range)

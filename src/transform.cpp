@@ -327,7 +327,7 @@ void Transformer::initDraftMatches(bool newResizedImg, const Mat &resizedVersion
 	}
 }
 
-void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, TaskMonitor &imgTransformTaskMonitor) {
+void Transformer::considerSymsBatch(unsigned fromIdx, unsigned upperIdx, AbsTaskMonitor &imgTransformTaskMonitor) {
 	// Cannot set finalizedRows as reduction(+ : finalizedRows) in the for below,
 	// since its value is checked during the loop - the same story as for isCanceled
 	volatile size_t finalizedRows = 0U;
