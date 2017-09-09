@@ -8,8 +8,10 @@
 
 The module ***Symbols Preselection*** tackles the feature with the same name, which is a heuristic for reducing the count of complex computations by splitting the transformation process in 2:
 
-- the initial phase works with *tiny versions* of the symbols (***SymsSupportWithPreselection*** and ***ClustersSupportWithPreselection***) and of the patches (***TransformSupportWithPreselection***). It looks for several good symbols that approximate a certain patch (***MatchProgressWithPreselection*** and ***TopCandidateMatches***) and creates a &quot;**short list**&quot; from them (***CandidateShortList***)
-- the final phase works with the normal-size versions of the symbols from the short list (***MatchSupportWithPreselection***). One of them could become the ***BestMatch*** known so far
+- the initial phase works with *tiny versions* of the symbols (***SymsSupportWithPreselection*** and ***ClustersSupportWithPreselection***) and of the patches (***TransformSupportWithPreselection***). It looks for several good symbols that approximate a certain patch (***MatchProgressWithPreselection*** and ***(I)TopCandidateMatches***) and creates a &quot;**short list**&quot; from them (***CandidateShortList***)
+- the final phase works with the normal-size versions of the symbols from the short list (***MatchSupportWithPreselection***). One of them could become the ***(I)BestMatch*** known so far
+
+The preselection mechanism can be enabled / disabled through the **PreselectionByTinySyms** field from [**res/varConfig.txt**][varConfig].
 
 Since **preselection** works much more on tiny symbols than on normal-size ones, theoretically it should be much faster. Practically:
 

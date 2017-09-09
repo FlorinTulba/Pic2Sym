@@ -5,15 +5,15 @@
 -------
 ![](DraftImprover_classes.jpg)<br>
 
-***MatchEngine***:
+_**(I)MatchEngine**_:
 
-- holds the (filtered) set of symbols to be used during the image approximation 
-- similarly, it has some precomputed values for normal-size symbols (***CachedData***)
-- keeps also the ***ClusterEngine***, which allows grouping the previously mentioned symbols in clusters, to reduce the count of compare operations between symbols and patches
-- improves the drafts ***BestMatch*** for the <b><i>Patch</i></b>es based on normal-size fonts, as explained above. The best draft known for a given patch is stored in ***ApproxVariant***, together with the relevant parameters (***MatchParams***)
-- collaborates with the submodule ***Symbols Preselection*** to respect the preselection mode
-- reports draft improvement progress through a ***TaskMonitor*** to the ***AbsJobMonitor*** supervising the image transformation process
-- uses several <b><i>MatchAspect</i></b>s (created by ***MatchAspectsFactory***) which are configurable from the [***Control Panel***][CtrlPanel] and reflected in ***MatchSettings***. The aspects whose sliders are on 0 are disabled and not used while transforming the image
+- holds the (filtered) set of symbols to be used during the image approximation (symSet : VSymData)
+- similarly, it has some precomputed values for normal-size symbols (_**CachedData(RW)**_)
+- keeps also the _**(I)ClusterEngine**_, which allows grouping the previously mentioned symbols in clusters, to reduce the count of compare operations between symbols and patches
+- improves the drafts _**(I)BestMatch**_ for the <b><i>(I)Patch</i></b>es based on normal-size fonts, as explained above. The best draft known for a given patch is stored together with the relevant parameters (_**(I)MatchParams(RW)**_)
+- collaborates with the submodule _**Symbols Preselection**_ to respect the preselection mode
+- reports draft improvement progress through a _**TaskMonitor**_ to the _**AbsJobMonitor**_ supervising the image transformation process
+- uses several <b><i>MatchAspect</i></b>s (created by _**MatchAspectsFactory**_) which are configurable from the [_**Control Panel**_][CtrlPanel] and reflected in _**(I)MatchSettings**_. The aspects whose sliders are on 0 are disabled and not used while transforming the image
 
 Since the final score for comparing a certain symbol with a patch (approximating the patch by that symbol) is the product of the scores of each enabled ***MatchAspect***, a heuristic method to compute scores faster has been introduced:
 
@@ -27,16 +27,16 @@ There is also one surprising consequence of this heuristic approach:
 
 - *several simple aspects enabled along a few complex ones* might run **faster** than *enabling the complex aspects alone* when transforming an image with **rather coarse texture**. This is because the complex aspects can be skipped more frequently in the first case and less often in the second
 
-The extra management of scores (**ScoreThresholds** class) brought by the heuristic is less productive on **finely-grained** patches. So the skip mechanism might be disabled altogether or just adjusted to start when there are more chances to be efficient (the classes derived from **MatchAssessor**).
+The extra management of scores (see **(I)ScoreThresholds**) brought by the heuristic is less productive on **finely-grained** patches. So the skip mechanism might be disabled altogether or just adjusted to start when there are more chances to be efficient (the classes derived from **MatchAssessor**).
 
 Currently, the most complex **MatchAspect** is [***StructuralSimilarity***][Structural Similarity]. It produces aesthetic results, but it is also quite slow. It involves several image processing operations, among which there is also *blurring*. The recommended blur type is the Gaussian one. Profiling the application demonstrated that this blur operation is really expensive. Starting from this observation, several alternative blur algorithms were investigated and implemented. Any of them can be configured to be used in [**res/varConfig.txt**][varConfig].<br>
 
-***BlurEngine*** is the parent of following blur methods:
+_**(I)BlurEngine**_ is the parent of following blur methods:
 
-- ***GaussBlur*** wraps the original Gaussian blur from OpenCV (not the CUDA implementation)
-- [***BoxBlur***][BoxBlur] wraps the box blur from OpenCV (not the CUDA implementation). This is an averaging blur, which is simpler and faster than the Gaussian blur. However, in order to deliver similar quality compared to the Gaussian blur, it must be applied several times and sometimes with various window widths. The number of iterations is currently hardcoded on 1, to let this method be faster than GaussianBlur, while loosing blur quality
-- [***ExtBoxBlur***][ExtBoxBlur] is a more elaborated version of the BoxBlur, with increased accuracy as goal. It deals with the fact that the ideal blur window width is a floating point value, not an integer one. The number of iterations is currently hardcoded on 1. For these settings, it is slightly faster than *BoxBlur*.
-- [***StackBlur***][StackBlur] is an adaptation of the (CPU-only and also CUDA) algorithms that can be found [here][StackBlurWithCUDA]
+- _**GaussBlur**_ wraps the original Gaussian blur from OpenCV (not the CUDA implementation)
+- [_**BoxBlur**_][BoxBlur] wraps the box blur from OpenCV (not the CUDA implementation). This is an averaging blur, which is simpler and faster than the Gaussian blur. However, in order to deliver similar quality compared to the Gaussian blur, it must be applied several times and sometimes with various window widths. The number of iterations is currently hardcoded on 1, to let this method be faster than GaussianBlur, while loosing blur quality
+- [_**ExtBoxBlur**_][ExtBoxBlur] is a more elaborated version of the BoxBlur, with increased accuracy as goal. It deals with the fact that the ideal blur window width is a floating point value, not an integer one. The number of iterations is currently hardcoded on 1. For these settings, it is slightly faster than *BoxBlur*.
+- [_**StackBlur**_][StackBlur] is an adaptation of the 2 (CPU-only and CUDA) algorithms that can be found [here][StackBlurWithCUDA]
 
 Current version of the project relies only on CPU power. In this context and for the reference window width and standard deviation prescribed for the Gaussian blur within ***StructuralSimilarity***, none of the presented alternatives and neither other investigated blurs were able to beat the Gaussian blur from OpenCV while also aiming for similar blur quality.
 

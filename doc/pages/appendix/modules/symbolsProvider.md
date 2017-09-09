@@ -6,16 +6,16 @@
 
 ![](SymProvider_classes.jpg)<br>
 
-The ***ControlPanel*** uses the ***SelectFont*** to provide the symbols needed during image transformation. Whenever the data of a certain font type cannot be loaded / processed, exceptions like ***FontLocationFailure*** or ***SymsLoadingFailure*** are issued and handled.
+The ***(I)ControlPanel*** uses the ***SelectFont*** to provide the symbols needed during image transformation. Whenever the data of a certain font type cannot be loaded / processed, exceptions like ***FontLocationFailure*** or ***SymsLoadingFailure*** are issued and handled.
 
-***FontEngine***:
+***(I)FontEngine***:
 
-- (through the interfaces derived from ***IController***)
+- (through the interfaces accessible through ***IController***)
 	- presents the pages of the symbol set (see ***IPresentCmap***)
 	- reports the progress while loading a symbol set (see ***IGlyphsProgressTracker***)
-	- demands a delegate to update the symbol settings ***SymSettings*** with some new valid values (see ***IUpdateSymSettings***)
-- realizes interface ***ITinySymsProvider***, which means that for each font type it computes the relevant data for the tiny versions (***TinySym***) of those symbols. The data ***VTinySyms*** gets saved and afterwards reloaded (by ***VTinySymsIO***) each time it&#39;s requested
-- has a container ***PmsCont*** with the symbols ***PixMapSym*** remaining after applying the chain of filters derived from ***ISymFilter***
+	- demands a delegate to update the symbol settings ***(I)SymSettings*** with some new valid values (see ***IUpdateSymSettings***)
+- realizes interface ***ITinySymsProvider***, which means that for each font type it computes the relevant data for the tiny versions (_**(I)TinySym**_) of those symbols. The data ***VTinySyms*** gets saved and afterwards reloaded (by ***VTinySymsIO***) each time it&#39;s requested
+- has a container ***(I)PmsCont*** with the symbols ***(I)PixMapSym*** remaining after applying the chain of filters derived from ***ISymFilter***
 
 Removing undesirable symbols from the symbol set (filtering) is a good idea because:
 
@@ -28,19 +28,20 @@ Besides lots of **Heuristic Criteria**, the implementation of those filters cove
 
 Depending on the context, apart from the pixels of a glyph and its code, the relevant data about a symbol also contains:
 
-- density (the average pixel value) and mass-center (see ***PixMapSym*** - used mostly to display the symbol set)
-- density, mass-center, plus pixel range and several masks (see ***SymData*** - necessary when approximating image patches or when comparing symbols to each other)
-- the items from ***SymData***, plus several projections of the glyph (heuristics accelerating the clustering of <b><i>TinySym</i></b>s)
+- density (the average pixel value) and mass-center (see ***(I)PixMapSym*** - used mostly to display the symbol set)
+- density, mass-center, plus pixel range and several masks (see ***(I)SymData*** - necessary when approximating image patches or when comparing symbols to each other)
+- several projections of the glyph (heuristics accelerating the clustering of <b><i>(I)TinySym</i></b>s)
 
-The symbol set is grouped by similarity (clustered). Each group of similar glyphs gets assigned a cluster representative (the average of the members - ***Cluster*** and ***ClusterData***). This reorganizing is beneficial during the image approximation process, since it allows skipping all members of a cluster whose representative is dissimilar to the currently analyzed patch.
+The symbol set is grouped by similarity (clustered). Each group of similar glyphs gets assigned a cluster representative (the average of the members - ***ICentroid***, ***Cluster::Centroid*** and ***(I)ClusterData***). This reorganizing is beneficial during the image approximation process, since it allows skipping all members of a cluster whose representative is dissimilar to the currently analyzed patch.
 The 2 available clustering algorithms (***PartitionClustering*** and ***TTSAS_Clustering*** derived from ***ClusterAlg***):
 
 - use many constants configurable in [**res/varConfig.txt**][varConfig]
 - save the generated permutation the first time a font type is clustered and afterwards they just reload it (with ***ClusterIO***) when demanded
-- perform the regrouping by comparing ***TinySyms*** (provided by an ***ITinySymsProvider***) instead of the actual symbols, to quicken the process and to let the **same clustering be reused for any font size**. No matching aspects are involved here! Instead, there are some heuristics available, which can be disabled altogether - to be able to measure their performance impact
+- perform the regrouping by comparing <b><i>(I)TinySym</b></i>s (provided by an ***ITinySymsProvider***) instead of the actual symbols, to quicken the process and to let the **same clustering be reused for any font size**. No matching aspects are involved here! Instead, there are some heuristics available, which can be disabled altogether - to be able to measure their performance impact
 
 Setting a certain clustering algorithm can be configured in [**res/varConfig.txt**][varConfig].<br>
-Clustering can also be disabled (see ***NoClustering***). This option was quite handy for a couple of tests among the Unit Testing suites.<br>
+
+When the found clusters are considerably small, the Clustering mechanism won&#39;t be used (below the **MinAverageClusterSize** value from *res/varConfig.txt* file). Clustering can also be disabled (see ***NoClustering***), which is quite handy for a couple of tests among the Unit Testing suites.<br>
 
 ***PartitionClustering*** uses *partition* function from **OpenCV**, which also provides other clustering techniques not helpful in current context:
 
@@ -71,14 +72,14 @@ It was customized to:
 
 There might be some additional improvements to this algorithm, like [**Using the Triangle Inequality to Accelerate TTSAS Cluster Algorithm**][improvedTTSAS].
 
-The ***MatchEngine*** maintains the set of (filtered) normal-size symbols. The mechanism how to regroup these symbols (***ClusterEngine***) was included therefore here, as well. So, when the ***Controller***:
+The ***(I)MatchEngine*** maintains the set of (filtered) normal-size symbols. The mechanism how to regroup these symbols (_**(I)ClusterEngine**_) was included therefore here, as well. So, when the ***(I)Controller***:
 
-- updates the symbol set and lets the ***MatchEngine*** know that, clustering data gets updated, as well
+- updates the symbol set and lets the ***(I)MatchEngine*** know that, clustering data gets updated, as well
 - performs an image approximation, the candidate symbols for each image patch can be grouped and iterated by clusters
 
-The ***ClusterEngine*** is helped by ***ClusterSupport*** and ***ClusterSupportWithPreselection*** (part of ***PreselManager***) to perform clustering on normal-size or tiny versions of the symbols, based on the preselection mode.
+The ***(I)ClusterEngine*** is helped by ***(I)ClusterSupport(WithPreselection)*** to perform clustering on normal-size or tiny versions of the symbols, based on the preselection mode.
 
-***CmapPerspective*** permits visualizing the glyphs grouped by clusters (largest groups first). Image transformations might use a different symbols order and even ignore clustering if the average cluster size is too low, to prevent inefficient symbols traversal.
+***(I)CmapPerspective*** permits visualizing the glyphs grouped by clusters (largest groups first). Image transformations might use a different symbols order and even ignore clustering if the average cluster size is too low, to prevent inefficient symbols traversal.
 
 -------
 [Back to the Appendix](../appendix.md) or jump to the [start page](../../../../ReadMe.md)
