@@ -6,7 +6,7 @@
 
 ![](SymProvider_classes.jpg)<br>
 
-The ***(I)ControlPanel*** uses the ***SelectFont*** to provide the symbols needed during image transformation. Whenever the data of a certain font type cannot be loaded / processed, exceptions like ***FontLocationFailure*** or ***SymsLoadingFailure*** are issued and handled.
+The ***(I)ControlPanel*** uses the ***SelectFont*** to provide the symbols needed during image transformation. Whenever the data of a certain font type cannot be loaded / processed, exceptions like ***FontLocationFailure***, ***NormalSymsLoadingFailure*** or ***TinySymsLoadingFailure*** are issued and handled.
 
 ***(I)FontEngine***:
 

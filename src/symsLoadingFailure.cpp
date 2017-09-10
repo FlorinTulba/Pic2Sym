@@ -49,26 +49,14 @@ using namespace std;
 
 extern const stringType CannotLoadFontErrSuffix;
 
-SymsLoadingFailure::SymsLoadingFailure(const stringType& _Message) :
+TinySymsLoadingFailure::TinySymsLoadingFailure(const stringType& _Message) :
 	runtime_error(_Message.c_str()) {}
 
-SymsLoadingFailure::SymsLoadingFailure(const char *_Message) :
-	runtime_error(_Message) {}
+NormalSymsLoadingFailure::NormalSymsLoadingFailure(const stringType& _Message) :
+	runtime_error(_Message.c_str()) {}
 
-void SymsLoadingFailure::informUser(const stringType &msg) const {
+void SymsLoadingFailure::informUser(const stringType &msg) {
 	ostringstream oss;
 	oss<<msg<<CannotLoadFontErrSuffix;
 	infoMsg(oss.str(), "Manageable Error");
 }
-
-TinySymsLoadingFailure::TinySymsLoadingFailure(const stringType& _Message) :
-	SymsLoadingFailure(_Message.c_str()) {}
-
-TinySymsLoadingFailure::TinySymsLoadingFailure(const char *_Message) :
-	SymsLoadingFailure(_Message) {}
-
-NormalSymsLoadingFailure::NormalSymsLoadingFailure(const stringType& _Message) :
-	SymsLoadingFailure(_Message.c_str()) {}
-
-NormalSymsLoadingFailure::NormalSymsLoadingFailure(const char *_Message) :
-	SymsLoadingFailure(_Message) {}

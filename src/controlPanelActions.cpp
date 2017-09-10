@@ -240,13 +240,15 @@ bool ControlPanelActions::loadSettings(const stringType &from/* = ""*/) {
 
 	try {
 		ctrler.symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
+	} catch(TinySymsLoadingFailure&) {
 		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font pointed by this settings file!");
+		SymsLoadingFailure::informUser("Couldn't load the tiny versions of the font pointed "
+									   "by this settings file!");
 		return false;
-	} catch(NormalSymsLoadingFailure &nslf) {
+	} catch(NormalSymsLoadingFailure&) {
 		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the font pointed by this settings file!");
+		SymsLoadingFailure::informUser("Couldn't load the normal versions of the font pointed "
+									   "by this settings file!");
 		return false;
 	}
 
@@ -379,12 +381,14 @@ void ControlPanelActions::newFontFamily(const stringType &fontFile) {
 
 	try {
 		ctrler.symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
+	} catch(TinySymsLoadingFailure&) {
 		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the newly selected font family!");
-	} catch(NormalSymsLoadingFailure &nslf) {
+		SymsLoadingFailure::informUser("Couldn't load the tiny versions "
+									   "of the newly selected font family!");
+	} catch(NormalSymsLoadingFailure&) {
 		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the newly selected font family!");
+		SymsLoadingFailure::informUser("Couldn't load the normal versions "
+									   "of the newly selected font family!");
 	}
 }
 
@@ -408,12 +412,14 @@ void ControlPanelActions::newFontEncoding(int encodingIdx) {
 
 	try {
 		ctrler.symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
+	} catch(TinySymsLoadingFailure&) {
 		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
-	} catch(NormalSymsLoadingFailure &nslf) {
+		SymsLoadingFailure::informUser("Couldn't load the tiny versions of the font "
+									   "whose encoding has been updated!");
+	} catch(NormalSymsLoadingFailure&) {
 		invalidateFont();
-		nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
+		SymsLoadingFailure::informUser("Couldn't load the normal versions of the font "
+									   "whose encoding has been updated!");
 	}
 }
 
@@ -427,13 +433,15 @@ bool ControlPanelActions::newFontEncoding(const stringType &encName) {
 	if(result) {
 		try {
 			ctrler.symbolsChanged();
-		} catch(TinySymsLoadingFailure &tslf) {
+		} catch(TinySymsLoadingFailure&) {
 			invalidateFont();
-			tslf.informUser("Couldn't load the tiny versions of the font whose encoding has been updated!");
+			SymsLoadingFailure::informUser("Couldn't load the tiny versions of the font "
+										   "whose encoding has been updated!");
 			return false;
-		} catch(NormalSymsLoadingFailure &nslf) {
+		} catch(NormalSymsLoadingFailure&) {
 			invalidateFont();
-			nslf.informUser("Couldn't load the normal versions of the font whose encoding has been updated!");
+			SymsLoadingFailure::informUser("Couldn't load the normal versions of the font "
+										   "whose encoding has been updated!");
 			return false;
 		}
 	}
@@ -480,12 +488,13 @@ void ControlPanelActions::newFontSize(int fontSz) {
 
 	try {
 		ctrler.symbolsChanged();
-	} catch(TinySymsLoadingFailure &tslf) {
+	} catch(TinySymsLoadingFailure&) {
 		invalidateFont();
-		tslf.informUser("Couldn't load the tiny versions of the font whose size has been updated!");
-	} catch(NormalSymsLoadingFailure &nslf) {
+		SymsLoadingFailure::informUser("Couldn't load the tiny versions of the font "
+									   "whose size has been updated!");
+	} catch(NormalSymsLoadingFailure&) {
 		invalidateFont();
-		nslf.informUser("Couldn't load the requested size versions of the fonts!");
+		SymsLoadingFailure::informUser("Couldn't load the requested size versions of the fonts!");
 	}
 }
 

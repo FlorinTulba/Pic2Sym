@@ -239,11 +239,11 @@ void Transformer::run() {
 
 	try {
 		me.updateSymbols(); // throws for invalid cmap/size
-	} catch(TinySymsLoadingFailure &tslf) {
+	} catch(TinySymsLoadingFailure&) {
 		timer.invalidate();
 		ptpt.transformFailedToStart();
-		tslf.informUser("Couldn't load the tiny versions of the selected font, "
-						"thus the transformation was aborted!");
+		SymsLoadingFailure::informUser("Couldn't load the tiny versions of the selected font, "
+									   "thus the transformation was aborted!");
 		return;
 	}
 

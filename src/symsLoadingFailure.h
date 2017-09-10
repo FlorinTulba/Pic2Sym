@@ -45,30 +45,31 @@
 
 #pragma warning ( pop )
 
-/// Base exception class for easier catching and handling failures while loading normal / tiny symbols
-class SymsLoadingFailure /*abstract*/ : public std::runtime_error {
-protected:
-	explicit SymsLoadingFailure(const std::stringType &_Message);
-	explicit SymsLoadingFailure(const char *_Message);
-
-public:
-#ifdef AI_REVIEWER_CHECK // Without this virtual destructor, AI Reviewer signals Refused Bequest for the derived types
-	virtual ~SymsLoadingFailure() = 0 {}
-#endif // AI_REVIEWER_CHECK defined
-
-	void informUser(const std::stringType &msg) const; ///< informs the user about the problem
-};
-
-/// Distinct exception class for easier catching and handling failures while loading tiny symbols
-struct TinySymsLoadingFailure : SymsLoadingFailure {
+/// Catching and handling failures while loading tiny symbols.
+struct TinySymsLoadingFailure : std::runtime_error {
 	explicit TinySymsLoadingFailure(const std::stringType &_Message);
-	explicit TinySymsLoadingFailure(const char *_Message);
 };
 
-/// Distinct exception class for easier catching and handling failures while loading normal symbols
-struct NormalSymsLoadingFailure : SymsLoadingFailure {
+/// Catching and handling failures while loading normal symbols
+struct NormalSymsLoadingFailure : std::runtime_error {
 	explicit NormalSymsLoadingFailure(const std::stringType &_Message);
-	explicit NormalSymsLoadingFailure(const char *_Message);
+};
+
+/**
+Substitute of a free function concerning the failure of loading a symbol set.
+
+Previously, this was the base class of the 2 exception types from above.
+
+It was a clear case of `Refused Bequest` (as signaled by AI Reviewer), since:
+- the 2 exception types need only separate catch clauses and never a common one
+- the only method from SymsLoadingFailure appears rather static,
+	thus the exception types cannot override it
+
+So the inheritance was not necessary and this approach also solves the `Refused Bequest` issue.
+*/
+struct SymsLoadingFailure {
+	/// Informs the user about the problem around loading a new set of symbols
+	static void informUser(const std::stringType &msg);
 };
 
 #endif // H_SYMS_LOADING_FAILURE
