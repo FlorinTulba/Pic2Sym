@@ -162,7 +162,7 @@ The [**UserInteraction**][UI] component:
 
 The linked pages and the comments within the code provide more explanations.
 
-Following the [**S.O.L.I.D.**](https://en.wikipedia.org/wiki/SOLID_(object-oriented_design)) design guidelines is important throughout this project. To monitor the compliance with those rules, Pic2Sym has been granted the privilege to use [**AI Reviewer**](http://www.aireviewer.com) (Special thanks for their generous and attentive support). The commits addressing any major issues reported by **AI Reviewer** should be posted under [**Design Optimizations**](https://github.com/FlorinTulba/Pic2Sym/issues/7).
+Following the [**S.O.L.I.D.**](https://en.wikipedia.org/wiki/SOLID_(object-oriented_design)) design guidelines is important throughout this project. To monitor the compliance with those rules, Pic2Sym has been granted the privilege to use [**AI Reviewer**](http://www.aireviewer.com) (Special thanks for their generous and attentive support). The commits addressing any major issues reported by **AI Reviewer** should be posted under [**Design Optimizations**](https://github.com/FlorinTulba/Pic2Sym/issues/7). The newly introduced interfaces imply some time penalty (less than 5 %) during image transformations because of the new handling of the involved objects (dynamic allocation, aggregation and indirection via pointers and virtual calls).
 
 -------
 [Back to start page](../../../ReadMe.md)
