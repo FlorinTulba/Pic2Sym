@@ -158,7 +158,29 @@ public:
 	*/
 	bool isRemovable() const override final;
 
+#ifdef UNIT_TESTING
+	typedef std::unordered_map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
+	/// Constructor that allows filling only the relevant matrices from MatArray
+	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
+			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
+
+	/// A clone with different symIdx
+	std::uniquePtr<const SymData> clone(size_t symIdx_) const;
+#endif // UNIT_TESTING defined
+
+protected:
+	/* Constructors callable from derived classes only */
+
+	/// Used for creation of TinySym and ClusterData
+	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL,
+			double avgPixVal_ = 0., const cv::Point2d &mc_ = cv::Point2d(.5, .5));
+
+	/// Used to create the TinySym centroid of a cluster 
+	SymData(const cv::Point2d &mc_, double avgPixVal_);
+
+private:
+	friend class boost::serialization::access;
 	/**
 	Serializes this SymData object (apart from 'removable' field) to ar.
 
@@ -181,27 +203,6 @@ public:
 		ar & masks;
 #endif // AI_REVIEWER_CHECK not defined
 	}
-
-#ifdef UNIT_TESTING
-	typedef std::unordered_map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
-
-	/// Constructor that allows filling only the relevant matrices from MatArray
-	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
-
-	/// A clone with different symIdx
-	std::uniquePtr<const SymData> clone(size_t symIdx_) const;
-#endif // UNIT_TESTING defined
-
-protected:
-	/* Constructors callable from derived classes only */
-
-	/// Used for creation of TinySym and ClusterData
-	SymData(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL,
-			double avgPixVal_ = 0., const cv::Point2d &mc_ = cv::Point2d(.5, .5));
-
-	/// Used to create the TinySym centroid of a cluster 
-	SymData(const cv::Point2d &mc_, double avgPixVal_);
 };
 
 #ifndef AI_REVIEWER_CHECK

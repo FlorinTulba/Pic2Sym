@@ -93,6 +93,58 @@ public:
 	static const unsigned VERSION = 2U; ///< version of MatchSettings class
 
 	/**
+	Initializes the object.
+
+	When unit testing, it leaves it empty.
+	Otherwise it will load its fields from disk.
+	*/
+	MatchSettings();
+
+	const bool& isHybridResult() const override final { return hybridResultMode; }
+	MatchSettings& setResultMode(bool hybridResultMode_) override;
+
+	const double& get_kSsim() const override final { return kSsim; }
+	MatchSettings& set_kSsim(double kSsim_) override;
+
+	const double& get_kSdevFg() const override final { return kSdevFg; }
+	MatchSettings& set_kSdevFg(double kSdevFg_) override;
+
+	const double& get_kSdevEdge() const override final { return kSdevEdge; }
+	MatchSettings& set_kSdevEdge(double kSdevEdge_) override;
+
+	const double& get_kSdevBg() const override final { return kSdevBg; }
+	MatchSettings& set_kSdevBg(double kSdevBg_) override;
+
+	const double& get_kContrast() const override final { return kContrast; }
+	MatchSettings& set_kContrast(double kContrast_) override;
+
+	const double& get_kCosAngleMCs() const override final { return kCosAngleMCs; }
+	MatchSettings& set_kCosAngleMCs(double kCosAngleMCs_) override;
+
+	const double& get_kMCsOffset() const override final { return kMCsOffset; }
+	MatchSettings& set_kMCsOffset(double kMCsOffset_) override;
+
+	const double& get_kSymDensity() const override final { return kSymDensity; }
+	MatchSettings& set_kSymDensity(double kSymDensity_) override;
+
+	unsigned getBlankThreshold() const override final { return threshold4Blank; }
+	MatchSettings& setBlankThreshold(unsigned threshold4Blank_) override;
+
+#ifndef UNIT_TESTING
+	/// loads user defaults or throws for obsolete / invalid file
+	void replaceByUserDefaults() override;
+	void saveAsUserDefaults() const override;	///< save these as user defaults
+#endif // UNIT_TESTING not defined
+
+	/// Provides a representation of these settings in a verbose manner or not
+	const std::stringType toString(bool verbose) const override;
+
+	/// @return a clone of current settings
+	std::uniquePtr<IMatchSettings> clone() const override;
+
+private:
+	friend class boost::serialization::access;
+	/**
 	Loading a MatchSettings object of a given version.
 	It overwrites *this, reporting any changes
 
@@ -170,56 +222,6 @@ public:
 			<< kSymDensity
 			<< threshold4Blank;
 	}
-
-	/**
-	Initializes the object.
-
-	When unit testing, it leaves it empty.
-	Otherwise it will load its fields from disk.
-	*/
-	MatchSettings();
-
-	const bool& isHybridResult() const override final { return hybridResultMode; }
-	MatchSettings& setResultMode(bool hybridResultMode_) override;
-
-	const double& get_kSsim() const override final { return kSsim; }
-	MatchSettings& set_kSsim(double kSsim_) override;
-
-	const double& get_kSdevFg() const override final { return kSdevFg; }
-	MatchSettings& set_kSdevFg(double kSdevFg_) override;
-
-	const double& get_kSdevEdge() const override final { return kSdevEdge; }
-	MatchSettings& set_kSdevEdge(double kSdevEdge_) override;
-
-	const double& get_kSdevBg() const override final { return kSdevBg; }
-	MatchSettings& set_kSdevBg(double kSdevBg_) override;
-
-	const double& get_kContrast() const override final { return kContrast; }
-	MatchSettings& set_kContrast(double kContrast_) override;
-
-	const double& get_kCosAngleMCs() const override final { return kCosAngleMCs; }
-	MatchSettings& set_kCosAngleMCs(double kCosAngleMCs_) override;
-
-	const double& get_kMCsOffset() const override final { return kMCsOffset; }
-	MatchSettings& set_kMCsOffset(double kMCsOffset_) override;
-
-	const double& get_kSymDensity() const override final { return kSymDensity; }
-	MatchSettings& set_kSymDensity(double kSymDensity_) override;
-
-	unsigned getBlankThreshold() const override final { return threshold4Blank; }
-	MatchSettings& setBlankThreshold(unsigned threshold4Blank_) override;
-
-#ifndef UNIT_TESTING
-	/// loads user defaults or throws for obsolete / invalid file
-	void replaceByUserDefaults() override;
-	void saveAsUserDefaults() const override;	///< save these as user defaults
-#endif // UNIT_TESTING not defined
-
-	/// Provides a representation of these settings in a verbose manner or not
-	const std::stringType toString(bool verbose) const override;
-
-	/// @return a clone of current settings
-	std::uniquePtr<IMatchSettings> clone() const override;
 
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();

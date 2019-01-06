@@ -62,6 +62,33 @@ protected:
 	unsigned fontSz;		///< size of the symbols
 
 public:
+	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
+	SymSettings(unsigned fontSz_) : fontSz(fontSz_) {}
+
+	/// Reset font settings apart from the font size
+	/// which should remain on its value from the Control Panel
+	void reset() override;
+
+	/// Report if these settings are initialized or not
+	bool initialized() const override;
+
+	const std::stringType& getFontFile() const override final { return fontFile; }
+	void setFontFile(const std::stringType &fontFile_) override;
+
+	const std::stringType& getEncoding() const override final { return encoding; }
+	void setEncoding(const std::stringType &encoding_) override;
+
+	const unsigned& getFontSz() const override final { return fontSz; }
+	void setFontSz(unsigned fontSz_) override;
+
+	/// @return a copy of these settings
+	std::uniquePtr<ISymSettings> clone() const override;
+
+	bool operator==(const SymSettings &other) const;
+	bool operator!=(const SymSettings &other) const;
+
+private:
+	friend class boost::serialization::access;
 	/**
 	Loads a SymSettings object from ar overwriting *this and reporting the changes.
 
@@ -97,31 +124,6 @@ public:
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 #endif // AI_REVIEWER_CHECK not defined
-
-	/// Constructor takes an initial fontSz, just to present a valid slider value in Control Panel
-	SymSettings(unsigned fontSz_) : fontSz(fontSz_) {}
-
-	/// Reset font settings apart from the font size
-	/// which should remain on its value from the Control Panel
-	void reset() override;
-
-	/// Report if these settings are initialized or not
-	bool initialized() const override;
-
-	const std::stringType& getFontFile() const override final { return fontFile; }
-	void setFontFile(const std::stringType &fontFile_) override;
-
-	const std::stringType& getEncoding() const override final { return encoding; }
-	void setEncoding(const std::stringType &encoding_) override;
-
-	const unsigned& getFontSz() const override final { return fontSz; }
-	void setFontSz(unsigned fontSz_) override;
-
-	/// @return a copy of these settings
-	std::uniquePtr<ISymSettings> clone() const override;
-
-	bool operator==(const SymSettings &other) const;
-	bool operator!=(const SymSettings &other) const;
 };
 
 #ifndef AI_REVIEWER_CHECK

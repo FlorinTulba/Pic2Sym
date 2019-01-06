@@ -67,6 +67,14 @@ struct VTinySymsIO {
 	VTinySymsIO(VTinySyms &tinySyms_);
 	void operator=(const VTinySymsIO&) = delete;
 
+	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
+	bool loadFrom(const std::stringType &path);
+
+	/// Writes current content to file located at path. Returns false when saving fails.
+	bool saveTo(const std::stringType &path) const;
+
+private:
+	friend class boost::serialization::access;
 	/// Serializes this VTinySymsIO object to ar
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned /*version*/) {
@@ -74,12 +82,6 @@ struct VTinySymsIO {
 		ar & tinySyms;
 #endif // AI_REVIEWER_CHECK not defined
 	}
-
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
-	bool loadFrom(const std::stringType &path);
-
-	/// Writes current content to file located at path. Returns false when saving fails.
-	bool saveTo(const std::stringType &path) const;
 };
 
 #ifndef AI_REVIEWER_CHECK

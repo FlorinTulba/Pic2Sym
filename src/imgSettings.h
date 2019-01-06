@@ -64,6 +64,21 @@ protected:
 	unsigned vMaxSyms;	///< Count of resulted vertical symbols
 
 public:
+
+	/// Constructor takes initial values just to present valid sliders positions in Control Panel
+	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
+		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
+
+	unsigned getMaxHSyms() const override final { return hMaxSyms; }
+	void setMaxHSyms(unsigned syms) override;
+
+	unsigned getMaxVSyms() const override final { return vMaxSyms; }
+	void setMaxVSyms(unsigned syms) override;
+
+	std::uniquePtr<IfImgSettings> clone() const override;
+
+private:
+	friend class boost::serialization::access;
 	/**
 	Overwrites *this with the ImgSettings object read from ar.
 
@@ -97,18 +112,6 @@ public:
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
 #endif // AI_REVIEWER_CHECK not defined
-
-	/// Constructor takes initial values just to present valid sliders positions in Control Panel
-	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
-		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
-
-	unsigned getMaxHSyms() const override final { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms) override;
-
-	unsigned getMaxVSyms() const override final { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms) override;
-
-	std::uniquePtr<IfImgSettings> clone() const override;
 };
 
 #ifndef AI_REVIEWER_CHECK

@@ -94,6 +94,8 @@ public:
 	IfImgSettings& refIS() override final;
 	IMatchSettings& refMS() override final;
 
+private:
+	friend class boost::serialization::access;
 	/**
 	Overwrites *this with the Settings object read from ar.
 

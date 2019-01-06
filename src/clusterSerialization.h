@@ -58,6 +58,16 @@
 
 /// Clusters data that needs to be serialized
 class ClusterIO {
+	friend class boost::serialization::access;
+	/// Serializes this ClusterIO object to ar
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned /*version*/) {
+		ar & clustersCount;
+#ifndef AI_REVIEWER_CHECK
+		ar & clusterLabels;
+#endif // AI_REVIEWER_CHECK not defined
+	}
+
 protected:
 	/// assigned cluster for each symbol when sorted as within the cmap (by symIdx)
 	std::vector<int> clusterLabels;	
@@ -73,15 +83,6 @@ public:
 	ClusterIO(ClusterIO&&) = delete;
 	void operator=(const ClusterIO&) = delete;
 	ClusterIO& operator=(ClusterIO &&other);
-
-	/// Serializes this ClusterIO object to ar
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
-		ar & clustersCount;
-#ifndef AI_REVIEWER_CHECK
-		ar & clusterLabels;
-#endif // AI_REVIEWER_CHECK not defined
-	}
 
 	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
 	bool loadFrom(const std::stringType &path);

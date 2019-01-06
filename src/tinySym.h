@@ -46,6 +46,7 @@
 
 #ifndef AI_REVIEWER_CHECK
 #	include <boost/serialization/array.hpp>
+#	include <boost/serialization/base_object.hpp>
 #	include <boost/serialization/version.hpp>
 #endif // AI_REVIEWER_CHECK not defined
 
@@ -119,10 +120,15 @@ public:
 	/// Inverse diagonal projection divided by TinySymDiagsCount
 	const cv::Mat& getSlashDiagAvgProj() const override final;
 
+private:
+	friend class boost::serialization::access;
 	/// Serializes this TinySym object to ar
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned version) {
-		SymData::serialize(ar, version);
+#ifndef AI_REVIEWER_CHECK
+		ar & boost::serialization::base_object<SymData>(*this);
+#endif // AI_REVIEWER_CHECK not defined
+
 		ar & mat &
 			hAvgProj & vAvgProj &
 			backslashDiagAvgProj & slashDiagAvgProj;
