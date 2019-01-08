@@ -142,8 +142,27 @@ public:
 	/// @return a clone of current settings
 	std::uniquePtr<IMatchSettings> clone() const override;
 
+	/**
+	The classes with MatchSettings might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on MatchSettings
+
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on MatchSettings
+
 	/**
 	Loading a MatchSettings object of a given version.
 	It overwrites *this, reporting any changes
@@ -156,7 +175,13 @@ private:
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
 #ifndef UNIT_TESTING
-		if(version < MatchSettings::VERSION) {
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG(
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"MatchSettings class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
+
+		if(version < VERSION) {
 			/*
 			MatchSettings is considered correctly initialized if its data is read from
 			'res/defaultMatchSettings.txt'(most up-to-date file, which always exists) or
@@ -209,11 +234,14 @@ private:
 		set_kCosAngleMCs(defSettings.kCosAngleMCs);
 		set_kSymDensity(defSettings.kSymDensity);
 		setBlankThreshold(defSettings.threshold4Blank);
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 	/// Saves *this to archive ar using current version of MatchSettings.
 	template<class Archive>
-	void save(Archive &ar, const unsigned/* version*/) const {
+	void save(Archive &ar, const unsigned version) const {
 		ar << hybridResultMode
 			<< kSsim
 			<< kSdevFg << kSdevEdge << kSdevBg
@@ -221,6 +249,9 @@ private:
 			<< kMCsOffset << kCosAngleMCs
 			<< kSymDensity
 			<< threshold4Blank;
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 #ifndef AI_REVIEWER_CHECK

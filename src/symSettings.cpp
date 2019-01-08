@@ -46,6 +46,8 @@
 
 using namespace std;
 
+unsigned SymSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 void SymSettings::reset() {
 	fontFile = encoding = "";
 	// the font size should remain on its value from the Control Panel
@@ -88,4 +90,8 @@ bool SymSettings::operator==(const SymSettings &other) const {
 
 bool SymSettings::operator!=(const SymSettings &other) const {
 	return !((*this)==other);
+}
+
+bool SymSettings::olderVersionDuringLastIO() {
+	return VERSION_FROM_LAST_IO_OP < VERSION;
 }

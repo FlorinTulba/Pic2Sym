@@ -38,6 +38,8 @@
 
 #include "matchSettings.h"
 
+unsigned MatchSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 #pragma warning ( push, 0 )
 
 #include <iostream>
@@ -259,4 +261,8 @@ MatchSettings& MatchSettings::setBlankThreshold(unsigned threshold4Blank_) {
 
 uniquePtr<IMatchSettings> MatchSettings::clone() const {
 	return makeUnique<MatchSettings>(*this);
+}
+
+bool MatchSettings::olderVersionDuringLastIO() {
+	return VERSION_FROM_LAST_IO_OP < VERSION;
 }

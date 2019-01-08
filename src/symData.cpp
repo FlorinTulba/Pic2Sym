@@ -45,6 +45,8 @@
 using namespace std;
 using namespace cv;
 
+unsigned SymData::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
 				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
@@ -72,8 +74,8 @@ SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 #pragma warning( disable : WARN_UNREF_FORMAL_PARAM )
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
-		for(Mat &m : other.masks)
-			m.release();
+	for(Mat &m : other.masks)
+		m.release();
 }
 #pragma warning( default : WARN_UNREF_FORMAL_PARAM )
 
@@ -124,6 +126,10 @@ double SymData::getDiffMinMax() const { return diffMinMax; }
 double SymData::getAvgPixVal() const { return avgPixVal; }
 unsigned long SymData::getCode() const { return code; }
 bool SymData::isRemovable() const { return removable; }
+
+bool SymData::olderVersionDuringLastIO() {
+	return VERSION_FROM_LAST_IO_OP < VERSION;
+}
 
 void SymData::computeFields(const cv::Mat &glyph, SymData &sd, bool forTinySym) {
 	extern const double EPSp1();

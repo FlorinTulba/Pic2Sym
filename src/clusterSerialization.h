@@ -44,9 +44,10 @@
 #ifndef H_CLUSTER_SERIALIZATION
 #define H_CLUSTER_SERIALIZATION
 
+#include "misc.h"
+
 #pragma warning ( push, 0 )
 
-#include "std_string.h"
 #include <vector>
 
 #ifndef AI_REVIEWER_CHECK
@@ -59,13 +60,26 @@
 /// Clusters data that needs to be serialized
 class ClusterIO {
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on ClusterIO
+
 	/// Serializes this ClusterIO object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
+	void serialize(Archive &ar, const unsigned version) {
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG( // source file will be rewritten to reflect this (downgraded) VERSION
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"ClusterIO class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
+
 		ar & clustersCount;
 #ifndef AI_REVIEWER_CHECK
 		ar & clusterLabels;
 #endif // AI_REVIEWER_CHECK not defined
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 protected:
@@ -94,6 +108,21 @@ public:
 
 	const std::vector<int>& getClusterLabels() const { return clusterLabels; }
 	unsigned getClustersCount() const { return clustersCount; }
+
+	/**
+	The classes with cluster data might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on ClusterIO
 };
 
 #ifndef AI_REVIEWER_CHECK

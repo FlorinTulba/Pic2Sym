@@ -48,6 +48,7 @@
 using namespace std;
 using namespace cv;
 
+unsigned TinySym::VERSION_FROM_LAST_IO_OP = UINT_MAX;
 extern unsigned TinySymsSz();
 
 namespace {
@@ -127,6 +128,10 @@ const Mat& TinySym::getHAvgProj() const { return hAvgProj; }
 const Mat& TinySym::getVAvgProj() const { return vAvgProj; }
 const Mat& TinySym::getBackslashDiagAvgProj() const { return backslashDiagAvgProj; }
 const Mat& TinySym::getSlashDiagAvgProj() const { return slashDiagAvgProj; }
+
+bool TinySym::olderVersionDuringLastIO() {
+	return SymData::olderVersionDuringLastIO() || VERSION_FROM_LAST_IO_OP < VERSION;
+}
 
 #ifdef UNIT_TESTING
 

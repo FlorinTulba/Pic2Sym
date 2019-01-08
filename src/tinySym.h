@@ -120,11 +120,36 @@ public:
 	/// Inverse diagonal projection divided by TinySymDiagsCount
 	const cv::Mat& getSlashDiagAvgProj() const override final;
 
+	/**
+	The classes with symbol data might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on TinySym
+
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on TinySym
+
 	/// Serializes this TinySym object to ar
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned version) {
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG( // source file will be rewritten to reflect this (downgraded) VERSION
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"TinySym class (now at version " + to_string(VERSION) + ")!",
+ 				std::domain_error);
+
 #ifndef AI_REVIEWER_CHECK
 		ar & boost::serialization::base_object<SymData>(*this);
 #endif // AI_REVIEWER_CHECK not defined
@@ -132,6 +157,9 @@ private:
 		ar & mat &
 			hAvgProj & vAvgProj &
 			backslashDiagAvgProj & slashDiagAvgProj;
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 };
 

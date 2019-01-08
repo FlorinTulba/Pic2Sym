@@ -74,6 +74,9 @@ protected:
 	const std::uniquePtr<IMatchSettings> ms;		///< settings used during approximation process
 
 public:
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of Settings class
+
 	/**
 	Creates a complete set of settings required during image transformations.
 
@@ -94,8 +97,27 @@ public:
 	IfImgSettings& refIS() override final;
 	IMatchSettings& refMS() override final;
 
+	/**
+	The classes with Settings might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on Settings
+
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on Settings
+
 	/**
 	Overwrites *this with the Settings object read from ar.
 
@@ -104,7 +126,11 @@ private:
 	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
-		UNREFERENCED_PARAMETER(version);
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG(
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"Settings class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
 
 		// read user default match settings
 #ifndef AI_REVIEWER_CHECK
@@ -112,16 +138,22 @@ private:
 			>> dynamic_cast<ImgSettings&>(*is)
 			>> dynamic_cast<MatchSettings&>(*ms);
 #endif // AI_REVIEWER_CHECK not defined
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 	/// Saves *this to ar
 	template<class Archive>
-	void save(Archive &ar, const unsigned) const {
+	void save(Archive &ar, const unsigned version) const {
 #ifndef AI_REVIEWER_CHECK
 		ar << dynamic_cast<const SymSettings&>(*ss)
 			<< dynamic_cast<const ImgSettings&>(*is)
 			<< dynamic_cast<const MatchSettings&>(*ms);
 #endif // AI_REVIEWER_CHECK not defined
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 #ifndef AI_REVIEWER_CHECK
@@ -130,7 +162,7 @@ private:
 };
 
 #ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(Settings, 0)
+BOOST_CLASS_VERSION(Settings, Settings::VERSION)
 #endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_SETTINGS

@@ -67,20 +67,53 @@ struct VTinySymsIO {
 	VTinySymsIO(VTinySyms &tinySyms_);
 	void operator=(const VTinySymsIO&) = delete;
 
-	/// Overwrites current content with the items read from file located at path. Returns false when loading fails.
+	/**
+	Overwrites current content with the items read from file located at path.
+	Calls saveTo to overwrite the file if it contains older class version.
+
+	@return false when loading fails.
+	*/
 	bool loadFrom(const std::stringType &path);
 
 	/// Writes current content to file located at path. Returns false when saving fails.
 	bool saveTo(const std::stringType &path) const;
 
+	/**
+	The classes with tiny symbols data might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on VTinySymsIO
+
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on VTinySymsIO
+
 	/// Serializes this VTinySymsIO object to ar
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
+	void serialize(Archive &ar, const unsigned version) {
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG(
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"VTinySymsIO class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
+
 #ifndef AI_REVIEWER_CHECK
 		ar & tinySyms;
 #endif // AI_REVIEWER_CHECK not defined
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 };
 

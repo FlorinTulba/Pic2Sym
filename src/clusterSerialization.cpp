@@ -56,6 +56,8 @@
 using namespace std;
 using namespace boost::archive;
 
+unsigned ClusterIO::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 ClusterIO& ClusterIO::operator=(ClusterIO &&other) {
 	if(this != &other) {
 		clustersCount = other.clustersCount;
@@ -79,6 +81,14 @@ bool ClusterIO::loadFrom(const stringType &path) {
 
 	*this = std::move(draftClusters);
 
+	if(ClusterIO::olderVersionDuringLastIO()) {
+		ifs.close();
+
+		// Rewriting the file. Same thread is used.
+		if(saveTo(path))
+			cout<<"Updated `"<<path<<"` because it used older versions of some classes required during loading!"<<endl;
+	}
+
 	return true;
 }
 
@@ -99,6 +109,10 @@ bool ClusterIO::saveTo(const stringType &path) const {
 void ClusterIO::reset(unsigned clustersCount_, vector<int> &&clusterLabels_) {
 	clustersCount = clustersCount_;
 	clusterLabels = move(clusterLabels_);
+}
+
+bool ClusterIO::olderVersionDuringLastIO() {
+	return VERSION_FROM_LAST_IO_OP < VERSION;
 }
 
 #endif // UNIT_TESTING not defined

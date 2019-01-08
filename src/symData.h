@@ -41,6 +41,7 @@
 
 #include "symDataBase.h"
 #include "matSerialization.h"
+#include "misc.h"
 
 #pragma warning ( push, 0 )
 
@@ -158,6 +159,21 @@ public:
 	*/
 	bool isRemovable() const override final;
 
+	/**
+	The classes with symbol data might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on SymData
+
 #ifdef UNIT_TESTING
 	typedef std::unordered_map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
@@ -181,6 +197,10 @@ protected:
 
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on SymData
+
 	/**
 	Serializes this SymData object (apart from 'removable' field) to ar.
 
@@ -188,20 +208,33 @@ private:
 	as filtering options might be different for distinct run sessions.
 	*/
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned /*version*/) {
+	void serialize(Archive &ar, const unsigned version) {
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG( // source file will be rewritten to reflect this (downgraded) VERSION
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"SymData class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
+
 		ar & code & symIdx & minVal & diffMinMax & avgPixVal;
 		ar & mc.x & mc.y;
 		ar & negSym;
 
-		// Make sure a loaded symbol is initially not removable
-#pragma warning( disable : WARN_CONST_COND_EXPR )
-		if(Archive::is_loading::value && removable)
-#pragma warning( default : WARN_CONST_COND_EXPR )
-			removable = false;
-
 #ifndef AI_REVIEWER_CHECK
 		ar & masks;
 #endif // AI_REVIEWER_CHECK not defined
+
+#pragma warning( disable : WARN_CONST_COND_EXPR )
+		if(Archive::is_loading::value)
+#pragma warning( default : WARN_CONST_COND_EXPR )
+		{
+			if(removable)
+				removable = false; // Make sure a loaded symbol is initially not removable
+
+		} else { // Saving
+		}
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 };
 

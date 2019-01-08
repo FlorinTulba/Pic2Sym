@@ -64,6 +64,8 @@ protected:
 	unsigned vMaxSyms;	///< Count of resulted vertical symbols
 
 public:
+	// BUILD CLEAN WHEN THIS CHANGES!
+	static const unsigned VERSION = 0U; ///< version of ImgSettings class
 
 	/// Constructor takes initial values just to present valid sliders positions in Control Panel
 	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
@@ -77,8 +79,27 @@ public:
 
 	std::uniquePtr<IfImgSettings> clone() const override;
 
+	/**
+	The classes with ImgSettings might need to aggregate more information.
+	Thus, these classes could have several versions while some of them have serialized instances.
+
+	When loading such older classes, the extra information needs to be deduced.
+	It makes sense to resave the file with the additional data to avoid recomputing it
+	when reloading the same file.
+
+	The method below helps checking if the loaded classes are the newest ones or not.
+	Saved classes always use the newest class version.
+
+	Before serializing the first object of this class, the method should return false.
+	*/
+	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on ImgSettings
+
 private:
 	friend class boost::serialization::access;
+
+	/// UINT_MAX or the class version of the last loaded/saved object
+	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on ImgSettings
+
 	/**
 	Overwrites *this with the ImgSettings object read from ar.
 
@@ -87,7 +108,11 @@ private:
 	*/
 	template<class Archive>
 	void load(Archive &ar, const unsigned version) {
-		UNREFERENCED_PARAMETER(version);
+		if(version > VERSION)
+			THROW_WITH_VAR_MSG(
+				"Cannot serialize future version (" + to_string(version) + ") of "
+				"ImgSettings class (now at version " + to_string(VERSION) + ")!",
+				std::domain_error);
 
 		// It is useful to see which settings changed when loading
 		ImgSettings defSettings(*this); // create as copy of previous values
@@ -100,14 +125,20 @@ private:
 		// these show message when there are changes
 		setMaxHSyms(defSettings.hMaxSyms);
 		setMaxVSyms(defSettings.vMaxSyms);
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 
 	/// Saves *this to ar
 	template<class Archive>
-	void save(Archive &ar, const unsigned) const {
+	void save(Archive &ar, const unsigned version) const {
 #ifndef AI_REVIEWER_CHECK
 		ar << hMaxSyms << vMaxSyms;
 #endif // AI_REVIEWER_CHECK not defined
+
+		if(version != VERSION_FROM_LAST_IO_OP)
+			VERSION_FROM_LAST_IO_OP = version;
 	}
 #ifndef AI_REVIEWER_CHECK
 	BOOST_SERIALIZATION_SPLIT_MEMBER();
@@ -115,7 +146,7 @@ private:
 };
 
 #ifndef AI_REVIEWER_CHECK
-BOOST_CLASS_VERSION(ImgSettings, 0)
+BOOST_CLASS_VERSION(ImgSettings, ImgSettings::VERSION)
 #endif // AI_REVIEWER_CHECK not defined
 
 #endif // H_IMG_SETTINGS

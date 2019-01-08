@@ -52,6 +52,8 @@ using namespace std;
 using namespace boost::filesystem;
 using namespace cv;
 
+unsigned ImgSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 bool Img::reset(const Mat &source_) {
 	if(source_.empty())
 		return false;
@@ -100,4 +102,8 @@ void ImgSettings::setMaxVSyms(unsigned syms) {
 
 uniquePtr<IfImgSettings> ImgSettings::clone() const {
 	return makeUnique<ImgSettings>(*this);
+}
+
+bool ImgSettings::olderVersionDuringLastIO() {
+	return VERSION_FROM_LAST_IO_OP < VERSION;
 }

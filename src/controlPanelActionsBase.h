@@ -55,7 +55,8 @@ struct IControlPanelActions /*abstract*/ {
 	virtual void restoreUserDefaultMatchSettings() = 0;
 	virtual void setUserDefaultMatchSettings() const = 0; ///< saving current IMatchSettings to 'initMatchSettings.cfg'
 
-	virtual bool loadSettings(const std::stringType &from = "") = 0;	///< updating the Settings object
+	/// Updating the Settings object. Rewriting the source file if it contains older versions of some classes
+	virtual bool loadSettings(const std::stringType &from = "") = 0;
 	virtual void saveSettings() const = 0;	///< saving the Settings object
 
 	virtual unsigned getFontEncodingIdx() const = 0; ///< needed to restore encoding index

@@ -56,6 +56,8 @@
 using namespace std;
 using namespace boost::archive;
 
+unsigned VTinySymsIO::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 VTinySymsIO::VTinySymsIO(VTinySyms &tinySyms_) : tinySyms(tinySyms_) {}
 
 bool VTinySymsIO::loadFrom(const stringType &path) {
@@ -72,6 +74,14 @@ bool VTinySymsIO::loadFrom(const stringType &path) {
 	}
 #endif // AI_REVIEWER_CHECK
 
+	if(olderVersionDuringLastIO()) {
+		ifs.close();
+
+		// Rewriting the file. Same thread is used, as a detached thread needs non-'volatile' tinySyms
+		if(saveTo(path))
+			cout<<"Updated `"<<path<<"` because it used older versions of some classes required during loading!"<<endl;
+	}
+
 	return true;
 }
 
@@ -87,6 +97,10 @@ bool VTinySymsIO::saveTo(const stringType &path) const {
 #else // AI_REVIEWER_CHECK defined
 	return true;
 #endif // AI_REVIEWER_CHECK
+}
+
+bool VTinySymsIO::olderVersionDuringLastIO() {
+	return TinySym::olderVersionDuringLastIO() || VERSION_FROM_LAST_IO_OP < VERSION;
 }
 
 #endif // UNIT_TESTING

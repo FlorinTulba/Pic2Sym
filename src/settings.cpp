@@ -43,6 +43,8 @@
 
 using namespace std;
 
+unsigned Settings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+
 extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
 extern const unsigned Settings_MIN_H_SYMS;
 extern const unsigned Settings_MAX_H_SYMS;
@@ -106,6 +108,13 @@ IfImgSettings& Settings::refIS() {
 IMatchSettings& Settings::refMS() {
 	assert(ms);
 	return *ms;
+}
+
+bool Settings::olderVersionDuringLastIO() {
+	return MatchSettings::olderVersionDuringLastIO() ||
+		SymSettings::olderVersionDuringLastIO() ||
+		ImgSettings::olderVersionDuringLastIO() ||
+		VERSION_FROM_LAST_IO_OP < VERSION;
 }
 
 ostream& operator<<(ostream &os, const ISettings &s) {

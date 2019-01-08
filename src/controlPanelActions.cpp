@@ -252,6 +252,18 @@ bool ControlPanelActions::loadSettings(const stringType &from/* = ""*/) {
 		return false;
 	}
 
+	if(Settings::olderVersionDuringLastIO())
+#pragma warning ( disable : WARN_SEH_NOT_CAUGHT )
+		try { // Rewriting the file. Same thread is used.
+			ofstream ofs(sourceFile, ios::binary);
+			binary_oarchive oa(ofs);
+			oa << dynamic_cast<const Settings&>(cfg);
+			cout<<"Rewritten settings to `"<<sourceFile
+				<<"` because it used older versions of some classes!"<<endl;
+		} catch(...) {}
+
+#pragma warning ( default : WARN_SEH_NOT_CAUGHT )
+
 	return true;
 }
 
