@@ -104,7 +104,13 @@ public:
 	/// Computing max score of a this MatchAspect
 	double maxScore(const CachedData &cachedData) const;
 
-	/// Providing a clue about how complex is this MatchAspect compared to the others
+	/**
+	Providing a clue about how complex is this MatchAspect compared to the others.
+
+	@return 1000 for Structural Similarity (the slowest one) and proportionally lower values
+		for the rest of the aspects when timed individually using DengXian regular Unicode size 10,
+		no preselection, no symbol batching and no hybrid result
+	*/
 	virtual double relativeComplexity() const = 0;
 
 	virtual const std::stringType& name() const = 0; ///< provides aspect's name
@@ -159,6 +165,7 @@ STEPS TO CREATE A NEW 'MatchAspect' (<NewAspect>):
 #endif // UNIT_TESTING defined
 		/// Constructor Details
 		<NewAspect>(const IMatchSettings &ms);
+		void operator=(const <NewAspect>&) = delete;
 
 		REGISTER_MATCH_ASPECT(<NewAspect>);
 	};

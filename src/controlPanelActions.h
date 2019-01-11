@@ -126,6 +126,7 @@ public:
 	void newFontSize(int fontSz) override;
 	void newSymsBatchSize(int symsBatchSz) override;
 	void newStructuralSimilarityFactor(double k) override;
+	void newCorrelationFactor(double k) override;
 	void newUnderGlyphCorrectnessFactor(double k) override;
 	void newGlyphEdgeCorrectnessFactor(double k) override;
 	void newAsideGlyphCorrectnessFactor(double k) override;

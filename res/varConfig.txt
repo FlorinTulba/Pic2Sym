@@ -20,6 +20,8 @@ ParallelizeTr_PatchRowLoops	true
 ; Constants for the sliders controlling the range of each matching aspect
 ControlPanel_Converter_StructuralSim_maxSlider	100
 ControlPanel_Converter_StructuralSim_maxReal	2.5
+ControlPanel_Converter_Correlation_maxSlider	100
+ControlPanel_Converter_Correlation_maxReal	1.
 ControlPanel_Converter_Correctness_maxSlider	100
 ControlPanel_Converter_Correctness_maxReal	2.5
 ControlPanel_Converter_Contrast_maxSlider	100
@@ -231,6 +233,7 @@ ControlPanel_encodingTrName	"Encoding:"
 ControlPanel_symsBatchSzTrName	"Batch syms"
 ControlPanel_hybridResultTrName	"Hybrid Result"
 ControlPanel_structuralSimTrName	"Struct Sim:"
+ControlPanel_correlationTrName	"Correlation:"
 ControlPanel_underGlyphCorrectnessTrName	"Fit under:"
 ControlPanel_glyphEdgeCorrectnessTrName	"Fit edge:"
 ControlPanel_asideGlyphCorrectnessTrName	"Fit aside:"
@@ -256,14 +259,14 @@ Controller_PREFIX_GLYPH_PROGRESS	"Processing glyphs. Please wait"
 Controller_PREFIX_TRANSFORMATION_PROGRESS	"Transforming image. Please wait"
 
 ; Table headers for logging information about each approximated patch
-MatchParams_HEADER	"#ssim,	#sdFg,	#sdEdge,	#sdBg,	#fg,	#bg,	#mcPaX,	#mcPaY,	#mcPX,	#mcPY,	#density"
+MatchParams_HEADER	"#ssim,	#correl,	#sdFg,	#sdEdge,	#sdBg,	#fg,	#bg,	#mcPaX,	#mcPaY,	#mcPX,	#mcPY,	#density"
 BestMatch_HEADER	"#GlyphCode,	#ChosenScore,	"
 
 ; Text displayed within the About dialog. It contains placeholder $(PIC2SYM_VERSION) to be replaced with the actual version of the application
 ControlPanel_aboutText	"\t\tPic2Sym (v$(PIC2SYM_VERSION))\n\nThis application approximates images by a grid of\ncolored symbols with colored backgrounds.\n\nFor details, please visit:\n<https://github.com/FlorinTulba/Pic2Sym>\n\nor contact the author at: <florintulba@yahoo.com>.\n\n\n(c) 2016-2019 Florin Tulba under the GNU AGPL v3 license:\n<http://www.gnu.org/licenses/agpl-3.0.txt>"
 
 ; Text for the Instructions dialog
-ControlPanel_instructionsText	"The Control Panel allows setting:\n\n- which image to be approximated by symbols from a charset\n- maximum number of symbols used horizontally & vertically\n- which font family provides these symbols\n- the desired encoding within the selected font family\n- the size of these symbols\n- how to batch the remaining symbols to gradually enhance the\n   approximation, while displaying draft results\n- the result mode: normal or hybrid (cosmeticized version)\n- a factor to encourage structural similarity\n- factors to favor better correspondence of foreground\n   (under glyph) / contours (edges of the glyph) /\n   background (around, aside glyph)\n- a factor to encourage matching symbols with large contrast\n- a factor to encourage 'gravitational' smoothness\n   (match patch 'mass center')\n- a factor to enhance directionality (match patch 'gradient')\n- a factor to favor selecting larger symbols over small ones\n- the threshold contrast of determined matching glyphs below\n   which to replace these barely visible matches with Blanks\n\nThe rudimentary sliders used here won't always show valid ranges.\nThey all must be integer, start from 0, end at least on 1.\nWhen their labels is truncated, clicking on them will help."
+ControlPanel_instructionsText	"The Control Panel allows setting:\n\n- which image to be approximated by symbols from a charset\n- maximum number of symbols used horizontally & vertically\n- which font family provides these symbols\n- the desired encoding within the selected font family\n- the size of these symbols\n- how to batch the remaining symbols to gradually enhance the\n   approximation, while displaying draft results\n- the result mode: normal or hybrid (cosmeticized version)\n- a factor to encourage structural similarity\n- a factor to encourage correlation\n- factors to favor better correspondence of foreground\n   (under glyph) / contours (edges of the glyph) /\n   background (around, aside glyph)\n- a factor to encourage matching symbols with large contrast\n- a factor to encourage 'gravitational' smoothness\n   (match patch 'mass center')\n- a factor to enhance directionality (match patch 'gradient')\n- a factor to favor selecting larger symbols over small ones\n- the threshold contrast of determined matching glyphs below\n   which to replace these barely visible matches with Blanks\n\nThe rudimentary sliders used here won't always show valid ranges.\nThey all must be integer, start from 0, end at least on 1.\nWhen their labels is truncated, clicking on them will help."
 
 ; Copyright note
 copyrightText	"Running 'Pic2Sym' application, which approximates images by a grid of colored\nsymbols with colored backgrounds.\n\n\nThe entire project can be found at: <https://github.com/FlorinTulba/Pic2Sym>\n\nThis program is free software: you can use its results,\nredistribute it and/or modify it under the terms of the GNU\nAffero General Public License version 3 as published by the\nFree Software Foundation.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\nGNU Affero General Public License for more details.\n\nYou should have received a copy of the GNU Affero General Public License\nalong with this program ('agpl-3.0.txt').\nIf not, see <http://www.gnu.org/licenses/agpl-3.0.txt>."

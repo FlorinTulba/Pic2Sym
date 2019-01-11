@@ -47,14 +47,24 @@ using namespace cv;
 
 unsigned SymData::VERSION_FROM_LAST_IO_OP = UINT_MAX;
 
-SymData::SymData(const Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, 
-				 double avgPixVal_, const Point2d &mc_, const MatArray &masks_, bool removable_/* = false*/) :
+SymData::SymData(const Mat &negSym_, const cv::Mat &symMiu0_,
+				 unsigned long code_, size_t symIdx_, 
+				 double minVal_, double diffMinMax_, 
+				 double avgPixVal_, double normSymMiu0_,
+				 const Point2d &mc_, 
+				 const MatArray &masks_, 
+				 bool removable_/* = false*/) :
 	code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-	avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_), removable(removable_), masks(masks_) {}
+	avgPixVal(avgPixVal_), normSymMiu0(normSymMiu0_), mc(mc_),
+	negSym(negSym_), symMiu0(symMiu0_),
+	removable(removable_), masks(masks_) {}
 
 SymData::SymData(const IPixMapSym &pms, unsigned sz, bool forTinySym) :
-		code(pms.getSymCode()), symIdx(pms.getSymIdx()), avgPixVal(pms.getAvgPixVal()), mc(pms.getMc()),
-		negSym(pms.toMat(sz, true)), removable(pms.isRemovable()) {
+		code(pms.getSymCode()), symIdx(pms.getSymIdx()),
+		avgPixVal(pms.getAvgPixVal()),
+		mc(pms.getMc()),
+		negSym(pms.toMat(sz, true)),
+		removable(pms.isRemovable()) {
 	computeFields(pms.toMatD01(sz), *this, forTinySym);
 }
 
@@ -66,14 +76,16 @@ SymData::SymData(const Point2d &mc_, double avgPixVal_) : avgPixVal(avgPixVal_),
 
 SymData::SymData(const SymData &other) : code(other.code), symIdx(other.symIdx),
 		minVal(other.minVal), diffMinMax(other.diffMinMax),
-		avgPixVal(other.avgPixVal), mc(other.mc),
-		negSym(other.negSym), removable(other.removable), masks(other.masks) {}
+		avgPixVal(other.avgPixVal), normSymMiu0(other.normSymMiu0), mc(other.mc),
+		negSym(other.negSym), symMiu0(other.symMiu0),
+		removable(other.removable), masks(other.masks) {}
 
 // Delegating constructors for virtual inheritance triggers this warning in VS2013:
 // https://connect.microsoft.com/VisualStudio/feedback/details/774986/codename-milan-delegating-constructors-causes-warning-c4100-initvbases-unreferenced-formal-parameter-w4-when-derived-class-uses-virtual-inheritance
 #pragma warning( disable : WARN_UNREF_FORMAL_PARAM )
 SymData::SymData(SymData &&other) : SymData(other) {
 	other.negSym.release();
+	other.symMiu0.release();
 	for(Mat &m : other.masks)
 		m.release();
 }
@@ -89,8 +101,10 @@ SymData& SymData::operator=(const SymData &other) {
 		REPLACE_FIELD(minVal);
 		REPLACE_FIELD(diffMinMax);
 		REPLACE_FIELD(avgPixVal);
+		REPLACE_FIELD(normSymMiu0);
 		REPLACE_FIELD(mc);
 		REPLACE_FIELD(negSym);
+		REPLACE_FIELD(symMiu0);
 		REPLACE_FIELD(removable);
 
 		for(int i = 0; i < ISymData::MATRICES_COUNT; ++i)
@@ -107,6 +121,7 @@ SymData& SymData::operator=(SymData &&other) {
 
 	if(this != &other) {
 		other.negSym.release();
+		other.symMiu0.release();
 
 		for(Mat &m : other.masks)
 			m.release();
@@ -117,6 +132,8 @@ SymData& SymData::operator=(SymData &&other) {
 
 const Point2d& SymData::getMc() const { return mc; }
 const Mat& SymData::getNegSym() const { return negSym; }
+const Mat& SymData::getSymMiu0() const { return symMiu0; }
+double SymData::getNormSymMiu0() const { return normSymMiu0; }
 const ISymData::MatArray& SymData::getMasks() const { return masks; }
 size_t SymData::getSymIdx() const { return symIdx; }
 #ifdef UNIT_TESTING
@@ -131,8 +148,15 @@ bool SymData::olderVersionDuringLastIO() {
 	return VERSION_FROM_LAST_IO_OP < VERSION;
 }
 
+void SymData::computeSymMiu0Related(const cv::Mat &glyph, double miu, SymData &sd) {
+	sd.symMiu0 = glyph - miu;
+	sd.normSymMiu0 = norm(sd.symMiu0, NORM_L2);
+}
+
 void SymData::computeFields(const cv::Mat &glyph, SymData &sd, bool forTinySym) {
 	extern const double EPSp1();
+
+	computeSymMiu0Related(glyph, sd.avgPixVal, sd);
 
 	/*
 	SymData_computeFields_STILL_BG and STILL_FG from below are constants for foreground / background thresholds.

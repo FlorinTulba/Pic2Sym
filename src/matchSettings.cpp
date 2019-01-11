@@ -110,6 +110,7 @@ bool MatchSettings::parseCfg() {
 	bool correct = false;
 	const bool newResultMode = parser.read<bool>("HYBRID_RESULT");
 	const double new_kSsim = parser.read<double>("STRUCTURAL_SIMILARITY"),
+		new_kCorrel = parser.read<double>("CORRELATION_CORRECTNESS"),
 		new_kSdevFg = parser.read<double>("UNDER_SYM_CORRECTNESS"),
 		new_kSdevEdge = parser.read<double>("SYM_EDGE_CORRECTNESS"),
 		new_kSdevBg = parser.read<double>("ASIDE_SYM_CORRECTNESS"),
@@ -120,7 +121,8 @@ bool MatchSettings::parseCfg() {
 	const unsigned newThreshold4Blank = parser.read<unsigned>("THRESHOLD_FOR_BLANK");
 
 	if(!ISettings::isBlanksThresholdOk(newThreshold4Blank) ||
-	   new_kSsim < 0. || new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
+	   new_kSsim < 0. || new_kCorrel < 0. ||
+	   new_kSdevFg < 0. || new_kSdevEdge < 0. || new_kSdevBg < 0. ||
 	   new_kContrast < 0. || new_kMCsOffset < 0. || new_kCosAngleMCs < 0. ||
 	   new_kSymDensity < 0.)
 	   cerr<<"One or more properties in the configuration file are out of their range!"<<endl;
@@ -128,6 +130,7 @@ bool MatchSettings::parseCfg() {
 		correct = true;
 		setResultMode(newResultMode);
 		set_kSsim(new_kSsim);
+		set_kCorrel(new_kCorrel);
 		set_kSdevFg(new_kSdevFg);
 		set_kSdevEdge(new_kSdevEdge);
 		set_kSdevBg(new_kSdevBg);
@@ -191,6 +194,14 @@ MatchSettings& MatchSettings::set_kSsim(double kSsim_) {
 	if(kSsim != kSsim_) {
 		cout<<"kSsim"<<" : "<<kSsim<<" -> "<<kSsim_<<endl;
 		kSsim = kSsim_;
+	}
+	return *this;
+}
+
+MatchSettings& MatchSettings::set_kCorrel(double kCorrel_) {
+	if(kCorrel != kCorrel_) {
+		cout<<"kCorrel"<<" : "<<kCorrel<<" -> "<<kCorrel_<<endl;
+		kCorrel = kCorrel_;
 	}
 	return *this;
 }

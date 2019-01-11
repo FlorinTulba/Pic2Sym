@@ -6,43 +6,48 @@ HYBRID_RESULT	false
 
 ; Real coefficient that encourages structural similarity
 ; Set it to 0 if this is not an important match aspect.
-; Valid range 0 .. 2.5.  1 is ok.
+; Valid range 0 .. 2.5
 STRUCTURAL_SIMILARITY	2.5
+
+; Real coefficient that encourages a correlation between glyph and patch.
+; Set it to 0 if this is not an important match aspect.
+; Valid range 0 .. 1
+CORRELATION_CORRECTNESS	1.0
 
 ; Real coefficient that penalizes poor glyph matches when compared
 ; strictly to the region covered by the glyph's pixels
 ; Set it to 0 if it doesn't matter what lies under glyph's contour.
-; Valid range 0 .. 2.5.  1 is ok.
+; Valid range 0 .. 2.5
 UNDER_SYM_CORRECTNESS	0.25
 
 ; Real coefficient that penalizes poor glyph edge matches when compared
 ; strictly to the transition regions (contours) of the glyph.
 ; Set it to 0 if it doesn't matter what lies under the contour of the glyph.
-; Valid range 0 .. 2.5.  1 is ok.
+; Valid range 0 .. 2.5
 SYM_EDGE_CORRECTNESS 1.0
 
 ; Real coefficient that penalizes poor background glyph matches when compared
 ; strictly to the region falling aside the glyph.
 ; Set it to 0 if it doesn't matter what lies aside the glyph.
-; Valid range 0 .. 2.5.  1 is ok.
+; Valid range 0 .. 2.5
 ASIDE_SYM_CORRECTNESS	0.75
 
 ; Real coefficient that penalizes extremely low contrast matches,
 ; favoring less accurate ones, but which will bring more contrast.
 ; Set it to 0 if correctness is more important than a fancy result.
-; Valid range 0 .. 2.5.  1 is ok.
+; Valid range 0 .. 2.5
 MORE_CONTRAST_PREF	0.1
 
 ; Real coefficient that favors glyphs naturally disposed
 ; near the 'center of action' from the original area to approximate.
 ; Set it to 0 if chosen glyph can be far from the 'gravitational point' of the patch.
-; Valid range 0 .. 2.  1 is ok.
+; Valid range 0 .. 2
 GRAVITATIONAL_SMOOTHNESS	0.2
 
 ; Real coefficient that favors glyphs naturally disposed in directions that
 ; simulate the color transition (gradient) from the original area to approximate.
 ; Set it to 0 if color transition directions don't matter.
-; Valid range 0 .. 2.  1 is ok.
+; Valid range 0 .. 2
 DIRECTIONAL_SMOOTHNESS	0.2
 
 ; Real coefficient that might enforce choosing larger symbols, like an 'A' instead of 'i',

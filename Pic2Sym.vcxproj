@@ -50,6 +50,7 @@
     <ClInclude Include="src\controllerBase.h" />
     <ClInclude Include="src\controlPanelActions.h" />
     <ClInclude Include="src\controlPanelActionsBase.h" />
+    <ClInclude Include="src\correlationAspect.h" />
     <ClInclude Include="src\countSkippedAspects.h" />
     <ClInclude Include="src\extBoxBlur.h" />
     <ClInclude Include="src\filledRectanglesFilter.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\controlPanelActions.cpp" />
+    <ClCompile Include="src\correlationAspect.cpp" />
     <ClCompile Include="src\dlgs.cpp" />
     <ClCompile Include="src\extBoxBlur.cpp" />
     <ClCompile Include="src\filledRectanglesFilter.cpp" />

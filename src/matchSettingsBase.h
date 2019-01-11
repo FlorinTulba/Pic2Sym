@@ -57,6 +57,10 @@ struct IMatchSettings /*abstract*/ {
 	virtual const double& get_kSsim() const = 0;
 	virtual IMatchSettings& set_kSsim(double kSsim_) = 0;				///< Displays the update, if any
 
+	/// power of factor controlling correlation aspect
+	virtual const double& get_kCorrel() const = 0;
+	virtual IMatchSettings& set_kCorrel(double kCorrel_) = 0;				///< Displays the update, if any
+
 	/// power of factor for foreground glyph-patch correlation
 	virtual const double& get_kSdevFg() const = 0;
 	virtual IMatchSettings& set_kSdevFg(double kSdevFg_) = 0;			///< Displays the update, if any

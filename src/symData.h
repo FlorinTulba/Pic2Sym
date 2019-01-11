@@ -56,6 +56,8 @@
 
 #pragma warning ( pop )
 
+extern const double INV_255();
+
 struct IPixMapSym; // Forward declaration
 
 /// Most symbol information
@@ -69,6 +71,7 @@ protected:
 	cv::Point2d mc = cv::Point2d(.5, .5);
 
 	cv::Mat negSym;	///< negative of the symbol (0..255 byte for normal symbols; double for tiny)
+	cv::Mat symMiu0;///< The pixel values (double) are shifted so that the average pixel value (miu) is 0
 
 	MatArray masks;			///< various masks
 
@@ -76,6 +79,7 @@ protected:
 	double minVal = 0.;		///< the value of darkest pixel, range 0..1
 	double diffMinMax = 1.;	///< difference between brightest and darkest pixels, each in 0..1
 	double avgPixVal = 0.;	///< average pixel value, each pixel in 0..1
+	double normSymMiu0 = 0.;///< norm L2 of (symbol - average pixel value)
 
 	unsigned long code = ULONG_MAX;	///< the code of the symbol
 
@@ -92,6 +96,9 @@ protected:
 	*/
 	bool removable = false;
 
+	/// Computes symMiu0 and normSymMiu0 from sd based on glyph and its miu
+	static void computeSymMiu0Related(const cv::Mat &glyph, double miu, SymData &sd);
+
 	/**
 	Computes most information about a symbol based on glyph parameter.
 	It's also used to spare the constructor of SymData from performing computeFields' job.
@@ -104,12 +111,17 @@ protected:
 public:
 #ifndef AI_REVIEWER_CHECK
 	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ISymData class
+	static const unsigned VERSION = 1U; ///< version of ISymData class
 #endif // AI_REVIEWER_CHECK not defined
 
 	/// Fast constructor with the fields precomputed by computeFields - suitable for critical sections
-	SymData(const cv::Mat &negSym_, unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
-			double avgPixVal_, const cv::Point2d &mc_, const MatArray &masks_, bool removable_ = false);
+	SymData(const cv::Mat &negSym_, const cv::Mat &symMiu0_,
+			unsigned long code_, size_t symIdx_,
+			double minVal_, double diffMinMax_,
+			double avgPixVal_, double normSymMiu0_,
+			const cv::Point2d &mc_,
+			const MatArray &masks_,
+			bool removable_ = false);
 	SymData(const IPixMapSym &pms, unsigned sz, bool forTinySym);
 
 	SymData(const SymData &other);
@@ -125,6 +137,12 @@ public:
 
 	/// negative of the symbol (0..255 byte for normal symbols; double for tiny)
 	const cv::Mat& getNegSym() const override final;
+
+	/// The pixel values (double) are shifted so that the average pixel value (miu) is 0 
+	const cv::Mat& getSymMiu0() const override final;
+
+	/// norm L2 of (symbol - average pixel value)
+	double getNormSymMiu0() const override final;
 
 	/// various masks
 	const MatArray& getMasks() const override final;
@@ -178,8 +196,10 @@ public:
 	typedef std::unordered_map< int, const cv::Mat > IdxMatMap; ///< Used in the SymData constructor from below
 
 	/// Constructor that allows filling only the relevant matrices from MatArray
-	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_, double avgPixVal_,
-			const cv::Point2d &mc_, const IdxMatMap &relevantMats, const cv::Mat &negSym_ = cv::Mat());
+	SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
+			double avgPixVal_, double normSymMiu0_,
+			const cv::Point2d &mc_, const IdxMatMap &relevantMats,
+			const cv::Mat &negSym_ = cv::Mat(), const cv::Mat &symMiu0_ = cv::Mat());
 
 	/// A clone with different symIdx
 	std::uniquePtr<const SymData> clone(size_t symIdx_) const;
@@ -227,10 +247,19 @@ private:
 		if(Archive::is_loading::value)
 #pragma warning( default : WARN_CONST_COND_EXPR )
 		{
+			if(version > 0U) {
+				ar & symMiu0 & normSymMiu0;
+			} else {
+				cv::Mat sym = negSym.clone();
+				sym.convertTo(sym, CV_64FC1, INV_255());
+				computeSymMiu0Related(sym, avgPixVal, *this);
+			}
+
 			if(removable)
 				removable = false; // Make sure a loaded symbol is initially not removable
 
 		} else { // Saving
+			ar & symMiu0 & normSymMiu0;
 		}
 
 		if(version != VERSION_FROM_LAST_IO_OP)

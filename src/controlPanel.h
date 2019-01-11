@@ -132,7 +132,7 @@ protected:
 	int encoding, fontSz;
 	int symsBatchSz;
 	int hybridResult;
-	int structuralSim, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
+	int structuralSim, correlationCorrectness, underGlyphCorrectness, glyphEdgeCorrectness, asideGlyphCorrectness;
 	int moreContrast, gravity, direction, largerSym;
 	int thresh4Blanks;
 

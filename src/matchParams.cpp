@@ -83,6 +83,8 @@ const MatchParams& MatchParams::perfectMatch() {
 
 		idealMatch.ssim = 1.;		// Perfect structural similarity
 
+		idealMatch.absCorr = 1.;	// Perfect correlation
+
 		idealMatch.symDensity = 1.;	// Largest density possible
 
 		idealMatch.contrast = 255.;	// Largest contrast possible
@@ -95,6 +97,9 @@ const MatchParams& MatchParams::perfectMatch() {
 
 const optional<Point2d>& MatchParams::getMcPatch() const { return mcPatch; }
 #ifdef UNIT_TESTING
+const boost::optional<double>& MatchParams::getPatchSum() const { return patchSum; }
+const boost::optional<cv::Mat>& MatchParams::getPatchSq() const { return patchSq; }
+const boost::optional<double>& MatchParams::getNormPatchMinMiu() const { return normPatchMinMiu; }
 const optional<Mat>& MatchParams::getBlurredPatch() const { return blurredPatch; }
 const optional<Mat>& MatchParams::getBlurredPatchSq() const { return blurredPatchSq; }
 const optional<Mat>& MatchParams::getVariancePatch() const { return variancePatch; }
@@ -108,6 +113,7 @@ const optional<double>& MatchParams::getSymDensity() const { return symDensity; 
 const wstringType MatchParams::toWstring() const {
 	wostringstream os;
 	os<<ssim<<COMMA()
+		<<absCorr<<COMMA()
 		<<sdevFg<<COMMA()<<sdevEdge<<COMMA()<<sdevBg<<COMMA()
 		<<fg<<COMMA()<<bg<<COMMA();
 
@@ -131,6 +137,7 @@ const optional<double>& MatchParams::getFg() const { return fg; }
 const optional<double>& MatchParams::getBg() const { return bg; }
 const optional<double>& MatchParams::getContrast() const { return contrast; }
 const optional<double>& MatchParams::getSsim() const { return ssim; }
+const optional<double>& MatchParams::getAbsCorr() const { return absCorr; }
 const optional<double>& MatchParams::getSdevFg() const { return sdevFg; }
 const optional<double>& MatchParams::getSdevBg() const { return sdevBg; }
 const optional<double>& MatchParams::getSdevEdge() const { return sdevEdge; }
@@ -141,11 +148,12 @@ uniquePtr<IMatchParamsRW> MatchParams::clone() const { return makeUnique<MatchPa
 MatchParams& MatchParams::reset(bool skipPatchInvariantParts/* = true*/) {
 	mcPatchApprox = none;
 	patchApprox = none;
-	ssim = fg = bg = contrast = sdevFg = sdevBg = sdevEdge = symDensity = mcsOffset = none;
+	ssim = absCorr = fg = bg = contrast = sdevFg = sdevBg = sdevEdge = symDensity = mcsOffset = none;
 
 	if(!skipPatchInvariantParts) {
 		mcPatch = none;
-		blurredPatch = blurredPatchSq = variancePatch = none;
+		patchSq = blurredPatch = blurredPatchSq = variancePatch = none;
+		patchSum = normPatchMinMiu = 0.;
 	}
 	return *this;
 }
@@ -243,14 +251,28 @@ void MatchParams::computeSymDensity(const ISymData &symData) {
 	assert(*symDensity < EPSp1());
 }
 
+void MatchParams::computePatchSum(const Mat &patch) {
+	if(patchSum)
+		return;
+
+	patchSum = *sum(patch).val;
+}
+
+void MatchParams::computePatchSq(const Mat &patch) {
+	if(patchSq)
+		return;
+
+	patchSq = patch.mul(patch);
+}
+
 void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData) {
 	if(mcPatch)
 		return;
 
-	Mat temp;
-	double patchSum, mcX, mcY;
+	computePatchSum(patch);
 
-	patchSum = *sum(patch).val;
+	Mat temp;
+	double mcX, mcY;
 
 	reduce(patch, temp, 0, CV_REDUCE_SUM);	// sum all rows
 	mcX = temp.dot(cachedData.getConsec());
@@ -258,7 +280,7 @@ void MatchParams::computeMcPatch(const Mat &patch, const CachedData &cachedData)
 	reduce(patch, temp, 1, CV_REDUCE_SUM);	// sum all columns
 	mcY = temp.t().dot(cachedData.getConsec());
 
-	mcPatch = Point2d(mcX, mcY) / (patchSum * cachedData.getSz_1());
+	mcPatch = Point2d(mcX, mcY) / (patchSum.value() * cachedData.getSz_1());
 	assert(mcPatch->x > -EPS && mcPatch->x < EPSp1());
 	assert(mcPatch->y > -EPS && mcPatch->y < EPSp1());
 }

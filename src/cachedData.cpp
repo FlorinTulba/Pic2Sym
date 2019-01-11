@@ -155,6 +155,7 @@ CachedDataRW::CachedDataRW(bool forTinySyms_/* = false*/) : CachedData(forTinySy
 void CachedDataRW::useNewSymSize(unsigned sz_) {
 	const double szd = (double)sz_;
 	sz_1 = szd - 1.;
+	szSq = szd*szd;
 
 	consec = Mat(1, (int)sz_, CV_64FC1);
 	iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);

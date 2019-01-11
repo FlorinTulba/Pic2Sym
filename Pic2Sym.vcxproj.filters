@@ -558,6 +558,9 @@
     <ClInclude Include="src\transformBase.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
+    <ClInclude Include="src\correlationAspect.h">
+      <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -798,6 +801,9 @@
       <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClCompile>
     <ClCompile Include="src\matchProgressWithPreselection.cpp">
+      <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\correlationAspect.cpp">
       <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClCompile>
   </ItemGroup>

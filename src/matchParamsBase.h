@@ -76,6 +76,9 @@ struct IMatchParams /*abstract*/ {
 	// These params are computed only once, if necessary, when approximating the patch
 	virtual const boost::optional<cv::Point2d>& getMcPatch() const = 0;		///< mass center for the patch (range 0..1 x 0..1)
 #ifdef UNIT_TESTING
+	virtual const boost::optional<double>& getPatchSum() const = 0;			///< sum of the values of the pixels of the patch
+	virtual const boost::optional<cv::Mat>& getPatchSq() const = 0;			///< element-wise product patch * patch
+	virtual const boost::optional<double>& getNormPatchMinMiu() const = 0;	///< norm L2 of (patch - miu patch)
 	virtual const boost::optional<cv::Mat>& getBlurredPatch() const = 0;	///< blurred version of the patch
 	virtual const boost::optional<cv::Mat>& getBlurredPatchSq() const = 0;	///< blurredPatch element-wise squared
 	virtual const boost::optional<cv::Mat>& getVariancePatch() const = 0;	///< blur(patch^2) - blurredPatchSq
@@ -92,6 +95,7 @@ struct IMatchParams /*abstract*/ {
 	virtual const boost::optional<double>& getBg() const = 0;					///< color for bg (range 0..255)
 	virtual const boost::optional<double>& getContrast() const = 0;				///< fg - bg (range -255..255)
 	virtual const boost::optional<double>& getSsim() const = 0;					///< structural similarity (-1..1)
+	virtual const boost::optional<double>& getAbsCorr() const = 0;				///< absolute value of correlation (0..1)
 
 	// ideal value for the standard deviations below is 0
 	virtual const boost::optional<double>& getSdevFg() const = 0;	///< standard deviation for fg (0..127.5)
@@ -132,6 +136,8 @@ struct IMatchParamsRW /*abstract*/ : IMatchParams {
 	virtual void computeSdevBg(const cv::Mat &patch, const ISymData&) = 0;
 	virtual void computeSdevEdge(const cv::Mat &patch, const ISymData&) = 0;
 	virtual void computeSymDensity(const ISymData&) = 0;
+	virtual void computePatchSum(const cv::Mat &patch) = 0;
+	virtual void computePatchSq(const cv::Mat &patch) = 0;
 	virtual void computeMcPatch(const cv::Mat &patch, const CachedData&) = 0;
 	virtual void computeMcPatchApprox(const cv::Mat &patch, const ISymData&,
 									  const CachedData&) = 0;
@@ -143,6 +149,9 @@ struct IMatchParamsRW /*abstract*/ : IMatchParams {
 	virtual void computeVariancePatch(const cv::Mat &patch, const CachedData&) = 0;
 	virtual void computeSsim(const cv::Mat &patch, const ISymData&,
 							 const CachedData&) = 0;
+	virtual void computeNormPatchMinMiu(const cv::Mat &patch, const CachedData&) = 0;
+	virtual void computeAbsCorr(const cv::Mat &patch, const ISymData&,
+								const CachedData&) = 0;
 
 	virtual ~IMatchParamsRW() = 0 {}
 };

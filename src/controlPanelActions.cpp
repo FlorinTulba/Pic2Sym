@@ -608,6 +608,15 @@ void ControlPanelActions::newStructuralSimilarityFactor(double k) {
 	UPDATE_MATCH_ASPECT_VALUE(Ssim, k);
 }
 
+void ControlPanelActions::newCorrelationFactor(double k) {
+	extern const cv::String ControlPanel_correlationTrName;
+	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_correlationTrName);
+	if(nullptr == permit)
+		return;
+
+	UPDATE_MATCH_ASPECT_VALUE(Correl, k);
+}
+
 void ControlPanelActions::newUnderGlyphCorrectnessFactor(double k) {
 	extern const cv::String ControlPanel_underGlyphCorrectnessTrName;
 	const uniquePtr<const ActionPermit> permit = cp.actionDemand(ControlPanel_underGlyphCorrectnessTrName);

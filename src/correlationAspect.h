@@ -36,32 +36,39 @@
  If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
  ***********************************************************************************************/
 
-#include "matchAspectsFactory.h"
-#include "matchAspects.h"
-#include "structuralSimilarity.h"
-#include "correlationAspect.h"
-#include "misc.h"
+#ifndef H_CORRELATION_ASPECT
+#define H_CORRELATION_ASPECT
 
-using namespace std;
+#include "match.h"
 
-std::uniquePtr<const MatchAspect> MatchAspectsFactory::create(const stringType &aspectName,
-															  const IMatchSettings &ms) {
-#define HANDLE_MATCH_ASPECT(Aspect) \
-	if(aspectName.compare(#Aspect) == 0) \
-		/* makeUnique<Aspect>(ms) won't work below! */ \
-		return std::uniquePtr<Aspect>(new Aspect(ms))
+/**
+Selecting a symbol based on Zero Normalized Cross Correlation against the patch to approximate.
 
-	HANDLE_MATCH_ASPECT(StructuralSimilarity);
-	HANDLE_MATCH_ASPECT(CorrelationAspect);
-	HANDLE_MATCH_ASPECT(FgMatch);
-	HANDLE_MATCH_ASPECT(BgMatch);
-	HANDLE_MATCH_ASPECT(EdgeMatch);
-	HANDLE_MATCH_ASPECT(BetterContrast);
-	HANDLE_MATCH_ASPECT(GravitationalSmoothness);
-	HANDLE_MATCH_ASPECT(DirectionalSmoothness);
-	HANDLE_MATCH_ASPECT(LargerSym);
+See https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC) for details
+*/
+class CorrelationAspect : public MatchAspect {
+protected:
+	/// Defines the scoring rule, based on all required fields computed already in MatchParams mp
+	double score(const IMatchParams &mp, const CachedData &cachedData) const override;
 
-#undef HANDLE_ASPECT
+	/// Prepares required fields from MatchParams mp to be able to assess the match
+	void fillRequiredMatchParams(const cv::Mat &patch,
+								 const ISymData &symData,
+								 const CachedData &cachedData,
+								 IMatchParamsRW &mp) const override;
 
-	THROW_WITH_VAR_MSG(aspectName + " is an invalid aspect name!", invalid_argument);
-}
+#ifdef UNIT_TESTING // UNIT_TESTING needs the constructors as public
+public:
+#endif // UNIT_TESTING defined
+
+	CorrelationAspect(const IMatchSettings &ms);
+	void operator=(const CorrelationAspect&) = delete;
+
+	REGISTER_MATCH_ASPECT(CorrelationAspect);
+
+public:
+	/// Providing a clue about how complex is this MatchAspect compared to the others
+	double relativeComplexity() const override;
+};
+
+#endif // H_CORRELATION_ASPECT

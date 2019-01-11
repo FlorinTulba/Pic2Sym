@@ -74,6 +74,7 @@ protected:
 #endif // UNIT_TESTING not defined
 
 	double kSsim = 0.;				///< power of factor controlling structural similarity
+	double kCorrel = 0.;			///< power of factor controlling correlation aspect
 	double kSdevFg = 0.;			///< power of factor for foreground glyph-patch correlation
 	double kSdevEdge = 0.;			///< power of factor for contour glyph-patch correlation
 	double kSdevBg = 0.;			///< power of factor for background glyph-patch correlation
@@ -90,7 +91,7 @@ protected:
 
 public:
 	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 2U; ///< version of MatchSettings class
+	static const unsigned VERSION = 3U; ///< version of MatchSettings class
 
 	/**
 	Initializes the object.
@@ -105,6 +106,9 @@ public:
 
 	const double& get_kSsim() const override final { return kSsim; }
 	MatchSettings& set_kSsim(double kSsim_) override;
+
+	const double& get_kCorrel() const override final { return kCorrel; }
+	MatchSettings& set_kCorrel(double kCorrel_) override;
 
 	const double& get_kSdevFg() const override final { return kSdevFg; }
 	MatchSettings& set_kSdevFg(double kSdevFg_) override;
@@ -217,6 +221,11 @@ private:
 		} else {
 			defSettings.kSsim = 0.;
 		}
+		if(version >= 3U) { // versions >= 3 use kCorrel
+			ar >> defSettings.kCorrel;
+		} else {
+			defSettings.kCorrel = 0.;
+		}
 		ar >> defSettings.kSdevFg >> defSettings.kSdevEdge >> defSettings.kSdevBg
 			>> defSettings.kContrast
 			>> defSettings.kMCsOffset >> defSettings.kCosAngleMCs
@@ -226,6 +235,7 @@ private:
 		// these show message when there are changes
 		setResultMode(defSettings.hybridResultMode);
 		set_kSsim(defSettings.kSsim);
+		set_kCorrel(defSettings.kCorrel);
 		set_kSdevFg(defSettings.kSdevFg);
 		set_kSdevEdge(defSettings.kSdevEdge);
 		set_kSdevBg(defSettings.kSdevBg);
@@ -244,6 +254,7 @@ private:
 	void save(Archive &ar, const unsigned version) const {
 		ar << hybridResultMode
 			<< kSsim
+			<< kCorrel
 			<< kSdevFg << kSdevEdge << kSdevBg
 			<< kContrast
 			<< kMCsOffset << kCosAngleMCs

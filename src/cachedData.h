@@ -52,6 +52,7 @@ class CachedData {
 protected:
 	cv::Mat consec;		///< row matrix with consecutive elements: 0..sz-1
 	double sz_1;		///< double version of sz - 1
+	double szSq;		///< double version of sz^2
 
 #ifdef UNIT_TESTING // Unit testing needs to be able to change smallGlyphsCoverage
 public:
@@ -106,6 +107,7 @@ public:
 	// instead of virtual realizations of a read-only interface of this cached information
 	inline const cv::Mat& getConsec() const { return consec; }
 	inline double getSz_1() const { return sz_1; }
+	inline double getSzSq() const { return szSq; }
 	inline double getSmallGlyphsCoverage() const { return smallGlyphsCoverage; }
 };
 

@@ -84,6 +84,7 @@ struct IControlPanelActions /*abstract*/ {
 	virtual void newFontSize(int fontSz) = 0;
 	virtual void newSymsBatchSize(int symsBatchSz) = 0;
 	virtual void newStructuralSimilarityFactor(double k) = 0;
+	virtual void newCorrelationFactor(double k) = 0;
 	virtual void newUnderGlyphCorrectnessFactor(double k) = 0;
 	virtual void newGlyphEdgeCorrectnessFactor(double k) = 0;
 	virtual void newAsideGlyphCorrectnessFactor(double k) = 0;

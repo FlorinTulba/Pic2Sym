@@ -45,6 +45,9 @@
 class MatchParams : public IMatchParamsRW {
 protected:
 	// These params are computed only once, if necessary, when approximating the patch
+	boost::optional<double> patchSum;			///< sum of the values of the pixels of the patch
+	boost::optional<cv::Mat> patchSq;			///< element-wise product patch * patch
+	boost::optional<double> normPatchMinMiu;	///< norm L2 of (patch - miu patch)
 	boost::optional<cv::Point2d> mcPatch;		///< mass center for the patch (range 0..1 x 0..1)
 	boost::optional<cv::Mat> blurredPatch;		///< blurred version of the patch
 	boost::optional<cv::Mat> blurredPatchSq;	///< blurredPatch element-wise squared
@@ -59,6 +62,7 @@ protected:
 	boost::optional<double> bg;					///< color for bg (range 0..255)
 	boost::optional<double> contrast;			///< fg - bg (range -255..255)
 	boost::optional<double> ssim;				///< structural similarity (-1..1)
+	boost::optional<double> absCorr;			///< absolute value of correlation (0..1)
 
 	// ideal value for the standard deviations below is 0
 	boost::optional<double> sdevFg;		///< standard deviation for fg (0..127.5)
@@ -69,6 +73,9 @@ public:
 	// These params are computed only once, if necessary, when approximating the patch
 	const boost::optional<cv::Point2d>& getMcPatch() const override final;		///< mass center for the patch (range 0..1 x 0..1)
 #ifdef UNIT_TESTING
+	const boost::optional<double>& getPatchSum() const override final;			///< sum of the values of the pixels of the patch
+	const boost::optional<cv::Mat>& getPatchSq() const override final;			///< element-wise product patch * patch
+	const boost::optional<double>& getNormPatchMinMiu() const override final;	///< norm L2 of (patch - miu patch)
 	const boost::optional<cv::Mat>& getBlurredPatch() const override final;		///< blurred version of the patch
 	const boost::optional<cv::Mat>& getBlurredPatchSq() const override final;	///< blurredPatch element-wise squared
 	const boost::optional<cv::Mat>& getVariancePatch() const override final;	///< blur(patch^2) - blurredPatchSq
@@ -89,6 +96,7 @@ public:
 	const boost::optional<double>& getBg() const override final;				///< color for bg (range 0..255)
 	const boost::optional<double>& getContrast() const override final;			///< fg - bg (range -255..255)
 	const boost::optional<double>& getSsim() const override final;				///< structural similarity (-1..1)
+	const boost::optional<double>& getAbsCorr() const override final;			///< absolute value of correlation (0..1)
 
 	// ideal value for the standard deviations below is 0
 	const boost::optional<double>& getSdevFg() const override final;			///< standard deviation for fg (0..127.5)
@@ -103,7 +111,7 @@ public:
 	Prepares for next symbol to match against patch.
 
 	When skipPatchInvariantParts = true resets everything except:
-	mcPatch, blurredPatch, blurredPatchSq and variancePatch.
+	mcPatch, patchSum, normPatchMinMiu, patchSq, blurredPatch, blurredPatchSq and variancePatch.
 	*/
 	MatchParams& reset(bool skipPatchInvariantParts = true) override;
 
@@ -115,6 +123,8 @@ public:
 	void computeSdevBg(const cv::Mat &patch, const ISymData &symData) override;
 	void computeSdevEdge(const cv::Mat &patch, const ISymData &symData) override;
 	void computeSymDensity(const ISymData &symData) override;
+	void computePatchSum(const cv::Mat &patch) override;
+	void computePatchSq(const cv::Mat &patch) override;
 	void computeMcPatch(const cv::Mat &patch, const CachedData &cachedData) override;
 	void computeMcPatchApprox(const cv::Mat &patch, const ISymData &symData,
 							  const CachedData &cachedData) override;
@@ -126,6 +136,9 @@ public:
 	void computeVariancePatch(const cv::Mat &patch, const CachedData &cachedData) override;
 	void computeSsim(const cv::Mat &patch, const ISymData &symData,
 					 const CachedData &cachedData) override;
+	void computeNormPatchMinMiu(const cv::Mat &patch, const CachedData &cachedData) override;
+	void computeAbsCorr(const cv::Mat &patch, const ISymData &symData,
+						const CachedData &cachedData) override;
 
 	/**
 	Returns an instance as for an ideal match between a symbol and a patch.

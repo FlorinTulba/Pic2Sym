@@ -67,6 +67,7 @@ extern const String ControlPanel_encodingTrName;
 extern const String ControlPanel_fontSzTrName;
 extern const String ControlPanel_hybridResultTrName;
 extern const String ControlPanel_structuralSimTrName;
+extern const String ControlPanel_correlationTrName;
 extern const String ControlPanel_underGlyphCorrectnessTrName;
 extern const String ControlPanel_glyphEdgeCorrectnessTrName;
 extern const String ControlPanel_asideGlyphCorrectnessTrName;
@@ -95,6 +96,7 @@ namespace {
 	const unordered_set<const String*> matchAspectsSliders {
 		&ControlPanel_hybridResultTrName,
 		&ControlPanel_structuralSimTrName,
+		&ControlPanel_correlationTrName,
 		&ControlPanel_underGlyphCorrectnessTrName,
 		&ControlPanel_glyphEdgeCorrectnessTrName,
 		&ControlPanel_asideGlyphCorrectnessTrName,

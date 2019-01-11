@@ -307,7 +307,7 @@ static VALIDATOR_NO_ARGS(oddI, IsOdd, int);
 static VALIDATOR_NO_ARGS(oddU, IsOdd, unsigned);
 
 static VALIDATOR(lessThan20i,	IsLessThan, int, 20);
-static VALIDATOR(lessThan600i,	IsLessThan, int, 600, true);
+static VALIDATOR(lessThan600i, IsLessThan, int, 600, true);
 static VALIDATOR(lessThan800i,	IsLessThan, int, 800, true);
 static VALIDATOR(lessThan1000i, IsLessThan, int, 1000, true);
 static VALIDATOR(atMost9U,		IsLessThan, unsigned, 9U, true);
@@ -487,6 +487,7 @@ extern READ_STR_PROP_CONVERT(ControlPanel_encodingTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_symsBatchSzTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_hybridResultTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_structuralSimTrName, String);
+extern READ_STR_PROP_CONVERT(ControlPanel_correlationTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_underGlyphCorrectnessTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_glyphEdgeCorrectnessTrName, String);
 extern READ_STR_PROP_CONVERT(ControlPanel_asideGlyphCorrectnessTrName, String);
@@ -512,6 +513,8 @@ extern const Size CmapInspect_pageSz(CmapInspect_width, CmapInspect_height);
 
 extern READ_INT_PROP(ControlPanel_Converter_StructuralSim_maxSlider, atLeast10i(), lessThan1000i());
 extern READ_DOUBLE_PROP(ControlPanel_Converter_StructuralSim_maxReal, positiveD(), lessThan10D());
+extern READ_INT_PROP(ControlPanel_Converter_Correlation_maxSlider, atLeast10i(), lessThan1000i());
+extern READ_DOUBLE_PROP(ControlPanel_Converter_Correlation_maxReal, positiveD(), lessThan1D());
 extern READ_INT_PROP(ControlPanel_Converter_Correctness_maxSlider, atLeast10i(), lessThan1000i());
 extern READ_DOUBLE_PROP(ControlPanel_Converter_Correctness_maxReal, positiveD(), lessThan10D());
 extern READ_INT_PROP(ControlPanel_Converter_Contrast_maxSlider, atLeast10i(), lessThan1000i());

@@ -78,6 +78,12 @@ struct ISymData /*abstract*/ {
 	/// negative of the symbol (0..255 byte for normal symbols; double for tiny)
 	virtual const cv::Mat& getNegSym() const = 0;
 
+	/// The pixel values (double) are shifted so that the average pixel value (miu) is 0 
+	virtual const cv::Mat& getSymMiu0() const = 0;
+
+	/// norm L2 of (symbol - average pixel value)
+	virtual double getNormSymMiu0() const = 0;
+
 	/// various masks
 	virtual const MatArray& getMasks() const = 0;
 

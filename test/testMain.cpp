@@ -459,16 +459,19 @@ TinySym::TinySym(const Mat &negSym_, const Point2d &mc_/* = Point2d(.5, .5)*/, d
 }
 
 SymData::SymData(unsigned long code_, size_t symIdx_, double minVal_, double diffMinMax_,
-				 double avgPixVal_, const Point2d &mc_, const SymData::IdxMatMap &relevantMats,
-				 const Mat &negSym_/* = Mat()*/) :
+				 double avgPixVal_, double normSymMiu0_,
+				 const Point2d &mc_, const SymData::IdxMatMap &relevantMats,
+				 const Mat &negSym_/* = Mat()*/, const Mat &symMiu0_/* = Mat()*/) :
 		code(code_), symIdx(symIdx_), minVal(minVal_), diffMinMax(diffMinMax_),
-		avgPixVal(avgPixVal_), mc(mc_), negSym(negSym_) {
+		avgPixVal(avgPixVal_), normSymMiu0(normSymMiu0_), mc(mc_),
+		negSym(negSym_), symMiu0(symMiu0_) {
 	for(const auto &idxAndMat : relevantMats)
 		masks[idxAndMat.first] = idxAndMat.second;
 }
 
 unique_ptr<const SymData> SymData::clone(size_t symIdx_) const {
-	return make_unique<const SymData>(negSym, code, symIdx_, minVal, diffMinMax, avgPixVal, mc, masks);
+	return make_unique<const SymData>(negSym, symMiu0, code, symIdx_, minVal, diffMinMax,
+									  avgPixVal, normSymMiu0, mc, masks);
 }
 
 PixMapSym::PixMapSym(const vector<unsigned char> &data, const Mat &consec, const Mat &revConsec) : 

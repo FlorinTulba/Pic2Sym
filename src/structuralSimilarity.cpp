@@ -110,9 +110,10 @@ void MatchParams::computeVariancePatch(const Mat &patch, const CachedData &cache
 		return;
 
 	computeBlurredPatchSq(patch, cachedData);
+	computePatchSq(patch);
 
 	Mat variancePatch_;
-	StructuralSimilarity::supportBlur.process(patch.mul(patch), variancePatch_, cachedData.forTinySyms);
+	StructuralSimilarity::supportBlur.process(patchSq.value(), variancePatch_, cachedData.forTinySyms);
 	variancePatch_ -= blurredPatchSq.value();
 	variancePatch = variancePatch_;
 }

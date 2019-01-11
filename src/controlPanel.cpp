@@ -65,6 +65,8 @@ using namespace cv;
 
 extern const int ControlPanel_Converter_StructuralSim_maxSlider;
 extern const double ControlPanel_Converter_StructuralSim_maxReal;
+extern const int ControlPanel_Converter_Correlation_maxSlider;
+extern const double ControlPanel_Converter_Correlation_maxReal;
 extern const int ControlPanel_Converter_Contrast_maxSlider;
 extern const double ControlPanel_Converter_Contrast_maxReal;
 extern const int ControlPanel_Converter_Correctness_maxSlider;
@@ -89,6 +91,7 @@ extern const String ControlPanel_fontSzTrName;
 extern const String ControlPanel_encodingTrName;
 extern const String ControlPanel_hybridResultTrName;
 extern const String ControlPanel_structuralSimTrName;
+extern const String ControlPanel_correlationTrName;
 extern const String ControlPanel_underGlyphCorrectnessTrName;
 extern const String ControlPanel_glyphEdgeCorrectnessTrName;
 extern const String ControlPanel_asideGlyphCorrectnessTrName;
@@ -115,6 +118,10 @@ ControlPanel::slidersConverters() {
 					   std::makeUnique<const ProportionalSliderValue>(
 					   std::makeUnique<const ProportionalSliderValue::Params>(
 					   ControlPanel_Converter_StructuralSim_maxSlider, ControlPanel_Converter_StructuralSim_maxReal)));
+		result.emplace(&ControlPanel_correlationTrName,
+					   std::makeUnique<const ProportionalSliderValue>(
+					   std::makeUnique<const ProportionalSliderValue::Params>(
+					   ControlPanel_Converter_Correlation_maxSlider, ControlPanel_Converter_Correlation_maxReal)));
 		result.emplace(&ControlPanel_underGlyphCorrectnessTrName,
 					   std::makeUnique<const ProportionalSliderValue>(
 					   std::makeUnique<const ProportionalSliderValue::Params>(
@@ -158,6 +165,10 @@ void ControlPanel::updateMatchSettings(const IMatchSettings &ms) {
 	newVal = slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(ms.get_kSsim());
 	while(structuralSim != newVal)
 		setTrackbarPos(*(pLuckySliderName = &ControlPanel_structuralSimTrName), nullptr, newVal);
+
+	newVal = slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(ms.get_kCorrel());
+	while(correlationCorrectness != newVal)
+		setTrackbarPos(*(pLuckySliderName = &ControlPanel_correlationTrName), nullptr, newVal);
 
 	newVal = slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(ms.get_kSdevFg());
 	while(underGlyphCorrectness != newVal)
@@ -245,6 +256,8 @@ void ControlPanel::restoreSliderValue(const String &trName, const stringType &er
 		prevVal = cfg.getMS().isHybridResult() ? 1 : 0;
 	} else if(&trName == &ControlPanel_structuralSimTrName) {
 		prevVal = slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(cfg.getMS().get_kSsim());
+	} else if(&trName == &ControlPanel_correlationTrName) {
+		prevVal = slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(cfg.getMS().get_kCorrel());
 	} else if(&trName == &ControlPanel_underGlyphCorrectnessTrName) {
 		prevVal = slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(cfg.getMS().get_kSdevFg());
 	} else if(&trName == &ControlPanel_glyphEdgeCorrectnessTrName) {
@@ -289,6 +302,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 		symsBatchSz((int)SymsBatch_defaultSz),
 		hybridResult(cfg_.getMS().isHybridResult() ? 1 : 0),
 		structuralSim(slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(cfg_.getMS().get_kSsim())),
+		correlationCorrectness(slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(cfg_.getMS().get_kCorrel())),
 		underGlyphCorrectness(slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevFg())),
 		glyphEdgeCorrectness(slidersConverters().at(&ControlPanel_glyphEdgeCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevEdge())),
 		asideGlyphCorrectness(slidersConverters().at(&ControlPanel_asideGlyphCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevBg())),
@@ -338,6 +352,7 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 	extern const unsigned Settings_MAX_FONT_SIZE;
 	extern const unsigned SymsBatch_trackMax;
 	extern const int ControlPanel_Converter_StructuralSim_maxSlider;
+	extern const int ControlPanel_Converter_Correlation_maxSlider;
 	extern const int ControlPanel_Converter_Contrast_maxSlider;
 	extern const int ControlPanel_Converter_Correctness_maxSlider;
 	extern const int ControlPanel_Converter_Direction_maxSlider;
@@ -449,6 +464,12 @@ ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cf
 		extern const String ControlPanel_structuralSimTrName; // redeclared within lambda, since no capture is allowed
 		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
 		pActions->newStructuralSimilarityFactor(slidersConverters().at(&ControlPanel_structuralSimTrName)->fromSlider(val));
+	}, reinterpret_cast<void*>(&performer));
+	createTrackbar(ControlPanel_correlationTrName, nullptr, &correlationCorrectness, ControlPanel_Converter_Correlation_maxSlider,
+				   [] (int val, void *userdata) {
+		extern const String ControlPanel_correlationTrName; // redeclared within lambda, since no capture is allowed
+		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+		pActions->newCorrelationFactor(slidersConverters().at(&ControlPanel_correlationTrName)->fromSlider(val));
 	}, reinterpret_cast<void*>(&performer));
 	createTrackbar(ControlPanel_underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, ControlPanel_Converter_Correctness_maxSlider,
 				   [] (int val, void *userdata) {

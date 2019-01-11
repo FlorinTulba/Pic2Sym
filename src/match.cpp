@@ -121,7 +121,7 @@ void FgMatch::fillRequiredMatchParams(const Mat &patch,
 double FgMatch::relativeComplexity() const {
 	// Simpler than BgMatch if considering that fg masks are typically smaller than bg ones,
 	// so there are less values to consider
-	return 3.1;
+	return 46.2;
 }
 
 BgMatch::BgMatch(const IMatchSettings &ms) : MatchAspect(ms.get_kSdevBg()) {}
@@ -149,7 +149,7 @@ void BgMatch::fillRequiredMatchParams(const Mat &patch,
 double BgMatch::relativeComplexity() const {
 	// More complex than FgMatch if considering that fg masks are typically smaller than bg ones,
 	// so bg has more values to consider
-	return 3.2;
+	return 59.4;
 }
 
 EdgeMatch::EdgeMatch(const IMatchSettings &ms) : MatchAspect(ms.get_kSdevEdge()) {}
@@ -176,7 +176,7 @@ void EdgeMatch::fillRequiredMatchParams(const Mat &patch,
 
 double EdgeMatch::relativeComplexity() const {
 	// Computes contrast, performs a norm and others => longer than FgMatch/BgMatch
-	return 4.;
+	return 198.57;
 }
 
 BetterContrast::BetterContrast(const IMatchSettings &ms) : MatchAspect(ms.get_kContrast()) {}
@@ -197,9 +197,8 @@ void BetterContrast::fillRequiredMatchParams(const Mat &patch,
 }
 
 double BetterContrast::relativeComplexity() const {
-	// Simpler than FgMatch/BgMatch, since they compute not only the mean, but also the standard deviation
-	// Normally, computing the 2 means from BetterContrast would be quicker than a mean plus a standard deviation
-	return 2.;
+	// In practice is slightly slower than BgMatch and slightly faster than GravitationalSmoothness
+	return 67.66;
 }
 
 GravitationalSmoothness::GravitationalSmoothness(const IMatchSettings &ms) :
@@ -228,7 +227,7 @@ void GravitationalSmoothness::fillRequiredMatchParams(const Mat &patch,
 
 double GravitationalSmoothness::relativeComplexity() const {
 	// Computes contrast, mass centers, symbol density
-	return 15.;
+	return 68.21;
 }
 
 DirectionalSmoothness::DirectionalSmoothness(const IMatchSettings &ms) :
@@ -285,7 +284,7 @@ void DirectionalSmoothness::fillRequiredMatchParams(const Mat &patch,
 double DirectionalSmoothness::relativeComplexity() const {
 	// Although both GravitationalSmoothness and DirectionalSmoothness call only
 	// computeMcsOffset, DirectionalSmoothness has a more complex score method
-	return 15.1;
+	return 69.31;
 }
 
 LargerSym::LargerSym(const IMatchSettings &ms) : MatchAspect(ms.get_kSymDensity()) {}
@@ -307,5 +306,5 @@ void LargerSym::fillRequiredMatchParams(const Mat&,
 }
 
 double LargerSym::relativeComplexity() const {	
-	return 0.001; // Performs only a value copy
+	return 3.52; // Performs only a value copy
 }

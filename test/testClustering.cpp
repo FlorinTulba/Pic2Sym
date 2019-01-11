@@ -138,7 +138,7 @@ namespace ut {
 	const Point2d TinySymCenter(TinySymMidSide, TinySymMidSide),
 				UnitSquareCenter(.5, .5);
 
-	const SymData EmptySymData5x5(0UL, 0U, 0., 0., 0., TinySymCenter,
+	const SymData EmptySymData5x5(0UL, 0U, 0., 0., 0., 0., TinySymCenter,
 					{ { ISymData::GROUNDED_SYM_IDX, Mat(TinySymsSize, TinySymsSize, CV_64FC1, Scalar(0.)) } },
 					Mat(TinySymsSize, TinySymsSize, CV_8UC1, Scalar(255U)));
 

@@ -215,6 +215,7 @@ const stringType MatchSettings::toString(bool verbose) const {
 			oss<<#paramName " : "<<paramName<<endl
 
 		REPORT_POSITIVE_PARAM(kSsim);
+		REPORT_POSITIVE_PARAM(kCorrel);
 		REPORT_POSITIVE_PARAM(kSdevFg);
 		REPORT_POSITIVE_PARAM(kSdevEdge);
 		REPORT_POSITIVE_PARAM(kSdevBg);
@@ -230,7 +231,7 @@ const stringType MatchSettings::toString(bool verbose) const {
 
 	} else {
 		oss<<hybridResultMode<<'_'
-			<<kSsim<<'_'
+			<<kSsim<<'_'<<kCorrel<<'_'
 			<<kSdevFg<<'_'<<kSdevEdge<<'_'<<kSdevBg<<'_'
 			<<kContrast<<'_'<<kMCsOffset<<'_'<<kCosAngleMCs<<'_'
 			<<kSymDensity<<'_'<<threshold4Blank;

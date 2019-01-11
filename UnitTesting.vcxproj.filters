@@ -249,6 +249,9 @@
     <ClCompile Include="src\controlPanelActions.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
+    <ClCompile Include="src\correlationAspect.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -657,6 +660,9 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\viewsBase.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\correlationAspect.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>

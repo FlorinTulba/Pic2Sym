@@ -81,7 +81,7 @@ bool ClusterIO::loadFrom(const stringType &path) {
 
 	*this = std::move(draftClusters);
 
-	if(ClusterIO::olderVersionDuringLastIO()) {
+	if(olderVersionDuringLastIO()) {
 		ifs.close();
 
 		// Rewriting the file. Same thread is used.
