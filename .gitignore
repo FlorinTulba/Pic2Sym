@@ -8,6 +8,7 @@
 *.obj
 *.pdb
 /*.props
+*.RData
 *.Rhistory
 *.*sdf
 *.suo
