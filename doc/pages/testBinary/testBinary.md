@@ -15,7 +15,7 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 <table style="width:100%; margin-left:0; margin-right:0" border="0" cellpadding="0" cellspacing="5">
 	<tr valign="center" style="vertical-align:center">
 		<td width="60%" align="justify" style="text-align:justify; padding-left:0; padding-right:0">
-			1. Download <b><a href="../../../bin/Pic2Sym.msi">Pic2Sym.msi</a></b> and double-click it to install the application.
+			1. Download <b><a href="../../../raw/version2.1/bin/Pic2Sym.msi">Pic2Sym.msi</a></b> and double-click it to install the application.
 			<p>
 			The installer:
 			<ul>
