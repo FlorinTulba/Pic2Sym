@@ -22,9 +22,13 @@ Among the many image/video\-to\-ASCII applications, only a few tackle:
 
 1.	***large symbol sets*** (more difficult to find appropriate matches quick enough)
 2.	the problems raised by the ***less\-ideal aspect\-ratio of the original symbols*** (results are less accurate vertically, as symbols occupy vertical rectangles, so vertical information will be less frequently approximated than horizontal image data)
-3.	using a ***non\-black (or white) background*** for the symbols (results appear like a rough canvas). [This Android application](https://play.google.com/store/apps/details?id=com.muri.asciiart&hl=en) addressed the issue.
+3.	using a ***non\-black (or white) background*** for the symbols (results appear like a rough canvas). There was an Android application that used colored backgrounds for each symbol, but the displayed symbols were simply consecutive characters from a provided text repeated over and over throughout the image.
 
-**Pic2Sym** attempts to handle the issues above. Point 1 involves developing fast and accurate match algorithms. One such algorithm (accurate, but slow) I included in the application comes from [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) research. Point 2 meant resizing the symbols to fit within squares of desired size. Point 3 simply averages the color around the chosen symbol to determine its background.
+**Pic2Sym** attempts to handle the issues above:
+
+- Point 1 involves developing fast and accurate match algorithms, like some inspired by [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (accurate, but slow) or [Cross Correlation](https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC)) (similar accuracy and around 11 times faster when compared to *Structural Similarity*)
+- Point 2 meant resizing the symbols to fit within squares of desired size
+- Point 3 simply averages the color around the chosen symbol to determine its background.
 
 
 ----------

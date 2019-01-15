@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup, include=F}
@@ -17,13 +19,14 @@ knitr::opts_chunk$set(
 # Section to be placed after first document item (Topics from above)
  
 #cat("[//]: # Only the Rmd file needs to be edited. Do not change the corresponding md file!")   # This gets generated, but is removed from md file
-cat("<a title = 'Only the Rmd file needs to be edited. Do not change the corresponding md file!'>")   # This reaches the md file
+cat("<a title = 'Only the Rmd file needs to be edited.",
+    "Do not change the corresponding md file!'>")   # This reaches the md file
 
 ```
 
 - [Performance Overview](#Overview)
 - Analysis of Pic2Sym by version:
-    - [2.0](#v2.0)
+    - [2.0 - 2.1](#v2.0-v2.1)
         - [Skipping Matching Aspects Heuristic](#SkipAspects)
         - [Symbol Set Filtering](#SymsFiltering)
         - [Symbols Preselection](#SymsPreselection)
@@ -39,9 +42,9 @@ cat("<a title = 'Only the Rmd file needs to be edited. Do not change the corresp
 
 ### Performance Overview of existing versions of Pic2Sym
 
-#### Considering the quality and accuracy of the produced results:
+#### Considering the **quality and accuracy** of the produced results:
 
-|   								| v1.0 	| v1.1 - v1.3   | v2.0
+|   								| v1.0 	| v1.1 - v1.3   | v2.0, v2.1
 ---									|:-:	|:-:		    |:-:
 *Can Avoid Undesirable Symbols*     | - 	| - 		    | **Yes**
 *Smooth Results (Hybrid Mode)* 		| - 	| **Yes**    	| **Yes**
@@ -50,12 +53,14 @@ cat("<a title = 'Only the Rmd file needs to be edited. Do not change the corresp
 
 Explanations concerning the values within the table:
 
-- <b><i>(\*)</i></b> refers to the &#39;*accuracy*&#39; of **v2.0** (does it deliver the best possible matches?), which is 100% when all its features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
+- <b><i>(\*)</i></b> refers to the &#39;*accuracy*&#39; of **v2.0** and **v2.1** (do they deliver the best possible matches?), which is 100% when all of their features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
 	* low clustering accuracy might let a patch be approximated with an unexpected symbol
 	* using blur algorithms inferior to Gaussian blur (like Box blur) for the [Structural Similarity][] matching aspect might produce mismatches, too
 	* using Symbols Preselection reduces match accuracy even more, since the Preselection phase is highly subjective
 
-#### Existing versions compared by their speed:
+#### Existing versions compared by their **speed**:
+
+- Version **2.1** reordered slightly the matching aspects (to reflect their actual costs) and brought a new matching aspect - the [Cross Correlation][] (Corr), which is much faster than [Structural Similarity][] (SS), plus their accuracy is similar. Thus, starting with v2.1, SS can be replaced by Corr or they can be used together (when the *Skipping Aspects* is enabled) to avoid computing SS aspect as often as possible. When *Skipping Aspects* is disabled and all 9 matching aspects are enabled (compared to just 8 prior to v2.1), the transformation needs an additional time for Corr
 
 - Version **2.0** is typically superior to the previous versions. However, it can disable all its new features. In that case it will be slightly inferior to **v1.3**.
 
@@ -70,13 +75,13 @@ Explanations concerning the values within the table:
 
 * * *
 
-<a name = "v2.0"></a>
+<a name = "v2.0-v2.1"></a>
 
-### Performance of Pic2Sym v2.0
+### Performance of Pic2Sym v2.0 / v2.1
 
-The newly introduced elements are described in their corresponding [modules](../appendix/appendix.md#Modules). These host modules are mentioned below for each feature.
+More details about the features below can be found in their corresponding [modules](../appendix/appendix.md#Modules).
 
-One new feature is allowing any number of user requests in parallel, as long as they are valid for a given state of the application. It belongs to the [**User Interaction**][UI] module.
+One feature is allowing any number of user requests in parallel, as long as they are valid for a given state of the application. It belongs to the [**User Interaction**][UI] module.
 
 Continuing with more relevant features from the application performance point of view.
 
@@ -107,42 +112,61 @@ Now let&#39;s observe the maximum count of matching aspects that can be skipped 
 
 - the configuration from [this example](../results/Example1_v1.3.jpg) (using 125 glyphs)
 - *Parallelism* (2 threads)
+- *EnableSkipAboveMatchRatio* set on 0
 - no other features and without *generating drafts*
 
-| Matching Aspect name 		| Complexity 	| Skipped for [I1][]| Skipped for [I2][]|
----							|-:				|-:				    |-:
-*Prefer Larger Symbols* 	| 0.001 		| 0.00%	    		| 0.00%
-*Prefer Better Contrast* 	| 2.000 		| 0.00%	    		| 0.00%
-*Foreground matching* 		| 3.100 		| 11.11%    		| 0.40%
-*Background matching*		| 3.200 		| 11.58% 	    	| 0.43%
-*Edges matching* 			| 4.000			| 14.10% 	    	| 0.61%
-*Gravitational Smoothness* 	| 15.000 		| 15.64% 	    	| 0.78%
-*Directional Smoothness*	| 15.100		| 15.96% 	    	| 0.80%
-*[Structural Similarity][] (SS)*| 1000.000 	| 44.40% 	    	| 13.66%
+First, the measurements from v2.1:
 
-> The 2 scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
+| Matching Aspect name          | Complexity&nbsp;as<br>actual cost| Skipped<br>for [I1][]| Skipped<br>for [I2][]|
+:-                              |-:         |-:                 |-:
+*Prefer Larger Symbols* 	    | 3.52 		| - 	    		| -
+*Foreground matching* 		    | 46.20 	| -     		    | -
+*Background matching*		    | 59.40		| -      	    	| -
+*Prefer Better Contrast* 	    | 67.66		| - 	    		| -
+*Gravitational Smoothness* 	    | 68.21 	| 0.07% 	    	| 0.02%
+*Directional Smoothness*	    | 69.31     | 0.07% 	    	| 0.02%
+*[Cross Correlation][] (Corr)*  | 90.21     | 2.91%             | 1.20%
+*Edges matching* 			    | 198.57    | 81.18% 	    	| 64.67%
+*[Structural Similarity][] (SS)*| 1000.00   | 82.46% 	    	| 67.79%
 
-In the presented cases, the 2 least complex matching aspects (*Prefer Larger Symbols* and *Prefer Better Contrast*) had to be evaluated for all compare operations. Only after cumulating the scores from both of them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
+The complexity of the aspects was set proportional to the time required to approximate image [I1][] using each aspect alone and using a font family with more than 7000 glyphs. The complexity of SS (the slowest one) is fixed to 1000, while the other shift proportionally to reflect a shorter duration.
 
-Apart from the substantial number of uniform patches, image [I1][] presents also many coarse-textured regions, which generally have a few good matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
+For v2.0, the complexity of the aspects was based on times obtained using only font families with a modest number of glyphs. It appeared to confirm a certain intuitive order. So, the order of the aspects is different and the data looks like this:
 
-Comparing now the durations required to approximate the images either by all matching aspects, or just by *[Structural Similarity][]* (SS - the most complex one):
+| Matching Aspect name         | Expected<br>Complexity | Skipped<br>for [I1][]| Skipped<br>for [I2][]|
+:-                             |-:          |-:                 |-:
+*Prefer Larger Symbols*        | 0.001      | -                 | -
+*Prefer Better Contrast*       | 2.000      | -                 | -
+*Foreground matching*          | 3.100      | 11.11%            | 0.40%
+*Background matching*          | 3.200      | 11.58%            | 0.43%
+*Edges matching*               | 4.000      | 14.10%            | 0.61%
+*Gravitational Smoothness*     | 15.000     | 15.64%            | 0.78%
+*Directional Smoothness*       | 15.100     | 15.96%            | 0.80%
+*[Structural Similarity][] (SS)*| 1000.000  | 44.40%            | 13.66%
+
+> The 2 scenarios involved all *Matching Aspects* (available in their version), which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
+
+In the presented cases, several least complex matching aspects had to be evaluated for all compare operations. Only after cumulating the scores from them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
+
+Apart from the substantial number of uniform patches, image [I1][] presents also many coarse-textured regions, which generally do have a few good matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
+
+Comparing now the durations required to approximate the images either by all matching aspects (available in their version), or just by *[Structural Similarity][]* (SS - the most complex one) or by *[Cross Correlation][]* (Corr - the much faster alternative for SS):
 
 |                                   | [I1][]    | [I2][] |
 :-:                                 |:-:        |:-:
-*Required Time - all aspects ON*    | 37.253s   | 73.408s
-*Required Time - only SS set ON*    | 42.901s   | 60.681s
-*Total Compare operations*          | 2395625   | 3440875
+*Total Compare<br>operations*          | 2395625   | 3440875
+*Required Time* (**v2.1**)<br>*using only Corr* | 3.4s   | 4.7s
+*Required Time* (**v2.1**)<br>*using all 9 aspects* | 16s   | 32s
+*Required Time* (**v2.0**)<br>*using all 8 aspects* | 37s   | 73s
+*Required Time* (**v2.0**, **v2.1**)<br>*using only SS* | 43s   | 61s
 
-The durations from the table for image I1 show that using all enabled aspects can be around 1.15 times faster than transforming those images based only on SS.
+The reported total compare operations are the products between the count of non\-uniform patches (the only image patches that get approximated) and the number of considered glyphs from the font family. Each such patch is compared against each symbol using the mentioned selection of matching aspects.
 
-For image I2, its finely-grained patches meant that the ranking among the competitor symbols (when all aspects were enabled) was established late, or only after computing also the *[Structural Similarity][]*. Because of that, there were extremely few skipped aspects. The difference is 12.727s between the transformation only with SS and the one with all aspects enabled. 
+The times from the column for image [I1][] (which contains lots of coarse patches) are in ascending order - **SS only** is the slowest time, **Corr only** the fastest, while v2.0 skips some SS computations (around 45%) and ranks third, but skips still less of them than v2.1 (around 83%), which ranks second.
 
-Current percentage of skipped SS aspects for transforming image I2 with all aspects enabled is 13.66% and the approximation time is 73.408s. What percentage value would reduce the transformation time to 60.681s (same as when using only the SS aspect)?
+Corr gets assessed before SS in v2.1 and this allows skipping more SS computations.
 
-- average computation of SS with 2 threads and ignoring &#39;binding&#39; code is: <i>tSS = 60.681s / 3440875 = 17.635 microseconds</i> (see column I2 from last table)
-- required count of additionally skipped SS aspects is: <i>(73.408s - 60.681s) / tSS = 721675.9</i>, to be rounded to 721676
-- the result is: <i>13.66% + (100 * 721676 / 3440875)% = 34.63362%</i>. This means that the paradox of evaluating more aspects in less time happens only when there are at least 35%-40% skipped SS aspects
+For image I2, its finely-grained patches meant that the ranking among the competitor symbols (when all aspects were enabled) was established late, or only after computing also the *[Structural Similarity][]*. Because of that, there were extremely few skipped aspects, SS in particular. This is clear in v2.0 (skips only 14% of SS), but less so in v2.1, where almost 68% of the SS computations are dropped. That is the reason why v2.0 needs more time when it uses all its 8 matching aspects compared to the case when it uses only SS.
 
 So, this feature is most valuable when transforming images with more frequent coarse patches.
 
@@ -172,62 +196,88 @@ For larger symbols, their remaining count is not that critical, since the number
 
 Let&#39;s see how various font families shrink after applying all implemented filters (font size is 10) and the times required to process image [I1][] when all features are enabled:
 
-|Font Type|Initial Symbols|Remaining Symbols| Transformation Time|
----|-:|-:|-:
+|Font Type|Initial<br>Symbols|Remaining<br>Symbols| Transformation<br>Time (v2.0)| Transformation<br>Time (v2.1)|
+:-|-:|-:|-:|-:
 ```{r ResultsTable, echo=F, results='asis', cache=T, cache.path="../../cache/performance/ResultsTable/", cache.comments=F}
 # Keeping observations grouped
 times <- data.frame(FontType=c("BpMono_Bold_AppleRoman"), 
                       InitialSymbols=c(125), 
                       RemainingSymbols=c(58), 
-                      TransformationTime=c(15), stringsAsFactors=F)
+                      TransformationTimeV20=c(15), 
+                      TransformationTimeV21=c(10), stringsAsFactors=F)
 times <- rbind(times, 
                  data.frame(FontType=c("ProFontWindows_Regular_AppleRoman"), 
                       InitialSymbols=c(201), 
                       RemainingSymbols=c(134), 
-                      TransformationTime=c(29), stringsAsFactors=F))
+                      TransformationTimeV20=c(29), 
+                      TransformationTimeV21=c(16), stringsAsFactors=F))
 times <- rbind(times, 
                  data.frame(FontType=c("EnvyCode_Regular_AppleRoman"), 
                       InitialSymbols=c(220), 
                       RemainingSymbols=c(192), 
-                      TransformationTime=c(39), stringsAsFactors=F))
+                      TransformationTimeV20=c(39), 
+                      TransformationTimeV21=c(21), stringsAsFactors=F))
 times <- rbind(times, 
                  data.frame(FontType=c("Consolas_Bold_Unicode"), 
                       InitialSymbols=c(2215), 
                       RemainingSymbols=c(1465), 
-                      TransformationTime=c(211), stringsAsFactors=F))
+                      TransformationTimeV20=c(211), 
+                      TransformationTimeV21=c(95), stringsAsFactors=F))
 times <- rbind(times, 
                  data.frame(FontType=c("CourierNew_Bold_Unicode"), 
                       InitialSymbols=c(2846), 
                       RemainingSymbols=c(2064), 
-                      TransformationTime=c(237), stringsAsFactors=F))
+                      TransformationTimeV20=c(237), 
+                      TransformationTimeV21=c(139), stringsAsFactors=F))
 times <- rbind(times, 
                  data.frame(FontType=c("DengXian_Regular_Unicode"), 
                       InitialSymbols=c(28541), 
                       RemainingSymbols=c(7247), 
-                      TransformationTime=c(1230), stringsAsFactors=F))
+                      TransformationTimeV20=c(1230), 
+                      TransformationTimeV21=c(365), stringsAsFactors=F))
 times <- rbind(times, 
                  data.frame(FontType=c("Osaka_Regular_Unicode"), 
                       InitialSymbols=c(14963), 
                       RemainingSymbols=c(7884), 
-                      TransformationTime=c(1526), stringsAsFactors=F))
+                      TransformationTimeV20=c(1526), 
+                      TransformationTimeV21=c(495), stringsAsFactors=F))
 
 observations <- dim(times)[1]
 
 # Create the rows of the Markdown table
 for(i in seq_len(observations)) {
     observation <- times[i,]
-    cat(observation$FontType, " | ", observation$InitialSymbols, " | ", observation$RemainingSymbols, " | ", observation$TransformationTime, "\n")
+    cat(observation$FontType, " | ",
+        observation$InitialSymbols, " | ",
+        observation$RemainingSymbols, " | ",
+        observation$TransformationTimeV20,  " | ",
+        observation$TransformationTimeV21, "\n")
 }
 ```
 
-The processing time looks quasi-proportional to the count of (remaining) symbols used for approximating a certain image. See next *log-log* plot for the values from the previous table:<br>
-```{r LinearModelForAnImg, echo=F, results='asis', cache=T, cache.path="../../cache/performance/LinearModelForAnImg/", cache.comments=F, dependson="ResultsTable", cache.rebuild=c(times, observations)}
-colours <- c("black", "coral", "blue", "red", "darkgray", "brown", "green", "pink", "violet")
+The processing time looks quasi-proportional to the count of (remaining) symbols used for approximating a certain image. See next *log-log* plots for the values from the previous table:<br>
+```{r LinearModelForAnImg, echo=F, results='asis', cache=T, fig.keep='all', cache.path="../../cache/performance/LinearModelForAnImg/", cache.comments=F, dependson="ResultsTable", cache.rebuild=c(times, observations)}
+colours <- c("black", "coral", "blue", "red",
+             "darkgray", "brown", "green", "pink", "violet")
 pchVals <- seq_len(observations)
 
+versions <- c("v2.0", "v2.1")
+
+library(stringr, verbose = F)
+VERSIONS <- toupper(str_replace_all(versions, "\\.", ""))
+transformationTimes <- lapply(VERSIONS, function(V)
+    times[[sprintf("TransformationTime%s", V)]])
+
 # Labels to show near the points
-pointLabels <- mapply(function(RemSymsCount, TransfDur) sprintf("%.0f symbols - %.0fs",RemSymsCount,TransfDur), 
-                      times$RemainingSymbols, times$TransformationTime)
+pointLabels <- lapply(transformationTimes,
+                      function(transformationTimesForVersion) {
+                          mapply(function(RemSymsCount, TransfDur) {
+                              sprintf("%.0f symbols - %.0fs",
+                                      RemSymsCount,TransfDur)
+                             },
+                             times$RemainingSymbols,
+                             transformationTimesForVersion)
+                        })
 
 # Consolas_Bold_Unicode and CourierNew_Bold_Unicode are outliers
 # since their large clusters let them obtain much better times
@@ -235,7 +285,12 @@ outliers <- c("Consolas_Bold_Unicode", "CourierNew_Bold_Unicode")
 unbiasedTimes <- times[ ! times$FontType %in% outliers , ]
 
 # Finding a line through the unbiased points in log-log space
-lmObj <- lm(log10(TransformationTime) ~ log10(RemainingSymbols), unbiasedTimes)
+lmObj <- lapply(VERSIONS, function(V) {
+    logLogFormula <- as.formula(paste0(
+        "log10(TransformationTime", V, ") ~ log10(RemainingSymbols)"
+    ))
+    lm(logLogFormula, unbiasedTimes)
+})
 
 # Position the labels of the points to the right (4) when in the left half and to the left in the right half
 # The axis is logarithmic, thus the center is computed as below
@@ -251,39 +306,63 @@ par(mai = c(.9, .8, .4, .2)) # Bottom, left, top and right margins expressed in 
 
 # Using scatterplot from car for its feature that can represent all points differently
 library(car, verbose = F)
-scatterplot(TransformationTime ~ RemainingSymbols, times, log="xy",
-            groups=times$RemainingSymbols, # Separates the points as if they were different groups
-            #labels=pointLabels, id.n=observations, id.cex=.6, id.location="lr", # produces stuff to console => spoils the md file
-            main="Log-Log Plot: Timing the Transformation of an Image with various Font Types",
-            xlab="Remaining Symbols after Filtering the Font Types", ylab="Transformation Duration (s)",
-            cex.main=.9, cex.lab=.8, cex.axis=.7, 
-            grid=T, col=colours, pch=pchVals, cex=.7,
-            las=1, # tick values on vertical axis are displayed horizontally
-            legend.plot=F, # it's simpler to work separately with legend
-            smooth=F, # it's simpler to draw the linear regression separately
-            boxplots=F) # no need for boxplots
-par(new=T) # same plot for next items
-abline(coef(lmObj), col="cyan") # Linear approximation for the points
-text(times$RemainingSymbols, times$TransformationTime, pointLabels,
-     cex=.6, pos=labelPositions, offset=.5, col=colours) # attaching labels to the points
-legend("topleft", legend=times$FontType,
-       cex=.7,
-       pch=pchVals,
-       col=colours[1:observations],
-       bty="n") # Show no rectangle around the legend
+for(verIdx in seq_len(length(versions))) {
+    v <- versions[verIdx]
+    V <- VERSIONS[verIdx]
+    timesForSymsFormula <- as.formula(paste0("TransformationTime", V,
+                                             " ~ RemainingSymbols"))
+    scatterplot(timesForSymsFormula, times, log="xy",
+                #groups=times$RemainingSymbols, # Separates the points as if they were different groups => a separate unwanted legend
+                #labels=pointLabels, id.n=observations, id.cex=.6, id.location="lr", # produces stuff to console => spoils the md file
+                main=paste0("Log-Log Plot: ",
+                            "Timing the Transformation of an Image ",
+                            "with various Font Types in ", v),
+                xlab="Remaining Symbols after Filtering the Font Types",
+                ylab="Transformation Duration (s)",
+                cex.main=.9, cex.lab=.8, cex.axis=.7,
+                regLine=F, # the regression line is fitted with abline below
+                grid=T, col=colours, pch=pchVals, cex=.7,
+                las=1, # tick values on vertical axis are displayed horizontally
+                legend=F, # it's simpler to work separately with legend
+                smooth=F, # it's simpler to draw the linear regression separately
+                boxplots=F) # no need for boxplots
+    par(new=T) # same plot for next items
+    abline(coef(lmObj[[verIdx]]), col="cyan") # Linear approximation for the points
+    text(times$RemainingSymbols,
+         times[[paste0("TransformationTime",V)]],
+         pointLabels[[verIdx]],
+         cex=.6, pos=labelPositions, offset=.5, col=colours) # attaching labels to the points
+    legend("topleft", legend=times$FontType,
+           cex=.7,
+           pch=pchVals,
+           col=colours[1:observations],
+           bty="n") # Show no rectangle around the legend
+    cat('<br>')
+}
+```
+So, when using **v2.0** and **v2.1** with all features enabled, the time required for the transformation of the image [I1][] could be approximated by the rules:
 
+| Version | Duration formula |
+:-:|:-:
+```{r DisplayLinearModelForAnImg, echo=F, results='asis', cache=T, cache.path="../../cache/performance/DisplayLinearModelForAnImg/", cache.comments=F, dependson=c("ResultsTable", "LinearModelForAnImg"), cache.rebuild=c(versions, VERSIONS, unbiasedTimes)}
+lmObj <- lapply(VERSIONS, function(V) {
+    normalScaleFormula <- as.formula(paste0(
+        "TransformationTime", V, " ~ RemainingSymbols"
+    ))
+    lm(normalScaleFormula, unbiasedTimes)
+})
+
+for(verIdx in seq_len(length(versions))) {
+    thisLm <- lmObj[[verIdx]]
+    slope <- thisLm$coefficients[2]
+    intercept <- thisLm$coefficients[1]
+    addOperatorStr <- "+"; if(intercept<0) addOperatorStr <- "-"
+    cat(sprintf("%s | <i>%.3f * RemainingSymbols %s %.3f</i>\n",
+                versions[verIdx], slope, addOperatorStr, abs(intercept)))
+}
 ```
 
-So, when using **Pic2Sym v2.0** with all features enabled, the time required for the transformation of the image [I1][] could be approximated by the rule:<br>
-```{r DisplayLinearModelForAnImg, echo=F, results='asis', cache=T, cache.path="../../cache/performance/DisplayLinearModelForAnImg/", cache.comments=F, dependson="ResultsTable", cache.rebuild=c(unbiasedTimes)}
-lmObj <- lm(TransformationTime ~ RemainingSymbols, unbiasedTimes)
-slope <- lmObj$coefficients[2]
-intercept <- lmObj$coefficients[1]
-addOperatorStr <- "+"; if(intercept<0) addOperatorStr <- "-"
-cat(sprintf("<i>Duration = %.3f * RemainingSymbols %s %.3f</i>\n", slope, addOperatorStr, abs(intercept)))
-```
-
-The resulted times for the fonts *Consolas_Bold_Unicode* and *CourierNew_Bold_Unicode* are clearly better than expected and this is because those font families can be **grouped in larger clusters** than the other font types, resulting in an even smaller count of remaining symbols (there will be just one representative symbol for each group of glyphs). These aspects are better explained within the [Symbols Clustering](#SymsClustering) section from below.
+The resulted times for the fonts *Consolas_Bold_Unicode* and *CourierNew_Bold_Unicode* are clearly better than expected in v2.0 and this is because those font families can be **grouped in larger clusters** than the other font types, resulting in an even smaller count of remaining symbols (there will be just one representative symbol for each group of glyphs). These aspects are better explained within the [Symbols Clustering](#SymsClustering) section from below.
 
 ---
 
@@ -303,47 +382,69 @@ The performance of this mechanism depends on the count of symbols that may quali
 Additionaly, the larger the original font size, the higher the acceleration rate of processing images:
 
 ```{r PreselectionGainByFontSize, echo=F, results='asis', cache=T, cache.path="../../cache/performance/PreselectionGainByFontSize/", cache.comments=F}
+Versions <- c("v2.0", "v2.1"); countVersions <- length(Versions)
 Sizes <- seq(10, 40, by=5); countSizes <- length(Sizes)
 Images <- c("I1", "I2"); countImages <- length(Images)
 PreselectionModes <- c("NoPreselection", "WithPreselection"); countPresModes <- length(PreselectionModes)
 
-times <- array(dim=c(countSizes, countImages, countPresModes),
-               dimnames = list(Sizes, Images, PreselectionModes))
+times <- array(dim=c(countVersions, countSizes, countImages, countPresModes),
+               dimnames = list(Versions, Sizes, Images, PreselectionModes))
 
-times[Sizes==10, "I1",] <- c(48.0545, 40.0705) # NoPreselection, WithPreselection
-times[Sizes==10, "I2",] <- c(68.4497, 59.7929)
+times["v2.0", Sizes==10, "I1",] <- c(48.0545, 40.0705) # NoPreselection, WithPreselection
+times["v2.0", Sizes==10, "I2",] <- c(68.4497, 59.7929)
 
-times[Sizes==15, "I1",] <- c(29.1859, 20.3496)
-times[Sizes==15, "I2",] <- c(36.1655, 27.6107)
+times["v2.0", Sizes==15, "I1",] <- c(29.1859, 20.3496)
+times["v2.0", Sizes==15, "I2",] <- c(36.1655, 27.6107)
 
-times[Sizes==20, "I1",] <- c(21.4702, 12.8974)
-times[Sizes==20, "I2",] <- c(25.0398, 16.0124)
+times["v2.0", Sizes==20, "I1",] <- c(21.4702, 12.8974)
+times["v2.0", Sizes==20, "I2",] <- c(25.0398, 16.0124)
 
-times[Sizes==25, "I1",] <- c(17.4542, 8.70842)
-times[Sizes==25, "I2",] <- c(19.2864, 10.2928)
+times["v2.0", Sizes==25, "I1",] <- c(17.4542, 8.70842)
+times["v2.0", Sizes==25, "I2",] <- c(19.2864, 10.2928)
 
-times[Sizes==30, "I1",] <- c(15.3054, 6.51361)
-times[Sizes==30, "I2",] <- c(16.5152, 7.88942)
+times["v2.0", Sizes==30, "I1",] <- c(15.3054, 6.51361)
+times["v2.0", Sizes==30, "I2",] <- c(16.5152, 7.88942)
 
-times[Sizes==35, "I1",] <- c(14.2804, 4.97021)
-times[Sizes==35, "I2",] <- c(15.1676, 5.57001)
+times["v2.0", Sizes==35, "I1",] <- c(14.2804, 4.97021)
+times["v2.0", Sizes==35, "I2",] <- c(15.1676, 5.57001)
 
-times[Sizes==40, "I1",] <- c(13.2808, 4.06441)
-times[Sizes==40, "I2",] <- c(13.8092, 4.51981)
+times["v2.0", Sizes==40, "I1",] <- c(13.2808, 4.06441)
+times["v2.0", Sizes==40, "I2",] <- c(13.8092, 4.51981)
+
+times["v2.1", Sizes==10, "I1",] <- c(51.8993, 44.8839)
+times["v2.1", Sizes==10, "I2",] <- c(74.3165, 66.4285)
+
+times["v2.1", Sizes==15, "I1",] <- c(31.5807, 22.7172)
+times["v2.1", Sizes==15, "I2",] <- c(40.0505, 29.3565)
+
+times["v2.1", Sizes==20, "I1",] <- c(24.4696, 13.845)
+times["v2.1", Sizes==20, "I2",] <- c(29.7133, 17.3414)
+
+times["v2.1", Sizes==25, "I1",] <- c(21.3884, 9.48062)
+times["v2.1", Sizes==25, "I2",] <- c(24.8762, 11.1774)
+
+times["v2.1", Sizes==30, "I1",] <- c(20.2642, 7.15561)
+times["v2.1", Sizes==30, "I2",] <- c(22.7522, 8.15162)
+
+times["v2.1", Sizes==35, "I1",] <- c(19.8994, 5.40001)
+times["v2.1", Sizes==35, "I2",] <- c(22.269, 5.90121)
+
+times["v2.1", Sizes==40, "I1",] <- c(20.4318, 4.42221)
+times["v2.1", Sizes==40, "I2",] <- c(22.0954, 4.94501)
 
 # % gain from Preselection:
-gains <- 100 * times[,,"NoPreselection"]/times[,,"WithPreselection"]
+gains <- 100 * times[,,,"NoPreselection"]/times[,,,"WithPreselection"]
 
 xrange <- range(Sizes); yrange <- range(gains)
 
-colours <- c("black", "coral") # I1, I2
+colours <- c("red", "black", "magenta", "blue") # v2.0-I1, v2.0-I2, v2.1-I1, v2.1-I2
 cexVal <- .8 # Resize factor for various items
 
 # Trimming from the white margins of the figure
 par(mai = c(.8, .8, .4, .1)) # Bottom, left, top and right margins expressed in inches
 
-# Plotting the series for I1
-plot(Sizes, gains[, "I1"], xlim=xrange, ylim=yrange, cex=cexVal,
+# Plotting the series for v2.0-I1
+plot(Sizes, gains["v2.0",, "I1"], xlim=xrange, ylim=yrange, cex=cexVal,
      type="p", pch=1, # using a symbol for the plotted points
      col=colours[1],  # using a certain color for the plotted points & lines
      xlab='Font Size', ylab="Gain from Preselection (%)", cex.lab=cexVal, cex.axis=cexVal,
@@ -351,28 +452,48 @@ plot(Sizes, gains[, "I1"], xlim=xrange, ylim=yrange, cex=cexVal,
      las=1) # tick values on vertical axis are displayed horizontally
 grid()
 
-# Plotting the series for I2
+# Plotting the series for v2.0-I2
 par(new=TRUE) # Use same plot
-plot(Sizes, gains[, "I2"], xlim=xrange, ylim=yrange, cex=cexVal,
+plot(Sizes, gains["v2.0",, "I2"], xlim=xrange, ylim=yrange, cex=cexVal,
      type="p", pch=2, # use a different symbol for its plotted points
      col=colours[2],  # use a different color for its plotted points & lines
      xlab='', ylab='', axes=F, xaxt="n", yaxt="n") # inhibit any axis information
 
-legend("topleft", legend=sapply(Images, function(Img) sprintf("Gain for Image %s", Img)),
+# Plotting the series for v2.1-I1
+par(new=TRUE) # Use same plot
+plot(Sizes, gains["v2.1",, "I2"], xlim=xrange, ylim=yrange, cex=cexVal,
+     type="p", pch=3, # use a different symbol for its plotted points
+     col=colours[3],  # use a different color for its plotted points & lines
+     xlab='', ylab='', axes=F, xaxt="n", yaxt="n") # inhibit any axis information
+
+# Plotting the series for v2.1-I2
+par(new=TRUE) # Use same plot
+plot(Sizes, gains["v2.1",, "I2"], xlim=xrange, ylim=yrange, cex=cexVal,
+     type="p", pch=4, # use a different symbol for its plotted points
+     col=colours[4],  # use a different color for its plotted points & lines
+     xlab='', ylab='', axes=F, xaxt="n", yaxt="n") # inhibit any axis information
+
+legend("topleft",
+       legend=c("Gain for Image I1 (v2.0)", "Gain for Image I2 (v2.0)",
+                "Gain for Image I1 (v2.1)", "Gain for Image I2 (v2.1)"),
        cex=cexVal,
-       pch=seq_len(countImages),
+       pch=seq_len(countVersions * countImages),
        col=colours,
        bty="n") # Show no rectangle around the legend
 
 interpolateLocation <- seq(xrange[1], xrange[2], 5)
-lines(predict(smooth.spline(Sizes, gains[, "I1"]), interpolateLocation), col=colours[1])
-lines(predict(smooth.spline(Sizes, gains[, "I2"]), interpolateLocation), col=colours[2])
+lines(predict(smooth.spline(Sizes, gains["v2.0",, "I1"]), interpolateLocation), col=colours[1])
+lines(predict(smooth.spline(Sizes, gains["v2.0",, "I2"]), interpolateLocation), col=colours[2])
+lines(predict(smooth.spline(Sizes, gains["v2.1",, "I1"]), interpolateLocation), col=colours[3])
+lines(predict(smooth.spline(Sizes, gains["v2.1",, "I2"]), interpolateLocation), col=colours[4])
 
 ```
 
 The values from the graph are computed like this: <i>(timingWithoutPreselection / timingWithPreselection) &#42; 100%</i>
 
-The images [I1][] and [I2][] were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
+The images [I1][] and [I2][] were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg) (in v2.1, the slider for the additional **Correlation** matching aspect needs to be at 100%). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
+
+In v2.1, the gain is much higer than in v2.0 for larger symbols because of the use of the **Correlation** matching aspect whose computation time depends quadratically on the font size. The *Preselection* performs computations for the full size only for the items in the *Short List*.
 
 The quality of the result is a subjective matter. One could not even notice how this feature provides poor matches for some patches. However, the [Unit Tests][UnitTests] demonstrated a significant drop of the accuracy for approximations using the Preselection mode.
 
@@ -395,10 +516,10 @@ Here are 2 transformations that might redeem this feature (please ignore the dur
 
 All features were enabled for a first measurement, then the clustering was disabled for getting the second measurement. Below are the results:
 
-|                           | Average Cluster Size  | Using all Features                | All Features except Clustering | Gain from Clustering |
----                         |:-:                    |:-:                                |:-:                                |:-:
-*Consolas Bold Unicode*     | 1.28                  | 211s                              | 259s                              | 123% (1.23 x faster)
-*Courier New Bold Unicode*  | 1.32                  | 237s                              | 293s                              | 124% (1.24 x faster)
+| | Average Cluster Size  | Using all Features | All Features except Clustering | Gain from Clustering |
+:-|:-:|:-:|:-:|:-:
+*Consolas Bold Unicode*|1.28|v2.0: 211s<br>v2.1: 95s|v2.0: 211s<br>v2.1: 107s|v2.0: 1.23 x faster<br>v2.1: 1.12 x faster
+*Courier New Bold Unicode*|1.32|v2.0: 237s<br>v2.1: 139s|v2.0: 293s<br>v2.1: 167s|v2.0: 1.24 x faster<br>v2.1: 1.2 x faster
 
 The *average cluster size = acs* represents how large the existing clusters are, on average. It gets reported in the *console window* each time a font type is loaded.
 
@@ -424,6 +545,8 @@ Here are some orientative times for loading a symbols set for the first time (us
 - 90s for loading the largest tested font family - DengXian Unicode with more than 28000 glyphs
 
 These times were achieved only after introducing a heuristic method for computing the distance between a cluster (representative) and a symbol searching for a parent cluster (The noticed gain was around 10 times. *FastDistSymToClusterComputation* from the [configuration][] file could be changed to observe the difference).
+
+In v2.1, the loading of the font families needs slightly more time since the (newly introduced) **Cross Correlation** matching aspect was implemented to reuse some data related to the fonts that can be stored directly on the symbols data, so loading the fonts means also computing the extra information about each glyph.
 
 ---
 
@@ -605,6 +728,7 @@ For the scenario mentioned above, *maximum reported memory* was less than *114 M
 [Back to start page](../../../ReadMe.md)
 
 [Structural Similarity]:https://ece.uwaterloo.ca/~z70wang/research/ssim
+[Cross Correlation]:https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC)
 [notations]:notations.md
 [UnitTests]:../UnitTesting/UnitTesting.md
 [configuration]:../../../res/varConfig.txt

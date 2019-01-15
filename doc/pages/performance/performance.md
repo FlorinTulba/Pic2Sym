@@ -1,11 +1,10 @@
-
 ### Topics
 
 <a title = 'Only the Rmd file needs to be edited. Do not change the corresponding md file!'>
 
 -   [Performance Overview](#Overview)
 -   Analysis of Pic2Sym by version:
-    -   [2.0](#v2.0)
+    -   [2.0 - 2.1](#v2.0-v2.1)
         -   [Skipping Matching Aspects Heuristic](#SkipAspects)
         -   [Symbol Set Filtering](#SymsFiltering)
         -   [Symbols Preselection](#SymsPreselection)
@@ -21,9 +20,9 @@
 
 ### Performance Overview of existing versions of Pic2Sym
 
-#### Considering the quality and accuracy of the produced results:
+#### Considering the **quality and accuracy** of the produced results:
 
-|                                 | v1.0 | v1.1 - v1.3 |          v2.0          |
+|                                 | v1.0 | v1.1 - v1.3 |       v2.0, v2.1       |
 |---------------------------------|:----:|:-----------:|:----------------------:|
 | *Can Avoid Undesirable Symbols* |   -  |      -      |         **Yes**        |
 | *Smooth Results (Hybrid Mode)*  |   -  |   **Yes**   |         **Yes**        |
@@ -32,12 +31,14 @@
 
 Explanations concerning the values within the table:
 
--   <b><i>(\*)</i></b> refers to the '*accuracy*' of **v2.0** (does it deliver the best possible matches?), which is 100% when all its features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
+-   <b><i>(\*)</i></b> refers to the '*accuracy*' of **v2.0** and **v2.1** (do they deliver the best possible matches?), which is 100% when all of their features are disabled or when only using the **Symbol Filters** feature. Otherwise it depends:
     -   low clustering accuracy might let a patch be approximated with an unexpected symbol
     -   using blur algorithms inferior to Gaussian blur (like Box blur) for the [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) matching aspect might produce mismatches, too
     -   using Symbols Preselection reduces match accuracy even more, since the Preselection phase is highly subjective
 
-#### Existing versions compared by their speed:
+#### Existing versions compared by their **speed**:
+
+-   Version **2.1** reordered slightly the matching aspects (to reflect their actual costs) and brought a new matching aspect - the [Cross Correlation](https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC)) (Corr), which is much faster than [Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS), plus their accuracy is similar. Thus, starting with v2.1, SS can be replaced by Corr or they can be used together (when the *Skipping Aspects* is enabled) to avoid computing SS aspect as often as possible. When *Skipping Aspects* is disabled and all 9 matching aspects are enabled (compared to just 8 prior to v2.1), the transformation needs an additional time for Corr
 
 -   Version **2.0** is typically superior to the previous versions. However, it can disable all its new features. In that case it will be slightly inferior to **v1.3**.
 
@@ -51,13 +52,13 @@ Explanations concerning the values within the table:
 
 ------------------------------------------------------------------------
 
-<a name = "v2.0"></a>
+<a name = "v2.0-v2.1"></a>
 
-### Performance of Pic2Sym v2.0
+### Performance of Pic2Sym v2.0 / v2.1
 
-The newly introduced elements are described in their corresponding [modules](../appendix/appendix.md#Modules). These host modules are mentioned below for each feature.
+More details about the features below can be found in their corresponding [modules](../appendix/appendix.md#Modules).
 
-One new feature is allowing any number of user requests in parallel, as long as they are valid for a given state of the application. It belongs to the [**User Interaction**](../appendix/modules/UI.md) module.
+One feature is allowing any number of user requests in parallel, as long as they are valid for a given state of the application. It belongs to the [**User Interaction**](../appendix/modules/UI.md) module.
 
 Continuing with more relevant features from the application performance point of view.
 
@@ -118,42 +119,178 @@ Now let's observe the maximum count of matching aspects that can be skipped whil
 
 -   the configuration from [this example](../results/Example1_v1.3.jpg) (using 125 glyphs)
 -   *Parallelism* (2 threads)
+-   *EnableSkipAboveMatchRatio* set on 0
 -   no other features and without *generating drafts*
 
-| Matching Aspect name                                                            |  Complexity|  Skipped for [I1](../../examples/6.jpg)|  Skipped for [I2](../../examples/15.jpg)|
-|---------------------------------------------------------------------------------|-----------:|---------------------------------------:|----------------------------------------:|
-| *Prefer Larger Symbols*                                                         |       0.001|                                   0.00%|                                    0.00%|
-| *Prefer Better Contrast*                                                        |       2.000|                                   0.00%|                                    0.00%|
-| *Foreground matching*                                                           |       3.100|                                  11.11%|                                    0.40%|
-| *Background matching*                                                           |       3.200|                                  11.58%|                                    0.43%|
-| *Edges matching*                                                                |       4.000|                                  14.10%|                                    0.61%|
-| *Gravitational Smoothness*                                                      |      15.000|                                  15.64%|                                    0.78%|
-| *Directional Smoothness*                                                        |      15.100|                                  15.96%|                                    0.80%|
-| *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim) (SS)* |    1000.000|                                  44.40%|                                   13.66%|
+First, the measurements from v2.1:
 
-> The 2 scenarios involved all *Matching Aspects*, which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
+<table style="width:17%;">
+<colgroup>
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Matching Aspect name</th>
+<th align="right">Complexity as<br>actual cost</th>
+<th align="right">Skipped<br>for <a href="../../examples/6.jpg">I1</a></th>
+<th align="right">Skipped<br>for <a href="../../examples/15.jpg">I2</a></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><em>Prefer Larger Symbols</em></td>
+<td align="right">3.52</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Foreground matching</em></td>
+<td align="right">46.20</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><em>Background matching</em></td>
+<td align="right">59.40</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Prefer Better Contrast</em></td>
+<td align="right">67.66</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><em>Gravitational Smoothness</em></td>
+<td align="right">68.21</td>
+<td align="right">0.07%</td>
+<td align="right">0.02%</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Directional Smoothness</em></td>
+<td align="right">69.31</td>
+<td align="right">0.07%</td>
+<td align="right">0.02%</td>
+</tr>
+<tr class="odd">
+<td align="left"><em><a href="https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC)">Cross Correlation</a> (Corr)</em></td>
+<td align="right">90.21</td>
+<td align="right">2.91%</td>
+<td align="right">1.20%</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Edges matching</em></td>
+<td align="right">198.57</td>
+<td align="right">81.18%</td>
+<td align="right">64.67%</td>
+</tr>
+<tr class="odd">
+<td align="left"><em><a href="https://ece.uwaterloo.ca/~z70wang/research/ssim">Structural Similarity</a> (SS)</em></td>
+<td align="right">1000.00</td>
+<td align="right">82.46%</td>
+<td align="right">67.79%</td>
+</tr>
+</tbody>
+</table>
 
-In the presented cases, the 2 least complex matching aspects (*Prefer Larger Symbols* and *Prefer Better Contrast*) had to be evaluated for all compare operations. Only after cumulating the scores from both of them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
+The complexity of the aspects was set proportional to the time required to approximate image [I1](../../examples/6.jpg) using each aspect alone and using a font family with more than 7000 glyphs. The complexity of SS (the slowest one) is fixed to 1000, while the other shift proportionally to reflect a shorter duration.
 
-Apart from the substantial number of uniform patches, image [I1](../../examples/6.jpg) presents also many coarse-textured regions, which generally have a few good matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
+For v2.0, the complexity of the aspects was based on times obtained using only font families with a modest number of glyphs. It appeared to confirm a certain intuitive order. So, the order of the aspects is different and the data looks like this:
 
-Comparing now the durations required to approximate the images either by all matching aspects, or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one):
+<table style="width:17%;">
+<colgroup>
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Matching Aspect name</th>
+<th align="right">Expected<br>Complexity</th>
+<th align="right">Skipped<br>for <a href="../../examples/6.jpg">I1</a></th>
+<th align="right">Skipped<br>for <a href="../../examples/15.jpg">I2</a></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><em>Prefer Larger Symbols</em></td>
+<td align="right">0.001</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Prefer Better Contrast</em></td>
+<td align="right">2.000</td>
+<td align="right">-</td>
+<td align="right">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><em>Foreground matching</em></td>
+<td align="right">3.100</td>
+<td align="right">11.11%</td>
+<td align="right">0.40%</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Background matching</em></td>
+<td align="right">3.200</td>
+<td align="right">11.58%</td>
+<td align="right">0.43%</td>
+</tr>
+<tr class="odd">
+<td align="left"><em>Edges matching</em></td>
+<td align="right">4.000</td>
+<td align="right">14.10%</td>
+<td align="right">0.61%</td>
+</tr>
+<tr class="even">
+<td align="left"><em>Gravitational Smoothness</em></td>
+<td align="right">15.000</td>
+<td align="right">15.64%</td>
+<td align="right">0.78%</td>
+</tr>
+<tr class="odd">
+<td align="left"><em>Directional Smoothness</em></td>
+<td align="right">15.100</td>
+<td align="right">15.96%</td>
+<td align="right">0.80%</td>
+</tr>
+<tr class="even">
+<td align="left"><em><a href="https://ece.uwaterloo.ca/~z70wang/research/ssim">Structural Similarity</a> (SS)</em></td>
+<td align="right">1000.000</td>
+<td align="right">44.40%</td>
+<td align="right">13.66%</td>
+</tr>
+</tbody>
+</table>
 
-|                                  | [I1](../../examples/6.jpg) | [I2](../../examples/15.jpg) |
-|:--------------------------------:|:--------------------------:|:---------------------------:|
-| *Required Time - all aspects ON* |           37.253s          |           73.408s           |
-| *Required Time - only SS set ON* |           42.901s          |           60.681s           |
-|    *Total Compare operations*    |           2395625          |           3440875           |
+> The 2 scenarios involved all *Matching Aspects* (available in their version), which are sorted in the table by their complexity, like the application itself does. First such aspect is always evaluated, but the following ones can be skipped sometimes. This order ensures that the most complex matching aspects are skipped most often.
 
-The durations from the table for image I1 show that using all enabled aspects can be around 1.15 times faster than transforming those images based only on SS.
+In the presented cases, several least complex matching aspects had to be evaluated for all compare operations. Only after cumulating the scores from them it was possible to guarantee for some symbols that they cannot be better matches (for a given patch) than the best match found earlier. For those symbols, evaluating the rest of the matching aspects is therefore not necessary.
 
-For image I2, its finely-grained patches meant that the ranking among the competitor symbols (when all aspects were enabled) was established late, or only after computing also the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)*. Because of that, there were extremely few skipped aspects. The difference is 12.727s between the transformation only with SS and the one with all aspects enabled.
+Apart from the substantial number of uniform patches, image [I1](../../examples/6.jpg) presents also many coarse-textured regions, which generally do have a few good matches among the symbols. Once found, such a match will have a score really difficult to compete against. Many of the remaining symbols will be rejected due to this fact soon after computing the scores for only a few matching aspects.
 
-Current percentage of skipped SS aspects for transforming image I2 with all aspects enabled is 13.66% and the approximation time is 73.408s. What percentage value would reduce the transformation time to 60.681s (same as when using only the SS aspect)?
+Comparing now the durations required to approximate the images either by all matching aspects (available in their version), or just by *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)* (SS - the most complex one) or by *[Cross Correlation](https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC))* (Corr - the much faster alternative for SS):
 
--   average computation of SS with 2 threads and ignoring 'binding' code is: <i>tSS = 60.681s / 3440875 = 17.635 microseconds</i> (see column I2 from last table)
--   required count of additionally skipped SS aspects is: <i>(73.408s - 60.681s) / tSS = 721675.9</i>, to be rounded to 721676
--   the result is: <i>13.66% + (100 \* 721676 / 3440875)% = 34.63362%</i>. This means that the paradox of evaluating more aspects in less time happens only when there are at least 35%-40% skipped SS aspects
+|                                                         | [I1](../../examples/6.jpg) | [I2](../../examples/15.jpg) |
+|:-------------------------------------------------------:|:--------------------------:|:---------------------------:|
+|              *Total Compare<br>operations*              |           2395625          |           3440875           |
+|     *Required Time* (**v2.1**)<br>*using only Corr*     |            3.4s            |             4.7s            |
+|   *Required Time* (**v2.1**)<br>*using all 9 aspects*   |             16s            |             32s             |
+|   *Required Time* (**v2.0**)<br>*using all 8 aspects*   |             37s            |             73s             |
+| *Required Time* (**v2.0**, **v2.1**)<br>*using only SS* |             43s            |             61s             |
+
+The reported total compare operations are the products between the count of non-uniform patches (the only image patches that get approximated) and the number of considered glyphs from the font family. Each such patch is compared against each symbol using the mentioned selection of matching aspects.
+
+The times from the column for image [I1](../../examples/6.jpg) (which contains lots of coarse patches) are in ascending order - **SS only** is the slowest time, **Corr only** the fastest, while v2.0 skips some SS computations (around 45%) and ranks third, but skips still less of them than v2.1 (around 83%), which ranks second.
+
+Corr gets assessed before SS in v2.1 and this allows skipping more SS computations.
+
+For image I2, its finely-grained patches meant that the ranking among the competitor symbols (when all aspects were enabled) was established late, or only after computing also the *[Structural Similarity](https://ece.uwaterloo.ca/~z70wang/research/ssim)*. Because of that, there were extremely few skipped aspects, SS in particular. This is clear in v2.0 (skips only 14% of SS), but less so in v2.1, where almost 68% of the SS computations are dropped. That is the reason why v2.0 needs more time when it uses all its 8 matching aspects compared to the case when it uses only SS.
 
 So, this feature is most valuable when transforming images with more frequent coarse patches.
 
@@ -183,21 +320,84 @@ For larger symbols, their remaining count is not that critical, since the number
 
 Let's see how various font families shrink after applying all implemented filters (font size is 10) and the times required to process image [I1](../../examples/6.jpg) when all features are enabled:
 
-| Font Type                           |  Initial Symbols|  Remaining Symbols|  Transformation Time|
-|-------------------------------------|----------------:|------------------:|--------------------:|
-| BpMono\_Bold\_AppleRoman            |              125|                 58|                   15|
-| ProFontWindows\_Regular\_AppleRoman |              201|                134|                   29|
-| EnvyCode\_Regular\_AppleRoman       |              220|                192|                   39|
-| Consolas\_Bold\_Unicode             |             2215|               1465|                  211|
-| CourierNew\_Bold\_Unicode           |             2846|               2064|                  237|
-| DengXian\_Regular\_Unicode          |            28541|               7247|                 1230|
-| Osaka\_Regular\_Unicode             |            14963|               7884|                 1526|
+<table style="width:21%;">
+<colgroup>
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Font Type</th>
+<th align="right">Initial<br>Symbols</th>
+<th align="right">Remaining<br>Symbols</th>
+<th align="right">Transformation<br>Time (v2.0)</th>
+<th align="right">Transformation<br>Time (v2.1)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">BpMono_Bold_AppleRoman</td>
+<td align="right">125</td>
+<td align="right">58</td>
+<td align="right">15</td>
+<td align="right">10</td>
+</tr>
+<tr class="even">
+<td align="left">ProFontWindows_Regular_AppleRoman</td>
+<td align="right">201</td>
+<td align="right">134</td>
+<td align="right">29</td>
+<td align="right">16</td>
+</tr>
+<tr class="odd">
+<td align="left">EnvyCode_Regular_AppleRoman</td>
+<td align="right">220</td>
+<td align="right">192</td>
+<td align="right">39</td>
+<td align="right">21</td>
+</tr>
+<tr class="even">
+<td align="left">Consolas_Bold_Unicode</td>
+<td align="right">2215</td>
+<td align="right">1465</td>
+<td align="right">211</td>
+<td align="right">95</td>
+</tr>
+<tr class="odd">
+<td align="left">CourierNew_Bold_Unicode</td>
+<td align="right">2846</td>
+<td align="right">2064</td>
+<td align="right">237</td>
+<td align="right">139</td>
+</tr>
+<tr class="even">
+<td align="left">DengXian_Regular_Unicode</td>
+<td align="right">28541</td>
+<td align="right">7247</td>
+<td align="right">1230</td>
+<td align="right">365</td>
+</tr>
+<tr class="odd">
+<td align="left">Osaka_Regular_Unicode</td>
+<td align="right">14963</td>
+<td align="right">7884</td>
+<td align="right">1526</td>
+<td align="right">495</td>
+</tr>
+</tbody>
+</table>
 
-The processing time looks quasi-proportional to the count of (remaining) symbols used for approximating a certain image. See next *log-log* plot for the values from the previous table:<br> <img src="./LinearModelForAnImg-1.png" style="display: block; margin: auto;" />
+The processing time looks quasi-proportional to the count of (remaining) symbols used for approximating a certain image. See next *log-log* plots for the values from the previous table:<br> <img src="./LinearModelForAnImg-1.png" style="display: block; margin: auto;" /><br><img src="./LinearModelForAnImg-2.png" style="display: block; margin: auto;" /><br> So, when using **v2.0** and **v2.1** with all features enabled, the time required for the transformation of the image [I1](../../examples/6.jpg) could be approximated by the rules:
 
-So, when using **Pic2Sym v2.0** with all features enabled, the time required for the transformation of the image [I1](../../examples/6.jpg) could be approximated by the rule:<br> <i>Duration = 0.182 \* RemainingSymbols + 1.752</i>
+| Version |             Duration formula             |
+|:-------:|:----------------------------------------:|
+|   v2.0  | <i>0.182 \* RemainingSymbols + 1.752</i> |
+|   v2.1  | <i>0.056 \* RemainingSymbols + 7.122</i> |
 
-The resulted times for the fonts *Consolas\_Bold\_Unicode* and *CourierNew\_Bold\_Unicode* are clearly better than expected and this is because those font families can be **grouped in larger clusters** than the other font types, resulting in an even smaller count of remaining symbols (there will be just one representative symbol for each group of glyphs). These aspects are better explained within the [Symbols Clustering](#SymsClustering) section from below.
+The resulted times for the fonts *Consolas\_Bold\_Unicode* and *CourierNew\_Bold\_Unicode* are clearly better than expected in v2.0 and this is because those font families can be **grouped in larger clusters** than the other font types, resulting in an even smaller count of remaining symbols (there will be just one representative symbol for each group of glyphs). These aspects are better explained within the [Symbols Clustering](#SymsClustering) section from below.
 
 ------------------------------------------------------------------------
 
@@ -220,7 +420,9 @@ Additionaly, the larger the original font size, the higher the acceleration rate
 
 The values from the graph are computed like this: <i>(timingWithoutPreselection / timingWithPreselection) \* 100%</i>
 
-The images [I1](../../examples/6.jpg) and [I2](../../examples/15.jpg) were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
+The images [I1](../../examples/6.jpg) and [I2](../../examples/15.jpg) were mentioned earlier in different studies. The times for the ratios presented in the chart were obtained based on the configuration from [this example](../results/Example1_v1.3.jpg) (in v2.1, the slider for the additional **Correlation** matching aspect needs to be at 100%). *Parallelism* was enabled while *Drafts generation* and all other features were ***OFF***. *Short List length* was 2.
+
+In v2.1, the gain is much higer than in v2.0 for larger symbols because of the use of the **Correlation** matching aspect whose computation time depends quadratically on the font size. The *Preselection* performs computations for the full size only for the items in the *Short List*.
 
 The quality of the result is a subjective matter. One could not even notice how this feature provides poor matches for some patches. However, the [Unit Tests](../UnitTesting/UnitTesting.md) demonstrated a significant drop of the accuracy for approximations using the Preselection mode.
 
@@ -243,9 +445,9 @@ Here are 2 transformations that might redeem this feature (please ignore the dur
 
 All features were enabled for a first measurement, then the clustering was disabled for getting the second measurement. Below are the results:
 
-<table style="width:28%;">
+<table style="width:26%;">
 <colgroup>
-<col width="5%" />
+<col width="4%" />
 <col width="5%" />
 <col width="5%" />
 <col width="5%" />
@@ -253,7 +455,7 @@ All features were enabled for a first measurement, then the clustering was disab
 </colgroup>
 <thead>
 <tr class="header">
-<th></th>
+<th align="left"></th>
 <th align="center">Average Cluster Size</th>
 <th align="center">Using all Features</th>
 <th align="center">All Features except Clustering</th>
@@ -262,18 +464,18 @@ All features were enabled for a first measurement, then the clustering was disab
 </thead>
 <tbody>
 <tr class="odd">
-<td><em>Consolas Bold Unicode</em></td>
+<td align="left"><em>Consolas Bold Unicode</em></td>
 <td align="center">1.28</td>
-<td align="center">211s</td>
-<td align="center">259s</td>
-<td align="center">123% (1.23 x faster)</td>
+<td align="center">v2.0: 211s<br>v2.1: 95s</td>
+<td align="center">v2.0: 211s<br>v2.1: 107s</td>
+<td align="center">v2.0: 1.23 x faster<br>v2.1: 1.12 x faster</td>
 </tr>
 <tr class="even">
-<td><em>Courier New Bold Unicode</em></td>
+<td align="left"><em>Courier New Bold Unicode</em></td>
 <td align="center">1.32</td>
-<td align="center">237s</td>
-<td align="center">293s</td>
-<td align="center">124% (1.24 x faster)</td>
+<td align="center">v2.0: 237s<br>v2.1: 139s</td>
+<td align="center">v2.0: 293s<br>v2.1: 167s</td>
+<td align="center">v2.0: 1.24 x faster<br>v2.1: 1.2 x faster</td>
 </tr>
 </tbody>
 </table>
@@ -302,6 +504,8 @@ Here are some orientative times for loading a symbols set for the first time (us
 -   90s for loading the largest tested font family - DengXian Unicode with more than 28000 glyphs
 
 These times were achieved only after introducing a heuristic method for computing the distance between a cluster (representative) and a symbol searching for a parent cluster (The noticed gain was around 10 times. *FastDistSymToClusterComputation* from the [configuration](../../../res/varConfig.txt) file could be changed to observe the difference).
+
+In v2.1, the loading of the font families needs slightly more time since the (newly introduced) **Cross Correlation** matching aspect was implemented to reuse some data related to the fonts that can be stored directly on the symbols data, so loading the fonts means also computing the extra information about each glyph.
 
 ------------------------------------------------------------------------
 

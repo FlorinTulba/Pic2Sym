@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup, include=F}
@@ -12,7 +14,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r shared, include=F, cache=T, cache.path="../../cache/results/shared/", cache.comments=F}
-versions <- c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0")  # x axis
+versions <- c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1")  # x axis
 
 # Monitored evolution criteria from version to version
 criteria <- c("1 Thread, Basic", 
@@ -40,34 +42,76 @@ initValues <- function() {
 }
 
 # Displays the series of times (versionsCount rows by criteriaCount columns) by version
-renderValues <- function(times, legendPos = "topright") {
-    yrange <- range(times, na.rm=T) # Ensure all times fit in the displayed y range of the y axis
+# There might be some consecutive versions that have the same times. In that case
+# specify them in versionsWithSameResults like:
+#       list(list("v1.0", 3, "v1.*"), list("v2.0", 2, "v2.0-1"))
+# which means that 3 versions starting with v1.0 are labeled v1.*
+# and use data from v1.0 and
+# 2 versions starting with v2.0 are labeled v2.0-1 and use data from v2.0
+renderValues <- function(times, legendPos = "topright",
+                         versionsWithSameResults = list()) {
+    times_ <- times
+    redundantVersionsBatches <- length(versionsWithSameResults)
+    redundancy <- 0
+    theXrange <- xrange # number of non redundant versions
+    xLabels <- versions # version names that appear on graphs (v1.*, v2.0-1)
+    dataSources <- versions # version names that provide the graph data
+    if(redundantVersionsBatches > 0) {
+        for(i in 1:redundantVersionsBatches) {
+            redundantVersionsBatch <- versionsWithSameResults[[i]]
+            batchDataSource <- redundantVersionsBatch[[1]]
+            batchLen <- redundantVersionsBatch[[2]]
+            batchLabel <- redundantVersionsBatch[[3]]
+            redundancy <- redundancy + batchLen - 1
+            batchDataSourceIdx <- match(batchDataSource, dataSources)
+            countCurrentDataSources <- length(dataSources)
+            tmpXL <- c()
+            if(batchDataSourceIdx > 1) {
+                tmpXL <- xLabels[1 : batchDataSourceIdx - 1]
+            }
+            tmpXL <- c(tmpXL, batchLabel)
+            tmpDS <- dataSources[1 : batchDataSourceIdx]
+            if(batchDataSourceIdx+batchLen <= countCurrentDataSources) {
+                tmpDS <- c(tmpDS, dataSources[batchDataSourceIdx+batchLen :
+                                  countCurrentDataSources])
+                tmpXL <- c(tmpXL, xLabels[batchDataSourceIdx+batchLen :
+                                  countCurrentDataSources])
+            }
+            dataSources <- tmpDS
+            xLabels <- tmpXL
+            times_ <- times_[-(batchDataSourceIdx+1) :
+                            -(batchDataSourceIdx+batchLen-1),]
+        }
+        theXrange <- c(1, xrange[2] - redundancy)
+    }
+    
+    yrange <- range(times_, na.rm=T) # Ensure all times fit in the displayed y range of the y axis
     
     # Trimming from the white margins of the figure
     par(mai = c(.5, .8, .4, .2)) # Bottom, left, top and right margins expressed in inches
     
     # First plotted criterion displays the title and the times from the y axis
-    plot(times[, "1 Thread, Basic"], xlim=xrange, ylim=yrange, cex=cexVal,
+    plot(times_[, "1 Thread, Basic"], xlim=theXrange, ylim=yrange, cex=cexVal,
          type="b", pch=1, # using a symbol for the plotted points
          col=colours[1],  # using a certain color for the plotted points & lines
          xlab='', ylab="Duration (s)", cex.lab=cexVal,
          main="Duration for Transforming this Image with each Pic2Sym Version", cex.main=cexVal,
          las=1, # tick values on vertical axis are displayed horizontally
          xaxt="n") #inhibits showing x axis values
-    axis(1, at=seq_len(versionsCount), labels=versions) # placing the Pic2Sym versions instead of the x axis values
+    axis(1, at=seq_len(versionsCount-redundancy), labels=xLabels) # placing the Pic2Sym versions instead of the x axis values
     grid()
 
     # Plotting the rest of the criteria
     for(i in 2 : criteriaCount) {
         par(new=TRUE) # Use same plot
-        plot(times[, criteria[i]], xlim=xrange, ylim=yrange, cex=cexVal,
+        plot(times_[, criteria[i]], xlim=theXrange, ylim=yrange, cex=cexVal,
              type="b", pch=i, # Each criterion uses a different symbol for its plotted points
              col=colours[i],  # Each criterion uses a different color for its plotted points & lines
              xlab='', ylab='', axes=F, xaxt="n", yaxt="n") # inhibit any axis information
     }
     
     criteriaIndices <- seq_len(criteriaCount)
-    validCriteriaIndices <- criteriaIndices[sapply(criteriaIndices, function(idx) F%in%is.na(times[,idx]))]
+    validCriteriaIndices <- criteriaIndices[sapply(criteriaIndices, function(idx) F%in%is.na(times_[,idx]))]
     
     legend(legendPos, legend=criteria[validCriteriaIndices],
            cex=cexVal,
@@ -77,7 +121,7 @@ renderValues <- function(times, legendPos = "topright") {
 }
 ```
 
-## Results generated by versions of Pic2Sym up to v2.0
+## Results generated by versions of Pic2Sym up to v2.1
 
 ```{r md_is_a_generated_file, results='asis', echo=F, cache=T, cache.path="../../cache/results/md_is_a_generated_file/", cache.comments=F}
 # Section to be placed after first document item ('Results generated ...' from above)
@@ -124,11 +168,11 @@ Some of the glyphs used here are quite similar, in the sense they have just diff
 ```{r Example2_ObtainedTimes, echo=FALSE, cache=T, cache.path="../../cache/results/Example2_ObtainedTimes/", cache.comments=F, dependson="shared", cache.rebuild=c(initValues, renderValues, colours, cexVal, xrange, criteria, criteriaCount, versions, versionsCount)}
 times <- initValues()
 
-times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(256, 150, 174, 154, 158)
+times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1"), "1 Thread, Basic"] <-
+    c(256, 150, 174, 154, 158, 174)
 
-times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(93, 82, 83)
+times[c("v1.2", "v1.3", "v2.0", "v2.1"), "2 Threads, Basic"] <-
+    c(93, 82, 83, 90)
 
 times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Clustering (Cl)",
@@ -137,6 +181,14 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Skip Aspects (SA)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(70, 83, 73, 67, 63, 39)
+
+times["v2.1", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
+                "2 Threads, Filters (Fil)",
+                "2 Threads, Preselection (Pre)",
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(77, 90, 78, 79, 57, 21)
 
 renderValues(times, "bottomleft")
 ```
@@ -155,11 +207,11 @@ Although declared as *Regular*, the symbols look bold\-ish.
 ```{r Example3_ObtainedTimes, echo=FALSE, cache=T, cache.path="../../cache/results/Example3_ObtainedTimes/", cache.comments=F, dependson="shared", cache.rebuild=c(initValues, renderValues, colours, cexVal, xrange, criteria, criteriaCount, versions, versionsCount)}
 times <- initValues()
 
-times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(240, 138, 158, 142, 149)
+times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1"), "1 Thread, Basic"] <-
+    c(240, 138, 158, 142, 149, 157)
 
-times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(82, 74, 76)
+times[c("v1.2", "v1.3", "v2.0", "v2.1"), "2 Threads, Basic"] <-
+    c(82, 74, 76, 82)
 
 times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Clustering (Cl)",
@@ -168,6 +220,14 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Skip Aspects (SA)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(65, 77, 52, 63, 54, 29)
+
+times["v2.1", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
+                "2 Threads, Filters (Fil)",
+                "2 Threads, Preselection (Pre)",
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(71, 82, 54, 68, 47, 16)
 
 renderValues(times, "bottomleft")
 ```
@@ -185,11 +245,11 @@ Their background decides how clear they remain.
 ```{r Example4_ObtainedTimes, echo=FALSE, cache=T, cache.path="../../cache/results/Example4_ObtainedTimes/", cache.comments=F, dependson="shared", cache.rebuild=c(initValues, renderValues, colours, cexVal, xrange, criteria, criteriaCount, versions, versionsCount)}
 times <- initValues()
 
-times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(250, 209, 234, 213, 218)
+times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1"), "1 Thread, Basic"] <-
+    c(250, 209, 234, 213, 218, 233)
 
-times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(129, 111, 116)
+times[c("v1.2", "v1.3", "v2.0", "v2.1"), "2 Threads, Basic"] <-
+    c(129, 111, 116, 122)
 
 times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Clustering (Cl)",
@@ -198,6 +258,14 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Skip Aspects (SA)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(99, 116, 89, 98, 108, 62)
+
+times["v2.1", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
+                "2 Threads, Filters (Fil)",
+                "2 Threads, Preselection (Pre)",
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(106, 123, 95, 105, 85, 32)
 
 renderValues(times, "bottomleft")
 ```
@@ -217,11 +285,11 @@ Besides that, disabling [Structural Similarity][] produced the result several ti
 ```{r Example5_ObtainedTimes, echo=FALSE, cache=T, cache.path="../../cache/results/Example5_ObtainedTimes/", cache.comments=F, dependson="shared", cache.rebuild=c(initValues, renderValues, colours, cexVal, xrange, criteria, criteriaCount, versions, versionsCount)}
 times <- initValues()
 
-times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(30, 23, 27, 25, 26)
+times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1"), "1 Thread, Basic"] <-
+    c(30, 23, 27, 25, 26, 39)
 
-times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(18, 13, 13)
+times[c("v1.2", "v1.3", "v2.0", "v2.1"), "2 Threads, Basic"] <-
+    c(18, 13, 13, 20)
 
 times["v2.0", c("2 Threads, Clustering (Cl)",
                 "2 Threads, Filters (Fil)",
@@ -229,6 +297,13 @@ times["v2.0", c("2 Threads, Clustering (Cl)",
                 "2 Threads, Skip Aspects (SA)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(13, 7, 11, 18, 8)
+
+times["v2.1", c("2 Threads, Clustering (Cl)",
+                "2 Threads, Filters (Fil)",
+                "2 Threads, Preselection (Pre)",
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(20, 10, 18, 13, 6)
 
 renderValues(times, "bottomleft")
 ```
@@ -260,7 +335,7 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(59, 69, 32, 58, 25)
 
-renderValues(times, "bottomleft")
+renderValues(times, "bottomleft", list(list("v2.0", 2, "v2.0-1")))
 ```
 
 _ _ _
@@ -291,11 +366,11 @@ Notice how the **symbols avoid imposing themselves** and are **more visible only
 ```{r Example1_ObtainedTimes, echo=FALSE, cache=T, cache.path="../../cache/results/Example1_ObtainedTimes/", cache.comments=F, dependson="shared", cache.rebuild=c(initValues, renderValues, colours, cexVal, xrange, criteria, criteriaCount, versions, versionsCount)}
 times <- initValues()
 
-times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0"), "1 Thread, Basic"] <-
-    c(153, 88, 101, 91, 93)
+times[c("v1.0", "v1.1", "v1.2", "v1.3", "v2.0", "v2.1"), "1 Thread, Basic"] <-
+    c(153, 88, 101, 91, 93, 100)
 
-times[c("v1.2", "v1.3", "v2.0"), "2 Threads, Basic"] <-
-    c(57, 48, 48)
+times[c("v1.2", "v1.3", "v2.0", "v2.1"), "2 Threads, Basic"] <-
+    c(57, 48, 48, 52)
 
 times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Clustering (Cl)",
@@ -304,6 +379,14 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, Skip Aspects (SA)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(42, 49, 24, 40, 37, 15)
+
+times["v2.1", c("2 Threads, Box Blur (BB)",
+                "2 Threads, Clustering (Cl)",
+                "2 Threads, Filters (Fil)",
+                "2 Threads, Preselection (Pre)",
+                "2 Threads, Skip Aspects (SA)",
+                "2 Threads, BB+Cl+Fil+Pre+SA")] <-
+    c(46, 52, 25, 45, 27, 10)
 
 renderValues(times, "bottomleft")
 ```
@@ -341,7 +424,7 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(137, 140, 134, 136, 87)
 
-renderValues(times, "bottomleft")
+renderValues(times, "bottomleft", list(list("v2.0", 2, "v2.0-1")))
 ```
 
 _ _ _
@@ -376,7 +459,7 @@ times["v2.0", c("2 Threads, Box Blur (BB)",
                 "2 Threads, BB+Cl+Fil+Pre+SA")] <-
     c(87, 92, 95, 88, 65)
 
-renderValues(times, "bottomleft")
+renderValues(times, "bottomleft", list(list("v2.0", 2, "v2.0-1")))
 ```
 
 _ _ _
@@ -397,34 +480,32 @@ Duration: less than **2 s** for all versions.
 
 ### Handling large symbol sets
 
-The following cases:
+The table below provides the results for [this image](../../examples/6.jpg) (27540 patches) when using 2 font families under Pic2Sym v2.0 and v2.1 (the latter comes with an additional *Cross Correlation* (**Corr**) matching aspect). All cases share these settings:
 
-- used all available Matching Aspects
-- didn&#39;t generate Draft Results (*Batch syms* on 0)
-- enabled all the features available in their version, among which:
-    - using Parallelism (only 2 threads)
-    - Symbols Filtering, which reduces the number of symbols
+- no *Draft Results* are generated (*Batch syms* on 0)
+- the *Hybrid Result* mode was not used, to be able to inspect the results better
+- all available *Matching Aspects* are used and they are set in [this way](CtrlPanelLargeFontFamilies.jpg)
+- all the features available in their version are enabled:
+    - using *Parallelism* (only *2 threads*, but worthy)
+    - *Symbols Filtering*, which reduces the number of symbols (see Used versus Total symbols), so clearly helpful
+    - *Skipping Aspects*, which ensures that even when using 8 (in v2.0) / 9 (in v2.1) matching aspects, the duration of the transformation is smaller than when using only the *Structural Similarity* (**SS**) matching aspect
+    - the cheaper *Box blur* substitute of the Gaussian blur, needed when evaluating the *Structural Similarity* (**SS**) matching aspect
+    - *Preselection* mechanism, which has just marginal benefits for small initial font sizes (10, in this case)
+    - *Symbols Clustering*, which does not help when the average cluster size is as small as for the 2 used font families. The feature disables itself in such contexts
 
----
+|*Font Family*|*Osaka Regular Unicode*&nbsp;&nbsp;&nbsp;|*DengXian Regular Unicode*|
+|:-|:-|:-|
+|**Total symbols**|14963|28541|
+|**Used symbols**|**7884**|**7247**|
+|**Time required in v2.0**&nbsp;&nbsp;&nbsp;|**1526**s (~26min)<br>81% from **SS** alone|**1226**s (~21min)<br>72% from **SS** alone|
+|**Time required in v2.1**&nbsp;&nbsp;&nbsp;|**495**s (~8min)<br>26% from **SS** alone<br>3 times longer than **Corr** alone|**365**s (~6min)<br>22% from **SS** alone<br>2.4 times longer than **Corr** alone|
+|**Resulted images**|[v2.0](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg), [v2.1](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_1_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)|[v2.0](../../examples/6_DengXian_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg), [v2.1](../../examples/6_DengXian_Regular_UNICODE_10_0_2.5_1_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)|
 
-Filtering shrank the font family *Osaka Regular Unicode* from 14963 symbols to less than 7900.<br>
-So, 27540 patches to approximate using around 7900 symbols require 1526s (around 26 minutes) in *v2.0* (better than in the screenshot below):<br>
-[![](Osaka_v2.0.jpg)](../../examples/6_osaka_unicode_Regular_UNICODE_10_0_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br>
-Here the *Hybrid Result* mode was not used, to be able to inspect the result better.<br>
+The times from v2.1 seem to be around a third of those from v2.0. This is due to the introduction of the **Cross Correlation** matching aspect, which has similar accuracy to **SS**, but works around 11 times faster than **SS**.
+
+The times would be longer when applying the transformations on images with a more finely-grained texture. See the [Performance Considerations](../performance/performance.md) about that.
+
 The amount of required memory was around 330MB.
-
----
-
-Filtering shrank the font family *DengXian Regular Unicode* from 28541 symbols to less than 7250.<br>
-So, 27540 patches to approximate using around 7250 symbols require 1230s (around 21 minutes) in *v2.0* (better than in the screenshot below):<br>
-[![](DengXian_v2.0.jpg)](../../examples/6_DengXian_Regular_UNICODE_10_1_2.5_0.25_1_0.75_0.1_0.2_0.2_0.1_0_2040_1350.jpg)<br>
-This time, the *Hybrid Result* mode was enabled.
-
----
-
-Both cases show that Clustering the Symbols here couldn&#39;t help much during the transformations, because there were so few clusters.
-
-The times would be longer when enabling just the *Strunctural Similarity* Matching Aspect or when applying the transformations on images with a more finely-grained texture. See the [Performance Considerations](../performance/performance.md) about that.
 
 * * *
 
@@ -453,6 +534,18 @@ Cases **to avoid**:
 	* contain *glyphs filling almost solid their square* (such symbols are very likely to approximate ambiguous patches and ***they appear rigid, despite they are correctly selected***)
 
 **Hybrid Results** mode, **Symbols Filtering, Clustering, Preselection** and **Skipping Matching Aspects** are now able to tackle most of these problematic contexts.
+
+The *reasons* behind the **patterns concerning the times from v2.0 and v2.1** (as observed on the graphs) are:
+
+- when applied alone, *Structural Similarity* (SS) matching aspect provides the same times within v2.0 and v2.1, since there is nothing different involved in this context
+- *Clustering* (Cl) and *Basic* values do overlap because clustering disables itself for font families with very few and very small clusters, as clustering would imply an additional computational cost
+- *Basic*, *Preselection* (Pre), *Box Blur* (BB) and *Filtering* (Fil) need more time in v2.1 because of the additional *Cross Correlation* (Corr) matching aspect, introduced in this version. Each patch needs to be assessed by 9 matching aspects, instead of 8, as it was in v2.0. Roughly, the time difference should be the duration required to perform the matching using only the *Cross Correlation* aspect
+- *All* (Cl, Pre, BB, Fil, SA) reflects mainly the advantages from *Skip Aspects*, described below
+- *Skip Aspects* (SA) evidences the improvement delivered with v2.1:
+
+    - the evaluation order of the matching aspects was slightly changed in v2.1, to reflect their actual cost
+    - the newly introduced *Cross Correlation* (Corr) aspect precedes *Structural Similarity* during the assessment, since it is around 11 times faster compared to SS
+    - Corr does decide often enough that *Structural Similarity* cannot improve the matching score to beat a given previous match, so SS is skipped plenty of times, thus there will be many cheap Corr computations and only a few expensive SS
 
 For optimal configuration of the application, please refer to the [Control Panel](../CtrlPanel/CtrlPanel.md) and [Appendix](../appendix/appendix.md) materials.
 

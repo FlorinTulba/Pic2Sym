@@ -34,6 +34,8 @@ These are the controls explained below:<br>
 
 - Slider \[*9*\] **Structural similarity** (see [this](https://ece.uwaterloo.ca/~z70wang/research/ssim) for details) does contribute to generating *great approximations*, however it incurs a *much longer transformation*
 
+- Slider \[*22*\] **Correlation** (see [this](https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC)) generates *high quality approximations* at a *much lower cost* than *Structural similarity*
+
 - The group \[*10*\] of sliders **Fit under**, **Fit edge** and **Fit aside** penalizes poor approximations (they aim for the *correctness* of the match, but *lack precision* due to the *discrete nature of the masks* they&#39;re using):
 	- **Fit under** will measure the match betweeen the foreground of the symbol and the patch. Normally, this checks an area smaller than the regions used by the next 2 sliders. This setting can _remain smaller than the values of *Fit edge* and *Fit aside*_
 
@@ -55,7 +57,7 @@ These are the controls explained below:<br>
 
 - The buttons **Load/Save Settings** \[*20* and *21*\] ensure rapid setup of various complete scenarios of transformation (apart from the image to approximate).
 
-Setting any _slider from the 9\-14 range to 0 disables the corresponding matching aspect_.
+To disable a matching aspect, just set its slider to 0 (sliders in the 9\-14 range or the slider 22).
 
 ----------
 [Back to start page](../../../ReadMe.md)

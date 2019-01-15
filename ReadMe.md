@@ -1,4 +1,4 @@
-# Pic2Sym v2.0
+# Pic2Sym v2.1
 
 This application **approximates images** by a **grid of colored symbols with colored backgrounds**.<br>
 It runs on **64\-bit Windows \(at least version 7\)**. 
@@ -103,7 +103,7 @@ Illustrating again the power of this main window:<br>
 
 * * *
 
-Kindly address any observations, suggestions or questions to me using *florintulba@yahoo.com*.<br>&copy; 2016, 2017 Florin Tulba (GNU AGPL v3 license)
+Kindly address any observations, suggestions or questions to me using *florintulba@yahoo.com*.<br>&copy; 2016-2019 Florin Tulba (GNU AGPL v3 license)
 
 * * *
 

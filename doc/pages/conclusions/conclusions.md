@@ -1,7 +1,7 @@
 ## Conclusions and further directions ##
 [Back to start page](../../../ReadMe.md)
 
-By now (v2.0), the application:
+By now (v2.1), the application:
 
 - presents several *coarser drafts* while *refining the result* and lets the user decide their frequency dynamically
 - displays *progress* information, *elapsed and estimated remaining time* for an image transformation or for the loading of a symbol set
@@ -22,11 +22,11 @@ By now (v2.0), the application:
 - offers several *image blurring techniques*, as *alternatives* to the *Gaussian blur* (up to this point *the most expensive operation performed during the image transformation* when the *Structural Similarity* matching aspect is enabled)
 - lets the user select *which critical paths to be performed in parallel* on *multi\-core machines*
 - allows multiple *non\-conflicting user commands* running in *parallel*
-- tackles well transformations based on font families with *less than 400 symbols*
+- tackles well transformations based on font families with *less than 1500 symbols*
 
-Further speed improvements could be obtained by involving __modern__ *accelerator devices* from one&#39;s machine, like GPU\-s. Even older GPU generations might help in some areas of the application, but they appear not suitable for blur algorithms (which were the most expensive parts).
+Further speed improvements could be obtained by involving __modern__ *accelerator devices* from one&#39;s machine, like GPU\-s. Using [this old GPU](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) for the *Box* and *Stack* blur algorithms (sources available on the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch) showed poor time performance. Newer GPU-s might still outperform the CPU-only versions of these algorithms.
 
-Using [this old GPU](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) for the *Box* and *Stack* blur algorithms (sources available on the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch) showed poor time performance. Newer GPU-s might still outperform the CPU-only versions of these algorithms.
+ Older GPU generations might help in areas of the application like computing the **Cross Correlation** matching aspect, where it can store beforehand the data for a batch of symbols and for several patches to approximate and then just reuse them for multiple output values.
 
 -----
 [Back to start page](../../../ReadMe.md)

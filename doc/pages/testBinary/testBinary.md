@@ -1,4 +1,4 @@
-## Testing Pic2Sym v2.0 (*64\-bit Windows only*) ##
+## Testing Pic2Sym v2.1 (*64\-bit Windows only*) ##
 
 [Back to start page](../../../ReadMe.md)
 
@@ -45,9 +45,9 @@ Now the steps for testing Pic2Sym (**no administrative privileges required**):
 			3. Adjust the settings for a <i>first <b>rapid</b></i> transformation based on the highlighted controls from the right:
 			<ul>
 				<li>select a <b>small image</b> to transform</li>
-				<li>select a <i>font family</i> preferably with <b>less than 400 symbols</b>. The <i>symbols window</i> should provide information about the size of the loaded font family:<br>
+				<li>select a <i>font family</i> preferably with <b>less than 1000 symbols</b>. The <i>symbols window</i> should provide information about the size of the loaded font family:<br>
 					<img src="smallFontFamily.jpg"></img></li>
-				<li>bring <b><a href="https://ece.uwaterloo.ca/~z70wang/research/ssim">Structural Similarity</a> slider to 0</b> (less accuracy, but faster)</li>
+				<li>bring <b><a href="https://ece.uwaterloo.ca/~z70wang/research/ssim">Structural Similarity</a> slider to 0</b> (faster result)</li>
 				<li><i>optionally</i> change <b>Batch syms</b> slider value to instruct the transformation how often to display <i>draft results</i> (A new draft is delivered after each processed batch of symbols. The slider configures the arity of the batches):
 				<ul>
 					<li><b>small (non-zero) slider value</b> means low-arity batches, thus frequently updated drafts and lengthier transformation</li>

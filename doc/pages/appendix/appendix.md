@@ -1,4 +1,4 @@
-## Appendix (Pic2Sym v2.0)
+## Appendix (Pic2Sym v2.1)
 
 [Back to start page](../../../ReadMe.md)
 
