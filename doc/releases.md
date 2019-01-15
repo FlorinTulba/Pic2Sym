@@ -1,5 +1,17 @@
 ## Released Versions:
 
+[**Version 2.1**](../../version_2.1/ReadMe.md):
+
+- introduced a fast an accurate matching aspect ([Cross Correlation](https://en.wikipedia.org/wiki/Cross-correlation#Zero-normalized_cross-correlation_(ZNCC))) which can replace previously implemented slower algorithms or it can run in parallel with them
+
+* * *
+
+[**Design Checks**](../../designChecks/ReadMe.md):
+
+- Following the [**S.O.L.I.D.**](https://en.wikipedia.org/wiki/SOLID_(object-oriented_design)) design guidelines is important throughout this project. To monitor the compliance with those rules, Pic2Sym has been granted the privilege to use [**AI Reviewer**](http://www.aireviewer.com) (Special thanks for their generous and attentive support). The commits addressing any major issues reported by **AI Reviewer** are posted under [**Design Optimizations**](https://github.com/FlorinTulba/Pic2Sym/issues/7)
+
+* * *
+
 [**Pic2Sym with several CUDA prototype algorithms**](../../prototypesCUDA/ReadMe.md):
 
 - is built on top of version 2.0, but uses *single-precision floating point values*, which are available on all GPU-s. Version 2.0 is using double-precision
@@ -7,7 +19,6 @@
 	- one executing the blur *entirely on the GPU*
 	- the other one using the GPU only for the *initialization of the rolling sums* of next iteration, while the CPU finishes the previous iteration
 - adapted and improved an existing CUDA version of the **Stack blur**
-
 
 * * *
 
