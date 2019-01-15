@@ -9,6 +9,7 @@
 *.*log
 *.[bB][aA][kK]
 *.uml
+*.pdb
 /*.props
 
 ## Folders to ignore
