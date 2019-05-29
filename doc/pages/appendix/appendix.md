@@ -93,7 +93,7 @@ Following *open\-source* and *platform\-independent* libraries were employed in 
 
 - **[OpenCV](http://opencv.org/)** for a minimal *graphical interface* and the provided *matrix and image processing capabilities*
 - **[FreeType 2](http://freetype.org/)** for *reading and processing fonts*
-- **[Boost](http://www.boost.org/)** for *filesystem*, *serialization* and other utilities
+- **[Boost](http://www.boost.org/)** for *serialization*, *unit testing* and several utilities
 - **[zlib](http://www.zlib.net/)** for *\(de\)compressing various files*
 
 However, it *runs only under Windows*, as it uses Windows\-specific:

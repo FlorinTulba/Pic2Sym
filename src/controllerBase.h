@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,83 +34,148 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_CONTROLLER_BASE
 #define H_CONTROLLER_BASE
 
+#include "misc.h"
+
 #ifndef UNIT_TESTING
 #include "pixMapSymBase.h"
 
-#else // UNIT_TESTING defined
-#include "std_memory.h"
+#else  // UNIT_TESTING defined
+#pragma warning(push, 0)
 
-#endif // UNIT_TESTING
+#include <memory>
 
-#pragma warning ( push, 0 )
+#pragma warning(pop)
 
-#include "std_string.h"
+#endif  // UNIT_TESTING
 
-#pragma warning ( pop )
+#pragma warning(push, 0)
+
+#include <string>
+
+#pragma warning(pop)
 
 // Forward declarations
-struct IUpdateSymSettings;
-struct IGlyphsProgressTracker;
-struct IPicTransformProgressTracker;
-struct IPresentCmap;
-struct IControlPanelActions;
-struct IResizedImg;
+class IUpdateSymSettings;
+class IGlyphsProgressTracker;
+class IPicTransformProgressTracker;
+class IPresentCmap;
+class IControlPanelActions;
+class IResizedImg;
 
 /// Base interface for the Controller.
-struct IController /*abstract*/ {
-	virtual ~IController() = 0 {}
+class IController /*abstract*/ {
+ public:
+  virtual ~IController() noexcept {}
 
-	// Group 1: 2 methods called so far only by ControlPanelActions
-	virtual void symbolsChanged() = 0;	///< Triggered by new font family / encoding / size
-	virtual void ensureExistenceCmapInspect() = 0;
+  // Slicing prevention
+  IController(const IController&) = delete;
+  IController(IController&&) = delete;
+  IController& operator=(const IController&) = delete;
+  IController& operator=(IController&&) = delete;
 
-	// Group 2: 2 methods called so far only by FontEngine
-	virtual const IUpdateSymSettings& getUpdateSymSettings() const = 0;
-	virtual const std::uniquePtr<const IPresentCmap>& getPresentCmap() const = 0; // the ref to uniquePtr solves a circular dependency inside the constructor
+  // Group 1: 2 methods called so far only by ControlPanelActions
+  /**
+  Triggered by new font family / encoding / size.
 
-	// Last group of methods used by many different clients without an obvious pattern
-	virtual const IGlyphsProgressTracker& getGlyphsProgressTracker() const = 0;
-	virtual IPicTransformProgressTracker& getPicTransformProgressTracker() = 0;
-	virtual const unsigned& getFontSize() const = 0; ///< font size determines grid size
-	/// Returns true if transforming a new image or the last one, but under other image parameters
-	virtual bool updateResizedImg(const IResizedImg &resizedImg_) = 0;
-	/**
-	Shows a 'Please wait' window and reports progress.
+  @throw logic_error if called before ensureExistenceCmapInspect() - cannot be
+  handled
+  @throw NormalSymsLoadingFailure when unable to load normal size symbols
+  @throw TinySymsLoadingFailure when unable to load tiny size symbols
 
-	@param progress the progress (0..1) as %
-	@param title details about the ongoing operation
-	@param async allows showing the window asynchronously
-	*/
-	virtual void hourGlass(double progress, const std::stringType &title = "", bool async = false) const = 0;
-	virtual void showResultedImage(double completionDurationS) = 0; ///< Displays the resulted image
+  Last 2 exceptions have handlers, so this method should not be noexcept.
+  */
+  virtual void symbolsChanged() = 0;
 
-	/**
-	Updates the status bar from the charmap inspector window.
+  virtual void ensureExistenceCmapInspect() noexcept = 0;
 
-	@param upperSymsCount an overestimated number of symbols from the unfiltered set
-		or 0 when considering the exact number of symbols from the filtered set
-	@param suffix an optional status bar message suffix
-	@param async allows showing the new status bar message asynchronously
-	*/
-	virtual void updateStatusBarCmapInspect(unsigned upperSymsCount = 0U,
-											const std::stringType &suffix = "",
-											bool async = false) const = 0;
+  // Group 2: 2 methods called so far only by FontEngine
+  virtual const IUpdateSymSettings& getUpdateSymSettings() const noexcept = 0;
 
-	/// Reports the duration of loading symbols / transforming images
-	virtual void reportDuration(const std::stringType &text, double durationS) const = 0;
+  /// The ref to unique_ptr solves a circular dependency inside the constructor
+  virtual const std::unique_ptr<const IPresentCmap>& getPresentCmap() const
+      noexcept = 0;
 
-	virtual IControlPanelActions& getControlPanelActions() = 0;
+  // Last group of methods used by many different clients without an obvious
+  // pattern
+  virtual const IGlyphsProgressTracker& getGlyphsProgressTracker() const
+      noexcept = 0;
+
+  virtual IPicTransformProgressTracker& getPicTransformProgressTracker() const
+      noexcept = 0;
+
+  /// Font size determines grid size
+  virtual const unsigned& getFontSize() const noexcept = 0;
+
+  /// Returns true if transforming a new image or the last one, but under other
+  /// image parameters
+  virtual bool updateResizedImg(const IResizedImg& resizedImg_) noexcept = 0;
+
+  /**
+  Shows a 'Please wait' window and reports progress.
+
+  @param progress the progress (0..1) as %
+  @param title details about the ongoing operation
+  @param async allows showing the window asynchronously
+
+  @throw invalid_argument if progress outside 0..1
+
+  Exception to be only reported, not handled
+  */
+  virtual void hourGlass(double progress,
+                         const std::string& title = "",
+                         bool async = false) const noexcept(!UT) = 0;
+
+  ///< Displays the resulted image
+  virtual void showResultedImage(double completionDurationS) const noexcept = 0;
+
+  /**
+  Updates the status bar from the charmap inspector window.
+
+  @param upperSymsCount an overestimated number of symbols from the unfiltered
+  set or 0 when considering the exact number of symbols from the filtered set
+  @param suffix an optional status bar message suffix
+  @param async allows showing the new status bar message asynchronously
+
+  @throw logic_error if called before ensureExistenceCmapInspect()
+
+  Exception to be only reported, not handled
+  */
+  virtual void updateStatusBarCmapInspect(unsigned upperSymsCount = 0U,
+                                          const std::string& suffix = "",
+                                          bool async = false) const
+      noexcept(!UT) = 0;
+
+  /**
+  Reports the duration of loading symbols / transforming images
+  @throw logic_error if called before ensureExistenceCmapInspect()
+
+  Exception to be only reported, not handled
+  */
+  virtual void reportDuration(const std::string& text, double durationS) const
+      noexcept(!UT) = 0;
+
+  virtual IControlPanelActions& getControlPanelActions() const noexcept = 0;
 
 #ifndef UNIT_TESTING
-	/// Attempts to display 1st cmap page, when full. Called after appending each symbol from charmap. 
-	virtual void display1stPageIfFull(const VPixMapSym &syms) = 0;
-#endif // UNIT_TESTING not defined
+  /**
+  Attempts to display 1st cmap page, when full. Called after appending each
+  symbol from charmap.
+  @throw logic_error if called before ensureExistenceCmapInspect()
+
+  Exception to be only reported, not handled
+  */
+  virtual void display1stPageIfFull(const VPixMapSym& syms) const
+      noexcept(!UT) = 0;
+#endif  // UNIT_TESTING not defined
+
+ protected:
+  constexpr IController() noexcept {}
 };
 
-#endif // H_CONTROLLER_BASE
+#endif  // H_CONTROLLER_BASE

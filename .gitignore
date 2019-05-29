@@ -18,7 +18,6 @@
 *_20*.vcxproj
 
 ## Folders to ignore
-/bin/DLLs/VS20*
 [Dd]ebug/
 /doc/cache
 /doc/doxy

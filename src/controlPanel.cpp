@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,32 +34,30 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
+
+#include "precompiled.h"
 
 #ifndef UNIT_TESTING
 
 #include "controlPanel.h"
 #include "controlPanelActions.h"
-#include "settingsBase.h"
-#include "symSettingsBase.h"
+#include "dlgs.h"
 #include "imgSettingsBase.h"
 #include "matchSettingsBase.h"
-#include "sliderConversion.h"
-#include "dlgs.h"
 #include "misc.h"
+#include "settingsBase.h"
+#include "sliderConversion.h"
+#include "symSettingsBase.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-// Using <thread> in VS2013 might trigger this warning:
-// https://connect.microsoft.com/VisualStudio/feedback/details/809540/c-warnings-in-stl-thread
-#pragma warning( disable : WARN_VIRT_DESTRUCT_EXPECTED )
 #include <thread>
-#pragma warning( default : WARN_VIRT_DESTRUCT_EXPECTED )
 
 #include <opencv2/highgui/highgui.hpp>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 using namespace std;
 using namespace cv;
@@ -103,443 +102,612 @@ extern const String ControlPanel_thresh4BlanksTrName;
 extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 extern const String ControlPanel_symsBatchSzTrName;
-extern const wstringType ControlPanel_aboutText;
-extern const wstringType ControlPanel_instructionsText;
+extern const wstring ControlPanel_aboutText;
+extern const wstring ControlPanel_instructionsText;
 extern const unsigned SymsBatch_defaultSz;
 
-const unordered_map<const String*, const std::uniquePtr<const SliderConverter>>& 
-ControlPanel::slidersConverters() {
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-	static unordered_map<const String*, const std::uniquePtr<const SliderConverter>> result;
-	static bool initialized = false;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
-	if(!initialized) {
-		result.emplace(&ControlPanel_structuralSimTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_StructuralSim_maxSlider, ControlPanel_Converter_StructuralSim_maxReal)));
-		result.emplace(&ControlPanel_correlationTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Correlation_maxSlider, ControlPanel_Converter_Correlation_maxReal)));
-		result.emplace(&ControlPanel_underGlyphCorrectnessTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
-		result.emplace(&ControlPanel_glyphEdgeCorrectnessTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
-		result.emplace(&ControlPanel_asideGlyphCorrectnessTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Correctness_maxSlider, ControlPanel_Converter_Correctness_maxReal)));
-		result.emplace(&ControlPanel_moreContrastTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Contrast_maxSlider, ControlPanel_Converter_Contrast_maxReal)));
-		result.emplace(&ControlPanel_gravityTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Gravity_maxSlider, ControlPanel_Converter_Gravity_maxReal)));
-		result.emplace(&ControlPanel_directionTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_Direction_maxSlider, ControlPanel_Converter_Direction_maxReal)));
-		result.emplace(&ControlPanel_largerSymTrName,
-					   std::makeUnique<const ProportionalSliderValue>(
-					   std::makeUnique<const ProportionalSliderValue::Params>(
-					   ControlPanel_Converter_LargerSym_maxSlider, ControlPanel_Converter_LargerSym_maxReal)));
+const unordered_map<const String*,
+                    const std::unique_ptr<const SliderConverter>>&
+ControlPanel::slidersConverters() noexcept {
+  static unordered_map<const String*,
+                       const std::unique_ptr<const SliderConverter>>
+      result;
+  static bool initialized = false;
 
-		initialized = true;
-	}
+  if (!initialized) {
+    result.emplace(&ControlPanel_structuralSimTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_StructuralSim_maxSlider,
+                           ControlPanel_Converter_StructuralSim_maxReal)));
+    result.emplace(&ControlPanel_correlationTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Correlation_maxSlider,
+                           ControlPanel_Converter_Correlation_maxReal)));
+    result.emplace(&ControlPanel_underGlyphCorrectnessTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Correctness_maxSlider,
+                           ControlPanel_Converter_Correctness_maxReal)));
+    result.emplace(&ControlPanel_glyphEdgeCorrectnessTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Correctness_maxSlider,
+                           ControlPanel_Converter_Correctness_maxReal)));
+    result.emplace(&ControlPanel_asideGlyphCorrectnessTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Correctness_maxSlider,
+                           ControlPanel_Converter_Correctness_maxReal)));
+    result.emplace(&ControlPanel_moreContrastTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Contrast_maxSlider,
+                           ControlPanel_Converter_Contrast_maxReal)));
+    result.emplace(&ControlPanel_gravityTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Gravity_maxSlider,
+                           ControlPanel_Converter_Gravity_maxReal)));
+    result.emplace(&ControlPanel_directionTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_Direction_maxSlider,
+                           ControlPanel_Converter_Direction_maxReal)));
+    result.emplace(&ControlPanel_largerSymTrName,
+                   std::make_unique<const ProportionalSliderValue>(
+                       std::make_unique<const ProportionalSliderValue::Params>(
+                           ControlPanel_Converter_LargerSym_maxSlider,
+                           ControlPanel_Converter_LargerSym_maxReal)));
 
-	return result;
+    initialized = true;
+  }
+
+  return result;
 }
 
-void ControlPanel::updateMatchSettings(const IMatchSettings &ms) {
-	int newVal = ms.isHybridResult();
-	while(hybridResult != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_hybridResultTrName), nullptr, newVal);
+void ControlPanel::updateMatchSettings(const IMatchSettings& ms) noexcept {
+  int newVal = ms.isHybridResult();
+  while (hybridResult != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_hybridResultTrName),
+                   winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(ms.get_kSsim());
-	while(structuralSim != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_structuralSimTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_structuralSimTrName)
+               ->toSlider(ms.get_kSsim());
+  while (structuralSim != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_structuralSimTrName),
+                   winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(ms.get_kCorrel());
-	while(correlationCorrectness != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_correlationTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_correlationTrName)
+               ->toSlider(ms.get_kCorrel());
+  while (correlationCorrectness != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_correlationTrName),
+                   winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(ms.get_kSdevFg());
-	while(underGlyphCorrectness != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_underGlyphCorrectnessTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_underGlyphCorrectnessTrName)
+               ->toSlider(ms.get_kSdevFg());
+  while (underGlyphCorrectness != newVal)
+    setTrackbarPos(
+        *(pLuckySliderName = &ControlPanel_underGlyphCorrectnessTrName),
+        winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_glyphEdgeCorrectnessTrName)->toSlider(ms.get_kSdevEdge());
-	while(glyphEdgeCorrectness != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_glyphEdgeCorrectnessTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_glyphEdgeCorrectnessTrName)
+               ->toSlider(ms.get_kSdevEdge());
+  while (glyphEdgeCorrectness != newVal)
+    setTrackbarPos(
+        *(pLuckySliderName = &ControlPanel_glyphEdgeCorrectnessTrName), winName,
+        newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_asideGlyphCorrectnessTrName)->toSlider(ms.get_kSdevBg());
-	while(asideGlyphCorrectness != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_asideGlyphCorrectnessTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_asideGlyphCorrectnessTrName)
+               ->toSlider(ms.get_kSdevBg());
+  while (asideGlyphCorrectness != newVal)
+    setTrackbarPos(
+        *(pLuckySliderName = &ControlPanel_asideGlyphCorrectnessTrName),
+        winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_moreContrastTrName)->toSlider(ms.get_kContrast());
-	while(moreContrast != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_moreContrastTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_moreContrastTrName)
+               ->toSlider(ms.get_kContrast());
+  while (moreContrast != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_moreContrastTrName),
+                   winName, newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_gravityTrName)->toSlider(ms.get_kMCsOffset());
-	while(gravity != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_gravityTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_gravityTrName)
+               ->toSlider(ms.get_kMCsOffset());
+  while (gravity != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_gravityTrName), winName,
+                   newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_directionTrName)->toSlider(ms.get_kCosAngleMCs());
-	while(direction != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_directionTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_directionTrName)
+               ->toSlider(ms.get_kCosAngleMCs());
+  while (direction != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_directionTrName), winName,
+                   newVal);
 
-	newVal = slidersConverters().at(&ControlPanel_largerSymTrName)->toSlider(ms.get_kSymDensity());
-	while(largerSym != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_largerSymTrName), nullptr, newVal);
+  newVal = slidersConverters()
+               .at(&ControlPanel_largerSymTrName)
+               ->toSlider(ms.get_kSymDensity());
+  while (largerSym != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_largerSymTrName), winName,
+                   newVal);
 
-	newVal = (int)ms.getBlankThreshold();
-	while(thresh4Blanks != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_thresh4BlanksTrName), nullptr, newVal);
+  newVal = (int)ms.getBlankThreshold();
+  while (thresh4Blanks != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_thresh4BlanksTrName),
+                   winName, newVal);
 
-	pLuckySliderName = nullptr;
+  pLuckySliderName = nullptr;
 }
 
-void ControlPanel::updateImgSettings(const IfImgSettings &is) {
-	int newVal = (int)is.getMaxHSyms();
-	while(maxHSyms != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outWTrName), nullptr, newVal);
+void ControlPanel::updateImgSettings(const IfImgSettings& is) noexcept {
+  int newVal = (int)is.getMaxHSyms();
+  while (maxHSyms != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_outWTrName), winName,
+                   newVal);
 
-	newVal = (int)is.getMaxVSyms();
-	while(maxVSyms != newVal)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_outHTrName), nullptr, newVal);
+  newVal = (int)is.getMaxVSyms();
+  while (maxVSyms != newVal)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_outHTrName), winName,
+                   newVal);
 
-	pLuckySliderName = nullptr;
+  pLuckySliderName = nullptr;
 }
 
-void ControlPanel::updateSymSettings(unsigned encIdx, unsigned fontSz_) {
-	while(encoding != (int)encIdx)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, (int)encIdx);
+void ControlPanel::updateSymSettings(unsigned encIdx,
+                                     unsigned fontSz_) noexcept {
+  while (encoding != (int)encIdx)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), winName,
+                   (int)encIdx);
 
-	while(fontSz != (int)fontSz_)
-		setTrackbarPos(*(pLuckySliderName = &ControlPanel_fontSzTrName), nullptr, (int)fontSz_);
+  while (fontSz != (int)fontSz_)
+    setTrackbarPos(*(pLuckySliderName = &ControlPanel_fontSzTrName), winName,
+                   (int)fontSz_);
 
-	pLuckySliderName = nullptr;
+  pLuckySliderName = nullptr;
 }
 
-void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) {
-	updatingEncMax = true;
-	setTrackbarMax(ControlPanel_encodingTrName, nullptr, max(1, int(uniqueEncodings-1U)));
+void ControlPanel::updateEncodingsCount(unsigned uniqueEncodings) noexcept {
+  updatingEncMax = true;
+  setTrackbarMax(ControlPanel_encodingTrName, winName,
+                 max(1, int(uniqueEncodings - 1U)));
 
-	// Sequence from below is required to really update the trackbar max & pos
-	// The controller should prevent them to trigger Controller::newFontEncoding
-	setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), nullptr, 1);
-	updatingEncMax = false;
-	setTrackbarPos(ControlPanel_encodingTrName, nullptr, 0);
-	pLuckySliderName = nullptr;
+  // Sequence from below is required to really update the trackbar max & pos
+  // The controller should prevent them to trigger Controller::newFontEncoding
+  setTrackbarPos(*(pLuckySliderName = &ControlPanel_encodingTrName), winName,
+                 1);
+  updatingEncMax = false;
+  setTrackbarPos(ControlPanel_encodingTrName, winName, 0);
+  pLuckySliderName = nullptr;
 }
 
-void ControlPanel::restoreSliderValue(const String &trName, const stringType &errText) {
-	// Determine previous value
-	int prevVal = 0;
-	if(&trName == &ControlPanel_outWTrName) {
-		prevVal = (int)cfg.getIS().getMaxHSyms();
-	} else if(&trName == &ControlPanel_outHTrName) {
-		prevVal = (int)cfg.getIS().getMaxVSyms();
-	} else if(&trName == &ControlPanel_encodingTrName) {
-		prevVal = (int)performer.getFontEncodingIdx();
-	} else if(&trName == &ControlPanel_fontSzTrName) {
-		prevVal = (int)cfg.getSS().getFontSz();
-	} else if(&trName == &ControlPanel_symsBatchSzTrName) {
-		prevVal = symsBatchSz; // no change needed for Symbols Batch Size!
-	} else if(&trName == &ControlPanel_hybridResultTrName) {
-		prevVal = cfg.getMS().isHybridResult() ? 1 : 0;
-	} else if(&trName == &ControlPanel_structuralSimTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(cfg.getMS().get_kSsim());
-	} else if(&trName == &ControlPanel_correlationTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(cfg.getMS().get_kCorrel());
-	} else if(&trName == &ControlPanel_underGlyphCorrectnessTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(cfg.getMS().get_kSdevFg());
-	} else if(&trName == &ControlPanel_glyphEdgeCorrectnessTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_glyphEdgeCorrectnessTrName)->toSlider(cfg.getMS().get_kSdevEdge());
-	} else if(&trName == &ControlPanel_asideGlyphCorrectnessTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_asideGlyphCorrectnessTrName)->toSlider(cfg.getMS().get_kSdevBg());
-	} else if(&trName == &ControlPanel_moreContrastTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_moreContrastTrName)->toSlider(cfg.getMS().get_kContrast());
-	} else if(&trName == &ControlPanel_gravityTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_gravityTrName)->toSlider(cfg.getMS().get_kMCsOffset());
-	} else if(&trName == &ControlPanel_directionTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_directionTrName)->toSlider(cfg.getMS().get_kCosAngleMCs());
-	} else if(&trName == &ControlPanel_largerSymTrName) {
-		prevVal = slidersConverters().at(&ControlPanel_largerSymTrName)->toSlider(cfg.getMS().get_kSymDensity());
-	} else if(&trName == &ControlPanel_thresh4BlanksTrName) {
-		prevVal = (int)cfg.getMS().getBlankThreshold();
-	} else THROW_WITH_VAR_MSG("Code for " + trName + " must be added within " __FUNCTION__, domain_error);
+void ControlPanel::restoreSliderValue(const String& trName,
+                                      const string& errText) noexcept {
+  // Determine previous value
+  int prevVal = 0;
+  if (&trName == &ControlPanel_outWTrName) {
+    prevVal = (int)cfg.getIS().getMaxHSyms();
+  } else if (&trName == &ControlPanel_outHTrName) {
+    prevVal = (int)cfg.getIS().getMaxVSyms();
+  } else if (&trName == &ControlPanel_encodingTrName) {
+    prevVal = (int)performer.getFontEncodingIdx();
+  } else if (&trName == &ControlPanel_fontSzTrName) {
+    prevVal = (int)cfg.getSS().getFontSz();
+  } else if (&trName == &ControlPanel_symsBatchSzTrName) {
+    prevVal = symsBatchSz;  // no change needed for Symbols Batch Size!
+  } else if (&trName == &ControlPanel_hybridResultTrName) {
+    prevVal = cfg.getMS().isHybridResult() ? 1 : 0;
+  } else if (&trName == &ControlPanel_structuralSimTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_structuralSimTrName)
+                  ->toSlider(cfg.getMS().get_kSsim());
+  } else if (&trName == &ControlPanel_correlationTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_correlationTrName)
+                  ->toSlider(cfg.getMS().get_kCorrel());
+  } else if (&trName == &ControlPanel_underGlyphCorrectnessTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_underGlyphCorrectnessTrName)
+                  ->toSlider(cfg.getMS().get_kSdevFg());
+  } else if (&trName == &ControlPanel_glyphEdgeCorrectnessTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_glyphEdgeCorrectnessTrName)
+                  ->toSlider(cfg.getMS().get_kSdevEdge());
+  } else if (&trName == &ControlPanel_asideGlyphCorrectnessTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_asideGlyphCorrectnessTrName)
+                  ->toSlider(cfg.getMS().get_kSdevBg());
+  } else if (&trName == &ControlPanel_moreContrastTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_moreContrastTrName)
+                  ->toSlider(cfg.getMS().get_kContrast());
+  } else if (&trName == &ControlPanel_gravityTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_gravityTrName)
+                  ->toSlider(cfg.getMS().get_kMCsOffset());
+  } else if (&trName == &ControlPanel_directionTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_directionTrName)
+                  ->toSlider(cfg.getMS().get_kCosAngleMCs());
+  } else if (&trName == &ControlPanel_largerSymTrName) {
+    prevVal = slidersConverters()
+                  .at(&ControlPanel_largerSymTrName)
+                  ->toSlider(cfg.getMS().get_kSymDensity());
+  } else if (&trName == &ControlPanel_thresh4BlanksTrName) {
+    prevVal = (int)cfg.getMS().getBlankThreshold();
+  } else {
+    cerr << "Either the tracker name: `" << trName
+         << "` is invalid or code for it must be added within " __FUNCTION__
+         << endl;
+    return;
+  }
 
-	// Deals with the case when the value was already restored / not modified at all
-	if(getTrackbarPos(trName, nullptr) == prevVal)
-		return;
+  // Deals with the case when the value was already restored / not modified at
+  // all
+  if (getTrackbarPos(trName, winName) == prevVal)
+    return;
 
-	slidersRestoringValue.insert(trName);
+  slidersRestoringValue.insert(trName);
 
-	thread([&] (const String sliderName, int previousVal, const stringType errorText) {
-				errMsg(errorText);
+  thread(
+      [&](const String sliderName, int previousVal,
+          const string errorText) noexcept {
+        errMsg(errorText);
 
-				// Set the previous value
-				while(getTrackbarPos(sliderName, nullptr) != previousVal)
-					setTrackbarPos(sliderName, nullptr, previousVal);
+        // Set the previous value
+        while (getTrackbarPos(sliderName, winName) != previousVal)
+          setTrackbarPos(sliderName, winName, previousVal);
 
-				slidersRestoringValue.erase(sliderName);
-			},
-			trName, prevVal, errText
-	).detach();
+        slidersRestoringValue.erase(sliderName);
+      },
+      trName, prevVal, errText)
+      .detach();
 }
 
-ControlPanel::ControlPanel(IControlPanelActions &performer_, const ISettings &cfg_) :
-		performer(performer_), cfg(cfg_),
-		maxHSyms((int)cfg_.getIS().getMaxHSyms()), maxVSyms((int)cfg_.getIS().getMaxVSyms()),
-		encoding(0), fontSz((int)cfg_.getSS().getFontSz()),
-		symsBatchSz((int)SymsBatch_defaultSz),
-		hybridResult(cfg_.getMS().isHybridResult() ? 1 : 0),
-		structuralSim(slidersConverters().at(&ControlPanel_structuralSimTrName)->toSlider(cfg_.getMS().get_kSsim())),
-		correlationCorrectness(slidersConverters().at(&ControlPanel_correlationTrName)->toSlider(cfg_.getMS().get_kCorrel())),
-		underGlyphCorrectness(slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevFg())),
-		glyphEdgeCorrectness(slidersConverters().at(&ControlPanel_glyphEdgeCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevEdge())),
-		asideGlyphCorrectness(slidersConverters().at(&ControlPanel_asideGlyphCorrectnessTrName)->toSlider(cfg_.getMS().get_kSdevBg())),
-		moreContrast(slidersConverters().at(&ControlPanel_moreContrastTrName)->toSlider(cfg_.getMS().get_kContrast())),
-		gravity(slidersConverters().at(&ControlPanel_gravityTrName)->toSlider(cfg_.getMS().get_kMCsOffset())),
-		direction(slidersConverters().at(&ControlPanel_directionTrName)->toSlider(cfg_.getMS().get_kCosAngleMCs())),
-		largerSym(slidersConverters().at(&ControlPanel_largerSymTrName)->toSlider(cfg_.getMS().get_kSymDensity())),
-		thresh4Blanks((int)cfg_.getMS().getBlankThreshold()) {
+ControlPanel::ControlPanel(IControlPanelActions& performer_,
+                           const ISettings& cfg_) noexcept
+    : performer(performer_),
+      cfg(cfg_),
+      maxHSyms((int)cfg_.getIS().getMaxHSyms()),
+      maxVSyms((int)cfg_.getIS().getMaxVSyms()),
+      encoding(0),
+      fontSz((int)cfg_.getSS().getFontSz()),
+      symsBatchSz((int)SymsBatch_defaultSz),
+      hybridResult(cfg_.getMS().isHybridResult() ? 1 : 0),
+      structuralSim(slidersConverters()
+                        .at(&ControlPanel_structuralSimTrName)
+                        ->toSlider(cfg_.getMS().get_kSsim())),
+      correlationCorrectness(slidersConverters()
+                                 .at(&ControlPanel_correlationTrName)
+                                 ->toSlider(cfg_.getMS().get_kCorrel())),
+      underGlyphCorrectness(slidersConverters()
+                                .at(&ControlPanel_underGlyphCorrectnessTrName)
+                                ->toSlider(cfg_.getMS().get_kSdevFg())),
+      glyphEdgeCorrectness(slidersConverters()
+                               .at(&ControlPanel_glyphEdgeCorrectnessTrName)
+                               ->toSlider(cfg_.getMS().get_kSdevEdge())),
+      asideGlyphCorrectness(slidersConverters()
+                                .at(&ControlPanel_asideGlyphCorrectnessTrName)
+                                ->toSlider(cfg_.getMS().get_kSdevBg())),
+      moreContrast(slidersConverters()
+                       .at(&ControlPanel_moreContrastTrName)
+                       ->toSlider(cfg_.getMS().get_kContrast())),
+      gravity(slidersConverters()
+                  .at(&ControlPanel_gravityTrName)
+                  ->toSlider(cfg_.getMS().get_kMCsOffset())),
+      direction(slidersConverters()
+                    .at(&ControlPanel_directionTrName)
+                    ->toSlider(cfg_.getMS().get_kCosAngleMCs())),
+      largerSym(slidersConverters()
+                    .at(&ControlPanel_largerSymTrName)
+                    ->toSlider(cfg_.getMS().get_kSymDensity())),
+      thresh4Blanks((int)cfg_.getMS().getBlankThreshold()) {
+  extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
+  extern const unsigned Settings_MAX_H_SYMS;
+  extern const unsigned Settings_MAX_V_SYMS;
+  extern const unsigned Settings_MAX_FONT_SIZE;
+  extern const unsigned SymsBatch_trackMax;
+  extern const int ControlPanel_Converter_StructuralSim_maxSlider;
+  extern const int ControlPanel_Converter_Correlation_maxSlider;
+  extern const int ControlPanel_Converter_Contrast_maxSlider;
+  extern const int ControlPanel_Converter_Correctness_maxSlider;
+  extern const int ControlPanel_Converter_Direction_maxSlider;
+  extern const int ControlPanel_Converter_Gravity_maxSlider;
+  extern const int ControlPanel_Converter_LargerSym_maxSlider;
 
-#ifdef AI_REVIEWER_CHECK 
-	// Current version of AI Reviewer skips the content of any lambda,
-	// so the following calls need to be issued explicitly,
-	// so that IControlPanelActions methods are not counted as underused
+  extern const String ControlPanel_selectImgLabel;
+  extern const String ControlPanel_transformImgLabel;
+  extern const String ControlPanel_selectFontLabel;
+  extern const String ControlPanel_restoreDefaultsLabel;
+  extern const String ControlPanel_saveAsDefaultsLabel;
+  extern const String ControlPanel_loadSettingsLabel;
+  extern const String ControlPanel_saveSettingsLabel;
+  extern const String ControlPanel_fontSzTrName;
+  extern const String ControlPanel_encodingTrName;
+  extern const String ControlPanel_symsBatchSzTrName;
+  extern const String ControlPanel_hybridResultTrName;
+  extern const String ControlPanel_structuralSimTrName;
+  extern const String ControlPanel_underGlyphCorrectnessTrName;
+  extern const String ControlPanel_glyphEdgeCorrectnessTrName;
+  extern const String ControlPanel_asideGlyphCorrectnessTrName;
+  extern const String ControlPanel_moreContrastTrName;
+  extern const String ControlPanel_gravityTrName;
+  extern const String ControlPanel_directionTrName;
+  extern const String ControlPanel_largerSymTrName;
+  extern const String ControlPanel_thresh4BlanksTrName;
+  extern const String ControlPanel_outWTrName;
+  extern const String ControlPanel_outHTrName;
 
-	performer.invalidateFont();
-	performer.loadSettings();
-	performer.newAsideGlyphCorrectnessFactor(0.);
-	performer.newContrastFactor(0.);
-	performer.newDirectionalSmoothnessFactor(0.);
-	performer.newFontEncoding(0);
-	performer.newFontFamily(stringType());
-	performer.newFontSize(0);
-	performer.newGlyphEdgeCorrectnessFactor(0.);
-	performer.newGlyphWeightFactor(0.);
-	performer.newGravitationalSmoothnessFactor(0.);
-	performer.newHmaxSyms(0);
-	performer.newImage(stringType(), true);
-	performer.newStructuralSimilarityFactor(0.);
-	performer.newSymsBatchSize(0);
-	performer.newThreshold4BlanksFactor(0U);
-	performer.newUnderGlyphCorrectnessFactor(0.);
-	performer.newVmaxSyms(0);
-	double dummy;
-	performer.performTransformation(&dummy);
-	performer.restoreUserDefaultMatchSettings();
-	performer.saveSettings();
-	performer.setResultMode(true);
-	performer.setUserDefaultMatchSettings();
-	performer.showAboutDlg(stringType(), wstringType());
-	performer.showInstructionsDlg(stringType(), wstringType());
+  createButton(ControlPanel_selectImgLabel, [](int, void* userdata) noexcept {
+    IControlPanelActions* pActions =
+        static_cast<IControlPanelActions*>(userdata);
+    static ImgSelector is;
 
-#else // AI_REVIEWER_CHECK not defined
-	
-	extern const unsigned Settings_MAX_THRESHOLD_FOR_BLANKS;
-	extern const unsigned Settings_MAX_H_SYMS;
-	extern const unsigned Settings_MAX_V_SYMS;
-	extern const unsigned Settings_MAX_FONT_SIZE;
-	extern const unsigned SymsBatch_trackMax;
-	extern const int ControlPanel_Converter_StructuralSim_maxSlider;
-	extern const int ControlPanel_Converter_Correlation_maxSlider;
-	extern const int ControlPanel_Converter_Contrast_maxSlider;
-	extern const int ControlPanel_Converter_Correctness_maxSlider;
-	extern const int ControlPanel_Converter_Direction_maxSlider;
-	extern const int ControlPanel_Converter_Gravity_maxSlider;
-	extern const int ControlPanel_Converter_LargerSym_maxSlider;
+    if (is.promptForUserChoice())
+      pActions->newImage(is.selection());
+  },
+               reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_transformImgLabel,
+               [](int, void* userdata) noexcept {
+                 IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->performTransformation();
+               },
+               reinterpret_cast<void*>(&performer));
 
-	extern const String ControlPanel_selectImgLabel;
-	extern const String ControlPanel_transformImgLabel;
-	extern const String ControlPanel_selectFontLabel;
-	extern const String ControlPanel_restoreDefaultsLabel;
-	extern const String ControlPanel_saveAsDefaultsLabel;
-	extern const String ControlPanel_loadSettingsLabel;
-	extern const String ControlPanel_saveSettingsLabel;
-	extern const String ControlPanel_fontSzTrName;
-	extern const String ControlPanel_encodingTrName;
-	extern const String ControlPanel_symsBatchSzTrName;
-	extern const String ControlPanel_hybridResultTrName;
-	extern const String ControlPanel_structuralSimTrName;
-	extern const String ControlPanel_underGlyphCorrectnessTrName;
-	extern const String ControlPanel_glyphEdgeCorrectnessTrName;
-	extern const String ControlPanel_asideGlyphCorrectnessTrName;
-	extern const String ControlPanel_moreContrastTrName;
-	extern const String ControlPanel_gravityTrName;
-	extern const String ControlPanel_directionTrName;
-	extern const String ControlPanel_largerSymTrName;
-	extern const String ControlPanel_thresh4BlanksTrName;
-	extern const String ControlPanel_outWTrName;
-	extern const String ControlPanel_outHTrName;
+  createTrackbar(ControlPanel_outWTrName, winName, &maxHSyms,
+                 (int)Settings_MAX_H_SYMS,
+                 [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newHmaxSyms(val);
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_outHTrName, winName, &maxVSyms,
+                 (int)Settings_MAX_V_SYMS,
+                 [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newVmaxSyms(val);
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createButton(ControlPanel_selectImgLabel,
-				 [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static ImgSelector is;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+  createButton(ControlPanel_selectFontLabel, [](int, void* userdata) noexcept {
+    IControlPanelActions* pActions =
+        static_cast<IControlPanelActions*>(userdata);
 
-		if(is.promptForUserChoice())
-			pActions->newImage(is.selection());
-	}, reinterpret_cast<void*>(&performer));
-	createButton(ControlPanel_transformImgLabel,
-				 [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->performTransformation();
-	}, reinterpret_cast<void*>(&performer));
+    static SelectFont sf;
 
-	createTrackbar(ControlPanel_outWTrName, nullptr, &maxHSyms, (int)Settings_MAX_H_SYMS,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newHmaxSyms(val);
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_outHTrName, nullptr, &maxVSyms, (int)Settings_MAX_V_SYMS,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newVmaxSyms(val);
-	}, reinterpret_cast<void*>(&performer));
+    if (sf.promptForUserChoice()) {
+      const string& selection = sf.selection();
+      if (!selection.empty())
+        pActions->newFontFamily(selection);
 
-	createButton(ControlPanel_selectFontLabel,
-				 [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
+      else {  // caught exception while computing selection
+        pActions->invalidateFont();
+        extern const string CannotLoadFontErrSuffix;
+        infoMsg("Couldn't locate the selected font!" + CannotLoadFontErrSuffix,
+                "Manageable Error");
+      }
+    }
+  },
+               reinterpret_cast<void*>(&performer));
 
-#pragma warning ( disable : WARN_THREAD_UNSAFE )
-		static SelectFont sf;
-#pragma warning ( default : WARN_THREAD_UNSAFE )
+  createTrackbar(ControlPanel_encodingTrName, winName, &encoding, 1,
+                 [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newFontEncoding(val);
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_fontSzTrName, winName, &fontSz,
+                 (int)Settings_MAX_FONT_SIZE,
+                 [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newFontSize(val);
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-		try {
-			if(sf.promptForUserChoice())
-				pActions->newFontFamily(sf.selection());
-		} catch(FontLocationFailure&) {
-			pActions->invalidateFont();
-			extern const stringType CannotLoadFontErrSuffix;
-			infoMsg("Couldn't locate the selected font!" + CannotLoadFontErrSuffix, "Manageable Error");
-		}
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_symsBatchSzTrName, winName, &symsBatchSz,
+                 (int)SymsBatch_trackMax, [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newSymsBatchSize(val);
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_encodingTrName, nullptr, &encoding, 1,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newFontEncoding(val);
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_fontSzTrName, nullptr, &fontSz, (int)Settings_MAX_FONT_SIZE,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newFontSize(val);
-	}, reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_restoreDefaultsLabel,
+               [](int, void* userdata) noexcept {
+                 IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->restoreUserDefaultMatchSettings();
+               },
+               reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_saveAsDefaultsLabel,
+               [](int, void* userdata) noexcept {
+                 const IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->setUserDefaultMatchSettings();
+               },
+               reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_symsBatchSzTrName, nullptr, &symsBatchSz, (int)SymsBatch_trackMax,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newSymsBatchSize(val);
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_hybridResultTrName, winName, &hybridResult, 1,
+                 [](int state, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->setResultMode(state != 0);
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createButton(ControlPanel_restoreDefaultsLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->restoreUserDefaultMatchSettings();
-	}, reinterpret_cast<void*>(&performer));
-	createButton(ControlPanel_saveAsDefaultsLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->setUserDefaultMatchSettings();
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_structuralSimTrName, winName, &structuralSim,
+                 ControlPanel_Converter_StructuralSim_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_structuralSimTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newStructuralSimilarityFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_structuralSimTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(
+      ControlPanel_correlationTrName, winName, &correlationCorrectness,
+      ControlPanel_Converter_Correlation_maxSlider,
+      [](int val, void* userdata) noexcept {
+        // Redeclared within lambda, since no capture is allowed
+        extern const String ControlPanel_correlationTrName;
+        IControlPanelActions* pActions =
+            static_cast<IControlPanelActions*>(userdata);
+        pActions->newCorrelationFactor(slidersConverters()
+                                           .at(&ControlPanel_correlationTrName)
+                                           ->fromSlider(val));
+      },
+      reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_underGlyphCorrectnessTrName, winName,
+                 &underGlyphCorrectness,
+                 ControlPanel_Converter_Correctness_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_underGlyphCorrectnessTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newUnderGlyphCorrectnessFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_underGlyphCorrectnessTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_glyphEdgeCorrectnessTrName, winName,
+                 &glyphEdgeCorrectness,
+                 ControlPanel_Converter_Correctness_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_glyphEdgeCorrectnessTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newGlyphEdgeCorrectnessFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_glyphEdgeCorrectnessTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_asideGlyphCorrectnessTrName, winName,
+                 &asideGlyphCorrectness,
+                 ControlPanel_Converter_Correctness_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_asideGlyphCorrectnessTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newAsideGlyphCorrectnessFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_asideGlyphCorrectnessTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_hybridResultTrName, nullptr, &hybridResult, 1,
-				   [] (int state, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->setResultMode(state != 0);
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(
+      ControlPanel_moreContrastTrName, winName, &moreContrast,
+      ControlPanel_Converter_Contrast_maxSlider,
+      [](int val, void* userdata) noexcept {
+        // Redeclared within lambda, since no capture is allowed
+        extern const String ControlPanel_moreContrastTrName;
+        IControlPanelActions* pActions =
+            static_cast<IControlPanelActions*>(userdata);
+        pActions->newContrastFactor(slidersConverters()
+                                        .at(&ControlPanel_moreContrastTrName)
+                                        ->fromSlider(val));
+      },
+      reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_structuralSimTrName, nullptr, &structuralSim, ControlPanel_Converter_StructuralSim_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_structuralSimTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newStructuralSimilarityFactor(slidersConverters().at(&ControlPanel_structuralSimTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_correlationTrName, nullptr, &correlationCorrectness, ControlPanel_Converter_Correlation_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_correlationTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newCorrelationFactor(slidersConverters().at(&ControlPanel_correlationTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_underGlyphCorrectnessTrName, nullptr, &underGlyphCorrectness, ControlPanel_Converter_Correctness_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_underGlyphCorrectnessTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newUnderGlyphCorrectnessFactor(slidersConverters().at(&ControlPanel_underGlyphCorrectnessTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_glyphEdgeCorrectnessTrName, nullptr, &glyphEdgeCorrectness, ControlPanel_Converter_Correctness_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_glyphEdgeCorrectnessTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newGlyphEdgeCorrectnessFactor(slidersConverters().at(&ControlPanel_glyphEdgeCorrectnessTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_asideGlyphCorrectnessTrName, nullptr, &asideGlyphCorrectness, ControlPanel_Converter_Correctness_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_asideGlyphCorrectnessTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newAsideGlyphCorrectnessFactor(slidersConverters().at(&ControlPanel_asideGlyphCorrectnessTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_gravityTrName, winName, &gravity,
+                 ControlPanel_Converter_Gravity_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_gravityTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newGravitationalSmoothnessFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_gravityTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_directionTrName, winName, &direction,
+                 ControlPanel_Converter_Direction_maxSlider,
+                 [](int val, void* userdata) noexcept {
+                   // Redeclared within lambda, since no capture is allowed
+                   extern const String ControlPanel_directionTrName;
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newDirectionalSmoothnessFactor(
+                       slidersConverters()
+                           .at(&ControlPanel_directionTrName)
+                           ->fromSlider(val));
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_moreContrastTrName, nullptr, &moreContrast, ControlPanel_Converter_Contrast_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_moreContrastTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newContrastFactor(slidersConverters().at(&ControlPanel_moreContrastTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(
+      ControlPanel_largerSymTrName, winName, &largerSym,
+      ControlPanel_Converter_LargerSym_maxSlider,
+      [](int val, void* userdata) noexcept {
+        // Redeclared within lambda, since no capture is allowed
+        extern const String ControlPanel_largerSymTrName;
+        IControlPanelActions* pActions =
+            static_cast<IControlPanelActions*>(userdata);
+        pActions->newGlyphWeightFactor(slidersConverters()
+                                           .at(&ControlPanel_largerSymTrName)
+                                           ->fromSlider(val));
+      },
+      reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_gravityTrName, nullptr, &gravity, ControlPanel_Converter_Gravity_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_gravityTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newGravitationalSmoothnessFactor(slidersConverters().at(&ControlPanel_gravityTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-	createTrackbar(ControlPanel_directionTrName, nullptr, &direction, ControlPanel_Converter_Direction_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_directionTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newDirectionalSmoothnessFactor(slidersConverters().at(&ControlPanel_directionTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
+  createTrackbar(ControlPanel_thresh4BlanksTrName, winName, &thresh4Blanks,
+                 (int)Settings_MAX_THRESHOLD_FOR_BLANKS,
+                 [](int val, void* userdata) noexcept {
+                   IControlPanelActions* pActions =
+                       static_cast<IControlPanelActions*>(userdata);
+                   pActions->newThreshold4BlanksFactor((unsigned)val);
+                 },
+                 reinterpret_cast<void*>(&performer));
 
-	createTrackbar(ControlPanel_largerSymTrName, nullptr, &largerSym, ControlPanel_Converter_LargerSym_maxSlider,
-				   [] (int val, void *userdata) {
-		extern const String ControlPanel_largerSymTrName; // redeclared within lambda, since no capture is allowed
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newGlyphWeightFactor(slidersConverters().at(&ControlPanel_largerSymTrName)->fromSlider(val));
-	}, reinterpret_cast<void*>(&performer));
-
-	createTrackbar(ControlPanel_thresh4BlanksTrName, nullptr, &thresh4Blanks, (int)Settings_MAX_THRESHOLD_FOR_BLANKS,
-				   [] (int val, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->newThreshold4BlanksFactor((unsigned)val);
-	}, reinterpret_cast<void*>(&performer));
-
-	createButton(ControlPanel_aboutLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->showAboutDlg(ControlPanel_aboutLabel, ControlPanel_aboutText);
-	}, reinterpret_cast<void*>(&performer));
-	createButton(ControlPanel_instructionsLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->showInstructionsDlg(ControlPanel_instructionsLabel, ControlPanel_instructionsText);
-	}, reinterpret_cast<void*>(&performer));
-	createButton(ControlPanel_loadSettingsLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->loadSettings();
-	}, reinterpret_cast<void*>(&performer));
-	createButton(ControlPanel_saveSettingsLabel, [] (int, void *userdata) {
-		IControlPanelActions *pActions = reinterpret_cast<IControlPanelActions*>(userdata);
-		pActions->saveSettings();
-	}, reinterpret_cast<void*>(&performer));
-#endif // AI_REVIEWER_CHECK
+  createButton(ControlPanel_aboutLabel, [](int, void* userdata) noexcept {
+    IControlPanelActions* pActions =
+        static_cast<IControlPanelActions*>(userdata);
+    pActions->showAboutDlg(ControlPanel_aboutLabel, ControlPanel_aboutText);
+  },
+               reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_instructionsLabel,
+               [](int, void* userdata) noexcept {
+                 IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->showInstructionsDlg(ControlPanel_instructionsLabel,
+                                               ControlPanel_instructionsText);
+               },
+               reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_loadSettingsLabel,
+               [](int, void* userdata) noexcept {
+                 IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->loadSettings();
+               },
+               reinterpret_cast<void*>(&performer));
+  createButton(ControlPanel_saveSettingsLabel,
+               [](int, void* userdata) noexcept {
+                 const IControlPanelActions* pActions =
+                     static_cast<IControlPanelActions*>(userdata);
+                 pActions->saveSettings();
+               },
+               reinterpret_cast<void*>(&performer));
 }
 
-#endif // UNIT_TESTING not defined
+#endif  // UNIT_TESTING not defined

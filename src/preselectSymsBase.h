@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,43 +34,65 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_PRESELECT_SYMS_BASE
 #define H_PRESELECT_SYMS_BASE
 
-#pragma warning ( push, 0 )
-
-#include <vector>
-#include <stack>
-
-#pragma warning ( pop )
-
-/// Id of the 'candidate' symbol (index in vector&lt;ISymData&gt;)
-typedef unsigned CandidateId;
-
-///< Selected 'candidate' symbols to compete within final selection, ordered by their estimated potential
-typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
+#include "misc.h"
+#include "preselCandidates.h"
 
 /// Interface of TopCandidateMatches
-struct ITopCandidateMatches /*abstract*/ {
-	/// Clears the short list and establishes a new threshold score
-	virtual void reset(double origThreshScore) = 0;
+class ITopCandidateMatches /*abstract*/ {
+ public:
+  /// Clears the short list and establishes a new threshold score
+  virtual void reset(double origThreshScore) noexcept = 0;
 
-	/// Attempts to put a new candidate on the short list. Returns false if his score is not good enough.
-	virtual bool checkCandidate(unsigned candidateIdx, double score) = 0;
+  /**
+  Attempts to put a new candidate on the short list.
+  @return false if his score is not good enough.
+  @throw logic_error if called after prepareReport()
 
-	/// Closes the selection process and orders the short list by score.
-	virtual void prepareReport() = 0;
+  Exception to be only reported, not handled
+  */
+  virtual bool checkCandidate(unsigned candidateIdx,
+                              double score) noexcept(!UT) = 0;
 
-	/// Checking if there's at least one candidate on the short list during or after the selection
-	virtual bool foundAny() const = 0;
+  /// Closes the selection process and orders the short list by score.
+  virtual void prepareReport() noexcept = 0;
 
-	/// Providing a copy of the sorted short list (without the scores) at the end of the selection
-	virtual CandidatesShortList getShortList() const = 0;
+  /// Checking if there's at least one candidate on the short list during or
+  /// after the selection
+  virtual bool foundAny() const noexcept = 0;
 
-	virtual ~ITopCandidateMatches() = 0 {}
+  /**
+  Get the sorted short list (without the scores) at the end of the selection
+  @throw logic_error if called before prepareReport() or after moveShortList()
+
+  Exception to be only reported, not handled
+  */
+  virtual const CandidatesShortList& getShortList() const noexcept(!UT) = 0;
+
+  /**
+  Moving to dest the sorted short list (without the scores) at the end of
+  the selection
+  @throw logic_error if called before prepareReport()
+
+  Exception to be only reported, not handled
+  */
+  virtual void moveShortList(CandidatesShortList& dest) noexcept(!UT) = 0;
+
+  virtual ~ITopCandidateMatches() noexcept {}
+
+  // Slicing prevention
+  ITopCandidateMatches(const ITopCandidateMatches&) = delete;
+  ITopCandidateMatches(ITopCandidateMatches&&) = delete;
+  ITopCandidateMatches& operator=(const ITopCandidateMatches&) = delete;
+  ITopCandidateMatches& operator=(ITopCandidateMatches&&) = delete;
+
+ protected:
+  constexpr ITopCandidateMatches() noexcept {}
 };
 
-#endif // H_PRESELECT_SYMS_BASE
+#endif  // H_PRESELECT_SYMS_BASE

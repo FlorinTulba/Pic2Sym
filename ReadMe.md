@@ -110,7 +110,7 @@ Kindly address any observations, suggestions or questions to me using *florintul
 **Notes:**
 
 - _Following the [**S.O.L.I.D.**](https://en.wikipedia.org/wiki/SOLID_(object-oriented_design)) design guidelines is important throughout this project. To monitor the compliance with those rules, Pic2Sym has been granted the privilege to use [**AI Reviewer**](http://www.aireviewer.com) (Special thanks for their generous and attentive support). The commits addressing any major issues reported by **AI Reviewer** should be posted under [**Design Optimizations**](https://github.com/FlorinTulba/Pic2Sym/issues/7)._
-- *For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [**Trifa Carina**](https://www.facebook.com/trifa.carina), [**Muntean Flavia**](https://www.facebook.com/darkfavy) and [**Rosca Adrian**](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
+- *For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [**Carina Trifa Plesescu**](https://www.facebook.com/trifa.carina), [**Flavia Begov**](https://www.facebook.com/darkfavy) and [**Adrian Rosca**](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
 
 
 [CtrlPanel]:doc/pages/CtrlPanel/CtrlPanel.md

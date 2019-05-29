@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,81 +34,112 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_MATCH_SETTINGS_BASE
 #define H_MATCH_SETTINGS_BASE
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-#include "std_string.h"
-#include "std_memory.h"
 #include <iostream>
+#include <memory>
+#include <string>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
-/// IMatchSettings class controls the matching parameters for transforming one or more images
-struct IMatchSettings /*abstract*/ {
-	/// 'normal' means actual result; 'hybrid' cosmeticizes the result
-	virtual const bool& isHybridResult() const = 0;
-	virtual IMatchSettings& setResultMode(bool hybridResultMode_) = 0;	///< Displays the update, if any
+/// IMatchSettings class controls the matching parameters for transforming one
+/// or more images
+class IMatchSettings /*abstract*/ {
+ public:
+  /// 'normal' means actual result; 'hybrid' cosmeticizes the result
+  virtual const bool& isHybridResult() const noexcept = 0;
 
-	/// power of factor controlling structural similarity
-	virtual const double& get_kSsim() const = 0;
-	virtual IMatchSettings& set_kSsim(double kSsim_) = 0;				///< Displays the update, if any
+  /// Displays the update, if any
+  virtual IMatchSettings& setResultMode(bool hybridResultMode_) noexcept = 0;
 
-	/// power of factor controlling correlation aspect
-	virtual const double& get_kCorrel() const = 0;
-	virtual IMatchSettings& set_kCorrel(double kCorrel_) = 0;				///< Displays the update, if any
+  /// Power of factor controlling structural similarity
+  virtual const double& get_kSsim() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kSsim(double kSsim_) noexcept = 0;
 
-	/// power of factor for foreground glyph-patch correlation
-	virtual const double& get_kSdevFg() const = 0;
-	virtual IMatchSettings& set_kSdevFg(double kSdevFg_) = 0;			///< Displays the update, if any
+  /// Power of factor controlling correlation aspect
+  virtual const double& get_kCorrel() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kCorrel(double kCorrel_) noexcept = 0;
 
-	/// power of factor for contour glyph-patch correlation
-	virtual const double& get_kSdevEdge() const = 0;
-	virtual IMatchSettings& set_kSdevEdge(double kSdevEdge_) = 0;		///< Displays the update, if any
+  /// Power of factor for foreground glyph-patch correlation
+  virtual const double& get_kSdevFg() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kSdevFg(double kSdevFg_) noexcept = 0;
 
-	/// power of factor for background glyph-patch correlation
-	virtual const double& get_kSdevBg() const = 0;
-	virtual IMatchSettings& set_kSdevBg(double kSdevBg_) = 0;			///< Displays the update, if any
+  /// Power of factor for contour glyph-patch correlation
+  virtual const double& get_kSdevEdge() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kSdevEdge(double kSdevEdge_) noexcept = 0;
 
-	/// power of factor for the resulted glyph contrast
-	virtual const double& get_kContrast() const = 0;
-	virtual IMatchSettings& set_kContrast(double kContrast_) = 0;		///< Displays the update, if any
+  /// Power of factor for background glyph-patch correlation
+  virtual const double& get_kSdevBg() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kSdevBg(double kSdevBg_) noexcept = 0;
 
-	/// power of factor targeting smoothness (mass-centers angle)
-	virtual const double& get_kCosAngleMCs() const = 0;
-	virtual IMatchSettings& set_kCosAngleMCs(double kCosAngleMCs_) = 0;	///< Displays the update, if any
+  /// Power of factor for the resulted glyph contrast
+  virtual const double& get_kContrast() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kContrast(double kContrast_) noexcept = 0;
 
-	/// power of factor targeting smoothness (mass-center offset)
-	virtual const double& get_kMCsOffset() const = 0;
-	virtual IMatchSettings& set_kMCsOffset(double kMCsOffset_) = 0;		///< Displays the update, if any
+  /// Power of factor targeting smoothness (mass-centers angle)
+  virtual const double& get_kCosAngleMCs() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kCosAngleMCs(double kCosAngleMCs_) noexcept = 0;
 
-	/// power of factor aiming fanciness, not correctness
-	virtual const double& get_kSymDensity() const = 0;
-	virtual IMatchSettings& set_kSymDensity(double kSymDensity_) = 0;	///< Displays the update, if any
+  /// Power of factor targeting smoothness (mass-center offset)
+  virtual const double& get_kMCsOffset() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kMCsOffset(double kMCsOffset_) noexcept = 0;
 
-	/// Using Blank character replacement under this threshold
-	virtual unsigned getBlankThreshold() const = 0;
-	virtual IMatchSettings& setBlankThreshold(unsigned threshold4Blank_) = 0;///< Displays the update, if any
+  /// Power of factor aiming fanciness, not correctness
+  virtual const double& get_kSymDensity() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& set_kSymDensity(double kSymDensity_) noexcept = 0;
+
+  /// Using Blank character replacement under this threshold
+  virtual unsigned getBlankThreshold() const noexcept = 0;
+  /// Displays the update, if any
+  virtual IMatchSettings& setBlankThreshold(
+      unsigned threshold4Blank_) noexcept = 0;
 
 #ifndef UNIT_TESTING
-	/// loads user defaults or throws for obsolete / invalid file
-	virtual void replaceByUserDefaults() = 0;
-	virtual void saveAsUserDefaults() const = 0;///< save these as user defaults
-#endif // UNIT_TESTING not defined
+  /**
+  Loads user defaults
+  @throw domain_error for obsolete / invalid file
 
-	/// Provides a representation of the settings in a verbose manner or not
-	virtual const std::stringType toString(bool verbose) const = 0;
+  Exception is handled, so no noexcept
+  */
+  virtual void replaceByUserDefaults() = 0;
 
-	/// @return a clone of current settings
-	virtual std::uniquePtr<IMatchSettings> clone() const = 0;
+  /// Save these as user defaults
+  virtual void saveAsUserDefaults() const noexcept = 0;
+#endif  // UNIT_TESTING not defined
 
-	virtual ~IMatchSettings() = 0 {}
+  /// Provides a representation of the settings in a verbose manner or not
+  virtual const std::string toString(bool verbose) const noexcept = 0;
+
+  /// @return a clone of current settings
+  virtual std::unique_ptr<IMatchSettings> clone() const noexcept = 0;
+
+  virtual ~IMatchSettings() noexcept {}
+
+  // If slicing is observed and becomes a severe problem, use `= delete` for all
+  IMatchSettings(const IMatchSettings&) noexcept = default;
+  IMatchSettings(IMatchSettings&&) noexcept = default;
+  IMatchSettings& operator=(const IMatchSettings&) noexcept = default;
+  IMatchSettings& operator=(IMatchSettings&&) noexcept = default;
+
+ protected:
+  constexpr IMatchSettings() noexcept {}
 };
 
-std::ostream& operator<<(std::ostream &os, const IMatchSettings &ms);
+std::ostream& operator<<(std::ostream& os, const IMatchSettings& ms) noexcept;
 
-#endif // H_MATCH_SETTINGS_BASE
+#endif  // H_MATCH_SETTINGS_BASE

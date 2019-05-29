@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,111 +34,139 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_TRANSFORM
 #define H_TRANSFORM
 
 #include "transformBase.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-#include "std_string.h"
-#include "std_memory.h"
+#include <atomic>
+#include <memory>
+#include <string>
 #include <vector>
 
 #include <opencv2/core/core.hpp>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 #ifndef UNIT_TESTING
 
 extern const unsigned SymsBatch_defaultSz;
 
-#endif // UNIT_TESTING not defined
+#endif  // UNIT_TESTING not defined
 
 // Forward declarations
-struct ISettings;		// global settings
-struct IPicTransformProgressTracker;	// data & views manager
+class ISettings;                     // global settings
+class IPicTransformProgressTracker;  // data & views manager
 class AbsTaskMonitor;
-struct IBestMatch;
-struct IBasicImgData;
-struct ITransformSupport;
-struct IMatchEngine;
-struct IController;
+class IBestMatch;
+class IBasicImgData;
+class ITransformSupport;
+class IMatchEngine;
+class IController;
 
-/// Transformer allows images to be approximated as a table of colored symbols from font files.
+/// Transformer allows images to be approximated as a table of colored symbols
+/// from font files.
 class Transformer : public ITransformer {
-protected:
-	IController &ctrler;	///< controller
-	IPicTransformProgressTracker &ptpt;	///< image transformation management from the controller
-	AbsJobMonitor *transformMonitor;	///< observer of the transformation process who reports its progress
+ public:
+  Transformer(IController& ctrler_,
+              const ISettings& cfg_,
+              IMatchEngine& me_,
+              IBasicImgData& img_) noexcept;
 
-	const ISettings &cfg;		///< general configuration
-	IMatchEngine &me;			///< approximating patches
-	IBasicImgData &img;			///< basic information about the current image to process
+  const cv::Mat& getResult() const noexcept final { return result; }
 
-	cv::Mat result;				///< the result of the transformation
+  void setDuration(double durationS_) noexcept override {
+    durationS = durationS_;
+  }
 
-	std::stringType studiedCase;	///< unique id for the studied case
-	cv::Mat resized;			///< resized version of the original
-	cv::Mat resizedBlurred;		///< blurred version of the resized original
+  double duration() const noexcept final { return durationS; }
 
-	/// temporary best matches
-	std::vector<std::vector<const std::uniquePtr<IBestMatch>>> draftMatches;
+  /**
+  Updates symsBatchSz.
+  @param symsBatchSz_ the value to set. If 0 is provided, batching symbols
+    gets disabled for the rest of the transformation, ignoring any new slider
+  positions.
+  */
+  void setSymsBatchSize(int symsBatchSz_) noexcept override;
 
-	// Keep this after previous fields, as it depends on them
-	const std::uniquePtr<ITransformSupport> transformSupport;	///< initializes and updates draft matches
+  /**
+  Applies the configured transformation onto current/new image
+  @throw logic_error, domain_error only in UnitTesting for incomplete
+  configuration
 
-	double durationS = 0.;		///< transformation duration in seconds
+  Exceptions to be caught only in UnitTesting
+  */
+  void run() noexcept(!UT) override;
 
-	int w = 0;					///< width of the resized image
-	int h = 0;					///< height of the resized image
-	unsigned sz = 0U;			///< font size used during transformation
-	unsigned symsCount = 0U;	///< symbols count within the used cmap
-	
-#ifndef UNIT_TESTING
-	// when UNIT_TESTING is not defined, start with batching SymsBatch_defaultSz symbols and allow canceling
-	volatile unsigned symsBatchSz = SymsBatch_defaultSz;	///< runtime control of how large next symbol batches are
-	volatile bool isCanceled = false;						///< has the process been canceled?
+  /// Setting the transformation monitor
+  Transformer& useTransformMonitor(
+      AbsJobMonitor& transformMonitor_) noexcept override;
 
-#else // no batching, nor canceling in Unit Testing mode
-	unsigned symsBatchSz = UINT_MAX;	///< runtime control of how large next symbol batches are
-	bool isCanceled = false;			///< has the process been canceled?
+ protected:
+  /// Updates the unique id for the studied case
+  void updateStudiedCase(int rows, int cols) noexcept;
 
-#endif // UNIT_TESTING
+  /// Makes sure draftMatches will be computed for correct resized img
+  void initDraftMatches(bool newResizedImg,
+                        const cv::Mat& resizedVersion,
+                        unsigned patchesPerCol,
+                        unsigned patchesPerRow) noexcept;
 
-	void updateStudiedCase(int rows, int cols); ///< Updates the unique id for the studied case
+  /// Improves the result by analyzing the symbols in range [fromIdx, upperIdx)
+  /// under the supervision of imgTransformTaskMonitor
+  void considerSymsBatch(unsigned fromIdx,
+                         unsigned upperIdx,
+                         AbsTaskMonitor& imgTransformTaskMonitor) noexcept;
 
-	/// Makes sure draftMatches will be computed for correct resized img
-	void initDraftMatches(bool newResizedImg, const cv::Mat &resizedVersion,
-						  unsigned patchesPerCol, unsigned patchesPerRow);
+ private:
+  IController& ctrler;  ///< controller
 
-	/// Improves the result by analyzing the symbols in range [fromIdx, upperIdx) under the supervision of imgTransformTaskMonitor
-	void considerSymsBatch(unsigned fromIdx, unsigned upperIdx, AbsTaskMonitor &imgTransformTaskMonitor);
+  /// Image transformation management from the controller
+  IPicTransformProgressTracker& ptpt;
 
-public:
-	Transformer(IController &ctrler_, const ISettings &cfg_,
-				IMatchEngine &me_, IBasicImgData &img_);
-	Transformer(const Transformer&) = delete;
-	void operator=(const Transformer&) = delete;
+  /// Observer of the transformation process who reports its progress
+  AbsJobMonitor* transformMonitor = nullptr;
 
-	const cv::Mat& getResult() const override final { return result; }
-	void setDuration(double durationS_) override { durationS = durationS_; }
+  const ISettings& cfg;  ///< general configuration
+  IMatchEngine& me;      ///< approximating patches
+  IBasicImgData& img;  ///< basic information about the current image to process
 
-	inline double duration() const override final { return durationS; }
+  cv::Mat result;  ///< the result of the transformation
 
-	/**
-	Updates symsBatchSz.
-	@param symsBatchSz_ the value to set. If 0 is provided, batching symbols
-		gets disabled for the rest of the transformation, ignoring any new slider positions.
-	*/
-	void setSymsBatchSize(int symsBatchSz_) override;
+  std::string studiedCase;  ///< unique id for the studied case
+  cv::Mat resized;          ///< resized version of the original
+  cv::Mat resizedBlurred;   ///< blurred version of the resized original
 
-	void run() override;	///< applies the configured transformation onto current/new image
+  /// temporary best matches
+  std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatches;
 
-	Transformer& useTransformMonitor(AbsJobMonitor &transformMonitor_) override; ///< setting the transformation monitor
+  // Keep this after previous fields, as it depends on them
+  /// Initializes and updates draft matches
+  const std::unique_ptr<ITransformSupport> transformSupport;
+
+  double durationS = 0.;  ///< transformation duration in seconds
+
+  int w = 0;                ///< width of the resized image
+  int h = 0;                ///< height of the resized image
+  unsigned sz = 0U;         ///< font size used during transformation
+  unsigned symsCount = 0U;  ///< symbols count within the used cmap
+
+#ifndef UNIT_TESTING  // Start with batching SymsBatch_defaultSz symbols
+  /// Runtime control of how large next symbol batches are
+  std::atomic_uint symsBatchSz{SymsBatch_defaultSz};
+
+#else  // No batching in Unit Testing mode
+  /// Runtime control of how large next symbol batches are
+  std::atomic_uint symsBatchSz{UINT_MAX};
+
+#endif  // UNIT_TESTING
+
+  std::atomic_bool isCanceled{false};  ///< has the process been canceled?
 };
 
-#endif // H_TRANSFORM
+#endif  // H_TRANSFORM

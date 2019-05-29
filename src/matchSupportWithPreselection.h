@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,58 +34,65 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_MATCH_SUPPORT_WITH_PRESELECTION
 #define H_MATCH_SUPPORT_WITH_PRESELECTION
 
-#include "matchSupport.h"
-#include "symDataBase.h"
 #include "cachedData.h"
-
-#pragma warning ( push, 0 )
-
-#include <stack>
-
-#pragma warning ( pop )
+#include "matchSupport.h"
+#include "preselCandidates.h"
+#include "symDataBase.h"
 
 // Forward declarations
-struct IBestMatch;
+class IBestMatch;
 class MatchAssessor;
-struct IMatchSettings;
-typedef unsigned CandidateId;
-typedef std::stack<CandidateId, std::vector<CandidateId>> CandidatesShortList;
+class IMatchSettings;
 
-/// Polymorphic support for the MatchEngine and Transformer classes reflecting the preselection mode.
+/// Polymorphic support for the MatchEngine and Transformer classes reflecting
+/// the preselection mode.
 class MatchSupportWithPreselection : public MatchSupport {
-protected:
-	CachedDataRW cdPresel;				///< cached data corresponding to tiny size symbols
-	VSymData &symsSet;					///< the set of normal-size symbols
-	MatchAssessor &matchAssessor;		///< match manager based on the enabled matching aspects
-	const IMatchSettings &matchSettings;///< match settings
+ public:
+  /// Filling in the rest of the data required when PreselectionByTinySyms ==
+  /// true
+  MatchSupportWithPreselection(CachedDataRW& cd_,
+                               VSymData& symsSet_,
+                               MatchAssessor& matchAssessor_,
+                               const IMatchSettings& matchSettings_) noexcept;
 
-public:
-	/// Filling in the rest of the data required when PreselectionByTinySyms == true
-	MatchSupportWithPreselection(CachedDataRW &cd_, VSymData &symsSet_,
-								 MatchAssessor &matchAssessor_,
-								 const IMatchSettings &matchSettings_);
+  /// cached data corresponding to the tiny size symbols
+  const CachedData& cachedData() const noexcept override;
 
-	MatchSupportWithPreselection(const MatchSupportWithPreselection&) = delete;
-	MatchSupportWithPreselection(MatchSupportWithPreselection&&) = delete;
-	void operator=(const MatchSupportWithPreselection&) = delete;
-	void operator=(MatchSupportWithPreselection&&) = delete;
+  /// update cached data corresponding to the tiny size symbols
+  void updateCachedData(unsigned fontSz,
+                        const IFontEngine& fe) noexcept override;
 
-	/// cached data corresponding to the tiny size symbols
-	const CachedData& cachedData() const override;
+  /**
+  @return true if a new better match is found within this short list
+  @throw invalid_argument if the draftMatch corresponds to a uniformous patch
 
-	/// update cached data corresponding to the tiny size symbols
-	void updateCachedData(unsigned fontSz, const IFontEngine &fe) override;
+  Exception to be only reported, not handled
+  */
+  bool improvesBasedOnBatchShortList(
+      CandidatesShortList&& shortList,  ///< most promising candidates from
+                                        ///< current batch of symbols
+      IBestMatch& draftMatch  ///< draft for normal symbols (hopefully improved
+                              ///< by a match with a symbol from the shortList)
+      ) const noexcept(!UT);
 
-	/// @return true if a new better match is found within this short list
-	bool improvesBasedOnBatchShortList(CandidatesShortList &&shortList,	///< most promising candidates from current batch of symbols
-									   IBestMatch &draftMatch	///< draft for normal symbols (hopefully improved by a match with a symbol from the shortList)
-									   ) const;
+  /// No const lvalue parameters accepted for improvesBasedOnBatchShortList
+  bool improvesBasedOnBatchShortList(const CandidatesShortList& shortList,
+                                     IBestMatch& draftMatch) const = delete;
+
+ private:
+  CachedDataRW cdPresel;  ///< cached data corresponding to tiny size symbols
+  VSymData& symsSet;      ///< the set of normal-size symbols
+
+  /// Match manager based on the enabled matching aspects
+  MatchAssessor& matchAssessor;
+
+  const IMatchSettings& matchSettings;  ///< match settings
 };
 
-#endif // H_MATCH_SUPPORT_WITH_PRESELECTION
+#endif  // H_MATCH_SUPPORT_WITH_PRESELECTION

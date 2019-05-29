@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,12 +34,13 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_PATCH
 #define H_PATCH
 
+#include "misc.h"
 #include "patchBase.h"
 
 /**
@@ -48,45 +50,63 @@ It decides whether this patch needs approximation or not - uniform patches
 don't produce interesting approximations.
 */
 class Patch : public IPatch {
-protected:
-	cv::Mat grayD;		///< gray version of the patch to process (its data type is double)
-	cv::Mat orig;		///< the patch to approximate
-	cv::Mat blurred;	///< the blurred version of the orig
+ public:
+  /**
+  Initializer
 
-	bool isColor;		///< is the patch color or grayscale?
+  @param orig_ patch to be approximated
+  @param blurred_ blurred version of the patch, either considering real borders,
+  or replicated ones
+  @param isColor_ type of image - color => true; grayscale => false
+  */
+  Patch(const cv::Mat& orig_, const cv::Mat& blurred_, bool isColor_) noexcept;
 
-	bool needsApproximation = true;	///< patches that appear uniform use 'blurred' as approximation
+  /// The patch to approximate
+  const cv::Mat& getOrig() const noexcept final;
 
-public:
-	/**
-	Initializer
+  /// The blurred version of the orig
+  const cv::Mat& getBlurred() const noexcept final;
 
-	@param orig_ patch to be approximated
-	@param blurred_ blurred version of the patch, either considering real borders, or replicated ones
-	@param isColor_ type of image - color => true; grayscale => false
-	*/
-	Patch(const cv::Mat &orig_, const cv::Mat &blurred_, bool isColor_);
+  /// Is the patch color or grayscale?
+  bool isColored() const noexcept final;
 
-	const cv::Mat& getOrig() const override final;		///< the patch to approximate
-	const cv::Mat& getBlurred() const override final;	///< the blurred version of the orig
+  /// Patches that appear uniform use 'blurred' as approximation
+  bool nonUniform() const noexcept final;
 
-	bool isColored() const override final;	///< is the patch color or grayscale?
-	bool nonUniform() const override final;	///< patches that appear uniform use 'blurred' as approximation
+  /**
+  Specifies which matrix to use during the approximation process (gray, of type
+  double)
+  @throw logic_error if called for uniformous patches
 
-	/// Specifies which matrix to use during the approximation process
-	const cv::Mat& matrixToApprox() const override;
+  Exception to be only reported, not handled
+  */
+  const cv::Mat& matrixToApprox() const noexcept(!UT) override;
 
-	std::uniquePtr<const IPatch> clone() const override; ///< @return a clone of itself
+  /// @return a clone of itself
+  std::unique_ptr<const IPatch> clone() const noexcept override;
 
 #ifdef UNIT_TESTING
-	/// Constructor delegating its job to the one with 3 parameters
-	Patch(const cv::Mat &orig_);
+  /// Constructor delegating its job to the one with 3 parameters
+  explicit Patch(const cv::Mat& orig_) noexcept;
 
-	/// Specifies which new matrix to use during the approximation process (gray, of type double); @return itself
-	Patch& setMatrixToApprox(const cv::Mat &m);
+  /// Specifies which new matrix to use during the approximation process (gray,
+  /// of type double); @return itself
+  Patch& setMatrixToApprox(const cv::Mat& m) noexcept;
 
-	void forceApproximation(); ///< Forces needsApproximation value on true
-#endif // UNIT_TESTING defined
+  /// Forces needsApproximation value on true
+  void forceApproximation() noexcept;
+#endif  // UNIT_TESTING defined
+
+ private:
+  /// Gray version of the patch to process (its data type is double)
+  cv::Mat grayD;
+  cv::Mat orig;     ///< the patch to approximate
+  cv::Mat blurred;  ///< the blurred version of the orig
+
+  bool isColor;  ///< is the patch color or grayscale?
+
+  /// Patches that appear uniform use 'blurred' as approximation
+  bool needsApproximation = true;
 };
 
-#endif // H_PATCH
+#endif  // H_PATCH

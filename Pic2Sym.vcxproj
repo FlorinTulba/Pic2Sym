@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -19,11 +19,6 @@
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h" />
-    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h" />
-    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h" />
-    <ClInclude Include="adaptedIncludes\std_memory.h" />
-    <ClInclude Include="adaptedIncludes\std_string.h" />
     <ClInclude Include="src\bestMatch.h" />
     <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\appStart.h" />
@@ -74,6 +69,8 @@
     <ClInclude Include="src\pixMapSymBase.h" />
     <ClInclude Include="src\pmsCont.h" />
     <ClInclude Include="src\pmsContBase.h" />
+    <ClInclude Include="src\precompiled.h" />
+    <ClInclude Include="src\preselCandidates.h" />
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\preselectSymsBase.h" />
@@ -172,7 +169,6 @@
     <ClCompile Include="src\clusterSerialization.cpp" />
     <ClCompile Include="src\clusterSupport.cpp" />
     <ClCompile Include="src\clusterSupportWithPreselection.cpp" />
-    <ClCompile Include="src\constants.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanel.cpp" />
     <ClCompile Include="src\controlPanelActions.cpp" />
@@ -194,6 +190,10 @@
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\picTransformProgressTracker.cpp" />
     <ClCompile Include="src\pmsCont.cpp" />
+    <ClCompile Include="src\precompiledHeaderGenerator.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\preselectManager.cpp" />
     <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
@@ -226,6 +226,7 @@
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\fontErrorsHelper.cpp" />
+    <ClCompile Include="src\templatesInstantiator.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\tinySym.cpp" />
     <ClCompile Include="src\tinySymsDataSerialization.cpp" />
@@ -268,20 +269,23 @@
     <ProjectGuid>{55EC7EFC-7D43-4724-ACBD-6CBE92946D6E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Pic2Sym</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -299,6 +303,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -306,45 +312,54 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
-      <MultiProcessorCompilation>false</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4571; 4710; 4711; 4820</DisableSpecificWarnings>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <EnablePREfast>false</EnablePREfast>
+      <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <DelayLoadDLLs>opencv_highgui$(OpenCvLibConfigSuffix).dll;opencv_videoio$(OpenCvLibConfigSuffix).dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\Microsoft\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;PIC2SYM_VERSION="$(Pic2SymVersion)";NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4710; 4711; 4820</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4571; 4710; 4711; 4820</DisableSpecificWarnings>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -353,15 +368,19 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_highgui$(OpenCvLibConfigSuffix).lib;vcomp$(ConfigurationSuffix).lib;DelayImp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <AdditionalManifestDependencies>
       </AdditionalManifestDependencies>
       <DelayLoadDLLs>opencv_highgui$(OpenCvLibConfigSuffix).dll;opencv_videoio$(OpenCvLibConfigSuffix).dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\GUI\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\Microsoft\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\GUI\plugins\platforms\*.dll" "$(TargetPath).local\platforms\" &amp;&amp; xcopy /YD "$(SolutionDir)res\defaultMatchSettings.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\NoImage.jpg" "$(SolutionDir)$(Platform)\$(Configuration)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\res\"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

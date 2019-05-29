@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,8 +34,8 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_EXT_BOX_BLUR
 #define H_EXT_BOX_BLUR
@@ -49,30 +50,42 @@ http://www.mia.uni-saarland.de/Publications/gwosdek-ssvm11.pdf
 
 The standard deviation and the iterations count are configurable.
 
-This blur still has O(1) / pixel time-performance, like the box blur and was introduced due to its quality:
-results are extremely similar to Gaussian filtering after only 2 iterations.
+This blur still has O(1) / pixel time-performance, like the box blur and was
+introduced due to its quality: results are extremely similar to Gaussian
+filtering after only 2 iterations.
 */
 class ExtBoxBlur : public BlurEngine {
-	static const ExtBoxBlur& configuredInstance();	///< Returns a fully configured instance
-	static ConfInstRegistrator cir;					///< Registers the configured instance plus its name
+ public:
+  /// Configure the filter through the desired standard deviation and the
+  /// iterations count
+  ExtBoxBlur(double desiredSigma, unsigned iterations_ = 1U) noexcept(!UT);
 
-protected:
-	/// Handle class
-	class Impl;
+  /// Reconfigure the filter through a new desired standard deviation and a new
+  /// iterations count
+  ExtBoxBlur& setSigma(double desiredSigma,
+                       unsigned iterations_ = 1U) noexcept(!UT);
 
-	static Impl& nonTinySyms(); ///< handler for non-tiny symbols
-	static Impl& tinySyms();	///< handler for tiny symbols
+  /// Reconfigure iterations count
+  ExtBoxBlur& setIterations(unsigned iterations_) noexcept(!UT);
 
-	/// Actual implementation for the current configuration. toBlur is checked; blurred is initialized
-	void doProcess(const cv::Mat &toBlur, cv::Mat &blurred, bool forTinySym) const override;
+ protected:
+  /// Actual implementation for the current configuration. toBlur is checked;
+  /// blurred is initialized
+  void doProcess(const cv::Mat& toBlur, cv::Mat& blurred, bool forTinySym) const
+      noexcept override;
 
-public:
-	/// Configure the filter through the desired standard deviation and the iterations count
-	ExtBoxBlur(double desiredSigma, unsigned iterations_ = 1U);
+ private:
+  /// Handle class
+  class Impl;
 
-	/// Reconfigure the filter through a new desired standard deviation and a new iterations count
-	ExtBoxBlur& setSigma(double desiredSigma, unsigned iterations_ = 1U);
-	ExtBoxBlur& setIterations(unsigned iterations_);	///< Reconfigure iterations count
+  static Impl& nonTinySyms() noexcept;  ///< handler for non-tiny symbols
+  static Impl& tinySyms() noexcept;     ///< handler for tiny symbols
+
+  /// @return a fully configured instance
+  static const ExtBoxBlur& configuredInstance() noexcept(!UT);
+
+  /// Registers the configured instance plus its name
+  static ConfInstRegistrator cir;
 };
 
-#endif // H_EXT_BOX_BLUR
+#endif  // H_EXT_BOX_BLUR

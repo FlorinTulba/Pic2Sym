@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,54 +34,115 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_PMS_CONT_BASE
 #define H_PMS_CONT_BASE
 
 #include "pixMapSymBase.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
 #include <unordered_map>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
-class SymFilterCache; // forward declaration
+extern template class std::unordered_map<unsigned, unsigned>;
+
+class SymFilterCache;  // forward declaration
 
 /// Base for the container holding PixMapSym-s of same size
-struct IPmsCont /*abstract*/ {
-	virtual bool isReady() const = 0;				///< is container ready to provide useful data?
-	virtual unsigned getFontSz() const = 0;			///< bounding box size
-	virtual unsigned getBlanksCount() const = 0;	///< how many Blank characters were within the charmap
-	virtual unsigned getDuplicatesCount() const = 0;///< how many duplicate symbols were within the charmap
+class IPmsCont /*abstract*/ {
+ public:
+  /// Is container ready to provide useful data?
+  virtual bool isReady() const noexcept = 0;
 
-	/// Associations: filterId - count of detected syms
-	virtual const std::unordered_map<unsigned, unsigned>& getRemovableSymsByCateg() const = 0;
+  /**
+  Bounding box size
+  @throw logic_error if not called after setAsReady()
 
-	/// Max ratio for small symbols of glyph area / containing area
-	virtual double getCoverageOfSmallGlyphs() const = 0;
+  Exception to be only reported, not handled
+  */
+  virtual unsigned getFontSz() const noexcept(!UT) = 0;
 
-	virtual const VPixMapSym& getSyms() const = 0;	///< data for each symbol within current charmap
+  /**
+  How many Blank characters were within the charmap
+  @throw logic_error if not called after setAsReady()
 
-	/// clears & prepares container for new entries
-	virtual void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U) = 0;
+  Exception to be only reported, not handled
+  */
+  virtual unsigned getBlanksCount() const noexcept(!UT) = 0;
 
-	/**
-	appendSym puts valid glyphs into vector 'syms'.
+  /**
+  How many duplicate symbols were within the charmap
+  @throw logic_error if not called after setAsReady()
 
-	Space (empty / full) glyphs are invalid.
-	Also updates the count of blanks & duplicates and of any filtered out symbols.
-	*/
-	virtual void appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) = 0;
+  Exception to be only reported, not handled
+  */
+  virtual unsigned getDuplicatesCount() const noexcept(!UT) = 0;
 
-	virtual void setAsReady() = 0; ///< No other symbols to append. Statistics can be now computed
+  /**
+  Associations: filterId - count of detected syms
+  @throw logic_error if not called after setAsReady()
 
-	virtual ~IPmsCont() = 0 {}
+  Exception to be only reported, not handled
+  */
+  virtual const std::unordered_map<unsigned, unsigned>&
+  getRemovableSymsByCateg() const noexcept(!UT) = 0;
+
+  /**
+  Max ratio for small symbols of glyph area / containing area
+  @throw logic_error if not called after setAsReady()
+
+  Exception to be only reported, not handled
+  */
+  virtual double getCoverageOfSmallGlyphs() const noexcept(!UT) = 0;
+
+  /**
+  Data for each symbol within current charmap
+  @throw logic_error if not called after setAsReady()
+
+  Exception to be only reported, not handled
+  */
+  virtual const VPixMapSym& getSyms() const noexcept(!UT) = 0;
+
+  /// Clears & prepares container for new entries
+  virtual void reset(unsigned fontSz_ = 0U,
+                     unsigned symsCount = 0U) noexcept = 0;
+
+  /**
+  appendSym puts valid glyphs into vector 'syms'.
+
+  Space (empty / full) glyphs are invalid.
+  Also updates the count of blanks & duplicates and of any filtered out symbols.
+
+  @throw logic_error if called after setAsReady()
+
+  Exception to be only reported, not handled
+  */
+  virtual void appendSym(FT_ULong c,
+                         size_t symIdx,
+                         FT_GlyphSlot g,
+                         FT_BBox& bb,
+                         SymFilterCache& sfc) noexcept(!UT) = 0;
+
+  /// No other symbols to append. Statistics can be now computed
+  virtual void setAsReady() noexcept = 0;
+
+  virtual ~IPmsCont() noexcept {}
+
+  // Slicing prevention
+  IPmsCont(const IPmsCont&) = delete;
+  IPmsCont(IPmsCont&&) = delete;
+  IPmsCont& operator=(const IPmsCont&) = delete;
+  IPmsCont& operator=(IPmsCont&&) = delete;
+
+ protected:
+  constexpr IPmsCont() noexcept {}
 };
 
-#endif // H_PMS_CONT_BASE
+#endif  // H_PMS_CONT_BASE

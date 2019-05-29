@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,8 +34,8 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_PMS_CONT
 #define H_PMS_CONT
@@ -42,68 +43,132 @@
 #include "pmsContBase.h"
 #include "symFilterBase.h"
 
-struct IController; // forward declaration
-struct IPixMapSym;
+class IController;  // forward declaration
+class IPixMapSym;
 
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont : public IPmsCont {
-protected:
-	VPixMapSym syms;	///< data for each symbol within current charmap
+ public:
+  explicit PmsCont(IController& ctrler_) noexcept;
 
-	// Precomputed entities during reset
-	cv::Mat consec;					///< vector of consecutive values 0..fontSz-1
-	cv::Mat revConsec;				///< consec reversed
+  /// Is container ready to provide useful data?
+  bool isReady() const noexcept override { return ready; }
 
-	IController &ctrler;	///< updates Cmap View as soon as there are enough symbols for 1 page
+  /**
+  Bounding box size
+  @throw logic_error if not called after setAsReady()
 
-	/// Member that allows setting filters to detect symbols with undesired features.
-	const std::uniquePtr<ISymFilter> symFilter = new DefSymFilter;
-	std::unordered_map<unsigned, unsigned> removableSymsByCateg; ///< associations: filterId - count of detected syms
+  Exception to be only reported, not handled
+  */
+  unsigned getFontSz() const noexcept(!UT) override;
 
-	double maxGlyphSum;				///< max sum of a glyph's pixels
-	double coverageOfSmallGlyphs;	///< max ratio for small symbols of glyph area / containing area
+  /**
+  How many Blank characters were within the charmap
+  @throw logic_error if not called after setAsReady()
 
-	unsigned fontSz = 0U;			///< bounding box size
+  Exception to be only reported, not handled
+  */
+  unsigned getBlanksCount() const noexcept(!UT) override;
 
-	unsigned blanks = 0U;			///< how many Blank characters were within the charmap
-	unsigned duplicates = 0U;		///< how many duplicate symbols were within the charmap
+  /**
+  How many duplicate symbols were within the charmap
+  @throw logic_error if not called after setAsReady()
 
-	bool ready = false;				///< is container ready to provide useful data?
+  Exception to be only reported, not handled
+  */
+  unsigned getDuplicatesCount() const noexcept(!UT) override;
 
-	/// If a symbol has a side equal to 0, it is a blank => increment blanks and return true
-	bool exactBlank(unsigned height, unsigned width);
-	
-	/// If a symbol contains almost only white pixels it is nearly blank => increment blanks and return true
-	bool nearBlank(const IPixMapSym &pms);
+  /**
+  Associations: filterId - count of detected syms
+  @throw logic_error if not called after setAsReady()
 
-	/// Is the symbol an exact duplicate of one which is already in the syms container? If yes, increment duplicates and return true
-	bool isDuplicate(const IPixMapSym &pms);
+  Exception to be only reported, not handled
+  */
+  const std::unordered_map<unsigned, unsigned>& getRemovableSymsByCateg() const
+      noexcept(!UT) override;
 
-public:
-	PmsCont(IController &ctrler_);
-	PmsCont(const PmsCont&) = delete;
-	void operator=(const PmsCont&) = delete;
+  /**
+  Max ratio for small symbols of glyph area / containing area
+  @throw logic_error if not called after setAsReady()
 
-	bool isReady() const override { return ready; }
-	unsigned getFontSz() const override;
-	unsigned getBlanksCount() const override;
-	unsigned getDuplicatesCount() const override;
-	const std::unordered_map<unsigned, unsigned>& getRemovableSymsByCateg() const override;
-	double getCoverageOfSmallGlyphs() const override;
-	const VPixMapSym& getSyms() const override;
+  Exception to be only reported, not handled
+  */
+  double getCoverageOfSmallGlyphs() const noexcept(!UT) override;
 
-	/// clears & prepares container for new entries
-	void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U) override;
+  /**
+  Data for each symbol within current charmap
+  @throw logic_error if not called after setAsReady()
 
-	/**
-	appendSym puts valid glyphs into vector 'syms'.
+  Exception to be only reported, not handled
+  */
+  const VPixMapSym& getSyms() const noexcept(!UT) override;
 
-	Space (empty / full) glyphs are invalid.
-	Also updates the count of blanks & duplicates and of any filtered out symbols.
-	*/
-	void appendSym(FT_ULong c, size_t symIdx, FT_GlyphSlot g, FT_BBox &bb, SymFilterCache &sfc) override;
+  /// Clears & prepares container for new entries
+  void reset(unsigned fontSz_ = 0U, unsigned symsCount = 0U) noexcept override;
 
-	void setAsReady() override; ///< No other symbols to append. Statistics can be now computed
+  /**
+  appendSym puts valid glyphs into vector 'syms'.
+
+  Space (empty / full) glyphs are invalid.
+  Also updates the count of blanks & duplicates and of any filtered out symbols.
+
+  @throw logic_error if called after setAsReady()
+
+  Exception to be only reported, not handled
+  */
+  void appendSym(FT_ULong c,
+                 size_t symIdx,
+                 FT_GlyphSlot g,
+                 FT_BBox& bb,
+                 SymFilterCache& sfc) noexcept(!UT) override;
+
+  /// No other symbols to append. Statistics can be now computed
+  void setAsReady() noexcept override;
+
+ protected:
+  /// If a symbol has a side equal to 0, it is a blank => increment blanks and
+  /// return true
+  bool exactBlank(unsigned height, unsigned width) noexcept;
+
+  /// If a symbol contains almost only white pixels it is nearly blank =>
+  /// increment blanks and return true
+  bool nearBlank(const IPixMapSym& pms) noexcept;
+
+  /// Is the symbol an exact duplicate of one which is already in the syms
+  /// container? If yes, increment duplicates and return true
+  bool isDuplicate(const IPixMapSym& pms) noexcept;
+
+ private:
+  VPixMapSym syms;  ///< data for each symbol within current charmap
+
+  // Precomputed entities during reset
+  cv::Mat consec;     ///< vector of consecutive values 0..fontSz-1
+  cv::Mat revConsec;  ///< consec reversed
+
+  /// Updates Cmap View as soon as there are enough symbols for 1 page
+  IController& ctrler;
+
+  /// Member that allows setting filters to detect symbols with undesired
+  /// features.
+  const std::unique_ptr<ISymFilter> symFilter{new DefSymFilter};
+
+  /// Associations: filterId - count of detected syms
+  std::unordered_map<unsigned, unsigned> removableSymsByCateg;
+
+  /// Max sum of a glyph's pixels
+  double maxGlyphSum = 0.;
+
+  /// Max ratio for small symbols of glyph area / containing area
+  double coverageOfSmallGlyphs = 0.;
+
+  unsigned fontSz = 0U;  ///< bounding box size
+
+  unsigned blanks = 0U;  ///< how many Blank characters were within the charmap
+
+  /// How many duplicate symbols were within the charmap
+  unsigned duplicates = 0U;
+
+  bool ready = false;  ///< is container ready to provide useful data?
 };
 
-#endif // H_PMS_CONT
+#endif  // H_PMS_CONT

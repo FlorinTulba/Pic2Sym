@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,49 +34,76 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_GRID_BARS_FILTER
 #define H_GRID_BARS_FILTER
 
+#include "misc.h"
 #include "symFilter.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
 #include <opencv2/core/core.hpp>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 /**
 Detects symbols typically used to generate a grid from glyphs.
 
-Such characters are less desirable, since the image to be processed is already split as a grid,
-so approximating patches with grid-like symbols produces the impression of further division.
+Such characters are less desirable, since the image to be processed is already
+split as a grid, so approximating patches with grid-like symbols produces the
+impression of further division.
 
 These symbols are quite elusive:
-- they might expand even towards the corners (when the borders they define are double-lines)
+- they might expand even towards the corners (when the borders they define are
+double-lines)
 - they might not touch the borders of the glyph
 - some of their branches might be thinner/thicker or single/double-lined
-- the brightness of each branch isn't always constant, nor it has a constant profile
+- the brightness of each branch isn't always constant, nor it has a constant
+profile
 
-After lots of approaches I still miss many true positives and get numerous false positives.
+After lots of approaches I still miss many true positives and get numerous false
+positives.
 
-It appears that supervised learning would be ideal here, instead of manually evolving a model.
-It would be much easier just to provide a set of positives and negatives to a machine learning 
-algorithm and then check its accuracy.
+It appears that supervised learning would be ideal here, instead of manually
+evolving a model. It would be much easier just to provide a set of positives and
+negatives to a machine learning algorithm and then check its accuracy.
 */
-struct GridBarsFilter : public TSymFilter<GridBarsFilter> {
-	CHECK_ENABLED_SYM_FILTER(GridBarsFilter);
+class GridBarsFilter : public TSymFilter<GridBarsFilter> {
+ public:
+  CHECK_ENABLED_SYM_FILTER(GridBarsFilter);
 
-	static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc); // static polymorphism
+  /**
+  Checks if pms can be filtered out based on this filter and sfc.
+  @return false also if the filter is not enabled
+  */
+  static bool isDisposable(const IPixMapSym& pms,
+                           const SymFilterCache& sfc) noexcept;
 
-	GridBarsFilter(std::uniquePtr<ISymFilter> nextFilter_ = nullptr);
-	GridBarsFilter(const GridBarsFilter&) = delete;
-	void operator=(const GridBarsFilter&) = delete;
+  explicit GridBarsFilter(
+      std::unique_ptr<ISymFilter> nextFilter_ = nullptr) noexcept;
 
-protected:
-	static bool checkProjectionForGridSymbols(const cv::Mat &sums);
+ private:
+  /**
+  Checks if sums might be the projection of a grid bar symbol.
+  Allowed patterns:
+  a) 0* t2+ t1+ A+ 0*
+  b) 0* A+ t1+ t2+ 0*	(reverse of (a))
+  c) 0* t1* A+ t1* 0*
+
+  where:
+  - t1 &lt; t2 - thicknesses of projected lines (which were parallel to the
+  projection plan)
+  - A (&gt;t2&gt;t1) - peak generated by the projection of a line perpendicular
+  to the projection plan.
+
+  @throw logic_error for reaching a state not handled yet
+
+  Exception just to be reported, not handled
+  */
+  static bool checkProjectionForGridSymbols(const cv::Mat& sums) noexcept(!UT);
 };
 
-#endif // H_GRID_BARS_FILTER
+#endif  // H_GRID_BARS_FILTER

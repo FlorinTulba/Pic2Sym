@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,94 +34,145 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_JOB_MONITOR_BASE
 #define H_JOB_MONITOR_BASE
 
-#pragma warning ( push, 0 )
+#include "misc.h"
 
-#include "std_string.h"
+#pragma warning(push, 0)
+
+#include <string>
 #include <vector>
 
-#pragma warning ( pop )
+#pragma warning(pop)
+
+extern template class std::vector<double>;
 
 // Forward declarations
 class AbsTaskMonitor;
-struct ITimerResult;
+class ITimerResult;
 
 /// Abstract class for monitoring progress of a given job
 class AbsJobMonitor /*abstract*/ {
-protected:
-	const std::stringType monitoredJob_;	///< name of the job
-	ITimerResult *timer = nullptr;			///< timer for reporting elapsed and estimated remaining time
+ public:
+  // No intention to copy / move
+  AbsJobMonitor(const AbsJobMonitor&) = delete;
+  AbsJobMonitor(AbsJobMonitor&&) = delete;
+  void operator=(const AbsJobMonitor&) = delete;
+  void operator=(AbsJobMonitor&&) = delete;
 
-	double progress_ = 0.;				///< actual known job's progress
+  virtual ~AbsJobMonitor() noexcept {}
 
-	bool aborted = false;				///< set if the job was aborted
+  /// Name of the job
+  const std::string& monitoredJob() const noexcept { return _monitoredJob; }
 
-	/// Prepares the monitor for a new timing using timer_
-	virtual void getReady(ITimerResult &timer_) {
-		timer = &timer_;
-		progress_ = 0.;
-		aborted = false;
-	}
+  /// Overall progress of the job (0..1 range)
+  double progress() const noexcept { return _progress; }
 
-	AbsJobMonitor(const std::stringType &monitoredJob) : monitoredJob_(monitoredJob) {}
-	void operator=(const AbsJobMonitor&) = delete;
+  /// Reports if the job was aborted or not
+  bool wasAborted() const noexcept { return aborted; }
 
-public:
-	virtual ~AbsJobMonitor() = 0 {}
+  /**
+  Before starting a certain job, usually there is enough information to provide
+  some estimates about the weight of each particular task of the job.
+  All these estimates must be positive and could sum up to 1 or 100 or anything
+  meaningful. Internally, they will be scaled to sum exactly 1.
 
-	const std::stringType& monitoredJob() const { return monitoredJob_; } ///< name of the job
-	double progress() const { return progress_; }	///< Overall progress of the job (0..1 range)
-	bool wasAborted() const { return aborted; }		///< Reports if the job was aborted or not
+  The parameter timer_ is the associated timer for reporting elapsed and
+  estimated remaining time
 
-	/**
-	Before starting a certain job, usually there is enough information to provide
-	some estimates about the weight of each particular task of the job.
-	All these estimates must sum up to 1.
+  @throw invalid_argument if totalContribValues contains negative values or 0-s
 
-	The parameter timer_ is the associated timer for reporting elapsed and estimated remaining time
-	*/
-	virtual void setTasksDetails(const std::vector<double> &totalContribValues, ITimerResult &timer_) = 0;
+  Exception to be only reported, not handled
+  */
+  virtual void setTasksDetails(const std::vector<double>& totalContribValues,
+                               ITimerResult& timer_) noexcept(!UT) = 0;
 
-	/**
-	At the start of each task of a given job, the user must create a
-	method-static instance of AbsTaskMonitor-derived, which registers itself
-	to a AbsJobMonitor-derived using:
-	monitorNewTask(*this)
-	The job monitor will return the order of the newly registered task
-	within the sequence of tasks required for this job.
+  /**
+  At the start of each task of a given job, the user must create a
+  method-static instance of AbsTaskMonitor-derived, which registers itself
+  to a AbsJobMonitor-derived using:
+  monitorNewTask(*this)
+  The job monitor will return the order of the newly registered task
+  within the sequence of tasks required for this job.
 
-	@param newActivity task that registers itself as part of a job
+  @param newActivity task that registers itself as part of a job
 
-	@return the order of this new task among job's tasks
-	*/
-	virtual unsigned monitorNewTask(AbsTaskMonitor &newActivity) = 0;
+  @return the order of this new task among job's tasks
+  */
+  virtual unsigned monitorNewTask(AbsTaskMonitor& newActivity) noexcept = 0;
 
-	/**
-	A task monitor reports the progress of its supervised task.
+  /**
+  A task monitor reports the progress of its supervised task.
 
-	@param taskProgress value in 0..1 range representing the progress of the task
-	@param taskSeqId the order of the task among job's tasks
-	*/
-	virtual void taskAdvanced(double taskProgress, unsigned taskSeqId) = 0;
+  @param taskProgress value in 0..1 range representing the progress of the task
+  @param taskSeqId the order of the task among job's tasks
 
-	/**
-	A task monitor reports the completion of its supervised task.
+  @throw invalid_argument if taskProgress is outside 0..1
+  @throw out_of_range if taskSeqId is an invalid index in details
 
-	@param taskSeqId the order of the task among job's tasks
-	*/
-	virtual void taskDone(unsigned taskSeqId) = 0;
+  Exceptions to be only reported, not handled
+  */
+  virtual void taskAdvanced(double taskProgress,
+                            unsigned taskSeqId) noexcept(!UT) = 0;
 
-	/**
-	A task monitor reports the abortion of its supervised task.
+  /**
+  A task monitor reports the completion of its supervised task.
 
-	@param taskSeqId the order of the task among job's tasks
-	*/
-	virtual void taskAborted(unsigned taskSeqId) = 0;
+  @param taskSeqId the order of the task among job's tasks
+  @throw out_of_range only in UnitTesting if taskSeqId is an invalid index in
+  details
+
+  Exception can be caught only in UnitTesting
+  */
+  virtual void taskDone(unsigned taskSeqId) noexcept(!UT) = 0;
+
+  /**
+  A task monitor reports the abortion of its supervised task.
+
+  @param taskSeqId the order of the task among job's tasks
+  @throw out_of_range only in UnitTesting if taskSeqId is an invalid index in
+  details
+
+  Exception can be caught only in UnitTesting
+  */
+  virtual void taskAborted(unsigned taskSeqId) noexcept(!UT) = 0;
+
+ protected:
+  explicit AbsJobMonitor(const std::string& monitoredJob) noexcept
+      : _monitoredJob(monitoredJob) {}
+
+  /// Prepares the monitor for a new timing using timer_
+  virtual void getReady(ITimerResult& timer) noexcept;
+
+  /**
+  @return reference to the provided timer, if any
+  @throw logic_error if called before getReady(), which sets a timer
+
+  Exception to be only reported, not handled
+  */
+  ITimerResult& timer() const noexcept;
+
+  /**
+  Sets a new progress
+  @throw invalid_argument if the argument is outside 0..1
+
+  Exception to be only reported, not handled
+  */
+  void progress(double progress) noexcept;
+
+ private:
+  const std::string _monitoredJob;  ///< name of the job
+
+  /// Timer for reporting elapsed and estimated remaining time
+  ITimerResult* _timer = nullptr;
+
+  double _progress = 0.;  ///< actual known job's progress
+
+  bool aborted = false;  ///< set if the job was aborted
 };
 
-#endif // H_JOB_MONITOR_BASE
+#endif  // H_JOB_MONITOR_BASE

@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,302 +34,475 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
+
+#include "precompiled.h"
 
 #ifndef UNIT_TESTING
 
 #include "dlgs.h"
 #include "misc.h"
+#include "warnings.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
+#include <algorithm>
 #include <cassert>
-#include <unordered_map>
+#include <filesystem>
 #include <regex>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
 
-#include "boost_filesystem_operations.h"
-
-#pragma warning ( pop )
+#pragma warning(pop)
 
 using namespace std;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
-namespace {
-	/**
-	FontFinder encapsulates the logic to obtain the file path for a given font name.
-	It has a single public and static method: pathFor.
-	*/
-	class FontFinder {
-		/**
-		RegistryHelper isolates Registry API from the business logic within FontFinder.
-		It provides an iterator-like method: extractNextFont.
-		*/
-		class RegistryHelper {
-			HKEY fontsKey = nullptr;
-			vector<TCHAR> fontNameBuf;
-			vector<BYTE> fontFileBuf;
-			DWORD longestNameLen = 0, longestDataLen = 0;
-			DWORD idx = 0;
+extern template class unordered_map<string, string>;
 
-		public:
-			RegistryHelper() {
-				// The mapping between the font name and the corresponding font file can be found
-				// in the registry in:
-				// Computer->HKEY_LOCAL_MACHINE->Software->Microsoft->Windows NT->CurrentVersion->Fonts
-				static const LPTSTR fontRegistryPath = _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts");
+/**
+FontFinder encapsulates the logic to obtain the file path for a given font name.
+It has a single public and static method: pathFor.
+*/
+class SelectFont::FontFinder {
+ public:
+  /**
+  Fills accessibleFonts with all global and user fonts to be found within
+  Windows registries.
 
-				if(RegOpenKeyEx(HKEY_LOCAL_MACHINE,	// predefined key
-								fontRegistryPath,	// subkey
-								0U,					// ulOptions - not an symbolic link
-								KEY_READ,			// rights to query, enumerate
-								&fontsKey			// returns the necessary key
-								) != ERROR_SUCCESS)
-					THROW_WITH_CONST_MSG("Couldn't find the Fonts mapping within Registry!", invalid_argument);
+  Possible exceptions invalid_argument, runtime_error and
+  length_error. All these shouldn't happen and their handling is not desired.
+  */
+  FontFinder() noexcept {
+    RegistryHelper rh;
+    FontData fd;
+    while (rh.extractNextFont(fd))
+      accessibleFonts.push_back(fd);
+  }
 
-				// Get the required buffer size for font names and the names of the corresponding font files		
-				if(RegQueryInfoKey(fontsKey,
-						nullptr, // lpClass
-						nullptr, // lpcClass
-						nullptr, // lpReserved
-						nullptr, // lpcSubKeys (There are no subkeys)
-						nullptr, // lpcMaxSubKeyLen
-						nullptr, // lpcMaxClassLen
-						nullptr, // lpcValues (We just enumerate the values, no need to know their count)
-						&longestNameLen, // returns required buffer size for font names
-						&longestDataLen, // returns required buffer size for corresponding names of the font files
-						nullptr, // lpcbSecurityDescriptor (Not necessary)
-						nullptr // lpftLastWriteTime (Not interested in this)
-						) != ERROR_SUCCESS)
-					THROW_WITH_CONST_MSG("Couldn't interrogate the Fonts key!", invalid_argument);
+  /**
+  pathFor static method finds the path for a provided fontName.
+  Unfortunately, the provided fontName isn't decorated with Bold and/or Italic
+  at all, so isBold and isItalic parameters were necessary, too.
+  @throw FontLocationFailure for empty choices
 
-				fontNameBuf.resize(longestNameLen+1); // reserve also for '\0'
-				fontFileBuf.resize(longestDataLen+2); // reserve also for '\0'(wchar_t as BYTE)
-			}
-			~RegistryHelper() {
-				RegCloseKey(fontsKey);
-			}
+  Exception handled, so no rapid termination via noexcept
+  */
+  string pathFor(const string& fontName, bool isBold, bool isItalic) {
+    unordered_map<string, string> choices;
+    wstring wFontName(CBOUNDS(fontName));
 
-			/*
-			extractNextFont returns true if there was another font to be handled.
-			In that case, it returns the font name and font file name within the parameters.
-			*/
-			bool extractNextFont(wstringType &fontName, wstringType &fontFileName) {
-				DWORD lenFontName = longestNameLen+1, lenFontFileName = longestDataLen+2;
-				const LONG ret = RegEnumValue(fontsKey,
-										idx++, // which font index
-										fontNameBuf.data(), // storage for the font names
-										&lenFontName, // length of the returned font name
-										nullptr, // lpReserved
-										nullptr, // lpType (All are REG_SZ)
-										fontFileBuf.data(), // storage for the font file names
-										&lenFontFileName); // length of the returned font file name
-				if(ERROR_NO_MORE_ITEMS == ret)
-					return false;
+    for (FontData& fd : accessibleFonts)
+      if (relevantFontName(fd.name, wFontName, isBold, isItalic))
+        choices[wstr2str(fd.name)] = refineFontFileName(fd.location);
 
-				if(ERROR_MORE_DATA == ret)
-					THROW_WITH_CONST_MSG(__FUNCTION__ " : Allocated buffer isn't large enough to fit the font name or font file name!", length_error);
+    return extractResult(choices);
+  }
 
-				if(ERROR_SUCCESS != ret)
-					THROW_WITH_CONST_MSG(__FUNCTION__ " : Couldn't enumerate the Fonts!", length_error);
+ private:
+  /// Details about a font - its name and the file location for its data
+  struct FontData {
+    wstring name;
+    wstring location;
+  };
 
-				fontName.assign(fontNameBuf.data());
-				fontFileName.assign((TCHAR*)fontFileBuf.data());
+  /**
+  RegistryHelper isolates Registry API from the business logic within
+  FontFinder. It provides an iterator-like method: extractNextFont.
+  */
+  class RegistryHelper final {
+   public:
+#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+    /**
+    Looks in the Windows registries for the installed & accessible fonts.
+    @throw domain_error for wrong registry keys
 
-				return true;
-			}
-		};
+    Exception to be only reported, not handled
+    */
+    RegistryHelper() noexcept {
+      // The mapping between the font name and the corresponding font file can
+      // be found in the registry in:
+      // HKEY_LOCAL_MACHINE>Software>Microsoft>Windows NT>CurrentVersion>Fonts
+      // HKEY_CURRENT_USER>Software>Microsoft>Windows NT>CurrentVersion>Fonts
+      static const LPTSTR fontRegistryPath =
+          _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts");
 
-		/**
-		The font read from registry needs to contain the required name and also match bold&italic style.
-		Otherwise it will return false.
-		*/
-		static bool relevantFontName(const wstringType &wCurFontName,
-									 const wstringType &wFontName, bool isBold, bool isItalic) {
-			const auto at = wCurFontName.find(wFontName); // fontName won't be necessary a prefix!!
-			if(at == wstringType::npos)
-				return false; // current font doesn't contain the desired prefix
+      if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,  // predefined key
+                       fontRegistryPath,    // subkey
+                       0U,                  // ulOptions - not an symbolic link
+                       KEY_READ,            // rights to query, enumerate
+                       &globalFontsKey      // returns the necessary key
+                       ) != ERROR_SUCCESS ||
+          RegOpenKeyEx(HKEY_CURRENT_USER,  // predefined key
+                       fontRegistryPath,   // subkey
+                       0U,                 // ulOptions - not an symbolic link
+                       KEY_READ,           // rights to query, enumerate
+                       &userFontsKey       // returns the necessary key
+                       ) != ERROR_SUCCESS)
+        THROW_WITH_CONST_MSG("Couldn't find the Fonts mapping within Registry!",
+                             domain_error);
 
-			// Bold and Italic fonts typically append such terms to their key name.
-	#pragma warning ( disable : WARN_THREAD_UNSAFE )
-			static const wregex rexBold(L"Bold|Heavy|Black", regex_constants::icase);
-			static const wregex rexItalic(L"Italic|Oblique", regex_constants::icase);
+      // Get the required buffer size for font names and the names of the
+      // corresponding font files
+      DWORD auxLongestNameLen = 0UL, auxLongestDataLen = 0UL;
+      if (RegQueryInfoKey(
+              globalFontsKey,
+              nullptr,            // lpClass
+              nullptr,            // lpcClass
+              nullptr,            // lpReserved
+              nullptr,            // lpcSubKeys (There are no subkeys)
+              nullptr,            // lpcMaxSubKeyLen
+              nullptr,            // lpcMaxClassLen
+              &globalFontsCount,  // lpcValues (gloabl fonts count)
+              &longestNameLen,    // returns required buffer size for font names
+              &longestDataLen,    // returns required buffer size for
+                                  // corresponding names of the font files
+              nullptr,            // lpcbSecurityDescriptor (Not necessary)
+              nullptr             // lpftLastWriteTime (Not interested in this)
+              ) != ERROR_SUCCESS ||
+          RegQueryInfoKey(
+              userFontsKey,
+              nullptr,  // lpClass
+              nullptr,  // lpcClass
+              nullptr,  // lpReserved
+              nullptr,  // lpcSubKeys (There are no subkeys)
+              nullptr,  // lpcMaxSubKeyLen
+              nullptr,  // lpcMaxClassLen
+              nullptr,  // lpcValues the user fonts count is not necessary
+              &auxLongestNameLen,  // returns required buffer size for font
+                                   // names
+              &auxLongestDataLen,  // returns required buffer size for
+                                   // corresponding names of the font files
+              nullptr,             // lpcbSecurityDescriptor (Not necessary)
+              nullptr              // lpftLastWriteTime (Not interested in this)
+              ) != ERROR_SUCCESS)
+        THROW_WITH_CONST_MSG("Couldn't interrogate the Fonts keys!",
+                             domain_error);
 
-			static match_results<wstring::const_iterator> match;
-	#pragma warning ( default : WARN_THREAD_UNSAFE )
+      longestNameLen = (std::max)(longestNameLen, auxLongestNameLen);
+      longestDataLen = (std::max)(longestDataLen, auxLongestDataLen);
 
-			const wstringType wSuffixCurFontName =
-				wCurFontName.substr(at+wFontName.length()); // extract the suffix
+      fontNameBuf.resize((size_t)longestNameLen +
+                         1ULL);  // reserve also for '\0'
+      fontFileBuf.resize((size_t)longestDataLen +
+                         2ULL);  // reserve also for '\0'(wchar_t as BYTE)
+    }
+#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
-			if(isBold != regex_search((wstring)wSuffixCurFontName, match, rexBold))
-				return false; // current font has different Bold status than expected
+    ~RegistryHelper() noexcept {
+      RegCloseKey(globalFontsKey);
+      RegCloseKey(userFontsKey);
+    }
 
-			if(isItalic != regex_search((wstring)wSuffixCurFontName, match, rexItalic))
-				return false; // current font has different Italic status than expected
+    RegistryHelper(const RegistryHelper&) = delete;
+    RegistryHelper(RegistryHelper&&) = delete;
+    void operator=(const RegistryHelper&) = delete;
+    void operator=(RegistryHelper&&) = delete;
 
-			return true;
-		}
+#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+    /**
+    extractNextFont returns true if there was another font to be handled.
+    In that case, it returns the font name and font file name within the
+    parameters.
 
-		/// Ensures the obtained font file name represents a valid path
-		static stringType refineFontFileName(const wstringType &wCurFontFileName) {
-			path curFontFile(stringType(BOUNDS(wCurFontFileName)));
-			if(!curFontFile.has_parent_path()) {
-				// The fonts are typically installed within c:\Windows\Fonts
-	#pragma warning ( disable : WARN_DEPRECATED WARN_THREAD_UNSAFE )
-				static const path typicalFontsDir =
-					path(stringType(getenv("SystemRoot"))).append("Fonts");
-	#pragma warning ( default : WARN_DEPRECATED WARN_THREAD_UNSAFE )
+    @throw length_error for buffer overruns while reading fonts information
+    @throw runtime_error if accessing the fonts data triggered some other error
 
-				path temp(typicalFontsDir);
-				temp /= curFontFile;
-				// If the curFontFile isn't a path already, prefix it with typicalFontsDir
-				curFontFile = move(temp);
-			}
-			if(!exists(curFontFile))
-				THROW_WITH_VAR_MSG(__FUNCTION__ " : There's no such font file: " + curFontFile.string(), 
-									FontLocationFailure);
+    Such exceptions shouldn't happen, so their handling isn't desired.
+    */
+    bool extractNextFont(FontData& fontData) noexcept {
+      DWORD lenFontName = longestNameLen + 1,
+            lenFontFileName = longestDataLen + 2;
+      LONG ret = RegEnumValue(
+          globalFontsKey,
+          idx++,               // which font index
+          fontNameBuf.data(),  // storage for the font names
+          &lenFontName,        // length of the returned font name
+          nullptr,             // lpReserved
+          nullptr,             // lpType (All are REG_SZ)
+          fontFileBuf.data(),  // storage for the font file names
+          &lenFontFileName);   // length of the returned font file name
 
-			return curFontFile.string();
-		}
+      // Start looking within the user fonts after checking all global ones
+      if (ERROR_NO_MORE_ITEMS == ret) {
+        ret = RegEnumValue(
+            userFontsKey,
+            idx - globalFontsCount - 1UL,  // which font index
+            fontNameBuf.data(),            // storage for the font names
+            &lenFontName,                  // length of the returned font name
+            nullptr,                       // lpReserved
+            nullptr,                       // lpType (All are REG_SZ)
+            fontFileBuf.data(),            // storage for the font file names
+            &lenFontFileName);  // length of the returned font file name
 
-		/// When ambiguous results, lets the user select the correct one.
-		static stringType extractResult(unordered_map<stringType, stringType> &choices) {
-			assert(!choices.empty());
+        if (ERROR_NO_MORE_ITEMS == ret)
+          return false;  // no more global / user fonts accessible
+      }
 
-			const size_t choicesCount = choices.size();
-			if(1ULL == choicesCount)
-				return cbegin(choices)->second;
+      if (ERROR_MORE_DATA == ret)
+        THROW_WITH_CONST_MSG(__FUNCTION__ " : Allocated buffer "
+                               "isn't large enough to fit the font name or "
+                               "font file name!", length_error);
 
-			// More than 1 file suits the selected font and the user should choose the appropriate one
-			cout<<endl<<"More fonts within Windows Registry suit the selected Font type. Please select the appropriate one:"<<endl;
-			size_t idx = 0ULL;
-			for(const auto &choice : choices)
-				cout<<idx++<<" : "<<choice.first<<" -> "<<choice.second<<endl;
+      if (ERROR_SUCCESS != ret)
+        THROW_WITH_CONST_MSG(__FUNCTION__ " : Couldn't enumerate the Fonts!",
+                             runtime_error);
 
-			//idx is here choicesCount
-			while(idx>=choicesCount) {
-				cout<<"Enter correct index: ";
-				cin>>idx;
-			}
+      fontData.name.assign(fontNameBuf.data());
+      fontData.location.assign((TCHAR*)fontFileBuf.data());
 
-			return next(cbegin(choices), (ptrdiff_t)idx)->second;
-		}
+      return true;
+    }
+#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
-	public:
-		/**
-		pathFor static method finds the path for a provided fontName.
-		Unfortunately, the provided fontName isn't decorated with Bold and/or Italic at all,
-		so isBold and isItalic parameters were necessary, too.
-		*/
-		static stringType pathFor(const stringType &fontName, bool isBold, bool isItalic) {
-			wstringType wCurFontName, wCurFontFileName;
-			unordered_map<stringType, stringType> choices;
-			wstringType wFontName(CBOUNDS(fontName));
+   private:
+    HKEY globalFontsKey = nullptr, userFontsKey = nullptr;
+    vector<TCHAR> fontNameBuf;
+    vector<BYTE> fontFileBuf;
+    DWORD globalFontsCount = 0;
+    DWORD longestNameLen = 0, longestDataLen = 0;
+    DWORD idx = 0;
+  };
 
-			RegistryHelper rh;
-			while(rh.extractNextFont(wCurFontName, wCurFontFileName))
-				if(relevantFontName(wCurFontName, wFontName, isBold, isItalic))
-					choices[wstr2str(wCurFontName)] =
-								refineFontFileName(wCurFontFileName);
+  /**
+  The font read from registry needs to contain the required name and also match
+  bold&italic style. Otherwise it will return false.
+  */
+  bool relevantFontName(const wstring& wCurFontName,
+                        const wstring& wFontName,
+                        bool isBold,
+                        bool isItalic) noexcept {
+    // fontName won't be necessarily a prefix of the font file name!!
+    const auto at = wCurFontName.find(wFontName);
+    if (at == wstring::npos)
+      return false;  // current font doesn't contain the desired prefix
 
-			if(choices.empty())
-				THROW_WITH_CONST_MSG(__FUNCTION__ " : Couldn't find this font within registry!\n"
-									"It might be there under a different name or "
-									"it might appear only among the Windows Fonts as a shortcut to the actual file.\n"
-									"The Font Dialog presents all corresponding Windows Fonts, "
-									"unfortunately providing unreliable font name hints",
-									FontLocationFailure);
+    // Bold and Italic fonts typically append such terms to their key name.
+    static const wregex rexBold(L"Bold|Heavy|Black", regex_constants::icase);
+    static const wregex rexItalic(L"Italic|Oblique", regex_constants::icase);
 
-			return extractResult(choices);
-		}
-	};
-} // anonymous namespace
+    static match_results<wstring::const_iterator> match;
 
-OpenSave::OpenSave(const TCHAR * const title, const TCHAR * const filter,
-				   const TCHAR * const defExtension/* = nullptr*/,
-				   bool toOpen_/* = true*/) : toOpen(toOpen_) {
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = nullptr; // no owner
-	fNameBuf[0ULL] = '\0';
-	ofn.lpstrFile = fNameBuf;
-	ofn.nMaxFile = sizeof(fNameBuf);
-	ofn.lpstrFilter = filter;
-	ofn.nFilterIndex = 1;
-	ofn.lpstrFileTitle = nullptr;
-	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = nullptr;
-	ofn.lpstrTitle = title;
-	if(defExtension != nullptr)
-		ofn.lpstrDefExt = defExtension;
-	if(toOpen)
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-	else
-		ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
+    const wstring wSuffixCurFontName = (wstring)wCurFontName.substr(
+        at + wFontName.length());  // extract the suffix
+
+    if (isBold != regex_search(wSuffixCurFontName, match, rexBold))
+      return false;  // current font has different Bold status than expected
+
+    if (isItalic != regex_search(wSuffixCurFontName, match, rexItalic))
+      return false;  // current font has different Italic status than expected
+
+    return true;
+  }
+
+  /**
+  Ensures the obtained font file name represents a valid path
+  @throw FontLocationFailure if unable to locate font file
+
+  Exception handled, so no rapid termination via noexcept
+  */
+  string refineFontFileName(wstring& wCurFontFileName) {
+#pragma warning(disable : WARN_DEPRECATED)
+    // The fonts are typically installed within:
+    // - %SystemRoot%\Fonts - global fonts
+    // - %LOCALAPPDATA%\Microsoft\Windows\Fonts - user fonts
+    static const path typicalGlobalFontsDir =
+        path(string(getenv("SystemRoot"))).append("Fonts");
+
+    static const path typicalUserFontsDir = path(string(getenv("LOCALAPPDATA")))
+                                                .append("Microsoft")
+                                                .append("Windows")
+                                                .append("Fonts");
+#pragma warning(default : WARN_DEPRECATED)
+
+    path curFontFile(string(BOUNDS(wCurFontFileName)));
+    bool fullPathAlready = false;
+
+    // The investigated paths for reaching the font file from the parameter
+    vector<string> attempts;
+
+    if (curFontFile.has_parent_path()) {
+      fullPathAlready = true;
+      attempts.push_back(curFontFile.string());
+    } else {
+      // If the curFontFile isn't a path already, prefix it with a typical
+      // fonts dir
+      path temp(typicalGlobalFontsDir);
+      temp /= curFontFile;
+      if (!exists(temp)) {
+        attempts.push_back(temp.string());
+        temp = typicalUserFontsDir;
+        temp /= curFontFile;
+      }
+      attempts.push_back(temp.string());
+      curFontFile = move(temp);
+    }
+
+    if (!exists(curFontFile)) {
+      ostringstream oss;
+      copy(CBOUNDS(attempts), ostream_iterator<string>(oss, ", "));
+      oss << "\b\b ";
+      THROW_WITH_VAR_MSG(
+          __FUNCTION__
+        " : Unable to find font file within the following location(s): "
+        + oss.str(),
+          FontLocationFailure);
+    }
+
+    string result = curFontFile.string();
+
+    if (!fullPathAlready)  // update FontData.location to be full path
+      wCurFontFileName.assign(BOUNDS(result));
+
+    return result;
+  }
+
+  /**
+  When ambiguous results, lets the user select the correct one.
+  @throw FontLocationFailure for empty choices
+
+  Exception handled, so no rapid termination via noexcept
+  */
+  string extractResult(const unordered_map<string, string>& choices) {
+    if (choices.empty())
+      THROW_WITH_CONST_MSG(
+          __FUNCTION__ " : Couldn't find this font within registry!\n"
+          "It might be there under a different name or "
+          "it might appear only among the Windows Fonts as a shortcut "
+          "to the actual file.\n"
+          "The Font Dialog presents all corresponding Windows Fonts, "
+          "unfortunately providing unreliable font name hints",
+          FontLocationFailure);
+
+    const size_t choicesCount = choices.size();
+    if (1ULL == choicesCount)
+      return cbegin(choices)->second;
+
+    // More than 1 file suits the selected font and the user should choose the
+    // appropriate one
+    cout << "\nMore fonts within Windows Registry suit the selected Font type. "
+            "Please select the appropriate one:\n";
+    size_t idx = 0ULL;
+    for (const auto& [fontName, fontPath] : choices)
+      cout << idx++ << " : " << fontName << " -> " << fontPath << '\n';
+
+    // idx is here choicesCount
+    while (idx >= choicesCount) {
+      cout << "Enter correct index: ";
+      cin >> idx;
+    }
+
+    return next(cbegin(choices), (ptrdiff_t)idx)->second;
+  }
+
+  vector<FontData> accessibleFonts;
+};
+
+OpenSave::OpenSave(const TCHAR* const title,
+                   const TCHAR* const filter,
+                   const TCHAR* const defExtension /* = nullptr*/,
+                   bool toOpen_ /* = true*/) noexcept
+    : Dlg(), toOpen(toOpen_) {
+  ZeroMemory(&ofn, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = nullptr;  // no owner
+  fNameBuf[0ULL] = '\0';
+  ofn.lpstrFile = fNameBuf;
+  ofn.nMaxFile = sizeof(fNameBuf);
+  ofn.lpstrFilter = filter;
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = nullptr;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = nullptr;
+  ofn.lpstrTitle = title;
+  if (defExtension != nullptr)
+    ofn.lpstrDefExt = defExtension;
+  if (toOpen)
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+  else
+    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
 }
 
-bool OpenSave::promptForUserChoice() {
-	if(toOpen) {
-		if(!GetOpenFileName(&ofn)) {
-			reset();
-			return false;
-		}
-	} else {
-		if(!GetSaveFileName(&ofn)) {
-			reset();
-			return false;
-		}
-	}
-	const wstringType wResult(ofn.lpstrFile);
-	result.assign(CBOUNDS(wResult));
-	return true;
+bool OpenSave::promptForUserChoice() noexcept {
+  if (toOpen) {
+    if (!GetOpenFileName(&ofn)) {
+      reset();
+      return false;
+    }
+  } else {
+    if (!GetSaveFileName(&ofn)) {
+      reset();
+      return false;
+    }
+  }
+  const wstring wResult(ofn.lpstrFile);
+  result().assign(CBOUNDS(wResult));
+  return true;
 }
 
-ImgSelector::ImgSelector() :
-	OpenSave(
-		_T("Please select an image to process"),
-		_T("Allowed Image Files\0*.bmp;*.dib;*.png;*.tif;*.tiff;*.jpg;*.jpe;*.jp2;*.jpeg;*.webp;*.pbm;*.pgm;*.ppm;*.sr;*.ras\0\0")) {}
+ImgSelector::ImgSelector() noexcept
+    : OpenSave(_T("Please select an image to process"),
+               _T("Allowed Image Files\0*.bmp;*.dib;*.png;*.tif;*.tiff;"
+                  "*.jpg;*.jpe;*.jp2;*.jpeg;*.webp;*.pbm;*.pgm;*.ppm;*.sr;*."
+                  "ras\0\0")) {}
 
-SettingsSelector::SettingsSelector(bool toOpen_/* = true*/) :
-	OpenSave(
-		toOpen_ ?
-			_T("Please select a settings file to load") :
-			_T("Please specify where to save current settings"),
-		_T("Allowed Settings Files\0*.p2s\0\0"),
-		_T("p2s"),
-		toOpen_) {}
+SettingsSelector::SettingsSelector(bool toOpen_ /* = true*/) noexcept
+    : OpenSave(toOpen_ ? _T("Please select a settings file to load")
+                       : _T("Please specify where to save current settings"),
+               _T("Allowed Settings Files\0*.p2s\0\0"),
+               _T("p2s"),
+               toOpen_) {}
 
-SelectFont::SelectFont() {
-	ZeroMemory(&cf, sizeof(cf));
-	cf.lStructSize = sizeof(cf);
-	ZeroMemory(&lf, sizeof(lf));
-	cf.lpLogFont = &lf;
-	cf.Flags = CF_FORCEFONTEXIST | CF_NOVERTFONTS | CF_FIXEDPITCHONLY | CF_SCALABLEONLY | CF_NOSIMULATIONS | CF_NOSCRIPTSEL;
+SelectFont::SelectFont() noexcept
+    : Dlg(), fontFinder(make_unique<FontFinder>()) {
+  assert(fontFinder);
+
+  ZeroMemory(&cf, sizeof(cf));
+  cf.lStructSize = sizeof(cf);
+  ZeroMemory(&lf, sizeof(lf));
+  cf.lpLogFont = &lf;
+  cf.Flags = CF_FORCEFONTEXIST | CF_NOVERTFONTS | CF_FIXEDPITCHONLY |
+             CF_SCALABLEONLY | CF_NOSIMULATIONS | CF_NOSCRIPTSEL;
 }
 
-bool SelectFont::promptForUserChoice() {
-	if(!ChooseFont(&cf)) {
-		reset();
-		return false;
-	}
-		
-	isBold = (cf.nFontType & 0x100) || (lf.lfWeight > FW_MEDIUM); // There are fonts with only a Medium style (no Regular one)
-	isItalic = (cf.nFontType & 0x200) || (lf.lfItalic != (BYTE)0);
-	const wstringType wResult(lf.lfFaceName);
-	result.assign(CBOUNDS(wResult));
-
-	cout<<"Selected ";
-	if(isBold)
-		cout<<"bold ";
-	if(isItalic)
-		cout<<"italic ";
-	cout<<'\''<<result<<"'";
-	
-	result = FontFinder::pathFor(result, isBold, isItalic);
-
-	cout<<" ["<<result<<']'<<endl;
-
-	return true;
+SelectFont::~SelectFont() noexcept {
+  // fontFinder.release(); // implicit action
+  // Howevr, this empty d-tor is still required since FontFinder class is not
+  // available to the header file, so the unique_ptr cannot use delete there
 }
 
-#endif // UNIT_TESTING not defined
+bool SelectFont::promptForUserChoice() noexcept {
+  if (!ChooseFont(&cf)) {
+    reset();
+    return false;
+  }
+
+  isBold =
+      (cf.nFontType & 0x100) ||
+      (lf.lfWeight >
+       FW_MEDIUM);  // There are fonts with only a Medium style (no Regular one)
+  isItalic = (cf.nFontType & 0x200) || (lf.lfItalic != (BYTE)0);
+  const wstring wResult(lf.lfFaceName);
+  result().assign(CBOUNDS(wResult));
+
+  cout << "Selected ";
+  if (isBold)
+    cout << "bold ";
+  if (isItalic)
+    cout << "italic ";
+  cout << '\'' << result() << "'";
+
+  try {
+    result(fontFinder->pathFor(result(), isBold, isItalic));
+
+    cout << " [" << result() << ']' << endl;
+  } catch (const FontLocationFailure&) {
+    reset();
+  }
+
+  return true;
+}
+
+#endif  // UNIT_TESTING not defined

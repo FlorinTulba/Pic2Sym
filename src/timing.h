@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,92 +34,105 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_TIMING
 #define H_TIMING
 
 #include "timingBase.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-#include "std_memory.h"
 #include <chrono>
+#include <memory>
 #include <vector>
 
-#pragma warning ( pop )
+#pragma warning(pop)
+
+extern template class std::chrono::time_point<
+    std::chrono::high_resolution_clock>;
 
 /**
 ActiveTimer class:
 - realization of IActiveTimer
 - one of the 2 base classes of Timer
 
-Timer becomes a `Concentrator class` if it realizes alone both IActiveTimer and ITimerResult.
+Timer becomes a `Concentrator class` if it realizes alone both IActiveTimer and
+ITimerResult.
 */
 class ActiveTimer /*abstract*/ : public IActiveTimer {
-protected:
-	/// Observers to be notified, which outlive this Timer or are `kept alive` until its destruction (due to sharedPtr)
-	const std::vector<std::sharedPtr<ITimerActions>> observers;
+ public:
+  /// If not canceled / released, reports duration to all observers
+  ~ActiveTimer() noexcept;
 
-	/// the moment when computation started / was resumed last time
-	std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
+  ActiveTimer(const ActiveTimer&) = delete;
+  ActiveTimer(ActiveTimer&&) = delete;
+  void operator=(const ActiveTimer&) = delete;
+  void operator=(ActiveTimer&&) = delete;
 
-	/// sum of previous intervals, when repeatedly paused and resumed
-	std::chrono::duration<double> elapsedS;
+  void invalidate() noexcept;  ///< prevents further use of this timer
 
-	bool paused = false;	///< true as long as not paused
-	bool valid = true;		///< true as long as not canceled / released
+  /// Stops the timer and reports duration to all observers
+  virtual void release() noexcept;
 
-	/// Initializes lastStart and notifies all observers
-	ActiveTimer(const std::vector<std::sharedPtr<ITimerActions>> &observers_);
+  /// Pauses the timer and reports duration to all observers
+  void pause() noexcept override;
 
-	ActiveTimer(std::sharedPtr<ITimerActions> observer); ///< initializes lastStart and notifies the observer
+  void resume() noexcept override;  ///< resumes the timer
 
-	/**
-	This class relies on automatic destructor calling, so duplicates mean 2 destructor calls.
-	There has to be only 1 notifier, so ActiveTimer cannot have copies.
-	So, there'll be ONLY the move constructor controlling the destruction of the source object!
-	*/
-	ActiveTimer(ActiveTimer &&other);
-	ActiveTimer(const ActiveTimer&) = delete;
-	void operator=(const ActiveTimer&) = delete;
-	void operator=(ActiveTimer&&) = delete;
+  /// Cancels a timing task.
+  /// @param reason explanation for cancellation
+  void cancel(
+      const std::string& reason = "The task was canceled") noexcept override;
 
-public:
-	virtual ~ActiveTimer();		///< if not canceled / released, reports duration to all observers
+ protected:
+  /// Initializes lastStart and notifies all observers
+  explicit ActiveTimer(
+      const std::vector<std::shared_ptr<ITimerActions>>& observers_) noexcept;
 
-	void invalidate();			///< prevents further use of this timer
+  /// Initializes lastStart and notifies the observer
+  explicit ActiveTimer(std::shared_ptr<ITimerActions> observer) noexcept;
 
-	virtual void release();		///< stops the timer and reports duration to all observers
+  bool valid() const noexcept { return _valid; }
+  bool paused() const noexcept { return _paused; }
 
-	void pause() override;		///< pauses the timer and reports duration to all observers
-	void resume() override;		///< resumes the timer
+  /// sum of previous intervals, when repeatedly paused and resumed
+  std::chrono::duration<double> elapsedS() const noexcept { return _elapsedS; }
 
-	/// Cancels a timing task.
-	/// @param reason explanation for cancellation
-	void cancel(const std::stringType &reason = "The task was canceled") override;
+  /// The moment when computation started / was resumed last time
+  std::chrono::time_point<std::chrono::high_resolution_clock> lastStart() const
+      noexcept {
+    return _lastStart;
+  }
+
+ private:
+  /// Observers to be notified, which outlive this Timer or are `kept alive`
+  /// until its destruction (due to shared_ptr)
+  const std::vector<std::shared_ptr<ITimerActions>> observers;
+
+  /// The moment when computation started / was resumed last time
+  std::chrono::time_point<std::chrono::high_resolution_clock> _lastStart;
+
+  /// Sum of previous intervals, when repeatedly paused and resumed
+  std::chrono::duration<double> _elapsedS;
+
+  bool _paused = false;  ///< true as long as not paused
+  bool _valid = true;    ///< true as long as not canceled / released
 };
 
 /// Timer class
 class Timer : public ActiveTimer, public ITimerResult {
-public:
-	/// Initializes lastStart and notifies all observers
-	Timer(const std::vector<std::sharedPtr<ITimerActions>> &observers_);
+ public:
+  /// Initializes lastStart and notifies all observers
+  explicit Timer(
+      const std::vector<std::shared_ptr<ITimerActions>>& observers_) noexcept;
 
-	Timer(std::sharedPtr<ITimerActions> observer); ///< initializes lastStart and notifies the observer
+  /// Initializes lastStart and notifies the observer
+  explicit Timer(std::shared_ptr<ITimerActions> observer) noexcept;
 
-	/**
-	This class relies on automatic destructor calling, so duplicates mean 2 destructor calls.
-	There has to be only 1 notifier, so Timer cannot have copies.
-	So, there'll be ONLY the move constructor controlling the destruction of the source object!
-	*/
-	Timer(Timer &&other);
-	Timer(const Timer&) = delete;
-	void operator=(const Timer&) = delete;
-	void operator=(Timer&&) = delete;
-
-	double elapsed() const override;	///< reports elapsed duration depending on valid & paused
+  /// Reports elapsed duration depending on valid & paused
+  double elapsed() const noexcept override;
 };
 
-#endif // H_TIMING
+#endif  // H_TIMING

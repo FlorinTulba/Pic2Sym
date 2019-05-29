@@ -177,9 +177,6 @@
     <ClCompile Include="src\controller.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
-    <ClCompile Include="src\constants.cpp">
-      <Filter>Source Files\Pic2Sym</Filter>
-    </ClCompile>
     <ClCompile Include="src\clusterSupportWithPreselection.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
@@ -252,6 +249,12 @@
     <ClCompile Include="src\correlationAspect.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
+    <ClCompile Include="src\precompiledHeaderGenerator.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
+    <ClCompile Include="src\templatesInstantiator.cpp">
+      <Filter>Source Files\Pic2Sym</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic2Sym.licenseheader" />
@@ -274,9 +277,6 @@
     </ClInclude>
     <ClInclude Include="test\fileIterationHelper.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\appStart.h">
-      <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\blur.h">
       <Filter>Header Files\Pic2Sym</Filter>
@@ -578,21 +578,6 @@
     <ClInclude Include="src\transformCompletion.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\std_memory.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\std_string.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
     <ClInclude Include="src\controlPanelActions.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
@@ -663,6 +648,12 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\correlationAspect.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\precompiled.h">
+      <Filter>Header Files\Pic2Sym</Filter>
+    </ClInclude>
+    <ClInclude Include="src\preselCandidates.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
   </ItemGroup>

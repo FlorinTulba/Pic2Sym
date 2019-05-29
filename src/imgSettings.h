@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,8 +34,8 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_IMG_SETTINGS
 #define H_IMG_SETTINGS
@@ -42,16 +43,14 @@
 #include "imgSettingsBase.h"
 #include "misc.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-#ifndef AI_REVIEWER_CHECK
-#	include <boost/archive/binary_oarchive.hpp>
-#	include <boost/archive/binary_iarchive.hpp>
-#	include <boost/serialization/split_member.hpp>
-#	include <boost/serialization/version.hpp>
-#endif // AI_REVIEWER_CHECK not defined
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 /**
 Contains max count of horizontal & vertical patches to process.
@@ -59,94 +58,98 @@ Contains max count of horizontal & vertical patches to process.
 The image is resized appropriately before processing.
 */
 class ImgSettings : public IfImgSettings {
-protected:
-	unsigned hMaxSyms;	///< Count of resulted horizontal symbols
-	unsigned vMaxSyms;	///< Count of resulted vertical symbols
+ public:
+  /// Constructor takes initial values just to present valid sliders positions
+  /// in Control Panel
+  ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) noexcept
+      : hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
 
-public:
-	// BUILD CLEAN WHEN THIS CHANGES!
-	static const unsigned VERSION = 0U; ///< version of ImgSettings class
+  unsigned getMaxHSyms() const noexcept final { return hMaxSyms; }
+  void setMaxHSyms(unsigned syms) noexcept override;
 
-	/// Constructor takes initial values just to present valid sliders positions in Control Panel
-	ImgSettings(unsigned hMaxSyms_, unsigned vMaxSyms_) :
-		hMaxSyms(hMaxSyms_), vMaxSyms(vMaxSyms_) {}
+  unsigned getMaxVSyms() const noexcept final { return vMaxSyms; }
+  void setMaxVSyms(unsigned syms) noexcept override;
 
-	unsigned getMaxHSyms() const override final { return hMaxSyms; }
-	void setMaxHSyms(unsigned syms) override;
+  std::unique_ptr<IfImgSettings> clone() const noexcept override;
 
-	unsigned getMaxVSyms() const override final { return vMaxSyms; }
-	void setMaxVSyms(unsigned syms) override;
+  /**
+  The classes with ImgSettings might need to aggregate more information.
+  Thus, these classes could have several versions while some of them have
+  serialized instances.
 
-	std::uniquePtr<IfImgSettings> clone() const override;
+  When loading such older classes, the extra information needs to be deduced.
+  It makes sense to resave the file with the additional data to avoid
+  recomputing it when reloading the same file.
 
-	/**
-	The classes with ImgSettings might need to aggregate more information.
-	Thus, these classes could have several versions while some of them have serialized instances.
+  The method below helps checking if the loaded classes are the newest ones or
+  not. Saved classes always use the newest class version.
 
-	When loading such older classes, the extra information needs to be deduced.
-	It makes sense to resave the file with the additional data to avoid recomputing it
-	when reloading the same file.
+  Before serializing the first object of this class, the method should return
+  false.
+  */
+  static bool olderVersionDuringLastIO() noexcept;
+  // There are no concurrent I/O operations on ImgSettings
 
-	The method below helps checking if the loaded classes are the newest ones or not.
-	Saved classes always use the newest class version.
+ private:
+  friend class boost::serialization::access;
 
-	Before serializing the first object of this class, the method should return false.
-	*/
-	static bool olderVersionDuringLastIO(); // There are no concurrent I/O operations on ImgSettings
+  /**
+  Overwrites *this with the ImgSettings object read from ar.
 
-private:
-	friend class boost::serialization::access;
+  @param ar source of the object to load
+  @param version the version of the loaded ImgSettings
 
-	/// UINT_MAX or the class version of the last loaded/saved object
-	static unsigned VERSION_FROM_LAST_IO_OP; // There are no concurrent I/O operations on ImgSettings
+  @throw domain_error if loading from an archive with an unsupported version
+  (more recent)
 
-	/**
-	Overwrites *this with the ImgSettings object read from ar.
+  Exception to be only reported, not handled
+  */
+  template <class Archive>
+  void load(Archive& ar, const unsigned version) noexcept(!UT) {
+    if (version > VERSION)
+      THROW_WITH_VAR_MSG("Cannot serialize(load) future version (" +
+                             std::to_string(version) +
+                             ") of "
+                             "ImgSettings class (now at version " +
+                             std::to_string(VERSION) + ")!",
+                         std::domain_error);
 
-	@param ar source of the object to load
-	@param version the version of the loaded ImgSettings
-	*/
-	template<class Archive>
-	void load(Archive &ar, const unsigned version) {
-		if(version > VERSION)
-			THROW_WITH_VAR_MSG(
-				"Cannot serialize future version (" + to_string(version) + ") of "
-				"ImgSettings class (now at version " + to_string(VERSION) + ")!",
-				std::domain_error);
+    // It is useful to see which settings changed when loading
+    ImgSettings defSettings(*this);  // create as copy of previous values
 
-		// It is useful to see which settings changed when loading
-		ImgSettings defSettings(*this); // create as copy of previous values
+    // read user default match settings
+    ar >> defSettings.hMaxSyms >> defSettings.vMaxSyms;
 
-		// read user default match settings
-#ifndef AI_REVIEWER_CHECK
-		ar >> defSettings.hMaxSyms >> defSettings.vMaxSyms;
-#endif // AI_REVIEWER_CHECK not defined
+    // these show message when there are changes
+    setMaxHSyms(defSettings.hMaxSyms);
+    setMaxVSyms(defSettings.vMaxSyms);
 
-		// these show message when there are changes
-		setMaxHSyms(defSettings.hMaxSyms);
-		setMaxVSyms(defSettings.vMaxSyms);
+    if (version != VERSION_FROM_LAST_IO_OP)
+      VERSION_FROM_LAST_IO_OP = version;
+  }
 
-		if(version != VERSION_FROM_LAST_IO_OP)
-			VERSION_FROM_LAST_IO_OP = version;
-	}
+  /// Saves *this to ar
+  template <class Archive>
+  void save(Archive& ar, const unsigned version) const noexcept {
+    ar << hMaxSyms << vMaxSyms;
 
-	/// Saves *this to ar
-	template<class Archive>
-	void save(Archive &ar, const unsigned version) const {
-#ifndef AI_REVIEWER_CHECK
-		ar << hMaxSyms << vMaxSyms;
-#endif // AI_REVIEWER_CHECK not defined
+    if (version != VERSION_FROM_LAST_IO_OP)
+      VERSION_FROM_LAST_IO_OP = version;
+  }
+  BOOST_SERIALIZATION_SPLIT_MEMBER();
 
-		if(version != VERSION_FROM_LAST_IO_OP)
-			VERSION_FROM_LAST_IO_OP = version;
-	}
-#ifndef AI_REVIEWER_CHECK
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif // AI_REVIEWER_CHECK not defined
+  /// UINT_MAX or the class version of the last loaded/saved object
+  static unsigned VERSION_FROM_LAST_IO_OP;
+  // There are no concurrent I/O operations on ImgSettings
+
+  unsigned hMaxSyms;  ///< Count of resulted horizontal symbols
+  unsigned vMaxSyms;  ///< Count of resulted vertical symbols
+
+ public:
+  // BUILD CLEAN WHEN THIS CHANGES!
+  static const unsigned VERSION = 0U;  ///< version of ImgSettings class
 };
 
-#ifndef AI_REVIEWER_CHECK
 BOOST_CLASS_VERSION(ImgSettings, ImgSettings::VERSION)
-#endif // AI_REVIEWER_CHECK not defined
 
-#endif // H_IMG_SETTINGS
+#endif  // H_IMG_SETTINGS

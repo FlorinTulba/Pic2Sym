@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,80 +34,94 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
-#include "selectSymbols.h"
-#include "controllerBase.h"
-#include "appStart.h"
-#include "pixMapSymBase.h" 
-#include "symDataBase.h"
-#include "matchEngineBase.h"
-#include "settingsBase.h"
-#include "symsSerialization.h"
+#include "precompiled.h"
+
 #include "cmapPerspectiveBase.h"
+#include "controllerBase.h"
+#include "matchEngineBase.h"
+#include "pixMapSymBase.h"
+#include "selectSymbols.h"
+#include "settingsBase.h"
+#include "symDataBase.h"
+#include "symsSerialization.h"
 #include "views.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
-#include <iostream>
 #include <ctime>
+#include <iostream>
 
-#include "boost_filesystem_operations.h"
+#include <filesystem>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 using namespace std;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
-SelectSymbols::SelectSymbols(const IController &ctrler_,
-							 const IMatchEngine &me_,
-							 const ICmapPerspective &cmP_,
-							 const std::uniquePtr<ICmapInspect> &pCmi_) :
-	ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
+#pragma warning(disable : WARN_REF_TO_CONST_UNIQUE_PTR)
+SelectSymbols::SelectSymbols(
+    const IController& ctrler_,
+    const IMatchEngine& me_,
+    const ICmapPerspective& cmP_,
+    const std::unique_ptr<ICmapInspect>& pCmi_) noexcept
+    : ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
+#pragma warning(default : WARN_REF_TO_CONST_UNIQUE_PTR)
 
 #ifndef UNIT_TESTING
 
-const ISymData* SelectSymbols::pointedSymbol(int x, int y) const {
-	if(!pCmi->isBrowsable())
-		return nullptr;
+#include "appStart.h"
 
-	const unsigned cellSide = pCmi->getCellSide(),
-		r = (unsigned)y / cellSide, c = (unsigned)x / cellSide,
-		symIdx = pCmi->getPageIdx()*pCmi->getSymsPerPage() + r*pCmi->getSymsPerRow() + c;
+const ISymData* SelectSymbols::pointedSymbol(int x, int y) const noexcept {
+  if (!pCmi->isBrowsable())
+    return nullptr;
 
-	if(symIdx >= me.getSymsCount())
-		return nullptr;
+  const unsigned cellSide = pCmi->getCellSide(), r = (unsigned)y / cellSide,
+                 c = (unsigned)x / cellSide,
+                 symIdx = pCmi->getPageIdx() * pCmi->getSymsPerPage() +
+                          r * pCmi->getSymsPerRow() + c;
 
-	return *cmP.getSymsRange(symIdx, 1U).first;
+  if (symIdx >= me.getSymsCount())
+    return nullptr;
+
+  return *cmP.getSymsRange(symIdx, 1U).first;
 }
 
-void SelectSymbols::displaySymCode(unsigned long symCode) const {
-	ostringstream oss;
-	oss<<" [symbol "<<symCode<<']';
-	ctrler.updateStatusBarCmapInspect(0U, oss.str()); // synchronous update
+void SelectSymbols::displaySymCode(unsigned long symCode) const noexcept {
+  ostringstream oss;
+  oss << " [symbol " << symCode << ']';
+  ctrler.updateStatusBarCmapInspect(0U, oss.str());  // synchronous update
 }
 
-void SelectSymbols::enlistSymbolForInvestigation(const ISymData &sd) const {
-	cout<<"Appending symbol "<<sd.getCode()<<" to the list needed for further investigations"<<endl;
-	symsToInvestigate.push_back(255U - sd.getNegSym()); // enlist actual symbol, not its negative
+void SelectSymbols::enlistSymbolForInvestigation(const ISymData& sd) const
+    noexcept {
+  cout << "Appending symbol " << sd.getCode()
+       << " to the list needed for further investigations" << endl;
+
+  // Enlist actual symbol, not its negative
+  symsToInvestigate.push_back(255U - sd.getNegSym());
 }
 
-void SelectSymbols::symbolsReadyToInvestigate() const {
-	if(symsToInvestigate.empty()) {
-		cout<<"The list of symbols for further investigations was empty, so there's nothing to save."<<endl;
-		return;
-	}
+void SelectSymbols::symbolsReadyToInvestigate() const noexcept {
+  if (symsToInvestigate.empty()) {
+    cout << "The list of symbols for further investigations was empty, "
+            "so there's nothing to save."
+         << endl;
+    return;
+  }
 
-	path destFile = AppStart::dir();
-	if(!exists(destFile.append("SymsSelections")))
-		create_directory(destFile);
-	destFile.append(to_string(time(nullptr))).concat(".txt");
-	cout<<"The list of "<<symsToInvestigate.size()<<" symbols for further investigations will be saved to file "
-		<<destFile<<" and then cleared."<<endl;
+  path destFile = AppStart::dir();
+  if (!exists(destFile.append("SymsSelections")))
+    create_directory(destFile);
+  destFile.append(to_string(time(nullptr))).concat(".txt");
+  cout << "The list of " << symsToInvestigate.size()
+       << " symbols for further investigations will be saved to file "
+       << destFile << " and then cleared." << endl;
 
-	ut::saveSymsSelection(destFile.string(), symsToInvestigate);
-	symsToInvestigate.clear();
+  ut::saveSymsSelection(destFile.string(), symsToInvestigate);
+  symsToInvestigate.clear();
 }
 
-#endif // UNIT_TESTING
+#endif  // UNIT_TESTING

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -13,18 +13,19 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{20C321AC-0C0E-45FD-9843-8B5F116CC93D}</ProjectGuid>
     <RootNamespace>UnitTesting</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -51,38 +52,45 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MultiProcessorCompilation>false</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4503</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4571; 4710; 4711; 4820</DisableSpecificWarnings>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
+      <Command>"$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)adaptedIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNIT_TESTING;PIC2SYM_VERSION="$(Pic2SymVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4503</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4350; 4435; 4503; 4514; 4571; 4710; 4711; 4820</DisableSpecificWarnings>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -91,12 +99,13 @@
       <AdditionalDependencies>libboost_unit_test_framework$(BoostLibConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\*.dll" "$(TargetPath).local\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\$(ConfigurationName)Only\*.dll" "$(TargetPath).local\" &amp;&amp; "$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
+      <Command>"$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>copy /Y nul $(TargetDir)..\issues.bat</Command>
+      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -110,7 +119,6 @@
     <ClCompile Include="src\clusterEngine.cpp" />
     <ClCompile Include="src\clusterSupport.cpp" />
     <ClCompile Include="src\clusterSupportWithPreselection.cpp" />
-    <ClCompile Include="src\constants.cpp" />
     <ClCompile Include="src\controller.cpp" />
     <ClCompile Include="src\controlPanelActions.cpp" />
     <ClCompile Include="src\correlationAspect.cpp" />
@@ -138,6 +146,10 @@
     <ClCompile Include="src\picTransformProgressTracker.cpp" />
     <ClCompile Include="src\pixMapSym.cpp" />
     <ClCompile Include="src\pmsCont.cpp" />
+    <ClCompile Include="src\precompiledHeaderGenerator.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\preselectManager.cpp" />
     <ClCompile Include="src\preselectSyms.cpp" />
     <ClCompile Include="src\presentation.cpp" />
@@ -157,6 +169,7 @@
     <ClCompile Include="src\symSettings.cpp" />
     <ClCompile Include="src\symsLoadingFailure.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
+    <ClCompile Include="src\templatesInstantiator.cpp" />
     <ClCompile Include="src\timing.cpp" />
     <ClCompile Include="src\tinySym.cpp" />
     <ClCompile Include="src\tinySymsDataSerialization.cpp" />
@@ -182,12 +195,6 @@
     <None Include="res\vga855.fon" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h" />
-    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h" />
-    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h" />
-    <ClInclude Include="adaptedIncludes\std_memory.h" />
-    <ClInclude Include="adaptedIncludes\std_string.h" />
-    <ClInclude Include="src\appStart.h" />
     <ClInclude Include="src\bestMatch.h" />
     <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\blur.h" />
@@ -256,6 +263,8 @@
     <ClInclude Include="src\pixMapSymBase.h" />
     <ClInclude Include="src\pmsCont.h" />
     <ClInclude Include="src\pmsContBase.h" />
+    <ClInclude Include="src\precompiled.h" />
+    <ClInclude Include="src\preselCandidates.h" />
     <ClInclude Include="src\preselectManager.h" />
     <ClInclude Include="src\preselectSyms.h" />
     <ClInclude Include="src\preselectSymsBase.h" />

@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,78 +34,134 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
+#include "cachedData.h"
 #include "matchEngineBase.h"
 #include "symDataBase.h"
-#include "cachedData.h"
 
 // Forward declarations
-struct ISettings;
-struct IClusterEngine;
-struct ICmapPerspective;
-struct IFontEngine;
+class ISettings;
+class IClusterEngine;
+class ICmapPerspective;
+class IFontEngine;
 class MatchAspect;
 
-/// MatchEngine finds best match for a patch based on current settings and symbols set.
+/// MatchEngine finds best match for a patch based on current settings and
+/// symbols set.
 class MatchEngine : public IMatchEngine {
-protected:
-	const ISettings &cfg;		///< settings for the engine
-	IFontEngine &fe;			///< symbols set manager
-	ICmapPerspective &cmP;		///< reorganized symbols to be visualized within the cmap viewer
+ public:
+  MatchEngine(const ISettings& cfg_,
+              IFontEngine& fe_,
+              ICmapPerspective& cmP_) noexcept;
 
-	/// observer of the symbols' loading, filtering and clustering, who reports their progress
-	AbsJobMonitor *symsMonitor = nullptr;
+  /**
+  @return the type of the symbols determined by fe & cfg
+  @throw logic_error only in UnitTesting for incomplete font configuration
+  @throw domain_error for invalid font size
 
-	std::stringType symsIdReady;	///< type of symbols ready to use for transformation
+  Exceptions to be only reported, not handled
+  */
+  std::string getIdForSymsToUse() const noexcept(!UT) override;
 
-#ifdef UNIT_TESTING // UnitTesting project needs access to following fields
-public:
-#endif // UNIT_TESTING defined
-	VSymData symsSet;				///< set of most information on each symbol
-	CachedDataRW cachedData;		///< data precomputed by matchSupport before performing the matching series
-	MatchAssessor &matchAssessor;	///< match manager based on the enabled matching aspects
+  /// To be displayed in CmapView's status bar
+  unsigned getSymsCount() const noexcept override;
 
-protected:
-	const std::uniquePtr<IClusterEngine> ce;			///< clusters manager
+  /// Access to the const methods of the matchAssessor
+  const MatchAssessor& assessor() const noexcept override;
 
-	// Keep this below the fields, as it depends on them
-	const std::uniquePtr<IMatchSupport> matchSupport;	///< cached data management
+  /// Access to all the methods of the matchAssessor
+  MatchAssessor& mutableAssessor() const noexcept override;
 
-	std::vector<const std::uniquePtr<const MatchAspect>> availAspects;	///< all the available aspects
+  IMatchSupport& support() noexcept override;  ///< access to matchSupport
 
-public:
-	MatchEngine(const ISettings &cfg_, IFontEngine &fe_, ICmapPerspective &cmP_);
-	MatchEngine(const MatchEngine&) = delete;
-	void operator=(const MatchEngine&) = delete;
+  /**
+  Using different charmap - also useful for displaying these changes
 
-	std::stringType getIdForSymsToUse() override; ///< type of the symbols determined by fe & cfg
+  @throw logic_error for incomplete font configuration
+  @throw NormalSymsLoadingFailure
+  @throw TinySymsLoadingFailure
 
-	unsigned getSymsCount() const override;	///< to be displayed in CmapView's status bar
+  Exceptions handled, so no rapid termination via noexcept
+  */
+  void updateSymbols() override;
 
-	const MatchAssessor& assessor() const override; ///< access to the const methods of the matchAssessor
+  /**
+  Called before a series of improvesBasedOnBatch
+  @throw logic_error for incomplete font configuration
+  @throw NormalSymsLoadingFailure
+  @throw TinySymsLoadingFailure
 
-	IMatchSupport& support() override; ///< access to matchSupport
+  Let the exceptions be handled, so no noexcept
+  */
+  void getReady() override;
 
-	void updateSymbols() override;	///< using different charmap - also useful for displaying these changes
-	void getReady() override;		///< called before a series of improvesBasedOnBatch
+  /**
+  @return true if a new better match is found within the new batch of symbols
 
-	/// @return true if a new better match is found within the new batch of symbols
-	bool improvesBasedOnBatch(unsigned fromSymIdx,			///< start of the batch
-							  unsigned upperSymIdx,			///< end of the batch (exclusive)
-							  IBestMatch &draftMatch,		///< draft for normal/tiny symbols (hopefully improved by a match with a symbol from the new batch)
-							  MatchProgress &matchProgress	///< observer notified for each new improved match
-							  ) const override;
+  @throw invalid_argument if upperSymIdx is too large or if draftMatch is
+  uniformous
 
-	bool usesUnicode() const override; ///< Unicode glyphs are logged as symbols, the rest as their code
+  Exception to be only reported, not handled
+  */
+  bool improvesBasedOnBatch(
+      unsigned fromSymIdx,   ///< start of the batch
+      unsigned upperSymIdx,  ///< end of the batch (exclusive)
+      IBestMatch&
+          draftMatch,  ///< draft for normal/tiny symbols (hopefully improved by
+                       ///< a match with a symbol from the new batch)
+      MatchProgress&
+          matchProgress  ///< observer notified for each new improved match
+      ) const noexcept(!UT) override;
 
-	const bool& isClusteringUseful() const override; ///< Clustering should be avoided when the obtained clusters are really small
+  /**
+  Unicode glyphs are logged as symbols, the rest as their code
+  @throw logic_error only in UnitTesting for incomplete font configuration
 
-	MatchEngine& useSymsMonitor(AbsJobMonitor &symsMonitor_) override;		///< setting the symbols monitor
+  Exception to be only reported, not handled
+  */
+  bool usesUnicode() const noexcept(!UT) override;
+
+  /// Clustering should be avoided when the obtained clusters are really small
+  const bool& isClusteringUseful() const noexcept override;
+
+  /// Setting the symbols monitor
+  MatchEngine& useSymsMonitor(AbsJobMonitor& symsMonitor_) noexcept override;
+
+  PRIVATE :
+
+      const ISettings& cfg;  ///< settings for the engine
+  IFontEngine& fe;           ///< symbols set manager
+
+  /// Reorganized symbols to be visualized within the cmap viewer
+  ICmapPerspective& cmP;
+
+  /// observer of the symbols' loading, filtering and clustering, who reports
+  /// their progress
+  AbsJobMonitor* symsMonitor = nullptr;
+
+  std::string symsIdReady;  ///< type of symbols ready to use for transformation
+
+  VSymData symsSet;  ///< set of most information on each symbol
+
+  /// Data precomputed by matchSupport before performing the matching series
+  CachedDataRW cachedData;
+
+  /// Match manager based on the enabled matching aspects
+  MatchAssessor& matchAssessor;
+
+  const std::unique_ptr<IClusterEngine> ce;  ///< clusters manager
+
+  // Keep this below the fields, as it depends on them
+  /// Cached data management
+  const std::unique_ptr<IMatchSupport> matchSupport;
+
+  /// All the available aspects
+  std::vector<std::unique_ptr<const MatchAspect>> availAspects;
 };
 
-#endif // H_MATCH_ENGINE
+#endif  // H_MATCH_ENGINE

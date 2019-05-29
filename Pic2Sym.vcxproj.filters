@@ -477,21 +477,6 @@
     <ClInclude Include="src\transformCompletion.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_bimap_bimap.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_filesystem_operations.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\boost_filesystem_path.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\std_memory.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="adaptedIncludes\std_string.h">
-      <Filter>Header Files\Testing</Filter>
-    </ClInclude>
     <ClInclude Include="src\clusterProcessingBase.h">
       <Filter>Header Files\Charmap\Clustering</Filter>
     </ClInclude>
@@ -557,6 +542,12 @@
     </ClInclude>
     <ClInclude Include="src\correlationAspect.h">
       <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\precompiled.h">
+      <Filter>Header Files\Var</Filter>
+    </ClInclude>
+    <ClInclude Include="src\preselCandidates.h">
+      <Filter>Header Files\Controller\TransformEngine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -722,9 +713,6 @@
     <ClCompile Include="src\fontErrorsHelper.cpp">
       <Filter>Source Files\Charmap</Filter>
     </ClCompile>
-    <ClCompile Include="src\constants.cpp">
-      <Filter>Source Files\Var</Filter>
-    </ClCompile>
     <ClCompile Include="src\matchAssessment.cpp">
       <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClCompile>
@@ -802,6 +790,12 @@
     </ClCompile>
     <ClCompile Include="src\correlationAspect.cpp">
       <Filter>Source Files\Controller\TransformEngine\MatchEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\precompiledHeaderGenerator.cpp">
+      <Filter>Source Files\Var</Filter>
+    </ClCompile>
+    <ClCompile Include="src\templatesInstantiator.cpp">
+      <Filter>Source Files\Var</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

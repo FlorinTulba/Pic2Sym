@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,92 +34,120 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_CACHED_DATA
 #define H_CACHED_DATA
 
-#pragma warning ( push, 0 )
+#include "misc.h"
 
+#pragma warning(push, 0)
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <opencv2/core/core.hpp>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
-struct IFontEngine; // forward declaration
+class IFontEngine;  // forward declaration
 
 /// Cached data for computing match parameters and evaluating match aspects
 class CachedData {
-protected:
-	cv::Mat consec;		///< row matrix with consecutive elements: 0..sz-1
-	double sz_1;		///< double version of sz - 1
-	double szSq;		///< double version of sz^2
+ public:
+  explicit CachedData(bool forTinySyms_ = false) noexcept;
+  virtual ~CachedData() noexcept = default;
 
-#ifdef UNIT_TESTING // Unit testing needs to be able to change smallGlyphsCoverage
-public:
-#endif // UNIT_TESTING defined
-	double smallGlyphsCoverage;	///< max density for symbols considered small
+  CachedData(const CachedData&) noexcept = default;
+  CachedData(CachedData&&) noexcept = default;
 
-public:
-	const bool forTinySyms;	///< Are all these values used for tiny symbols or for normal symbols?
+  // 'forTinySyms' is supposed to remain the same for original / copy
+  void operator=(const CachedData&) = delete;
+  void operator=(CachedData&&) = delete;
 
-	/// Constants about maximum standard deviations for foreground/background or edges
-	struct MaxSdev {
-		/**
-		Max possible std dev = 127.5  for foreground / background.
-		Happens for an error matrix with a histogram with 2 equally large bins on 0 and 255.
-		In that case, the mean is 127.5 and the std dev is:
-		sqrt( ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
-		*/
-		static inline const double forFgOrBg() { return 127.5; }
+  // Getters which need to be fast, so inline,
+  // instead of virtual realizations of a read-only interface of this cached
+  // information
+  const cv::Mat& getConsec() const noexcept { return consec; }
+  double getSz_1() const noexcept { return sz_1; }
+  double getSzSq() const noexcept { return szSq; }
+  double getSmallGlyphsCoverage() const noexcept { return smallGlyphsCoverage; }
 
-		/**
-		Max possible std dev for edge is 255.
-		This happens in the following situation:
-		a) Foreground and background masks cover an empty area of the patch =>
-		approximated patch will be completely black
-		b) Edge mask covers a full brightness (255) area of the patch =>
-		every pixel from the patch covered by the edge mask has a deviation of 255 from
-		the corresponding zone within the approximated patch.
-		*/
-		static inline const double forEdges() { return 255.; }
-	};
+  /// Constants about maximum standard deviations for foreground/background or
+  /// edges
+  struct MaxSdev {
+    /**
+    Max possible std dev = 127.5  for foreground / background.
+    Happens for an error matrix with a histogram with 2 equally large bins on 0
+    and 255. In that case, the mean is 127.5 and the std dev is: sqrt(
+    ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
+    */
+    static constexpr double forFgOrBg = 127.5;
 
-	/// Constants for computations concerning mass centers
-	struct MassCenters {
-		/// acceptable distance between mass centers (1/8)
-		static inline const double preferredMaxMcDist() { return .125; }
+    /**
+    Max possible std dev for edge is 255.
+    This happens in the following situation:
+    a) Foreground and background masks cover an empty area of the patch =>
+    approximated patch will be completely black
+    b) Edge mask covers a full brightness (255) area of the patch =>
+    every pixel from the patch covered by the edge mask has a deviation of 255
+    from the corresponding zone within the approximated patch.
+    */
+    static constexpr double forEdges = 255.;
+  };
 
-		/// The center of a square with unit-length sides
-		static const cv::Point2d& unitSquareCenter();
+  /// Constants for computations concerning mass centers
+  struct MassCenters {
+    /// acceptable distance between mass centers (1/8)
+    static constexpr double preferredMaxMcDist = .125;
 
-		/// 1 / max possible distance between mass centers: sqrt(2) - preferredMaxMcDist
-		static const double invComplPrefMaxMcDist();
+    /// The center of a square with unit-length sides
+    static const cv::Point2d& unitSquareCenter() noexcept;
 
-		// See comment from above the definitions of these static methods in cachedData.cpp, but also from DirectionalSmoothness::score
-		static const double a_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
-		static const double b_mcsOffsetFactor();	///< mcsOffsetFactor = a * mcsOffset + b
-	};
+    /// 1 / max possible distance between mass centers: sqrt(2) -
+    /// preferredMaxMcDist
+    static constexpr double invComplPrefMaxMcDist =
+        1. / (M_SQRT2 - preferredMaxMcDist);
 
-	CachedData(bool forTinySyms_ = false);
-	void operator=(const CachedData&) = delete;
+    // See comment from above the definitions of these static methods in
+    // cachedData.cpp, but also from DirectionalSmoothness::score
 
-	// Getters which need to be fast, so inline,
-	// instead of virtual realizations of a read-only interface of this cached information
-	inline const cv::Mat& getConsec() const { return consec; }
-	inline double getSz_1() const { return sz_1; }
-	inline double getSzSq() const { return szSq; }
-	inline double getSmallGlyphsCoverage() const { return smallGlyphsCoverage; }
+    /// mcsOffsetFactor = a * mcsOffset + b
+    static const double a_mcsOffsetFactor() noexcept;
+
+    /// mcsOffsetFactor = a * mcsOffset + b
+    static const double b_mcsOffsetFactor() noexcept;
+  };
+
+  PROTECTED :
+
+      cv::Mat consec;  ///< row matrix with consecutive elements: 0..sz-1
+  double sz_1 = 0.;    ///< double version of sz - 1
+  double szSq = 0.;    ///< double version of sz^2
+
+  /// Max density for symbols considered small
+  double smallGlyphsCoverage = 0.;
+
+ public:
+  /// Are all these values used for tiny symbols or for normal symbols?
+  const bool forTinySyms;
 };
 
 /// CachedData with modifiers
 class CachedDataRW : public CachedData {
-public:
-	CachedDataRW(bool forTinySyms_ = false);
+ public:
+  explicit CachedDataRW(bool forTinySyms_ = false) noexcept;
 
-	void update(unsigned sz_, const IFontEngine &fe_);
-	void update(const IFontEngine &fe_);
-	void useNewSymSize(unsigned sz_);
+  CachedDataRW(const CachedDataRW&) noexcept = default;
+  CachedDataRW(CachedDataRW&&) noexcept = default;
+
+  // 'forTinySyms' is supposed to remain the same for original / copy
+  void operator=(const CachedDataRW&) = delete;
+  void operator=(CachedDataRW&&) = delete;
+
+  void update(unsigned sz_, const IFontEngine& fe_) noexcept;
+  void update(const IFontEngine& fe_) noexcept;
+  void useNewSymSize(unsigned sz_) noexcept;
 };
 
-#endif // H_CACHED_DATA
+#endif  // H_CACHED_DATA

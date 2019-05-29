@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,13 +34,13 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifdef UNIT_TESTING
-#	error Should not include this header when UNIT_TESTING is defined
+#error Should not include this header when UNIT_TESTING is defined
 
-#else // UNIT_TESTING not defined
+#else  // UNIT_TESTING not defined
 
 #ifndef H_SLIDER_CONVERSION
 #define H_SLIDER_CONVERSION
@@ -47,24 +48,44 @@
 #include "sliderConversionBase.h"
 
 /// Performing conversions from and to slider range with a simple linear rule
-struct ProportionalSliderValue : SliderConverter {
-	/// Parameters used while interpreting/generating the value of a slider for a linear rule
-	struct Params : SliderConvParams {
-		double maxVal; ///< largest actual value
+class ProportionalSliderValue : public SliderConverter {
+ public:
+  /// Parameters used while interpreting/generating the value of a slider for a
+  /// linear rule
+  class Params : public SliderConvParams {
+   public:
+    /**
+    Sets the upper limits for the domain range and the slider range
+    @throw invalid_argument if maxVal_<=0
 
-		Params(int maxSlider_, double maxVal_);
-	};
+    Exception to be only reported, not handled
+    */
+    Params(int maxSlider_, double maxVal_) noexcept(!UT);
 
-	/// Take ownership of the parameter
-	ProportionalSliderValue(std::uniquePtr<const Params> sp_);
+    /// Largest actual value
+    double getMaxVal() const noexcept { return maxVal; }
 
-	ProportionalSliderValue(const ProportionalSliderValue&) = delete;
-	void operator=(const ProportionalSliderValue&) = delete;
+   private:
+    double maxVal;  ///< largest actual value
+  };
 
-	double fromSlider(int sliderPos) const override;
-	int toSlider(double actualValue) const override;
+  /**
+  Applies a proportional rule for the slider
+  @throw invalid_argument for nullptr sp_
+
+  Exception to be only reported, not handled
+  */
+  explicit ProportionalSliderValue(std::unique_ptr<const Params> sp_) noexcept(
+      !UT);
+  virtual ~ProportionalSliderValue() noexcept = default;
+
+  ProportionalSliderValue(const ProportionalSliderValue&) = delete;
+  void operator=(const ProportionalSliderValue&) = delete;
+
+  double fromSlider(int sliderPos) const noexcept override;
+  int toSlider(double actualValue) const noexcept override;
 };
 
-#endif // H_SLIDER_CONVERSION
+#endif  // H_SLIDER_CONVERSION
 
-#endif // UNIT_TESTING
+#endif  // UNIT_TESTING

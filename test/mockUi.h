@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,122 +34,138 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_MOCK_UI
 #define H_MOCK_UI
 
 #ifndef UNIT_TESTING
-#	error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
-#endif // UNIT_TESTING not defined
+#error Shouldn't include headers from UnitTesting project unless UNIT_TESTING is defined
+#endif  // UNIT_TESTING not defined
 
 #include "warnings.h"
 
-struct ICvWin /*abstract*/ {
-	virtual void setTitle(...) const = 0;
-	virtual void setOverlay(...) const = 0;
-	virtual void setStatus(...) const = 0;
-	virtual void setPos(...) const = 0;
-	virtual void permitResize(...) const = 0;
-	virtual void resize(...) const = 0;
+#pragma warning(push, 0)
 
-	virtual ~ICvWin() = 0 {}
+#include <memory>
+#include <string>
+
+#include <opencv2/core/core.hpp>
+
+#pragma warning(pop)
+
+class ICvWin /*abstract*/ {
+ public:
+  virtual void setTitle(const std::string&) const noexcept {}
+  virtual void setOverlay(...) const noexcept {}
+  virtual void setStatus(const std::string&, int = 0) const noexcept {}
+  virtual void setPos(...) const noexcept {}
+  virtual void permitResize(...) const noexcept {}
+  virtual void resize(...) const noexcept {}
+
+  virtual ~ICvWin() noexcept {}
+
+  // Slicing prevention
+  ICvWin(const ICvWin&) = delete;
+  ICvWin(ICvWin&&) = delete;
+  ICvWin& operator=(const ICvWin&) = delete;
+  ICvWin& operator=(ICvWin&&) = delete;
+
+ protected:
+  constexpr ICvWin() noexcept {}
 };
 
-class CvWin /*abstract*/ : public virtual ICvWin {
-protected:
-	CvWin() = default;
+class CvWin /*abstract*/ : public virtual ICvWin {};
 
-public:
-	void setTitle(...) const {}
-	void setOverlay(...) const {}
-	void setStatus(...) const {}
-	void setPos(...) const {}
-	void permitResize(...) const {}
-	void resize(...) const {}
+class IComparator /*abstract*/ : public virtual ICvWin {
+ public:
+  virtual void setReference(const cv::Mat&) noexcept {}
+  virtual void setResult(...) noexcept {}
 };
 
-struct IComparator : virtual ICvWin {
-	virtual void setReference(...) = 0;
-	virtual void setResult(...) = 0;
+class ICmapInspect /*abstract*/ : public virtual ICvWin {
+ public:
+  virtual unsigned getCellSide() const noexcept { return 0U; }
+  virtual unsigned getSymsPerRow() const noexcept { return 0U; }
+  virtual unsigned getSymsPerPage() const noexcept { return 0U; }
+  virtual unsigned getPageIdx() const noexcept { return 0U; }
+  virtual bool isBrowsable() const noexcept { return false; }
+  virtual void setBrowsable(...) noexcept {}
 
-	virtual ~IComparator() = 0 {}
+  /// Display an 'early' (unofficial) version of the 1st page from the Cmap
+  /// view, if the official version isn't available yet
+  virtual void showUnofficial1stPage(...) noexcept {}
+
+  /// Clears the grid, the status bar and updates required fields
+  virtual void clear() noexcept {}
+
+  /// Puts also the slider on 0
+  virtual void updatePagesCount(...) noexcept {}
+
+  /// Changing font size must update also the grid
+  virtual void updateGrid() noexcept {}
+
+  virtual void showPage(...) noexcept {}  ///< displays page 'pageIdx'
 };
 
-struct ICmapInspect /*abstract*/ : virtual ICvWin {
-	virtual unsigned getCellSide() const = 0;
-	virtual unsigned getSymsPerRow() const = 0;
-	virtual unsigned getSymsPerPage() const = 0;
-	virtual unsigned getPageIdx() const = 0;
-	virtual bool isBrowsable() const = 0;
-	virtual void setBrowsable(...) = 0;
+class IPresentCmap;
+class ISelectSymbols;
 
-	/// Display an 'early' (unofficial) version of the 1st page from the Cmap view, if the official version isn't available yet
-	virtual void showUnofficial1stPage(...) = 0;
-
-	virtual void clear() = 0;								///< clears the grid, the status bar and updates required fields
-
-	virtual void updatePagesCount(...) = 0;	///< puts also the slider on 0
-	virtual void updateGrid() = 0;							///< Changing font size must update also the grid
-
-	virtual void showPage(...) = 0;			///< displays page 'pageIdx'
-
-	virtual ~ICmapInspect() = 0 {}
-};
-
-#pragma warning( disable : WARN_INHERITED_VIA_DOMINANCE )
+#pragma warning(disable : WARN_INHERITED_VIA_DOMINANCE)
 class Comparator : public CvWin, public virtual IComparator {
-public:
-	static void updateTransparency(...) {}
-	void setReference(...) {}
-	void setResult(...) {}
-	void resize(...) const {}
+ public:
+  static void updateTransparency(...) noexcept {}
 };
 
 class CmapInspect : public CvWin, public virtual ICmapInspect {
-public:
-	CmapInspect(...) : CvWin() {}
-	static void updatePageIdx(...) {}
-	void updatePagesCount(...) {}
-	void updateGrid() {}
-	void clear() {}
-	void showPage(...) {}
-	unsigned getCellSide() const { return 0U; }
-	unsigned getSymsPerRow() const { return 0U; }
-	unsigned getSymsPerPage() const { return 0U; }
-	unsigned getPageIdx() const { return 0U; }
-	bool isBrowsable() const { return false; }
-	void setBrowsable(...) {}
-	void showUnofficial1stPage(...) {}
-};
-#pragma warning( default : WARN_INHERITED_VIA_DOMINANCE )
+ public:
+  CmapInspect(const IPresentCmap&,
+              const ISelectSymbols&,
+              const unsigned&) noexcept
+      : CvWin() {}
 
-struct ActionPermit {};
+  static void updatePageIdx(...) noexcept {}
+};
+#pragma warning(default : WARN_INHERITED_VIA_DOMINANCE)
+
+class ActionPermit {};
+class IMatchSettings;
+class IfImgSettings;
 
 /// Interface of ControlPanel
-struct IControlPanel /*abstract*/ {
-	virtual void restoreSliderValue(...) = 0;
-	virtual std::unique_ptr<const ActionPermit> actionDemand(...) = 0;
-	virtual void updateEncodingsCount(...) = 0;
-	virtual bool encMaxHack() const = 0;
-	virtual void updateSymSettings(...) = 0;
-	virtual void updateImgSettings(...) = 0;
-	virtual void updateMatchSettings(...) = 0;
+class IControlPanel /*abstract*/ {
+ public:
+  virtual void restoreSliderValue(const cv::String&,
+                                  const std::string&) noexcept {}
+  virtual std::unique_ptr<const ActionPermit> actionDemand(
+      const cv::String&) noexcept {
+    return std::make_unique<const ActionPermit>();
+  }
+  virtual void updateEncodingsCount(...) noexcept {}
+  virtual bool encMaxHack() const noexcept { return false; }
+  virtual void updateSymSettings(...) noexcept {}
+  virtual void updateImgSettings(const IfImgSettings&) noexcept {}
+  virtual void updateMatchSettings(const IMatchSettings&) noexcept {}
 
-	virtual ~IControlPanel() = 0 {}
+  virtual ~IControlPanel() noexcept {}
+
+  // Slicing prevention
+  IControlPanel(const IControlPanel&) = delete;
+  IControlPanel(IControlPanel&&) = delete;
+  IControlPanel& operator=(const IControlPanel&) = delete;
+  IControlPanel& operator=(IControlPanel&&) = delete;
+
+ protected:
+  constexpr IControlPanel() noexcept {}
 };
+
+class IControlPanelActions;
+class ISettings;
 
 class ControlPanel : public IControlPanel {
-public:
-	ControlPanel(...) {}
-	void updateEncodingsCount(...) {}
-	bool encMaxHack() const { return false; }
-	void updateMatchSettings(...) {}
-	void updateImgSettings(...) {}
-	void updateSymSettings(...) {}
-	std::unique_ptr<const ActionPermit> actionDemand(...) { return std::move(std::make_unique<const ActionPermit>()); }
-	void restoreSliderValue(...) {}
+ public:
+  ControlPanel(IControlPanelActions&, const ISettings&) noexcept {}
 };
 
-#endif // H_MOCK_UI
+#endif  // H_MOCK_UI

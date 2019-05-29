@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,91 +34,135 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_PRESELECT_SYMS
 #define H_PRESELECT_SYMS
 
+#include "misc.h"
 #include "preselectSymsBase.h"
 
-#pragma warning ( push, 0 )
+#pragma warning(push, 0)
 
 #include <queue>
 
-#pragma warning ( pop )
+#pragma warning(pop)
 
 /**
 Obtaining the top n candidate matches close-enough to or better than
 the previous best known match.
 */
 class TopCandidateMatches : public ITopCandidateMatches {
-protected:
-	/// Interface for the data for a candidate who enters the short list
-	struct ICandidate /*abstract*/ {
-		virtual double getScore() const = 0;
-		virtual CandidateId getIdx() const = 0;
+ public:
+  /**
+  Creating a selection processor.
+  @param shortListLength max number of candidates from the final short list
+  @param origThreshScore min score to enter the short list
+  @throw invalid_argument if shortListLength is 0
 
-		virtual ~ICandidate() = 0 {}
-	};
-	
-	/// Data for a candidate who enters the short list
-	class Candidate : public ICandidate {
-	protected:
-		double score;		///< his score
-		CandidateId idx;	///< id of the candidate (index in vector&lt;ISymData&gt;)
+  Exception to be only reported, not handled
+  */
+  TopCandidateMatches(unsigned shortListLength = 1U,
+                      double origThreshScore = 0.) noexcept(!UT);
 
-	public:
-		Candidate(CandidateId idx_, double score_);
+  /// Clears the short list and establishes a new threshold score
+  void reset(double origThreshScore) noexcept override;
 
-		double getScore() const override final { return score; }
-		CandidateId getIdx() const override final { return idx; }
+  /**
+  Attempts to put a new candidate on the short list.
+  @return false if his score is not good enough.
+  @throw logic_error if called after prepareReport()
 
-		/// Comparator based on the score
-		struct Greater {
-			bool operator()(const ICandidate &c1, const ICandidate &c2) const;
-		};
-	};
+  Exception to be only reported, not handled
+  */
+  bool checkCandidate(unsigned candidateIdx,
+                      double score) noexcept(!UT) override;
 
-	/// Unordered version of the short list, but allowing any time to remove the worst candidate from it
-	std::priority_queue<Candidate, std::vector<Candidate>, Candidate::Greater> scrapbook;
+  /// Closes the selection process and orders the short list by score.
+  void prepareReport() noexcept override;
 
-	CandidatesShortList shortList;	///< ordered short list (best first)
+  /// Checking if there's at least one candidate on the short list during or
+  /// after the selection
+  bool foundAny() const noexcept override;
 
-	/**
-	Min score to enter the list.
-	As long as the short list isn't full, this threshold is the same as origThreshScore.
-	When the list is full, a new candidate enters the list only if it beats the score of
-	the last candidate from the list (who will exit the list).
-	*/
-	double thresholdScore;
+  /**
+  Get the sorted short list (without the scores) at the end of the selection
+  @throw logic_error if called before prepareReport() or after moveShortList()
 
-	unsigned n;	///< length of the short list of candidates
+  Exception to be only reported, not handled
+  */
+  const CandidatesShortList& getShortList() const noexcept(!UT) override;
 
-	bool shortListReady = false;	///< set to true by prepareReport()
+  /**
+  Moving to dest the sorted short list (without the scores) at the end of
+  the selection
+  @throw logic_error if called before prepareReport()
 
-public:
-	/**
-	Creating a selection processor.
-	@param shortListLength max number of candidates from the final short list
-	@param origThreshScore min score to enter the short list
-	*/
-	TopCandidateMatches(unsigned shortListLength = 1U,
-						double origThreshScore = 0.);
+  Exception to be only reported, not handled
+  */
+  void moveShortList(CandidatesShortList& dest) noexcept(!UT) override;
 
-	void reset(double origThreshScore) override; ///< clears the short list and establishes a new threshold score
+ private:
+  /// Interface for the data for a candidate who enters the short list
+  class ICandidate /*abstract*/ {
+   public:
+    virtual double getScore() const noexcept = 0;
+    virtual CandidateId getIdx() const noexcept = 0;
 
-	/// Attempts to put a new candidate on the short list. Returns false if his score is not good enough.
-	bool checkCandidate(unsigned candidateIdx, double score) override;
+    virtual ~ICandidate() noexcept {}
 
-	/// Closes the selection process and orders the short list by score.
-	void prepareReport() override;
+    // If slicing is observed and becomes a severe problem, use `= delete` for
+    // all
+    ICandidate(const ICandidate&) noexcept = default;
+    ICandidate(ICandidate&&) noexcept = default;
+    ICandidate& operator=(const ICandidate&) noexcept = default;
+    ICandidate& operator=(ICandidate&&) noexcept = default;
 
-	/// Checking if there's at least one candidate on the short list during or after the selection
-	bool foundAny() const override;
+   protected:
+    constexpr ICandidate() noexcept {}
+  };
 
-	/// Providing a copy of the sorted short list (without the scores) at the end of the selection
-	CandidatesShortList getShortList() const override;
+  /// Data for a candidate who enters the short list
+  class Candidate : public ICandidate {
+   public:
+    Candidate(CandidateId idx_, double score_) noexcept;
+
+    double getScore() const noexcept final { return score; }
+    CandidateId getIdx() const noexcept final { return idx; }
+
+    /// Comparator based on the score
+    class Greater {
+     public:
+      bool operator()(const ICandidate& c1, const ICandidate& c2) const
+          noexcept;
+    };
+
+   private:
+    double score;     ///< his score
+    CandidateId idx;  ///< id of the candidate (index in vector&lt;ISymData&gt;)
+  };
+
+  /// Unordered version of the short list, but allowing any time to remove the
+  /// worst candidate from it
+  std::priority_queue<Candidate, std::vector<Candidate>, Candidate::Greater>
+      scrapbook;
+
+  CandidatesShortList shortList;  ///< ordered short list (best first)
+
+  /**
+  Min score to enter the list.
+  As long as the short list isn't full, this threshold is the same as
+  origThreshScore. When the list is full, a new candidate enters the list only
+  if it beats the score of the last candidate from the list (who will exit the
+  list).
+  */
+  double thresholdScore;
+
+  unsigned n;  ///< length of the short list of candidates
+
+  /// Set to true by prepareReport(); set to false by moveShortList()
+  bool shortListReady = false;
 };
 
-#endif // H_PRESELECT_SYMS
+#endif  // H_PRESELECT_SYMS

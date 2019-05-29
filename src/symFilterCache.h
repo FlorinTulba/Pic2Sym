@@ -1,24 +1,25 @@
-/************************************************************************************************
+/******************************************************************************
  The application Pic2Sym approximates images by a
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2016 Boost (www.boost.org)
-		License: <http://www.boost.org/LICENSE_1_0.txt>
-			or doc/licenses/Boost.lic
- - (c) 2015 OpenCV (www.opencv.org)
-		License: <http://opencv.org/license.html>
-            or doc/licenses/OpenCV.lic
- - (c) 2015 The FreeType Project (www.freetype.org)
-		License: <http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT>
-	        or doc/licenses/FTL.txt
+ - (c) 2003 Boost (www.boost.org)
+     License: doc/licenses/Boost.lic
+     http://www.boost.org/LICENSE_1_0.txt
+ - (c) 2015-2016 OpenCV (www.opencv.org)
+     License: doc/licenses/OpenCV.lic
+     http://opencv.org/license/
+ - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+     License: doc/licenses/FTL.txt
+     http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
  - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
-   (c) Microsoft Corporation (Visual C++ implementation for OpenMP C/C++ Version 2.0 March 2002)
-		See: <https://msdn.microsoft.com/en-us/library/8y6825x5(v=vs.140).aspx>
- - (c) 1995-2013 zlib software (Jean-loup Gailly and Mark Adler - see: www.zlib.net)
-		License: <http://www.zlib.net/zlib_license.html>
-            or doc/licenses/zlib.lic
- 
+   (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
+     See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
+ - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+     License: doc/licenses/zlib.lic
+     http://www.zlib.net/zlib_license.html
+
+
  (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
@@ -33,35 +34,35 @@
 
  You should have received a copy of the GNU Affero General Public License
  along with this program ('agpl-3.0.txt').
- If not, see <http://www.gnu.org/licenses/agpl-3.0.txt>.
- ***********************************************************************************************/
+ If not, see: http://www.gnu.org/licenses/agpl-3.0.txt .
+ *****************************************************************************/
 
 #ifndef H_SYM_FILTER_CACHE
 #define H_SYM_FILTER_CACHE
 
 /// Cached values to be used during glyph filtering
 class SymFilterCache {
-protected:
-	// values about the font, no matter its bounding box
-	unsigned szU = 0U;		///< font size as unsigned
-	double areaD = 0.;		///< font area as double
+ public:
+  unsigned getSzU() const noexcept { return szU; }
+  double getAreaD() const noexcept { return areaD; }
+  double getBbAreaD() const noexcept { return bbAreaD; }
 
-	// values about the bounding box of the font
-	double bbAreaD = 0U;	///< area of the bounding box as double
+  void setFontSz(unsigned sz) noexcept {
+    szU = sz;
+    areaD = (double)szU * szU;
+  }
 
-public:
-	inline unsigned getSzU() const { return szU; }
-	inline double getAreaD() const { return areaD; }
-	inline double getBbAreaD() const { return bbAreaD; }
+  void setBoundingBox(unsigned height, unsigned width) noexcept {
+    bbAreaD = (double)height * width;
+  }
 
-	inline void setFontSz(unsigned sz) {
-		szU = sz;
-		areaD = szU * szU;
-	}
+ private:
+  // values about the font, no matter its bounding box
+  unsigned szU = 0U;  ///< font size as unsigned
+  double areaD = 0.;  ///< font area as double
 
-	inline void setBoundingBox(unsigned height, unsigned width) {
-		bbAreaD = height * width;
-	}
+  // values about the bounding box of the font
+  double bbAreaD = 0U;  ///< area of the bounding box as double
 };
 
-#endif // H_SYM_FILTER_CACHE
+#endif  // H_SYM_FILTER_CACHE
