@@ -14,14 +14,18 @@
 *.suo
 *.uml
 *.user
+*_20*.sln
+*_20*.vcxproj
 
 ## Folders to ignore
+/bin/DLLs/VS20*
 [Dd]ebug/
-doc/cache
-doc/doxy
-doc/pages/watermark.bmp
+/doc/cache
+/doc/doxy
+/doc/pages/watermark.bmp
 include/
 lib/
 [Rr]elease/
 scripts/
+/.vs/
 x64/
