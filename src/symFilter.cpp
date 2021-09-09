@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,9 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "symFilter.h"
 
 #include "pixMapSymBase.h"
-#include "symFilter.h"
 #include "symFilterCache.h"
 #include "warnings.h"
 
@@ -54,6 +59,8 @@ using namespace std;
 
 extern template class unordered_set<string, hash<string>>;
 
+namespace pic2sym::syms::inline filter {
+
 unordered_map<unsigned, const string> SymFilter::filterTypes;
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
@@ -66,15 +73,14 @@ SymFilter::SymFilter(unsigned filterId_,
   static unordered_set<string, hash<string>> filterNames;
 
 #ifndef UNIT_TESTING
-  if (filterTypes.find(filterId_) != filterTypes.end())
-    THROW_WITH_VAR_MSG(__FUNCTION__ " called with alreay existing filterId_: " +
-                           to_string(filterId_),
-                       invalid_argument);
-
-  if (filterNames.find(filterName) != filterNames.end())
-    THROW_WITH_VAR_MSG(
-        __FUNCTION__ " called with alreay existing filterName: " + filterName,
-        invalid_argument);
+  EXPECTS_OR_REPORT_AND_THROW(
+      !filterTypes.contains(filterId_), invalid_argument,
+      HERE.function_name() + " called with alreay existing filterId_: "s +
+          to_string(filterId_));
+  EXPECTS_OR_REPORT_AND_THROW(
+      !filterNames.contains(filterName), invalid_argument,
+      HERE.function_name() + " called with alreay existing filterName: "s +
+          filterName);
 #endif  // UNIT_TESTING not defined
 
   filterTypes.emplace(filterId_, filterName);
@@ -82,14 +88,11 @@ SymFilter::SymFilter(unsigned filterId_,
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 const string& SymFilter::filterName(unsigned filterId_) noexcept(!UT) {
-  if (auto it = filterTypes.find(filterId_), itEnd = filterTypes.end();
-      it != itEnd)
-    return it->second;
+  const auto it = filterTypes.find(filterId_);
+  Expects(it != cend(filterTypes));  // received an invalid filterId
 
-  THROW_WITH_VAR_MSG(
-      __FUNCTION__ " : received an invalid filterId: " + to_string(filterId_),
-      invalid_argument);
+  return it->second;
 }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace pic2sym::syms::inline filter

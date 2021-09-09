@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -46,7 +49,11 @@
 #pragma warning(push, 0)
 
 #ifndef UNIT_TESTING
+
 #include <filesystem>
+
+#include <gsl/gsl>
+
 #endif  // UNIT_TESTING not defined
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -56,10 +63,16 @@
 
 #pragma warning(pop)
 
+namespace pic2sym::cfg {
+
 /// MatchSettings class controls the matching parameters for transforming one or
 /// more images.
 class MatchSettings : public IMatchSettings {
  public:
+  // BUILD CLEAN WHEN THIS CHANGES!
+  /// Version of MatchSettings class
+  static constexpr unsigned Version{3U};
+
   /**
   Initializes the object.
 
@@ -116,7 +129,7 @@ class MatchSettings : public IMatchSettings {
 #endif  // UNIT_TESTING not defined
 
   /// Provides a representation of these settings in a verbose manner or not
-  const std::string toString(bool verbose) const noexcept override;
+  std::string toString(bool verbose) const noexcept override;
 
   /// @return a clone of current settings
   std::unique_ptr<IMatchSettings> clone() const noexcept override;
@@ -157,15 +170,13 @@ class MatchSettings : public IMatchSettings {
   template <class Archive>
   void load(Archive& ar, const unsigned version) {
 #ifndef UNIT_TESTING
-    if (version > VERSION)
-      THROW_WITH_VAR_MSG("Cannot serialize future version (" +
-                             std::to_string(version) +
-                             ") of "
-                             "MatchSettings class (now at version " +
-                             std::to_string(VERSION) + ")!",
-                         std::domain_error);
+    EXPECTS_OR_REPORT_AND_THROW(
+        version <= Version, std::domain_error,
+        "Cannot serialize(load) future version ("s + std::to_string(version) +
+            ") of MatchSettings class (now at version "s +
+            std::to_string(Version) + ")!"s);
 
-    if (version < VERSION) {
+    if (version < Version) {
       /*
       MatchSettings is considered correctly initialized if its data is read from
       'res/defaultMatchSettings.txt'(most up-to-date file, which always exists)
@@ -176,7 +187,7 @@ class MatchSettings : public IMatchSettings {
       'initMatchSettings.cfg' if this doesn't exist / is older than
       'res/defaultMatchSettings.txt'.
 
-      Besides, anytime MatchSettings::VERSION is increased,
+      Besides, anytime MatchSettings::Version is increased,
       'initMatchSettings.cfg' becomes obsolete, so it must be overwritten with
       the fresh data from 'res/defaultMatchSettings.txt'.
 
@@ -184,8 +195,8 @@ class MatchSettings : public IMatchSettings {
       */
       if (!initialized)
         // can happen only when loading an obsolete 'initMatchSettings.cfg'
-        THROW_WITH_CONST_MSG("Obsolete version of 'initMatchSettings.cfg'!",
-                             std::domain_error);
+        REPORT_AND_THROW_CONST_MSG(
+            std::domain_error, "Obsolete version of 'initMatchSettings.cfg'!");
 
       // Point reachable while reading Settings with an older version of
       // MatchSettings field
@@ -194,7 +205,7 @@ class MatchSettings : public IMatchSettings {
 
     // It is useful to see which settings changed when loading =>
     // Loading data in a temporary object and comparing with existing values.
-    MatchSettings defSettings(*this);  // create as copy of previous values
+    MatchSettings defSettings{*this};  // create as copy of previous values
 
     // read user default match settings
     if (version >= 2U) {  // versions >= 2 use hybridResultMode
@@ -230,8 +241,8 @@ class MatchSettings : public IMatchSettings {
     set_kSymDensity(defSettings.kSymDensity);
     setBlankThreshold(defSettings.threshold4Blank);
 
-    if (version != VERSION_FROM_LAST_IO_OP)
-      VERSION_FROM_LAST_IO_OP = version;
+    if (version != VersionFromLast_IO_op)
+      VersionFromLast_IO_op = version;
   }
 
   /// Saves *this to archive ar using current version of MatchSettings.
@@ -241,8 +252,8 @@ class MatchSettings : public IMatchSettings {
        << kSdevBg << kContrast << kMCsOffset << kCosAngleMCs << kSymDensity
        << threshold4Blank;
 
-    if (version != VERSION_FROM_LAST_IO_OP)
-      VERSION_FROM_LAST_IO_OP = version;
+    if (version != VersionFromLast_IO_op)
+      VersionFromLast_IO_op = version;
   }
 
   BOOST_SERIALIZATION_SPLIT_MEMBER();
@@ -281,49 +292,48 @@ class MatchSettings : public IMatchSettings {
 
 #endif  // UNIT_TESTING not defined
 
-  double kSsim = 0.;    ///< power of factor controlling structural similarity
-  double kCorrel = 0.;  ///< power of factor controlling correlation aspect
+  double kSsim{};    ///< power of factor controlling structural similarity
+  double kCorrel{};  ///< power of factor controlling correlation aspect
 
   /// power of factor for foreground glyph-patch correlation
-  double kSdevFg = 0.;
+  double kSdevFg{};
 
   /// power of factor for contour glyph-patch correlation
-  double kSdevEdge = 0.;
+  double kSdevEdge{};
 
   /// power of factor for background glyph-patch correlation
-  double kSdevBg = 0.;
+  double kSdevBg{};
 
-  double kContrast = 0.;  ///< power of factor for the resulted glyph contrast
+  double kContrast{};  ///< power of factor for the resulted glyph contrast
 
   /// power of factor targeting smoothness (mass-center offset)
-  double kMCsOffset = 0.;
+  double kMCsOffset{};
 
   /// power of factor targeting smoothness (mass-centers angle)
-  double kCosAngleMCs = 0.;
+  double kCosAngleMCs{};
 
   /// power of factor aiming fanciness, not correctness
-  double kSymDensity = 0.;
+  double kSymDensity{};
 
   /// Using Blank character replacement under this threshold
-  unsigned threshold4Blank = 0U;
+  unsigned threshold4Blank{};
 
   /// 'normal' means actual result; 'hybrid' cosmeticizes the result
-  bool hybridResultMode = false;
+  bool hybridResultMode{false};
 
 #ifndef UNIT_TESTING
-  bool initialized = false;  ///< true after FIRST completed initialization
+  bool initialized{false};  ///< true after FIRST completed initialization
 
 #endif  // UNIT_TESTING not defined
 
   /// UINT_MAX or the class version of the last loaded/saved object
-  static unsigned VERSION_FROM_LAST_IO_OP;
+  static inline unsigned VersionFromLast_IO_op{UINT_MAX};
   // There are no concurrent I/O operations on MatchSettings
-
- public:
-  // BUILD CLEAN WHEN THIS CHANGES!
-  static const unsigned VERSION = 3U;  ///< version of MatchSettings class
 };
 
-BOOST_CLASS_VERSION(MatchSettings, MatchSettings::VERSION);
+}  // namespace pic2sym::cfg
+
+BOOST_CLASS_VERSION(pic2sym::cfg::MatchSettings,
+                    pic2sym::cfg::MatchSettings::Version);
 
 #endif  // H_MATCH_SETTINGS

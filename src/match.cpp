@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,26 +41,32 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "match.h"
 
 #include "cachedData.h"
-#include "match.h"
 #include "matchAspects.h"
 #include "matchParams.h"
-#include "symDataBase.h"
-#include "warnings.h"
 
 using namespace std;
 using namespace cv;
 
+namespace pic2sym::match {
+
 namespace {
-const Point2d ORIGIN;  // (0, 0)
-constexpr double TWOmSQRT2 = 2. - M_SQRT2;
+const Point2d Origin;  // (0, 0)
+constexpr double TwoMinusSqrt2{2. - numbers::sqrt2};
 
 // Early computation and avoids the Clique MatchParams - MatchAspect
 const IMatchParams& idealMatch = MatchParams::perfectMatch();
 }  // anonymous namespace
 
-MatchAspect::MatchAspect(const double& k_) noexcept : k(k_) {}
+using namespace cfg;
+using p2s::syms::ISymData;
+using p2s::transform::CachedData;
+
+MatchAspect::MatchAspect(const double& k_) noexcept : k(&k_) {}
 
 double MatchAspect::assessMatch(const Mat& patch,
                                 const ISymData& symData,
@@ -72,7 +81,7 @@ double MatchAspect::maxScore(const CachedData& cachedData) const noexcept {
 }
 
 bool MatchAspect::enabled() const noexcept {
-  return k > 0.;
+  return *k > 0.;
 }
 
 const vector<string>& MatchAspect::aspectNames() noexcept {
@@ -90,7 +99,7 @@ MatchAspect::NameRegistrator::NameRegistrator(
 }
 
 FgMatch::FgMatch(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kSdevFg()) {}
+    : MatchAspect{ms.get_kSdevFg()} {}
 
 /**
 Returned value discourages large std. devs.
@@ -100,9 +109,9 @@ is disabled) For other sdev-s       => returns closer to 1 for k in (0..1)
   returns sdev for k=1
   returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
-double FgMatch::score(const IMatchParams& mp, const CachedData&) const
-    noexcept {
-  return pow(1. - mp.getSdevFg().value() / CachedData::MaxSdev::forFgOrBg, k);
+double FgMatch::score(const IMatchParams& mp,
+                      const CachedData&) const noexcept {
+  return pow(1. - mp.getSdevFg().value() / CachedData::MaxSdev::forFgOrBg, *k);
 }
 
 void FgMatch::fillRequiredMatchParams(const Mat& patch,
@@ -119,7 +128,7 @@ double FgMatch::relativeComplexity() const noexcept {
 }
 
 BgMatch::BgMatch(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kSdevBg()) {}
+    : MatchAspect{ms.get_kSdevBg()} {}
 
 /**
 Returned value discourages large std. devs.
@@ -129,9 +138,9 @@ is disabled) For other sdev-s       => returns closer to 1 for k in (0..1)
   returns sdev for k=1
   returns closer to 0 for k>1 (Large k => higher penalty for large sdev-s)
 */
-double BgMatch::score(const IMatchParams& mp, const CachedData&) const
-    noexcept {
-  return pow(1. - mp.getSdevBg().value() / CachedData::MaxSdev::forFgOrBg, k);
+double BgMatch::score(const IMatchParams& mp,
+                      const CachedData&) const noexcept {
+  return pow(1. - mp.getSdevBg().value() / CachedData::MaxSdev::forFgOrBg, *k);
 }
 
 void BgMatch::fillRequiredMatchParams(const Mat& patch,
@@ -148,7 +157,7 @@ double BgMatch::relativeComplexity() const noexcept {
 }
 
 EdgeMatch::EdgeMatch(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kSdevEdge()) {}
+    : MatchAspect{ms.get_kSdevEdge()} {}
 
 /**
 Returned value discourages large std. devs.
@@ -158,9 +167,9 @@ aspect is disabled) For other sdev-s       => returns closer to 1 for k in
 (0..1) returns sdev for k=1 returns closer to 0 for k>1 (Large k => higher
 penalty for large sdev-s)
 */
-double EdgeMatch::score(const IMatchParams& mp, const CachedData&) const
-    noexcept {
-  return pow(1. - mp.getSdevEdge().value() / CachedData::MaxSdev::forEdges, k);
+double EdgeMatch::score(const IMatchParams& mp,
+                        const CachedData&) const noexcept {
+  return pow(1. - mp.getSdevEdge().value() / CachedData::MaxSdev::forEdges, *k);
 }
 
 void EdgeMatch::fillRequiredMatchParams(const Mat& patch,
@@ -177,22 +186,22 @@ double EdgeMatch::relativeComplexity() const noexcept {
 }
 
 BetterContrast::BetterContrast(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kContrast()) {}
+    : MatchAspect{ms.get_kContrast()} {}
 
 /**
 Encourages larger contrasts:
 0 for no contrast; 1 for max contrast (255)
 */
-double BetterContrast::score(const IMatchParams& mp, const CachedData&) const
-    noexcept {
-  return pow(abs(mp.getContrast().value()) / 255., k);
+double BetterContrast::score(const IMatchParams& mp,
+                             const CachedData&) const noexcept {
+  return pow(abs(mp.getContrast().value()) / 255., *k);
 }
 
-void BetterContrast::fillRequiredMatchParams(const Mat& patch,
-                                             const ISymData& symData,
-                                             const CachedData&,
-                                             IMatchParamsRW& mp) const
-    noexcept {
+void BetterContrast::fillRequiredMatchParams(
+    const Mat& patch,
+    const ISymData& symData,
+    const CachedData&,
+    IMatchParamsRW& mp) const noexcept {
   mp.computeContrast(patch, symData);
 }
 
@@ -204,7 +213,7 @@ double BetterContrast::relativeComplexity() const noexcept {
 
 GravitationalSmoothness::GravitationalSmoothness(
     const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kMCsOffset()) {}
+    : MatchAspect{ms.get_kMCsOffset()} {}
 
 /**
 Discourages mcsOffset larger than preferredMaxMcDist:
@@ -220,7 +229,7 @@ double GravitationalSmoothness::score(const IMatchParams& mp,
   return pow(1. + (CachedData::MassCenters::preferredMaxMcDist -
                    mp.getMcsOffset().value()) *
                       CachedData::MassCenters::invComplPrefMaxMcDist,
-             k);
+             *k);
 }
 
 void GravitationalSmoothness::fillRequiredMatchParams(
@@ -237,7 +246,7 @@ double GravitationalSmoothness::relativeComplexity() const noexcept {
 }
 
 DirectionalSmoothness::DirectionalSmoothness(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kCosAngleMCs()) {}
+    : MatchAspect{ms.get_kCosAngleMCs()} {}
 
 /**
 Penalizes large angle between mc-s, but no so much when they are close to each
@@ -252,14 +261,14 @@ from both.
 */
 double DirectionalSmoothness::score(const IMatchParams& mp,
                                     const CachedData&) const noexcept {
-  const Point2d relMcPatch =
-      mp.getMcPatch().value() - CachedData::MassCenters::unitSquareCenter();
-  const Point2d relMcGlyph = mp.getMcPatchApprox().value() -
-                             CachedData::MassCenters::unitSquareCenter();
+  const Point2d relMcPatch{mp.getMcPatch().value() -
+                           CachedData::MassCenters::unitSquareCenter()};
+  const Point2d relMcGlyph{mp.getMcPatchApprox().value() -
+                           CachedData::MassCenters::unitSquareCenter()};
 
   // best gradient orientation when angle between mc-s is 0 => cos = 1
-  double cosAngleMCs = 0.;                           // -1..1 range, best when 1
-  if (relMcGlyph != ORIGIN && relMcPatch != ORIGIN)  // avoid DivBy0
+  double cosAngleMCs{};                              // -1..1 range, best when 1
+  if (relMcGlyph != Origin && relMcPatch != Origin)  // avoid DivBy0
     cosAngleMCs =
         relMcGlyph.dot(relMcPatch) / (norm(relMcGlyph) * norm(relMcPatch));
 
@@ -269,7 +278,7 @@ double DirectionalSmoothness::score(const IMatchParams& mp,
   - 1 for |angleMCs| = 45
   - >1 for |angleMCs| < 45
   */
-  const double angleFactor = (1. + cosAngleMCs) * TWOmSQRT2;
+  const double angleFactor{(1. + cosAngleMCs) * TwoMinusSqrt2};
 
   /*
   mcsOffsetFactor encourages smaller offsets between mc-s
@@ -277,11 +286,11 @@ double DirectionalSmoothness::score(const IMatchParams& mp,
   - 1 for mcsOffset = PreferredMaxMcDist
   - >1 for mcsOffset < PreferredMaxMcDist
   */
-  const double mcsOffsetFactor =
-      CachedData::MassCenters::a_mcsOffsetFactor() * mp.getMcsOffset().value() +
-      CachedData::MassCenters::b_mcsOffsetFactor();
+  const double mcsOffsetFactor{CachedData::MassCenters::a_mcsOffsetFactor() *
+                                   mp.getMcsOffset().value() +
+                               CachedData::MassCenters::b_mcsOffsetFactor()};
 
-  return pow(angleFactor * mcsOffsetFactor, k);
+  return pow(angleFactor * mcsOffsetFactor, *k);
 }
 
 void DirectionalSmoothness::fillRequiredMatchParams(
@@ -299,7 +308,7 @@ double DirectionalSmoothness::relativeComplexity() const noexcept {
 }
 
 LargerSym::LargerSym(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kSymDensity()) {}
+    : MatchAspect{ms.get_kSymDensity()} {}
 
 /**
 Encourages approximations with symbols filling at least x% of their box.
@@ -309,7 +318,8 @@ Returns < 1 for glyphs under threshold;   >= 1 otherwise
 double LargerSym::score(const IMatchParams& mp,
                         const CachedData& cachedData) const noexcept {
   return pow(
-      mp.getSymDensity().value() + 1. - cachedData.getSmallGlyphsCoverage(), k);
+      mp.getSymDensity().value() + 1. - cachedData.getSmallGlyphsCoverage(),
+      *k);
 }
 
 void LargerSym::fillRequiredMatchParams(const Mat&,
@@ -322,3 +332,5 @@ void LargerSym::fillRequiredMatchParams(const Mat&,
 double LargerSym::relativeComplexity() const noexcept {
   return 3.52;  // Performs only a value copy
 }
+
+}  // namespace pic2sym::match

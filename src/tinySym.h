@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,8 +43,10 @@
 #ifndef H_TINY_SYM
 #define H_TINY_SYM
 
-#include "symData.h"
 #include "tinySymBase.h"
+
+#include "pixMapSymBase.h"
+#include "symData.h"
 
 #pragma warning(push, 0)
 
@@ -49,11 +54,13 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/version.hpp>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
 
-class IPixMapSym;  // Forward declaration
-
 #pragma warning(disable : WARN_INHERITED_VIA_DOMINANCE)
+
+namespace pic2sym::syms {
 
 /**
 Data for tiny symbols.
@@ -63,6 +70,10 @@ ICentroid and Centroid.
 */
 class TinySym : public SymData, public virtual ITinySym {
  public:
+  // BUILD CLEAN WHEN THIS CHANGES!
+  /// Version of ITinySym class
+  static constexpr unsigned Version{};
+
   /// Empty symbols with the code & index from cmap
   TinySym(unsigned long code_ = ULONG_MAX, size_t symIdx_ = 0ULL) noexcept;
 
@@ -72,7 +83,7 @@ class TinySym : public SymData, public virtual ITinySym {
 #ifdef UNIT_TESTING
   /// Generate the tiny symbol based on a negative
   TinySym(const cv::Mat& negSym_,
-          const cv::Point2d& mc_ = cv::Point2d(.5, .5),
+          const cv::Point2d& mc_ = cv::Point2d{.5, .5},
           double avgPixVal_ = 0.) noexcept;
 #endif  // UNIT_TESTING defined
 
@@ -163,25 +174,23 @@ class TinySym : public SymData, public virtual ITinySym {
   */
   template <class Archive>
   void serialize(Archive& ar, const unsigned version) noexcept(!UT) {
-    if (version > VERSION)
-      THROW_WITH_VAR_MSG("Cannot serialize(load) future version (" +
-                             to_string(version) +
-                             ") of "
-                             "TinySym class (now at version " +
-                             to_string(VERSION) + ")!",
-                         std::domain_error);
+    EXPECTS_OR_REPORT_AND_THROW(version <= Version, std::domain_error,
+                                "Cannot serialize(load) future version ("s +
+                                    std::to_string(version) +
+                                    ") of TinySym class (now at version "s +
+                                    std::to_string(Version) + ")!"s);
 
     ar& boost::serialization::base_object<SymData>(*this);
 
     ar& mat& hAvgProj& vAvgProj& backslashDiagAvgProj& slashDiagAvgProj;
 
-    if (version != VERSION_FROM_LAST_IO_OP)
-      VERSION_FROM_LAST_IO_OP = version;
+    if (version != VersionFromLast_IO_op)
+      VersionFromLast_IO_op = version;
   }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
   /// UINT_MAX or the class version of the last loaded/saved object
-  static unsigned VERSION_FROM_LAST_IO_OP;
+  static inline unsigned VersionFromLast_IO_op{UINT_MAX};
   // There are no concurrent I/O operations on TinySym
 
   /*
@@ -215,17 +224,15 @@ class TinySym : public SymData, public virtual ITinySym {
 
   /// Inverse diagonal projection divided by TinySymDiagsCount
   cv::Mat slashDiagAvgProj;
-
- public:
-  // BUILD CLEAN WHEN THIS CHANGES!
-  static const unsigned VERSION = 0U;  ///< version of ITinySym class
 };
 
 #pragma warning(default : WARN_INHERITED_VIA_DOMINANCE)
 
-BOOST_CLASS_VERSION(TinySym, TinySym::VERSION);
-
 /// container with TinySym-s
-typedef std::vector<TinySym> VTinySyms;
+using VTinySyms = std::vector<TinySym>;
+
+}  // namespace pic2sym::syms
+
+BOOST_CLASS_VERSION(pic2sym::syms::TinySym, pic2sym::syms::TinySym::Version);
 
 #endif  // H_TINY_SYM

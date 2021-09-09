@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -47,6 +50,8 @@
 
 #include "jobMonitorBase.h"
 
+#include "progressNotifier.h"
+
 #pragma warning(push, 0)
 
 #include <limits>
@@ -54,7 +59,7 @@
 
 #pragma warning(pop)
 
-class IProgressNotifier;  // forward declaration
+namespace pic2sym::ui {
 
 /// Implementation of AbsJobMonitor for supervising a given job
 class JobMonitor : public AbsJobMonitor {
@@ -112,10 +117,12 @@ class JobMonitor : public AbsJobMonitor {
   @throw invalid_argument if taskProgress is outside 0..1
   @throw out_of_range if taskSeqId is an invalid index in details
 
-  Exceptions to be only reported, not handled
+  Previous exceptions need to be only reported, not handled.
+
+  @throw AbortedJob if aborted is true.
+  This exception needs to be handled.
   */
-  void taskAdvanced(double taskProgress,
-                    unsigned taskSeqId) noexcept(!UT) override;
+  void taskAdvanced(double taskProgress, unsigned taskSeqId) override;
 
   /**
   A task monitor reports the completion of its supervised task.
@@ -124,9 +131,12 @@ class JobMonitor : public AbsJobMonitor {
   @throw out_of_range only in UnitTesting if taskSeqId is an invalid index in
   details
 
-  Exception can be caught only in UnitTesting
+  Previous exceptions need to be only reported, not handled.
+
+  @throw AbortedJob if aborted is true.
+  This exception needs to be handled.
   */
-  void taskDone(unsigned taskSeqId) noexcept(!UT) override;
+  void taskDone(unsigned taskSeqId) override;
 
   /**
   A task monitor reports the abortion of its supervised task.
@@ -147,15 +157,15 @@ class JobMonitor : public AbsJobMonitor {
   /// job and how long will it take
   struct TaskDetails {
     /// Starting point estimate of this task within the job ([0..1) range)
-    double contribStart = std::numeric_limits<double>::infinity();
+    double contribStart{std::numeric_limits<double>::infinity()};
 
     /// Estimate of the duration of this task within the job ((0..1] range)
-    double totalContrib = 0.;
+    double totalContrib{};
   };
 
  private:
   /// Needed for reporting the progress of the job to the user
-  const std::unique_ptr<IProgressNotifier> notifier;
+  std::unique_ptr<IProgressNotifier> notifier;
 
   /// How frequent should be the user notifications (ex.: 0.05 for reporting
   /// only every 5%)
@@ -177,11 +187,13 @@ class JobMonitor : public AbsJobMonitor {
   std::vector<TaskDetails> details;
 
   /// Last value of job's progress reported to the user
-  double lastUserNotifiedProgress = 0.;
+  double lastUserNotifiedProgress{};
 
   /// Last elapsed time reported to the user
-  double lastUserNotifiedElapsedTime = 0.;
+  double lastUserNotifiedElapsedTime{};
 };
+
+}  // namespace pic2sym::ui
 
 #endif  // H_JOB_MONITOR
 

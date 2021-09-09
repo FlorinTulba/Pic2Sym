@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,6 +43,9 @@
 #ifndef H_MATCH_PARAMS_BASE
 #define H_MATCH_PARAMS_BASE
 
+#include "cachedData.h"
+#include "symbolsSupportBase.h"
+
 #pragma warning(push, 0)
 
 #if defined _DEBUG || defined UNIT_TESTING
@@ -47,19 +53,17 @@
 #endif  // _DEBUG || UNIT_TESTING
 
 #include <memory>
-
 #include <optional>
 
 #include <opencv2/core/core.hpp>
 
 #pragma warning(pop)
 
-// Forward declarations
-class ISymData;
-class CachedData;
-class IMatchParamsRW;
-
 extern template class std::optional<double>;
+
+namespace pic2sym::match {
+
+class IMatchParamsRW;  // Defined below
 
 /**
 Base class (Read-only version) for the relevant parameters during patch&glyph
@@ -108,8 +112,8 @@ class IMatchParams /*abstract*/ {
 #endif  // UNIT_TESTING defined
 
   /// Mass center for the approximation of the patch (range 0..1 x 0..1)
-  virtual const std::optional<cv::Point2d>& getMcPatchApprox() const
-      noexcept = 0;
+  virtual const std::optional<cv::Point2d>& getMcPatchApprox()
+      const noexcept = 0;
 
   /// Distance between the 2 mass centers (range 0..sqrt(2))
   virtual const std::optional<double>& getMcsOffset() const noexcept = 0;
@@ -144,7 +148,7 @@ class IMatchParams /*abstract*/ {
   /// Standard deviation for contour (0..255)
   virtual const std::optional<double>& getSdevEdge() const noexcept = 0;
 
-  virtual ~IMatchParams() noexcept {}
+  virtual ~IMatchParams() noexcept = 0 {}
 
 #ifdef UNIT_TESTING
   /// @return a configurable copy of itself
@@ -153,22 +157,9 @@ class IMatchParams /*abstract*/ {
 
 #if defined _DEBUG || defined UNIT_TESTING
   /// Provides a representation of the parameters
-  virtual const std::wstring toWstring() const noexcept = 0;
+  virtual std::wstring toWstring() const noexcept = 0;
 #endif  // _DEBUG || UNIT_TESTING
-
-  // If slicing is observed and becomes a severe problem, use `= delete` for all
-  IMatchParams(const IMatchParams&) noexcept = default;
-  IMatchParams(IMatchParams&&) noexcept = default;
-  IMatchParams& operator=(const IMatchParams&) noexcept = default;
-  IMatchParams& operator=(IMatchParams&&) noexcept = default;
-
- protected:
-  constexpr IMatchParams() noexcept {}
 };
-
-#if defined _DEBUG || defined UNIT_TESTING
-std::wostream& operator<<(std::wostream& wos, const IMatchParams& mp) noexcept;
-#endif  // _DEBUG || UNIT_TESTING
 
 /// Base class (Read-Write version) for the relevant parameters during
 /// patch&glyph matching
@@ -184,46 +175,52 @@ class IMatchParamsRW /*abstract*/ : public IMatchParams {
       bool skipPatchInvariantParts = true) noexcept = 0;
 
   // Methods for computing each field
-  virtual void computeFg(const cv::Mat& patch, const ISymData&) noexcept = 0;
-  virtual void computeBg(const cv::Mat& patch, const ISymData&) noexcept = 0;
+  virtual void computeFg(const cv::Mat& patch,
+                         const syms::ISymData&) noexcept = 0;
+  virtual void computeBg(const cv::Mat& patch,
+                         const syms::ISymData&) noexcept = 0;
   virtual void computeContrast(const cv::Mat& patch,
-                               const ISymData&) noexcept = 0;
+                               const syms::ISymData&) noexcept = 0;
   virtual void computeSdevFg(const cv::Mat& patch,
-                             const ISymData&) noexcept = 0;
+                             const syms::ISymData&) noexcept = 0;
   virtual void computeSdevBg(const cv::Mat& patch,
-                             const ISymData&) noexcept = 0;
+                             const syms::ISymData&) noexcept = 0;
   virtual void computeSdevEdge(const cv::Mat& patch,
-                               const ISymData&) noexcept = 0;
-  virtual void computeSymDensity(const ISymData&) noexcept = 0;
+                               const syms::ISymData&) noexcept = 0;
+  virtual void computeSymDensity(const syms::ISymData&) noexcept = 0;
   virtual void computePatchSum(const cv::Mat& patch) noexcept = 0;
   virtual void computePatchSq(const cv::Mat& patch) noexcept = 0;
   virtual void computeMcPatch(const cv::Mat& patch,
-                              const CachedData&) noexcept = 0;
+                              const transform::CachedData&) noexcept = 0;
   virtual void computeMcPatchApprox(const cv::Mat& patch,
-                                    const ISymData&,
-                                    const CachedData&) noexcept = 0;
+                                    const syms::ISymData&,
+                                    const transform::CachedData&) noexcept = 0;
   virtual void computeMcsOffset(const cv::Mat& patch,
-                                const ISymData&,
-                                const CachedData&) noexcept = 0;
+                                const syms::ISymData&,
+                                const transform::CachedData&) noexcept = 0;
   virtual void computePatchApprox(const cv::Mat& patch,
-                                  const ISymData&) noexcept = 0;
+                                  const syms::ISymData&) noexcept = 0;
   virtual void computeBlurredPatch(const cv::Mat& patch,
-                                   const CachedData&) noexcept = 0;
+                                   const transform::CachedData&) noexcept = 0;
   virtual void computeBlurredPatchSq(const cv::Mat& patch,
-                                     const CachedData&) noexcept = 0;
+                                     const transform::CachedData&) noexcept = 0;
   virtual void computeVariancePatch(const cv::Mat& patch,
-                                    const CachedData&) noexcept = 0;
+                                    const transform::CachedData&) noexcept = 0;
   virtual void computeSsim(const cv::Mat& patch,
-                           const ISymData&,
-                           const CachedData&) noexcept = 0;
-  virtual void computeNormPatchMinMiu(const cv::Mat& patch,
-                                      const CachedData&) noexcept = 0;
+                           const syms::ISymData&,
+                           const transform::CachedData&) noexcept = 0;
+  virtual void computeNormPatchMinMiu(
+      const cv::Mat& patch,
+      const transform::CachedData&) noexcept = 0;
   virtual void computeAbsCorr(const cv::Mat& patch,
-                              const ISymData&,
-                              const CachedData&) noexcept = 0;
-
- protected:
-  constexpr IMatchParamsRW() noexcept {}
+                              const syms::ISymData&,
+                              const transform::CachedData&) noexcept = 0;
 };
+
+#if defined _DEBUG || defined UNIT_TESTING
+std::wostream& operator<<(std::wostream& wos, const IMatchParams& mp) noexcept;
+#endif  // _DEBUG || UNIT_TESTING
+
+}  // namespace pic2sym::match
 
 #endif  // H_MATCH_PARAMS_BASE

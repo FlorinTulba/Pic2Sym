@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,23 +41,37 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #ifndef UNIT_TESTING
 
-#include "misc.h"
-#include "presentCmap.h"
 #include "views.h"
 
+#include "misc.h"
+#include "presentCmap.h"
+
 #pragma warning(push, 0)
+
+#include <gsl/gsl>
 
 #include <opencv2/highgui/highgui.hpp>
 
 #pragma warning(pop)
 
 using namespace std;
+using namespace gsl;
 using namespace cv;
 
-const Mat Comparator::noImage = imread("res/NoImage.jpg");
+namespace pic2sym {
+
+extern const int Comparator_trackMax;
+extern const double Comparator_defaultTransparency;
+extern const String Comparator_transpTrackName;
+extern const String CmapInspect_pageTrackName;
+
+namespace ui {
+
+const Mat Comparator::noImage{imread("res/NoImage.jpg")};
 
 CvWin::CvWin(const String& winName_) noexcept : _winName(winName_) {
   namedWindow(_winName);
@@ -64,13 +81,13 @@ void CvWin::setTitle(const std::string& title) const noexcept {
   setWindowTitle(_winName, title);
 }
 
-void CvWin::setOverlay(const std::string& overlay, int timeoutMs /* = 0*/) const
-    noexcept {
+void CvWin::setOverlay(const std::string& overlay,
+                       int timeoutMs /* = 0*/) const noexcept {
   displayOverlay(_winName, overlay, timeoutMs);
 }
 
-void CvWin::setStatus(const std::string& status, int timeoutMs /* = 0*/) const
-    noexcept {
+void CvWin::setStatus(const std::string& status,
+                      int timeoutMs /* = 0*/) const noexcept {
   displayStatusBar(_winName, status, timeoutMs);
 }
 
@@ -86,16 +103,11 @@ void CvWin::permitResize(bool allow /* = true*/) const noexcept {
     setWindowProperty(_winName, cv::WND_PROP_ASPECT_RATIO,
                       cv::WINDOW_KEEPRATIO);
   }
-  waitKey(1);  // makes sure it works
 }
 
 void CvWin::resize(int w, int h) const noexcept {
   resizeWindow(_winName, w, h);
 }
-
-extern const int Comparator_trackMax;
-extern const double Comparator_defaultTransparency;
-extern const String Comparator_transpTrackName;
 
 void Comparator::setTransparency(double transparency) noexcept {
   if (!initial.empty() && !result.empty()) {
@@ -106,11 +118,8 @@ void Comparator::setTransparency(double transparency) noexcept {
   imshow(winName(), content());
 }
 
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 void Comparator::setReference(const Mat& ref_) noexcept {
-  if (ref_.empty())
-    THROW_WITH_CONST_MSG(__FUNCTION__ " - Please provide a non-empty image!",
-                         invalid_argument);
+  Expects(!ref_.empty());  // provide a non-empty image
 
   initial = content() = ref_;
   if (!result.empty())
@@ -120,36 +129,26 @@ void Comparator::setReference(const Mat& ref_) noexcept {
   else
     setTransparency(1.);
 }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 void Comparator::setResult(
     const Mat& res_,
     int transparency
     /* = (int)round(Comparator_defaultTransparency * Comparator_trackMax)*/) noexcept {
-  if (initial.empty())
-    THROW_WITH_CONST_MSG(
-        __FUNCTION__ " called before Comparator::setReference()!", logic_error);
+  Expects(!initial.empty());  // called before Comparator::setReference()
 
-  if (initial.type() != res_.type() || initial.size != res_.size)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " - Please provide a resulted image "
-        "of the same size & type as the original image!",
-        invalid_argument);
-
+  // provide a resulted image of the same size & type as the original image
+  Expects(initial.type() == res_.type() && initial.size == res_.size);
   result = res_;
   if (trackPos != transparency)
     setTrackbarPos(Comparator_transpTrackName, winName(), transparency);
   else
     setTransparency(Comparator_defaultTransparency);
 }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
 void Comparator::updateTransparency(int newTransp, void* userdata) noexcept {
-  Comparator* pComp = static_cast<Comparator*>(userdata);
+  not_null<Comparator*> pComp = static_cast<Comparator*>(userdata);
   pComp->setTransparency((double)newTransp / Comparator_trackMax);
 }
-
-extern const String CmapInspect_pageTrackName;
 
 void CmapInspect::updateGrid() noexcept {
   grid = createGrid();
@@ -166,7 +165,7 @@ void CmapInspect::clear() noexcept {
 
 void CmapInspect::updatePagesCount(unsigned cmapSize) noexcept {
   updatingPageMax = true;
-  pagesCount = (unsigned)ceil(cmapSize / (double)symsPerPage);
+  pagesCount = narrow_cast<unsigned>(ceil(cmapSize / (double)symsPerPage));
   setTrackbarMax(CmapInspect_pageTrackName, winName(),
                  max(1, (int)pagesCount - 1));
 
@@ -187,16 +186,19 @@ void CmapInspect::showPage(unsigned pageIdx) noexcept {
     setTrackbarPos(CmapInspect_pageTrackName, winName(),
                    (int)pageIdx);  // => page = pageIdx
 
-  const unsigned idxOfFirstSymFromPage = symsPerPage * pageIdx;
-  populateGrid(cmapPresenter.getFontFaces(idxOfFirstSymFromPage, symsPerPage),
-               cmapPresenter.getClusterOffsets(), idxOfFirstSymFromPage);
+  const unsigned idxOfFirstSymFromPage{symsPerPage * pageIdx};
+  populateGrid(cmapPresenter->getFontFaces(idxOfFirstSymFromPage, symsPerPage),
+               cmapPresenter->getClusterOffsets(), idxOfFirstSymFromPage);
   imshow(winName(), content());
 }
 
 void CmapInspect::updatePageIdx(int newPage, void* userdata) noexcept {
   // The caller ensures userdata is a `ICmapInspect*`, not a `CmapInspect*`
-  ICmapInspect* pCmi = static_cast<ICmapInspect*>(userdata);
+  not_null<ICmapInspect*> pCmi = static_cast<ICmapInspect*>(userdata);
   pCmi->showPage((unsigned)newPage);
 }
+
+}  // namespace ui
+}  // namespace pic2sym
 
 #endif  // UNIT_TESTING not defined

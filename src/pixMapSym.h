@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -44,12 +47,12 @@
 
 #pragma warning(push, 0)
 
-#include <compare>
-
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #pragma warning(pop)
+
+namespace pic2sym::syms {
 
 /**
 PixMapSym holds the representation('pixels') of symbol 'symCode'.
@@ -95,7 +98,7 @@ class PixMapSym : public IPixMapSym {
       const FT_BBox& bb          ///< the bounding box to fit
       ) noexcept;
 
-  ~PixMapSym() noexcept = default;
+  ~PixMapSym() noexcept override = default;
 
   PixMapSym(const PixMapSym&) noexcept;
   PixMapSym(PixMapSym&&) noexcept;
@@ -103,19 +106,8 @@ class PixMapSym : public IPixMapSym {
 
   void operator=(const PixMapSym&) = delete;
 
-#ifdef __cpp_lib_three_way_comparison
-  /// Useful to detect duplicates
-  std::strong_equality operator<=>(const PixMapSym& other) const noexcept;
-
-#else   // __cpp_lib_three_way_comparison not defined
-  /// Useful to detect duplicates
+  /// Useful to detect duplicates. No need for != since C++20. <=> not needed
   bool operator==(const PixMapSym& other) const noexcept;
-
-  /// Useful to detect duplicates
-  bool operator!=(const PixMapSym& other) const noexcept {
-    return !(*this == other);
-  }
-#endif  // __cpp_lib_three_way_comparison
 
   /// glyph's mass center (coordinates are within a unit-square: 0..1 x 0..1)
   const cv::Point2d& getMc() const noexcept final;
@@ -220,18 +212,24 @@ class PixMapSym : public IPixMapSym {
   /// 0..1)
   cv::Mat rowSums;
 
-  size_t symIdx = 0ULL;   ///< symbol index within cmap
-  double avgPixVal = 0.;  ///< average of the pixel values divided by 255
+  size_t symIdx{};     ///< symbol index within cmap
+  double avgPixVal{};  ///< average of the pixel values divided by 255
 
-  unsigned long symCode = 0UL;  ///< symbol code
+  unsigned long symCode{};  ///< symbol code
 
-  unsigned char rows = 0U,
-                cols = 0U;  // dimensions of 'pixels' rectangle from below
-  unsigned char left = 0U, top = 0U;  // position within the drawing square
+  // dimensions of 'pixels' rectangle from below
+  unsigned char rows{};
+  unsigned char cols{};
+
+  // position within the drawing square
+  unsigned char left{};
+  unsigned char top{};
 
   /// When set to true, the symbol will appear as marked (inversed) in the cmap
   /// viewer
-  bool removable = false;
+  bool removable{false};
 };
+
+}  // namespace pic2sym::syms
 
 #endif  // H_PIXMAP_SYM

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -52,6 +55,8 @@
 
 #include <vector>
 
+#include <gsl/gsl>
+
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
 
@@ -59,11 +64,11 @@
 
 extern template class std::vector<int>;
 
+namespace pic2sym::syms::inline cluster {
+
 /// Clusters data that needs to be serialized
 class ClusterIO {
  public:
-  constexpr ClusterIO() noexcept {}
-
   /**
   Overwrites current content with the items read from file located at path.
   @return false when loading fails, even for internal exceptions
@@ -104,7 +109,8 @@ class ClusterIO {
   // There are no concurrent I/O operations on ClusterIO
 
   // BUILD CLEAN WHEN THIS CHANGES!
-  static const unsigned VERSION = 0U;  ///< version of ClusterIO class
+  /// Version of ClusterIO class
+  static constexpr unsigned Version{};
 
  private:
   friend class boost::serialization::access;
@@ -118,34 +124,35 @@ class ClusterIO {
   */
   template <class Archive>
   void serialize(Archive& ar, const unsigned version) noexcept(!UT) {
-    if (version > VERSION)
-      THROW_WITH_VAR_MSG("Cannot serialize(load) future version (" +
-                             std::to_string(version) +
-                             ") of "
-                             "ClusterIO class (now at version " +
-                             std::to_string(VERSION) + ")!",
-                         std::domain_error);
+    EXPECTS_OR_REPORT_AND_THROW(version <= Version, std::domain_error,
+                                "Cannot serialize(load) future version ("s +
+                                    std::to_string(version) +
+                                    ") of ClusterIO class (now at version "s +
+                                    std::to_string(Version) + ")!"s);
 
     ar& clustersCount;
     ar& clusterLabels;
 
-    if (version != VERSION_FROM_LAST_IO_OP)
-      VERSION_FROM_LAST_IO_OP = version;
+    if (version != VersionFromLast_IO_op)
+      VersionFromLast_IO_op = version;
   }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
   /// UINT_MAX or the class version of the last loaded/saved object
-  static unsigned VERSION_FROM_LAST_IO_OP;
+  static inline unsigned VersionFromLast_IO_op{UINT_MAX};
   // There are no concurrent I/O operations on ClusterIO
 
   /// assigned cluster for each symbol when sorted as within the cmap (by
   /// symIdx)
   std::vector<int> clusterLabels;
 
-  unsigned clustersCount = 0U;  ///< total number of clusters
+  unsigned clustersCount{};  ///< total number of clusters
 };
 
-BOOST_CLASS_VERSION(ClusterIO, ClusterIO::VERSION);
+}  // namespace pic2sym::syms::inline cluster
+
+BOOST_CLASS_VERSION(pic2sym::syms::cluster::ClusterIO,
+                    pic2sym::syms::cluster::ClusterIO::Version);
 
 #endif  // H_CLUSTER_SERIALIZATION
 

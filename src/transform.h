@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,9 +45,19 @@
 
 #include "transformBase.h"
 
+#include "bestMatchBase.h"
+#include "controllerBase.h"
+#include "imgBasicData.h"
+#include "matchEngineBase.h"
+#include "picTransformProgressTrackerBase.h"
+#include "settingsBase.h"
+#include "taskMonitorBase.h"
+#include "transformSupportBase.h"
+
 #pragma warning(push, 0)
 
 #include <atomic>
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,30 +66,30 @@
 
 #pragma warning(pop)
 
+namespace pic2sym {
+
 #ifndef UNIT_TESTING
 
 extern const unsigned SymsBatch_defaultSz;
 
 #endif  // UNIT_TESTING not defined
 
-// Forward declarations
-class ISettings;                     // global settings
-class IPicTransformProgressTracker;  // data & views manager
-class AbsTaskMonitor;
-class IBestMatch;
-class IBasicImgData;
-class ITransformSupport;
-class IMatchEngine;
-class IController;
+namespace transform {
 
 /// Transformer allows images to be approximated as a table of colored symbols
 /// from font files.
 class Transformer : public ITransformer {
  public:
   Transformer(IController& ctrler_,
-              const ISettings& cfg_,
-              IMatchEngine& me_,
-              IBasicImgData& img_) noexcept;
+              const cfg::ISettings& cfg_,
+              match::IMatchEngine& me_,
+              input::IBasicImgData& img_) noexcept;
+
+  // Slicing prevention
+  Transformer(const Transformer&) = delete;
+  Transformer(Transformer&&) = delete;
+  void operator=(const Transformer&) = delete;
+  void operator=(Transformer&&) = delete;
 
   const cv::Mat& getResult() const noexcept final { return result; }
 
@@ -99,13 +112,16 @@ class Transformer : public ITransformer {
   @throw logic_error, domain_error only in UnitTesting for incomplete
   configuration
 
-  Exceptions to be caught only in UnitTesting
+  Exceptions from above to be caught only in UnitTesting
+
+  @throw AbortedJob if the user aborts the operation.
+  This exception needs to be handled by the caller.
   */
-  void run() noexcept(!UT) override;
+  void run() override;
 
   /// Setting the transformation monitor
   Transformer& useTransformMonitor(
-      AbsJobMonitor& transformMonitor_) noexcept override;
+      ui::AbsJobMonitor& transformMonitor_) noexcept override;
 
  protected:
   /// Updates the unique id for the studied case
@@ -121,20 +137,22 @@ class Transformer : public ITransformer {
   /// under the supervision of imgTransformTaskMonitor
   void considerSymsBatch(unsigned fromIdx,
                          unsigned upperIdx,
-                         AbsTaskMonitor& imgTransformTaskMonitor) noexcept;
+                         ui::AbsTaskMonitor& imgTransformTaskMonitor,
+                         std::future<void>& abortHandler) noexcept;
 
  private:
-  IController& ctrler;  ///< controller
+  gsl::not_null<IController*> ctrler;  ///< controller
 
   /// Image transformation management from the controller
-  IPicTransformProgressTracker& ptpt;
+  gsl::not_null<IPicTransformProgressTracker*> ptpt;
 
   /// Observer of the transformation process who reports its progress
-  AbsJobMonitor* transformMonitor = nullptr;
+  ui::AbsJobMonitor* transformMonitor = nullptr;
 
-  const ISettings& cfg;  ///< general configuration
-  IMatchEngine& me;      ///< approximating patches
-  IBasicImgData& img;  ///< basic information about the current image to process
+  gsl::not_null<const cfg::ISettings*> cfg;  ///< general configuration
+  gsl::not_null<match::IMatchEngine*> me;    ///< approximating patches
+  gsl::not_null<input::IBasicImgData*>
+      img;  ///< basic information about the current image to process
 
   cv::Mat result;  ///< the result of the transformation
 
@@ -143,18 +161,18 @@ class Transformer : public ITransformer {
   cv::Mat resizedBlurred;   ///< blurred version of the resized original
 
   /// temporary best matches
-  std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatches;
+  std::vector<std::vector<std::unique_ptr<match::IBestMatch>>> draftMatches;
 
   // Keep this after previous fields, as it depends on them
   /// Initializes and updates draft matches
-  const std::unique_ptr<ITransformSupport> transformSupport;
+  std::unique_ptr<ITransformSupport> transformSupport;
 
-  double durationS = 0.;  ///< transformation duration in seconds
+  double durationS{};  ///< transformation duration in seconds
 
-  int w = 0;                ///< width of the resized image
-  int h = 0;                ///< height of the resized image
-  unsigned sz = 0U;         ///< font size used during transformation
-  unsigned symsCount = 0U;  ///< symbols count within the used cmap
+  int w{};               ///< width of the resized image
+  int h{};               ///< height of the resized image
+  unsigned sz{};         ///< font size used during transformation
+  unsigned symsCount{};  ///< symbols count within the used cmap
 
 #ifndef UNIT_TESTING  // Start with batching SymsBatch_defaultSz symbols
   /// Runtime control of how large next symbol batches are
@@ -166,7 +184,10 @@ class Transformer : public ITransformer {
 
 #endif  // UNIT_TESTING
 
-  std::atomic_bool isCanceled{false};  ///< has the process been canceled?
+  std::atomic_flag isCanceled{};  ///< has the process been canceled?
 };
+
+}  // namespace transform
+}  // namespace pic2sym
 
 #endif  // H_TRANSFORM

@@ -89,7 +89,7 @@ Continuing with more relevant features from the application performance point of
 
 I\) ***Skipping Matching Aspects Heuristic***
 
-Its purpose is to identify poor matches as early and as cheap as possible. When patches are compared against the symbols using multiple matching aspects, poor matches might be spotted after evaluating only a few scores of those matching aspects. For that it is enough to know the total score of the best match found so far and the maximum score that can be obtained for the current pair: patch - symbol.
+Its purpose is to identify poor matches as early and as cheaply as possible. When patches are compared against the symbols using multiple matching aspects, poor matches might be spotted after evaluating only a few scores of those matching aspects. For that it is enough to know the total score of the best match found so far and the maximum score that can be obtained for the current pair: patch - symbol.
 
 This feature belongs to the [**Draft Improver**][draftImprover] module.
 
@@ -565,7 +565,6 @@ For the typical standard deviation of 1.5, `GaussianBlur` from OpenCV still rema
 - *Young \& van Vliet* (implementation from [CImg library](http://cimg.eu/))
 - *Deriche* (implementation from [CImg library](http://cimg.eu/))
 - [*Stacked Integral Image*](http://dev.ipol.im/~getreuer/code/doc/gaussian_20131215_doc/group__sii__gaussian.html)
-- *Stack blur* (adaptation of [this sequential algorithm](http://www.codeproject.com/Articles/42192/Fast-Image-Blurring-with-CUDA))
 
 All those competitor algorithms are less accurate than *Extended Box Blur* configured with just 2 repetitions.<br>
 When applied only once, sequential *Box-based blur* techniques can be 1.5 - 3 times faster than `GaussianBlur` from OpenCV.<br>
@@ -579,7 +578,6 @@ The project includes following blur algorithms:
 - **BoxBlur** - for its versatility: quickest for no repetitions and slower, but increasingly accurate for more repetitions
   (Every repetition delegates to `blur` from OpenCV)
 - **ExtBoxBlur** - for its accuracy, even for only a few repetitions
-- **StackBlur** - because it also provides a reference CUDA implementation that was improved and adapted for Pic2Sym
 
 When the *[Structural Similarity][]* is enabled and the application uses **BoxBlur** (which is configured to use a single iteration) the image transformation performs around 1.17 times faster compared to the **GaussBlur**. **ExtBoxBlur** with a single iteration is slightly faster than **BoxBlur** under the same assumptions.
 

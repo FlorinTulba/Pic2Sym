@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -60,7 +63,7 @@
 #define TITLED_AUTO_TEST_CASE_END }
 
 /// unit testing namespace
-namespace ut {
+namespace pic2sym::ut {
 
 /// Generates an uniformly-distributed random unsigned
 unsigned randUnifUint();
@@ -75,47 +78,35 @@ Generates an uniformly-distributed random unsigned char.
 unsigned char randUnsignedChar(unsigned char minIncl = 0U,
                                unsigned char maxIncl = 255U);
 
-/// Used for a global fixture to reinitialize Controller's fields for each test
-class Controller {
- public:
-  /*
-  Which Controller's fields to reinitialize.
-  The global fixture sets them to true.
-  After initialization each is set to false.
-  */
-  static inline bool initImg{false}, initFontEngine{false},
-      initMatchEngine{false}, initTransformer{false}, initPreselManager{false},
-      initComparator{false}, initControlPanel{false};
-};
-
-/// Mock MatchEngine
-class IMatchEngine /*abstract*/ {
- public:
-  virtual ~IMatchEngine() noexcept {}
-
-  // Slicing prevention
-  IMatchEngine(const IMatchEngine&) = delete;
-  IMatchEngine(IMatchEngine&&) = delete;
-  IMatchEngine& operator=(const IMatchEngine&) = delete;
-  IMatchEngine& operator=(IMatchEngine&&) = delete;
-
- protected:
-  constexpr IMatchEngine() noexcept {}
-};
-class MatchEngine : public IMatchEngine {};
-
 /// Fixture to be used before every test
 class Fixt /*abstract*/ {
  public:
-  // If slicing is observed and becomes a severe problem, use `= delete` for all
-  Fixt(const Fixt&) noexcept = default;
-  Fixt(Fixt&&) noexcept = default;
-  Fixt& operator=(const Fixt&) noexcept = default;
-  Fixt& operator=(Fixt&&) noexcept = default;
+  /**
+  Which components to reinitialize.
+  The tear down of the fixture marks them all for reinitialization.
+  */
+  template <class Comp>
+  class Component {
+    friend class Fixt;  // the only one able to reset unique_ptr<Comp> comp
 
- protected:
-  Fixt() noexcept;                     ///< set up
-  virtual ~Fixt() noexcept = default;  ///< tear down
+   public:
+    /// Get or create a component by providing ctorArgs for its creation.
+    template <typename... CtorArgs>
+    static Comp& get(CtorArgs&&... ctorArgs) {
+      if (!comp)
+        comp = std::make_unique<Comp>(std::forward<CtorArgs>(ctorArgs)...);
+      return *comp;
+    }
+
+   private:
+    /// owned component to be released only by ~Fixt
+    static inline std::unique_ptr<Comp> comp;
+  };
+
+  Fixt() noexcept = default;  ///< set up
+
+  /// tear down
+  virtual ~Fixt() noexcept = 0;
 };
 
 /**
@@ -127,8 +118,9 @@ It's appended with a unique id to distinguish among homonym tests
 from different unit testing sessions.
 @param mismatches vector of BestMatch objects
 */
-void showMismatches(const std::string& testTitle,
-                    const std::vector<std::unique_ptr<BestMatch>>& mismatches);
-}  // namespace ut
+void showMismatches(
+    const std::string& testTitle,
+    const std::vector<std::unique_ptr<match::BestMatch>>& mismatches);
+}  // namespace pic2sym::ut
 
 #endif  // H_TEST_MAIN

@@ -129,7 +129,9 @@
     <Text Include="res\defaultMatchSettings.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="README.md" />
+    <Text Include="res\varConfig.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
     <Text Include="doc\licenses\Boost.lic">
       <Filter>doc\licenses</Filter>
     </Text>
@@ -139,9 +141,13 @@
     <Text Include="doc\licenses\FTL.TXT">
       <Filter>doc\licenses</Filter>
     </Text>
-    <Text Include="res\varConfig.txt">
-      <Filter>Resource Files</Filter>
+    <Text Include="doc\licenses\zlib.lic">
+      <Filter>doc\licenses</Filter>
     </Text>
+    <Text Include="doc\licenses\MicrosoftGSL.lic">
+      <Filter>doc\licenses</Filter>
+    </Text>
+    <Text Include="Pic2Sym.licenseheader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\symFilter.h">
@@ -318,9 +324,6 @@
     <ClInclude Include="src\structuralSimilarity.h">
       <Filter>Header Files\Controller\TransformEngine\MatchEngine</Filter>
     </ClInclude>
-    <ClInclude Include="src\stackBlur.h">
-      <Filter>Header Files\Var\Blurring</Filter>
-    </ClInclude>
     <ClInclude Include="src\appStart.h">
       <Filter>Header Files\Var</Filter>
     </ClInclude>
@@ -489,7 +492,7 @@
     <ClInclude Include="src\symbolsSupportBase.h">
       <Filter>Header Files\Charmap</Filter>
     </ClInclude>
-    <ClInclude Include="src\symsLoadingFailure.h">
+    <ClInclude Include="src\symsChangeIssues.h">
       <Filter>Header Files\Charmap</Filter>
     </ClInclude>
     <ClInclude Include="src\scoreThresholdsBase.h">
@@ -548,6 +551,9 @@
     </ClInclude>
     <ClInclude Include="src\preselCandidates.h">
       <Filter>Header Files\Controller\TransformEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -686,9 +692,6 @@
     <ClCompile Include="src\gaussBlur.cpp">
       <Filter>Source Files\Var\Blurring</Filter>
     </ClCompile>
-    <ClCompile Include="src\stackBlur.cpp">
-      <Filter>Source Files\Var\Blurring</Filter>
-    </ClCompile>
     <ClCompile Include="src\appStart.cpp">
       <Filter>Source Files\Var</Filter>
     </ClCompile>
@@ -779,7 +782,7 @@
     <ClCompile Include="src\resizedImg.cpp">
       <Filter>Source Files\Controller\TransformEngine\Image</Filter>
     </ClCompile>
-    <ClCompile Include="src\symsLoadingFailure.cpp">
+    <ClCompile Include="src\symsChangeIssues.cpp">
       <Filter>Source Files\Charmap</Filter>
     </ClCompile>
     <ClCompile Include="src\scoreThresholds.cpp">
@@ -799,10 +802,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Pic2Sym.licenseheader" />
-    <None Include="doc\licenses\zlib.lic">
-      <Filter>doc\licenses</Filter>
-    </None>
     <None Include="doc\pages\appendix\modules\controller.md">
       <Filter>doc\pages\appendix\modules</Filter>
     </None>
@@ -860,5 +859,14 @@
     <None Include="doc\pages\results\results.Rmd">
       <Filter>doc\pages\results</Filter>
     </None>
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Pic2Sym.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="GSL.natvis" />
   </ItemGroup>
 </Project>

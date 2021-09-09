@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,8 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #define BOOST_TEST_MODULE Tests for project Pic2Sym
+
+#include "testMain.h"
 
 #include "clusterEngine.h"
 #include "clusterSupport.h"
@@ -65,7 +71,6 @@
 #include "settingsBase.h"
 #include "symSettingsBase.h"
 #include "symbolsSupport.h"
-#include "testMain.h"
 #include "transform.h"
 #include "transformSupport.h"
 #include "updateSymSettingsBase.h"
@@ -77,8 +82,12 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <optional>
 #include <random>
+#include <ranges>
+
+#include <gsl/gsl>
 
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -87,6 +96,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace gsl;
 using namespace boost;
 using namespace std::filesystem;
 
@@ -95,10 +105,6 @@ int __cdecl omp_get_thread_num(void) {
   return 0;
 }
 #pragma warning(default : WARN_INCONSISTENT_DLL_LINKAGE)
-
-bool checkCancellationRequest() noexcept {
-  return false;
-}
 
 namespace cv {
 // waitKey is called within Controller::symbolsChanged(),
@@ -109,13 +115,21 @@ int __cdecl waitKey(int) {
 }
 }  // namespace cv
 
+namespace pic2sym {
+
+extern const Size BlurWinSize;
+extern const double BlurStandardDeviation;
+
+void checkCancellationRequest(std::future<void>&, std::atomic_flag&) noexcept {}
+
 namespace ut {
-Fixt::Fixt() noexcept {
-  // reinitialize all these fields
-  Controller::initImg = Controller::initFontEngine =
-      Controller::initMatchEngine = Controller::initTransformer =
-          Controller::initPreselManager = Controller::initComparator =
-              Controller::initControlPanel = true;
+Fixt::~Fixt() noexcept {
+  Component<p2s::ui::ControlPanel>::comp.reset();
+  Component<p2s::ui::Comparator>::comp.reset();
+  Component<p2s::transform::Transformer>::comp.reset();
+  Component<p2s::syms::FontEngine>::comp.reset();
+  Component<p2s::input::Img>::comp.reset();
+  Component<p2s::match::MatchEngine>::comp.reset();
 }
 
 namespace {
@@ -126,7 +140,7 @@ std::optional<const std::filesystem::path> pathToPic2Sym() {
 #else  // _DEBUG not defined
 #define CONFIG_TYPE "Release"
 #endif  // _DEBUG
-  std::filesystem::path dirOfPic2Sym(absolute("."));
+  std::filesystem::path dirOfPic2Sym{absolute(".")};
   if (exists("x64")) {  // Solution root is the current folder
     // Pic2Sym.exe is in x64/<CONFIG_TYPE>/ folder
     dirOfPic2Sym.append("x64").append(CONFIG_TYPE);
@@ -141,8 +155,8 @@ std::optional<const std::filesystem::path> pathToPic2Sym() {
   }
 #undef CONFIG_TYPE
 
-  std::filesystem::path pic2SymPath(
-      std::filesystem::path(dirOfPic2Sym).append("Pic2Sym.exe"));
+  std::filesystem::path pic2SymPath{
+      std::filesystem::path(dirOfPic2Sym).append("Pic2Sym.exe")};
   if (!exists(pic2SymPath)) {
     cerr << "Couldn't locate Pic2Sym.exe" << endl;
     return std::nullopt;
@@ -160,7 +174,7 @@ UnitTesting project.
 void createVisualizer(const std::filesystem::path& dirOfPic2Sym,
                       const string& commandLine,
                       const string& testCateg) {
-  ofstream ofs(absolute(dirOfPic2Sym).append("issues.bat").string(), ios::app);
+  ofstream ofs{absolute(dirOfPic2Sym).append("issues.bat").string(), ios::app};
   if (!ofs) {
     cerr << "Couldn't open `issues.bat` in append mode for registering the "
          << testCateg << endl;
@@ -173,16 +187,17 @@ void createVisualizer(const std::filesystem::path& dirOfPic2Sym,
 }
 }  // anonymous namespace
 
-void showMismatches(const string& testTitle,
-                    const vector<unique_ptr<BestMatch>>& mismatches) {
+void showMismatches(
+    const string& testTitle,
+    const vector<unique_ptr<p2s::match::BestMatch>>& mismatches) {
   if (mismatches.empty())
     return;
 
-  const unsigned cases = (unsigned)mismatches.size();
+  const unsigned cases{narrow_cast<unsigned>(std::size(mismatches))};
   const auto& firstItem = *mismatches.front();
   const auto& firstRefM = firstItem.getPatch().getOrig();
-  const unsigned tileSz = (unsigned)firstRefM.rows;
-  const bool isColor = firstRefM.channels() > 1;
+  const int tileSz{firstRefM.rows};
+  const bool isColor{firstRefM.channels() > 1};
   cerr << "There were " << cases << " unexpected matches" << endl;
 
   auto pic2SymPath = pathToPic2Sym();
@@ -192,44 +207,48 @@ void showMismatches(const string& testTitle,
   const auto dirOfPic2Sym = pic2SymPath->parent_path();
 
   // Ensure there is a folder x64\<ConfigType>\UnitTesting\Mismatches
-  std::filesystem::path mismatchesFolder(dirOfPic2Sym);
+  std::filesystem::path mismatchesFolder{dirOfPic2Sym};
   if (!exists(mismatchesFolder.append("UnitTesting").append("Mismatches")))
     create_directory(mismatchesFolder);
 
-  time_t suffix = time(nullptr);
-  const string uniqueTestTitle = testTitle + "_" + to_string(suffix);
+  time_t suffix{time(nullptr)};
+  const string uniqueTestTitle{testTitle + "_" + to_string(suffix)};
   ostringstream oss;
-  oss << "Pic2Sym.exe mismatches \"" << uniqueTestTitle << '"';
-  string commandLine(oss.str());
+  oss << "Pic2Sym.exe mismatches " << quoted(uniqueTestTitle);
+  string commandLine{oss.str()};
 
   // Tiling the references/results in 2 rectangles with approx 800 x 600 aspect
   // ratio
-  static constexpr double ar = 800 / 600.;
+  static constexpr double ar{800 / 600.};
 
-  const double widthD = round(sqrt(cases * ar)), heightD = ceil(cases / widthD);
-  const unsigned widthTiles = (unsigned)widthD, heightTiles = (unsigned)heightD;
-  const unsigned width = widthTiles * tileSz, height = heightTiles * tileSz;
-  Mat m(2 * height, width, (isColor ? CV_8UC3 : CV_8UC1),
-        Scalar::all(127U)),                // combined
-      mRef(m, Range(0, height)),           // upper half contains the references
-      mRes(m, Range(height, 2 * height));  // lower half for results
+  const double widthD{round(sqrt(cases * ar))};
+  const double heightD{ceil(cases / widthD)};
+  const unsigned widthTiles{narrow_cast<unsigned>(widthD)};
+  const unsigned heightTiles{narrow_cast<unsigned>(heightD)};
+  const int width{(int)widthTiles * tileSz};
+  const int height{(int)heightTiles * tileSz};
+
+  // combined
+  Mat m{2 * height, width, (isColor ? CV_8UC3 : CV_8UC1), Scalar::all(127.)};
+  Mat mRef{m, Range{0, height}};           // upper half contains the references
+  Mat mRes{m, Range{height, 2 * height}};  // lower half for results
 
   // Tile the references & results
-  for (unsigned idx = 0U, r = 0U; r < heightTiles && idx < cases; ++r) {
-    Range rowRange(r * tileSz, (r + 1) * tileSz);
-    for (unsigned c = 0U; c < widthTiles && idx < cases; ++c, ++idx) {
-      Range colRange(c * tileSz, (c + 1) * tileSz);
+  for (unsigned idx{}, r{}; r < heightTiles && idx < cases; ++r) {
+    Range rowRange{(int)r * tileSz, int(r + 1U) * tileSz};
+    for (unsigned c{}; c < widthTiles && idx < cases; ++c, ++idx) {
+      Range colRange{(int)c * tileSz, int(c + 1) * tileSz};
       const auto& item = *mismatches[idx];
       item.getPatch().getOrig().copyTo(
-          Mat(mRef, rowRange, colRange));                      // reference
-      item.getApprox().copyTo(Mat(mRes, rowRange, colRange));  // result
+          Mat{mRef, rowRange, colRange});                      // reference
+      item.getApprox().copyTo(Mat{mRes, rowRange, colRange});  // result
     }
   }
 
   // write the combined matrices as <uniqueTestTitle>.jpg
-  std::filesystem::path destFile(std::filesystem::path(mismatchesFolder)
+  std::filesystem::path destFile{std::filesystem::path(mismatchesFolder)
                                      .append(uniqueTestTitle)
-                                     .concat(".jpg"));
+                                     .concat(".jpg")};
   if (false == imwrite(destFile.string().c_str(), m))
     cerr << "Couldn't write the image generated by Unit Tests!\n"
          << '[' << destFile << ']' << endl;
@@ -241,7 +260,7 @@ void showMismatches(const string& testTitle,
 
 void showMisfiltered(
     const string& testTitle,
-    const vector<std::unique_ptr<const IPixMapSym>>& misfiltered) {
+    const vector<std::unique_ptr<const p2s::syms::IPixMapSym>>& misfiltered) {
   if (misfiltered.empty())
     return;
 
@@ -252,59 +271,65 @@ void showMisfiltered(
   const auto dirOfPic2Sym = pic2SymPath->parent_path();
 
   // Ensure there is a folder x64\<ConfigType>\UnitTesting\Misfiltered
-  std::filesystem::path misfilteredFolder(dirOfPic2Sym);
+  std::filesystem::path misfilteredFolder{dirOfPic2Sym};
   if (!exists(misfilteredFolder.append("UnitTesting").append("Misfiltered")))
     create_directory(misfilteredFolder);
 
-  time_t suffix = time(nullptr);
-  string uniqueTestTitle =
-      testTitle + "_" + to_string(suffix);  // Append an unique suffix
-  for (const char toReplace :
-       string(" :"))  // Replace all spaces and colons with underscores
-    replace(BOUNDS(uniqueTestTitle), toReplace, '_');
+  time_t suffix{time(nullptr)};
+
+  // Append an unique suffix
+  string uniqueTestTitle{testTitle + "_" + to_string(suffix)};
+  for (const char toReplace : " :"s)
+    // Replace all spaces and colons with underscores
+    ranges::replace(uniqueTestTitle, toReplace, '_');
   ostringstream oss;
-  oss << "Pic2Sym.exe misfiltered \"" << uniqueTestTitle << '"';
-  string commandLine(oss.str());
+  oss << "Pic2Sym.exe misfiltered " << quoted(uniqueTestTitle);
+  string commandLine{oss.str()};
 
   // Construct the image to display, which should contain all miscategorized
   // symbols from one group
-  static const Scalar GridColor(255U, 200U, 200U), BgColor(200U, 200U, 255U);
+  static const Scalar GridColor{255U, 200U, 200U};
+  static const Scalar BgColor{200U, 200U, 255U};
 
-  const int borderRows = 2, vertSplitsCount = 1 + (int)misfiltered.size();
-  int rowsMislabeledSyms = 0, colsMislabeledSyms = 1, tallestSym = 0,
-      vertSplitIdx = 1;
+  const int borderRows{2};
+  const int vertSplitsCount{1 + narrow_cast<int>(std::ssize(misfiltered))};
+  int rowsMislabeledSyms{};
+  int colsMislabeledSyms{1};
+  int tallestSym{};
+  int vertSplitIdx{1};
   vector<int> posVertSplits(vertSplitsCount, 0);
   for (const auto& sym : misfiltered) {
-    const Mat symAsMat =
-        sym->asNarrowMat();  // narrow versions are now the whole symbols
+    // narrow versions are now the whole symbols
+    const Mat symAsMat{sym->asNarrowMat()};
     if (symAsMat.rows > tallestSym)
       tallestSym = symAsMat.rows;
     colsMislabeledSyms += symAsMat.cols + 1;
     posVertSplits[vertSplitIdx++] = colsMislabeledSyms - 1;
   }
   rowsMislabeledSyms = borderRows + tallestSym;
-  Mat mislabeledSyms(rowsMislabeledSyms, colsMislabeledSyms, CV_8UC3, BgColor);
+  Mat mislabeledSyms{rowsMislabeledSyms, colsMislabeledSyms, CV_8UC3, BgColor};
   mislabeledSyms.row(0).setTo(GridColor);
   mislabeledSyms.row(rowsMislabeledSyms - 1).setTo(GridColor);
   for (const int posVertSplit : posVertSplits)
     mislabeledSyms.col(posVertSplit).setTo(GridColor);
   vertSplitIdx = 0;
   for (const auto& sym : misfiltered) {
-    const Mat symMat =
-        sym->asNarrowMat();  // narrow versions are now the whole symbols
+    // narrow versions are now the whole symbols
+    const Mat symMat{sym->asNarrowMat()};
     const vector<Mat> symChannels(3, symMat);
-    Mat symAsIfColor, region(mislabeledSyms, Range(1, symMat.rows + 1),
-                             Range(posVertSplits[vertSplitIdx] + 1,
-                                   posVertSplits[vertSplitIdx + 1ULL]));
+    Mat symAsIfColor;
+    Mat region{mislabeledSyms, Range{1, symMat.rows + 1},
+               Range{posVertSplits[vertSplitIdx] + 1,
+                     posVertSplits[vertSplitIdx + 1ULL]}};
     merge(symChannels, symAsIfColor);
     symAsIfColor.copyTo(region);
     ++vertSplitIdx;
   }
 
   // write the misfiltered symbols as <uniqueTestTitle>.jpg
-  std::filesystem::path destFile(std::filesystem::path(misfilteredFolder)
+  std::filesystem::path destFile{std::filesystem::path(misfilteredFolder)
                                      .append(uniqueTestTitle)
-                                     .concat(".jpg"));
+                                     .concat(".jpg")};
   if (false == imwrite(destFile.string().c_str(), mislabeledSyms))
     cerr << "Couldn't write the image generated by Unit Tests!\n"
          << '[' << destFile << ']' << endl;
@@ -314,7 +339,7 @@ void showMisfiltered(
 
 unsigned randUnifUint() {
   static random_device rd;
-  static mt19937 gen(rd());
+  static mt19937 gen{rd()};
   static uniform_int_distribution<unsigned> uid;
 
   return uid(gen);
@@ -322,86 +347,77 @@ unsigned randUnifUint() {
 
 unsigned char randUnsignedChar(unsigned char minIncl /* = 0U*/,
                                unsigned char maxIncl /* = 255U*/) {
-  return (unsigned char)(minIncl +
-                         randUnifUint() % ((unsigned)(maxIncl - minIncl) + 1U));
+  return narrow_cast<unsigned char>(
+      minIncl + randUnifUint() % ((unsigned)(maxIncl - minIncl) + 1U));
 }
 }  // namespace ut
 
-MatchSettings::MatchSettings() {}
+cfg::MatchSettings::MatchSettings() {}
 
-#define GET_FIELD(FieldType, ...)                      \
-  static std::unique_ptr<FieldType> pField;            \
-  if (ut::Controller::init##FieldType || !pField) {    \
-    pField = std::make_unique<FieldType>(__VA_ARGS__); \
-    ut::Controller::init##FieldType = false;           \
-  }                                                    \
-  return *pField
-
-Img& ControlPanelActions::getImg() noexcept {
-  GET_FIELD(Img);
+input::Img& ControlPanelActions::getImg() noexcept {
+  return ut::Fixt::Component<input::Img>::get();
 }
 
-IControlPanel& ControlPanelActions::getControlPanel(
-    const ISettingsRW& cfg_) noexcept {
-  GET_FIELD(ControlPanel, *this, cfg_);
+ui::IControlPanel& ControlPanelActions::getControlPanel(
+    const cfg::ISettingsRW& cfg_) noexcept {
+  return ut::Fixt::Component<ui::ControlPanel>::get(*this, cfg_);
 }
 
 bool ControlPanelActions::newImage(const Mat& imgMat) noexcept {
-  bool result = img.reset(imgMat);
+  bool result{img->reset(imgMat)};
 
   if (result) {
     cout << "Using Matrix instead of a "
-         << (img.isColor() ? "color" : "grayscale") << " image" << endl;
+         << (img->isColor() ? "color" : "grayscale") << " image" << endl;
     if (!imageOk)
       imageOk = true;
 
     // For valid matrices of size sz x sz, ignore MIN_H_SYMS & MIN_V_SYMS =>
     // Testing an image containing a single patch
-    if ((unsigned)imgMat.cols == cfg.getSS().getFontSz() &&
-        (unsigned)imgMat.rows == cfg.getSS().getFontSz()) {
-      if (1U != cfg.getIS().getMaxHSyms())
-        cfg.refIS().setMaxHSyms(1U);
-      if (1U != cfg.getIS().getMaxVSyms())
-        cfg.refIS().setMaxVSyms(1U);
+    if ((unsigned)imgMat.cols == cfg->getSS().getFontSz() &&
+        (unsigned)imgMat.rows == cfg->getSS().getFontSz()) {
+      if (1U != cfg->getIS().getMaxHSyms())
+        cfg->refIS().setMaxHSyms(1U);
+      if (1U != cfg->getIS().getMaxVSyms())
+        cfg->refIS().setMaxVSyms(1U);
     }
   }
 
   return result;
 }
 
-IComparator& Controller::getComparator() noexcept {
-  GET_FIELD(Comparator);
+ui::IComparator& Controller::getComparator() noexcept {
+  return ut::Fixt::Component<ui::Comparator>::get();
 }
 
-IFontEngine& Controller::getFontEngine(const ISymSettings& ss_) noexcept {
-  GET_FIELD(FontEngine, *this, ss_);
+syms::IFontEngine& Controller::getFontEngine(
+    const cfg::ISymSettings& ss_) noexcept {
+  return ut::Fixt::Component<syms::FontEngine>::get(*this, ss_);
 }
 
-IMatchEngine& Controller::getMatchEngine(const ISettings& cfg_) noexcept {
-  GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), *cmP);
+match::IMatchEngine& Controller::getMatchEngine(
+    const cfg::ISettings& cfg_) noexcept {
+  return ut::Fixt::Component<match::MatchEngine>::get(
+      cfg_, getFontEngine(cfg_.getSS()), *cmP);
 }
 
-ITransformer& Controller::getTransformer(const ISettings& cfg_) noexcept {
-  GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_),
-            ControlPanelActions::getImg());
+transform::ITransformer& Controller::getTransformer(
+    const cfg::ISettings& cfg_) noexcept {
+  return ut::Fixt::Component<transform::Transformer>::get(
+      *this, cfg_, getMatchEngine(cfg_), ControlPanelActions::getImg());
 }
 
-#undef GET_FIELD
-
-Controller::~Controller() {}
-
-void Controller::handleRequests() noexcept {}
+Controller::~Controller() noexcept {}
 
 void Controller::hourGlass(double, const string&, bool) const {}
 
 void PicTransformProgressTracker::transformFailedToStart() noexcept {}
 
-void PicTransformProgressTracker::reportTransformationProgress(double,
-                                                               bool) const
-    noexcept {}
+void PicTransformProgressTracker::reportTransformationProgress(double, bool)
+    const noexcept {}
 
-void PicTransformProgressTracker::presentTransformationResults(double) const
-    noexcept {}
+void PicTransformProgressTracker::presentTransformationResults(
+    double) const noexcept {}
 
 void GlyphsProgressTracker::updateSymsDone(double) const noexcept {}
 
@@ -409,54 +425,56 @@ void Controller::updateStatusBarCmapInspect(unsigned,
                                             const string&,
                                             bool) const {}
 
-void Controller::reportDuration(const string&, double) const {}
+void Controller::reportDuration(string_view, double) const {}
 
-bool Controller::updateResizedImg(const IResizedImg&) noexcept {
+bool Controller::updateResizedImg(const input::IResizedImg&) noexcept {
   return true;
 }
 
 void Controller::showResultedImage(double) const noexcept {}
 
-const ISymData* SelectSymbols::pointedSymbol(int, int) const noexcept {
+const syms::ISymData* SelectSymbols::pointedSymbol(int, int) const noexcept {
   return nullptr;
 }
 
 void SelectSymbols::displaySymCode(unsigned long) const noexcept {}
 
-void SelectSymbols::enlistSymbolForInvestigation(const ISymData&) const
-    noexcept {}
+void SelectSymbols::enlistSymbolForInvestigation(
+    const syms::ISymData&) const noexcept {}
 
 void SelectSymbols::symbolsReadyToInvestigate() const noexcept {}
 
 namespace {
-ICmapPerspective::VPSymDataCIt dummyIt;
-ICmapPerspective::VPSymDataCItPair dummyFontFaces(dummyIt, dummyIt);
+ui::ICmapPerspective::VPSymDataCIt dummyIt;
+ui::ICmapPerspective::VPSymDataRange dummyFontFaces{dummyIt, dummyIt};
 set<unsigned> dummyClusterOffsets;
 }  // anonymous namespace
 
-ICmapPerspective::VPSymDataCItPair CmapPerspective::getSymsRange(...) const
-    noexcept {
+ui::ICmapPerspective::VPSymDataRange ui::CmapPerspective::getSymsRange(
+    ...) const noexcept {
   return dummyFontFaces;
 }
 
-const set<unsigned>& CmapPerspective::getClusterOffsets() const noexcept {
+const set<unsigned>& ui::CmapPerspective::getClusterOffsets() const noexcept {
   return dummyClusterOffsets;
 }
 
-void CmapPerspective::reset(
-    const VSymData&,
+void ui::CmapPerspective::reset(
+    const syms::VSymData&,
     const std::vector<std::vector<unsigned>>&) noexcept {}
 
-TinySym::TinySym(const Mat& negSym_,
-                 const Point2d& mc_ /* = Point2d(.5, .5)*/,
-                 double avgPixVal_ /* = 0.*/) noexcept
-    : SymData(mc_, avgPixVal_),
-      backslashDiagAvgProj(1, 2 * negSym_.rows - 1, CV_64FC1),
-      slashDiagAvgProj(1, 2 * negSym_.rows - 1, CV_64FC1) {
+syms::TinySym::TinySym(const Mat& negSym_,
+                       const Point2d& mc_ /* = Point2d(.5, .5)*/,
+                       double avgPixVal_ /* = 0.*/) noexcept
+    : syms::SymData{mc_, avgPixVal_},
+
+      // 0. parameter prevents using the initializer_list ctor of Mat
+      backslashDiagAvgProj{1, 2 * negSym_.rows - 1, CV_64FC1, 0.},
+      slashDiagAvgProj{1, 2 * negSym_.rows - 1, CV_64FC1, 0.} {
   assert(!negSym_.empty());
   negSym = negSym_;
-  Mat tinySymMat = 1 - negSym * INV_255;
-  SymData::computeFields(tinySymMat, *this, true);
+  Mat tinySymMat{1 - negSym * Inv255};
+  syms::SymData::computeFields(tinySymMat, *this, true);
 
   mat = masks[(size_t)MaskType::GroundedSym].clone();
   // computing average projections
@@ -465,16 +483,15 @@ TinySym::TinySym(const Mat& negSym_,
 
   Mat flippedMat;
   flip(mat, flippedMat, 1);  // flip around vertical axis
-  const int tinySymSz = negSym_.rows;
-  const double invTinySymSz = 1. / tinySymSz,
-               invTinySymArea = invTinySymSz * invTinySymSz,
-               invDiagsCountTinySym = 1. / (2. * tinySymSz - 1.);
-  for (int diagIdx = -tinySymSz + 1, i = 0; diagIdx < tinySymSz;
-       ++diagIdx, ++i) {
-    const Mat backslashDiag = mat.diag(diagIdx);
+  const int tinySymSz{negSym_.rows};
+  const double invTinySymSz{1. / tinySymSz};
+  const double invTinySymArea{invTinySymSz * invTinySymSz};
+  const double invDiagsCountTinySym{1. / (2. * tinySymSz - 1.)};
+  for (int diagIdx{-tinySymSz + 1}, i{}; diagIdx < tinySymSz; ++diagIdx, ++i) {
+    const Mat backslashDiag{mat.diag(diagIdx)};
     backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
 
-    const Mat slashDiag = flippedMat.diag(-diagIdx);
+    const Mat slashDiag{flippedMat.diag(-diagIdx)};
     slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
   }
 
@@ -487,16 +504,16 @@ TinySym::TinySym(const Mat& negSym_,
   slashDiagAvgProj *= invDiagsCountTinySym;
 }
 
-SymData::SymData(unsigned long code_,
-                 size_t symIdx_,
-                 double minVal_,
-                 double diffMinMax_,
-                 double avgPixVal_,
-                 double normSymMiu0_,
-                 const Point2d& mc_,
-                 const SymData::IdxMatMap& relevantMats,
-                 const Mat& negSym_ /* = Mat()*/,
-                 const Mat& symMiu0_ /* = Mat()*/) noexcept
+syms::SymData::SymData(unsigned long code_,
+                       size_t symIdx_,
+                       double minVal_,
+                       double diffMinMax_,
+                       double avgPixVal_,
+                       double normSymMiu0_,
+                       const Point2d& mc_,
+                       const syms::SymData::IdxMatMap& relevantMats,
+                       const Mat& negSym_ /* = Mat()*/,
+                       const Mat& symMiu0_ /* = Mat()*/) noexcept
     : code(code_),
       symIdx(symIdx_),
       minVal(minVal_),
@@ -510,23 +527,24 @@ SymData::SymData(unsigned long code_,
     masks[idxAndMat.first] = idxAndMat.second;
 }
 
-unique_ptr<const SymData> SymData::clone(size_t symIdx_) const noexcept {
-  return make_unique<const SymData>(negSym, symMiu0, code, symIdx_, minVal,
-                                    diffMinMax, avgPixVal, normSymMiu0, mc,
-                                    masks);
+unique_ptr<const syms::SymData> syms::SymData::clone(
+    size_t symIdx_) const noexcept {
+  return make_unique<const syms::SymData>(negSym, symMiu0, code, symIdx_,
+                                          minVal, diffMinMax, avgPixVal,
+                                          normSymMiu0, mc, masks);
 }
 
-PixMapSym::PixMapSym(const vector<unsigned char>& data,
-                     const Mat& consec,
-                     const Mat& revConsec) noexcept
+syms::PixMapSym::PixMapSym(const vector<unsigned char>& data,
+                           const Mat& consec,
+                           const Mat& revConsec) noexcept
     : pixels(data) {
-  const unsigned sz = (unsigned)consec.cols;
-  const double maxGlyphSum = 255. * sz * sz;
+  const unsigned sz{(unsigned)consec.cols};
+  const double maxGlyphSum{255. * sz * sz};
   assert(sz == (unsigned)revConsec.rows);
-  assert(sz * sz == (unsigned)data.size());
+  assert(sz * sz == narrow_cast<unsigned>(std::size(data)));
 
-  rows = cols = (unsigned char)sz;
-  top = (unsigned char)(rows - 1U);
+  rows = cols = narrow_cast<unsigned char>(sz);
+  top = narrow_cast<unsigned char>(rows - 1U);
 
   computeMcAndAvgPixVal(sz, maxGlyphSum, data, rows, cols, 0U, top, consec,
                         revConsec, mc, avgPixVal, &colSums, &rowSums);
@@ -534,15 +552,15 @@ PixMapSym::PixMapSym(const vector<unsigned char>& data,
 
 static const Mat blurredVersionOf(const Mat& orig_) noexcept {
   Mat blurred;
-  extern const Size BlurWinSize;
-  extern const double BlurStandardDeviation;
   GaussianBlur(orig_, blurred, BlurWinSize, BlurStandardDeviation,
                BlurStandardDeviation, BORDER_REPLICATE);
   return blurred;
 }
 
+namespace input {
+
 Patch::Patch(const Mat& orig_) noexcept
-    : Patch(orig_, blurredVersionOf(orig_), orig_.channels() > 1) {}
+    : Patch{orig_, blurredVersionOf(orig_), orig_.channels() > 1} {}
 
 Patch& Patch::setMatrixToApprox(const Mat& m) noexcept {
   const_cast<Mat&>(grayD) = m;
@@ -553,15 +571,21 @@ void Patch::forceApproximation() noexcept {
   const_cast<bool&>(needsApproximation) = true;
 }
 
-bool ClusterEngine::clusteredAlready(const string&,
-                                     const string&,
-                                     std::filesystem::path&) noexcept {
+}  // namespace input
+
+bool syms::cluster::ClusterEngine::clusteredAlready(
+    const string&,
+    const string&,
+    std::filesystem::path&) noexcept {
   return false;
 }
 
-bool FontEngine::isTinySymsDataSavedOnDisk(const string&,
-                                           std::filesystem::path&) noexcept {
+bool syms::FontEngine::isTinySymsDataSavedOnDisk(
+    const string&,
+    std::filesystem::path&) noexcept {
   return false;
 }
 
-void AbsJobMonitor::getReady(ITimerResult&) noexcept {}
+void ui::AbsJobMonitor::getReady(ITimerResult&) noexcept {}
+
+}  // namespace pic2sym

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,21 +41,21 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "boxBlur.h"
 #include "extBoxBlur.h"
 #include "gaussBlur.h"
 #include "misc.h"
 #include "propsReader.h"
-#include "stackBlur.h"
 #include "structuralSimilarity.h"
 #include "warnings.h"
 
 #pragma warning(push, 0)
 
-#include <boost/algorithm/string/replace.hpp>
+#include <string_view>
 
-#include <opencv2/core/core.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #pragma warning(pop)
 
@@ -62,17 +65,16 @@ using namespace boost::algorithm;
 
 extern template class unordered_set<string>;
 
+namespace pic2sym {
+
 namespace {
 /// Replaces all instances of a pattern in a text with a different string.
-string replacePlaceholder(
-    const string& text,  ///< initial text
-    const string& placeholder =
-        "$(PIC2SYM_VERSION)",                    ///< pattern to be replaced
-    const string& replacement = PIC2SYM_VERSION  ///< replacement string
-    ) noexcept {
-  string text_(text);
-  replace_all(text_, placeholder, replacement);
-  return text_;
+string replacePlaceholder(string text,              ///< initial text
+                          string_view placeholder,  ///< pattern to be replaced
+                          string_view replacement   ///< replacement string
+                          ) noexcept {
+  replace_all(text, placeholder, replacement);
+  return text;
 }
 
 /**
@@ -95,14 +97,16 @@ PropsReader& varConfigRef() noexcept(!UT) {
 }  // anonymous namespace
 
 // Macros for reading the properties from 'varConfig.txt'
-#define READ_PROP(prop, type, defaultValue, ...) \
-  const type prop =                              \
-      varConfigRef().read<type>(#prop, __VA_ARGS__).value_or(defaultValue);
+#define READ_PROP(prop, type, defaultValue, ...)                         \
+  const type prop {                                                      \
+    varConfigRef().read<type>(#prop, __VA_ARGS__).value_or(defaultValue) \
+  }
 
-#define READ_PROP_COND(prop, type, cond, defaultVal)                 \
-  const type prop =                                                  \
-      (cond) ? varConfigRef().read<type>(#prop).value_or(defaultVal) \
-             : (defaultVal)
+#define READ_PROP_COND(prop, type, cond, defaultVal)               \
+  const type prop {                                                \
+    (cond) ? varConfigRef().read<type>(#prop).value_or(defaultVal) \
+           : (defaultVal)                                          \
+  }
 
 #define READ_BOOL_PROP(prop) READ_PROP(prop, bool, false)
 
@@ -112,9 +116,6 @@ PropsReader& varConfigRef() noexcept(!UT) {
 
 #define READ_INT_PROP(prop, ...) READ_PROP(prop, int, 0, __VA_ARGS__)
 
-#define READ_INT_PROP_COND(prop, cond, defaultVal) \
-  READ_PROP_COND(prop, int, cond, defaultVal)
-
 #define READ_UINT_PROP(prop, ...) READ_PROP(prop, unsigned, 0U, __VA_ARGS__)
 
 #define READ_DOUBLE_PROP(prop, ...) READ_PROP(prop, double, 0., __VA_ARGS__)
@@ -122,10 +123,10 @@ PropsReader& varConfigRef() noexcept(!UT) {
 /// Reads a string from the config file and converts it to a constant of type
 /// stringLikeType, for instance cv::String
 #define READ_STR_PROP_CONVERT(prop, stringLikeType) \
-  const stringLikeType prop = varConfigRef().read<string>(#prop).value_or(""s);
+  const stringLikeType prop { varConfigRef().read<string>(#prop).value_or(""s) }
 
 /// Reads a string from the config file and converts it to a constant of type
-/// std::wstring
+/// std::wstring; Allows appending the value with + after calling the macro
 #define READ_WSTR_PROP(prop) \
   const wstring prop =       \
       str2wstr(varConfigRef().read<string>(#prop).value_or(""s))
@@ -137,12 +138,12 @@ static VALIDATOR(oddU, IsOdd, unsigned);
 static VALIDATOR(lessThan20i, IsLessThan, int, 20);
 static VALIDATOR(lessThan600i, IsLessThan, int, 600, true);
 static VALIDATOR(lessThan800i, IsLessThan, int, 800, true);
-static VALIDATOR(lessThan1000i, IsLessThan, int, 1000, true);
+static VALIDATOR(lessThan1000i, IsLessThan, int, 1'000, true);
 static VALIDATOR(atMost9U, IsLessThan, unsigned, 9U, true);
 static VALIDATOR(atMost50U, IsLessThan, unsigned, 50U, true);
 static VALIDATOR(atMost768U, IsLessThan, unsigned, 768U, true);
-static VALIDATOR(lessThan1000U, IsLessThan, unsigned, 1000U, true);
-static VALIDATOR(atMost1024U, IsLessThan, unsigned, 1024U, true);
+static VALIDATOR(lessThan1000U, IsLessThan, unsigned, 1'000U, true);
+static VALIDATOR(atMost1024U, IsLessThan, unsigned, 1'024U, true);
 static VALIDATOR(lessThan235D, IsLessThan, double, 235.);
 static VALIDATOR(atMost50D, IsLessThan, double, 50., true);
 static VALIDATOR(lessThan26D, IsLessThan, double, 26.);
@@ -176,14 +177,17 @@ static VALIDATOR(nonNegativeD, IsGreaterThan, double, 0., true);
 static VALIDATOR(availableClusterAlgs,
                  IsOneOf,
                  string,
-                 {"None", "Partition", "TTSAS"});
+                 {"None"s, "Partition"s, "TTSAS"s});
 static VALIDATOR(availBlurAlgsForStrSim,
                  IsOneOf,
                  string,
-                 {"box", "ext_box", "stack", "gaussian"});
+                 {"box"s, "ext_box"s, "gaussian"s});
 #pragma warning(default : WARN_UNREFERENCED_FUNCTION_REMOVED)
 
-// Reading data
+// Reading data before the main function - see static variable
+// FileValidationResult from below.
+// Initialization-order fiasco is avoided by using the extern constants from
+// within functions/methods or by lazy evaluation, thus after the main function
 extern READ_BOOL_PROP(Transform_BlurredPatches_InsteadOf_Originals);
 extern READ_BOOL_PROP(ViewSymWeightsHistogram);
 
@@ -200,19 +204,19 @@ static const unsigned minFontSize() noexcept {
   static READ_UINT_PROP(Settings_MIN_FONT_SIZE, atLeast5U());
   return Settings_MIN_FONT_SIZE;
 }
-extern const unsigned Settings_MIN_FONT_SIZE = minFontSize();
+extern const unsigned Settings_MIN_FONT_SIZE{minFontSize()};
 
 static const unsigned minHSyms() noexcept {
   static READ_UINT_PROP(Settings_MIN_H_SYMS, atLeast3U());
   return Settings_MIN_H_SYMS;
 }
-extern const unsigned Settings_MIN_H_SYMS = minHSyms();
+extern const unsigned Settings_MIN_H_SYMS{minHSyms()};
 
 static const unsigned minVSyms() noexcept {
   static READ_UINT_PROP(Settings_MIN_V_SYMS, atLeast3U());
   return Settings_MIN_V_SYMS;
 }
-extern const unsigned Settings_MIN_V_SYMS = minVSyms();
+extern const unsigned Settings_MIN_V_SYMS{minVSyms()};
 
 static VALIDATOR(moreThanMinFontSize,
                  IsGreaterThan,
@@ -227,7 +231,7 @@ static const unsigned maxFontSize() noexcept {
                         moreThanMinFontSize());
   return Settings_MAX_FONT_SIZE;
 }
-extern const unsigned Settings_MAX_FONT_SIZE = maxFontSize();
+extern const unsigned Settings_MAX_FONT_SIZE{maxFontSize()};
 
 extern READ_UINT_PROP(Settings_MAX_H_SYMS, atMost1024U(), moreThanMinHSyms());
 extern READ_UINT_PROP(Settings_MAX_V_SYMS, atMost768U(), moreThanMinVSyms());
@@ -314,23 +318,20 @@ extern READ_DOUBLE_PROP(StructuralSimilarity_C1, atLeast1dot6(), lessThan26D());
 extern READ_DOUBLE_PROP(StructuralSimilarity_C2, atLeast14D(), lessThan235D());
 
 // Keep all cir fields before StructuralSimilarity::supportBlur
-BlurEngine::ConfInstRegistrator BoxBlur::cir("box",
-                                             BoxBlur::configuredInstance());
-BlurEngine::ConfInstRegistrator ExtBoxBlur::cir(
-    "ext_box",
-    ExtBoxBlur::configuredInstance());
-BlurEngine::ConfInstRegistrator StackBlur::cir("stack",
-                                               StackBlur::configuredInstance());
-BlurEngine::ConfInstRegistrator GaussBlur::cir("gaussian",
-                                               GaussBlur::configuredInstance());
+blur::BlurEngine::ConfInstRegistrator blur::BoxBlur::cir{
+    "box", BoxBlur::configuredInstance()};
+blur::BlurEngine::ConfInstRegistrator blur::ExtBoxBlur::cir{
+    "ext_box", ExtBoxBlur::configuredInstance()};
+blur::BlurEngine::ConfInstRegistrator blur::GaussBlur::cir{
+    "gaussian", GaussBlur::configuredInstance()};
 
 // Keep this after StructuralSimilarity_BlurType and below all defined cir
 // static fields
-const IBlurEngine& StructuralSimilarity::supportBlur =
-    BlurEngine::byName(StructuralSimilarity_BlurType);
+const blur::IBlurEngine& match::StructuralSimilarity::supportBlur{
+    blur::BlurEngine::byName(StructuralSimilarity_BlurType)};
 
 static READ_INT_PROP(BlurWindowSize, oddI(), atLeast3i(), lessThan20i());
-extern const Size BlurWinSize(BlurWindowSize, BlurWindowSize);
+extern const Size BlurWinSize{BlurWindowSize, BlurWindowSize};
 extern READ_DOUBLE_PROP(BlurStandardDeviation, atLeast0dot8(), lessThan5D());
 
 extern READ_DOUBLE_PROP(Transform_ProgressReportsIncrement,
@@ -437,20 +438,24 @@ extern READ_STR_PROP_CONVERT(Comparator_transpTrackName, String);
 
 extern READ_STR_PROP_CONVERT(CmapInspect_pageTrackName, String);
 
-extern const wstring ControlPanel_aboutText = str2wstr(replacePlaceholder(
-    varConfigRef().read<string>("ControlPanel_aboutText").value_or(""s)));
+extern const wstring ControlPanel_aboutText{str2wstr(replacePlaceholder(
+    varConfigRef().read<string>("ControlPanel_aboutText"s).value_or(""s),
+    "$(PIC2SYM_VERSION)",
+    PIC2SYM_VERSION))};
 extern READ_WSTR_PROP(ControlPanel_instructionsText);
 
 #endif  // UNIT_TESTING not defined
 
-extern const string Comparator_initial_title = replacePlaceholder(
-    varConfigRef().read<string>("Comparator_initial_title").value_or(""s));
+extern const string Comparator_initial_title{replacePlaceholder(
+    varConfigRef().read<string>("Comparator_initial_title"s).value_or(""s),
+    "$(PIC2SYM_VERSION)",
+    PIC2SYM_VERSION)};
 extern READ_STR_PROP(Comparator_statusBar);
 
 extern READ_STR_PROP(Controller_PREFIX_GLYPH_PROGRESS);
 extern READ_STR_PROP(Controller_PREFIX_TRANSFORMATION_PROGRESS);
 
-extern READ_STR_PROP(copyrightText);
+extern READ_STR_PROP(CopyrightText);
 
 extern READ_STR_PROP(CannotLoadFontErrSuffix);
 
@@ -466,23 +471,23 @@ extern READ_WSTR_PROP(BestMatch_HEADER) + MatchParams_HEADER;
 #undef READ_BOOL_PROP
 #undef READ_BOOL_PROP_COND
 #undef READ_INT_PROP
-#undef READ_INT_PROP_COND
 #undef READ_UINT_PROP
 #undef READ_DOUBLE_PROP
 #undef READ_STR_PROP
 #undef READ_WSTR_PROP
 
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 /**
 @throw domain_error for invalid configuration file
 
 Exception to be reported only, not handled
 */
-static bool validateConfig() noexcept(!UT) {
+static bool validateConfig() {
   if (varConfigRef().anyError())
-    THROW_WITH_CONST_MSG("Invalid configuration items!", domain_error);
+    REPORT_AND_THROW_CONST_MSG(domain_error, "Invalid configuration items!");
   return true;
 }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
-static bool FILE_VALIDATION_RESULT = validateConfig();
+// Ensures the configuration is valid and read before starting main function
+static const bool FileValidationResult{validateConfig()};
+
+}  // namespace pic2sym

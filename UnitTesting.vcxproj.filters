@@ -96,9 +96,6 @@
     <ClCompile Include="src\structuralSimilarity.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
-    <ClCompile Include="src\stackBlur.cpp">
-      <Filter>Source Files\Pic2Sym</Filter>
-    </ClCompile>
     <ClCompile Include="src\sievesSymsFilter.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
@@ -234,7 +231,7 @@
     <ClCompile Include="src\resizedImg.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
-    <ClCompile Include="src\symsLoadingFailure.cpp">
+    <ClCompile Include="src\symsChangeIssues.cpp">
       <Filter>Source Files\Pic2Sym</Filter>
     </ClCompile>
     <ClCompile Include="src\scoreThresholds.cpp">
@@ -414,9 +411,6 @@
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\sievesSymsFilter.h">
-      <Filter>Header Files\Pic2Sym</Filter>
-    </ClInclude>
-    <ClInclude Include="src\stackBlur.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\structuralSimilarity.h">
@@ -632,7 +626,7 @@
     <ClInclude Include="src\symbolsSupportBase.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
-    <ClInclude Include="src\symsLoadingFailure.h">
+    <ClInclude Include="src\symsChangeIssues.h">
       <Filter>Header Files\Pic2Sym</Filter>
     </ClInclude>
     <ClInclude Include="src\timingBase.h">
@@ -693,5 +687,8 @@
     <Text Include="res\TestSymFilters\unreadablePositives.txt">
       <Filter>Resource Files\SymFilters</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="GSL.natvis" />
   </ItemGroup>
 </Project>

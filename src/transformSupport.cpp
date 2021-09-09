@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,6 +41,9 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "transformSupport.h"
 
 #include "bestMatch.h"
 #include "matchEngineBase.h"
@@ -45,13 +51,19 @@
 #include "matchProgress.h"
 #include "matchSupport.h"
 #include "patch.h"
-#include "transformSupport.h"
 
 using namespace std;
 using namespace cv;
 
+namespace pic2sym {
+
 extern const bool UsingOMP;
+
+using namespace match;
+
 static MatchProgress dummy;
+
+namespace transform {
 
 void TransformSupport::initDraftRow(
     vector<vector<unique_ptr<IBestMatch>>>& draft,
@@ -61,19 +73,19 @@ void TransformSupport::initDraftRow(
     const Mat& resBlurred,
     int patchSz,
     bool isColor) noexcept {
-  const int row = r * patchSz;
-  const Range rowRange(row, row + patchSz);
+  const int row{r * patchSz};
+  const Range rowRange{row, row + patchSz};
 
   vector<unique_ptr<IBestMatch>>& draftMatchesRow = draft[(size_t)r];
   draftMatchesRow.reserve(patchesPerRow);
-  for (int c = 0, cLim = (int)patchesPerRow * patchSz; c < cLim; c += patchSz) {
-    const Range colRange(c, c + patchSz);
-    const Mat patch(res, rowRange, colRange),
-        blurredPatch(resBlurred, rowRange, colRange);
+  for (int c{}, cLim{(int)patchesPerRow * patchSz}; c < cLim; c += patchSz) {
+    const Range colRange{c, c + patchSz};
+    const Mat patch{res, rowRange, colRange};
+    const Mat blurredPatch{resBlurred, rowRange, colRange};
 
     // Building a Patch with the blurred patch computed for its actual borders
-    draftMatchesRow.push_back(
-        make_unique<BestMatch>(Patch(patch, blurredPatch, isColor)));
+    draftMatchesRow.push_back(make_unique<BestMatch>(
+        p2s::input::Patch(patch, blurredPatch, isColor)));
   }
 }
 
@@ -90,11 +102,11 @@ void TransformSupport::patchImproved(Mat& result,
                                      const IBestMatch& draftMatch,
                                      const Range& rowRange,
                                      int startCol) noexcept {
-  Mat destRegion(result, rowRange, Range(startCol, startCol + (int)sz));
+  Mat destRegion{result, rowRange, Range{startCol, startCol + (int)sz}};
   draftMatch.getApprox().copyTo(destRegion);
 }
 
-void TransformSupport::manageUnifPatch(const IMatchSettings& ms,
+void TransformSupport::manageUnifPatch(const p2s::cfg::IMatchSettings& ms,
                                        Mat& result,
                                        unsigned sz,
                                        IBestMatch& draftMatch,
@@ -112,35 +124,37 @@ bool TransformSupport::checkUnifPatch(const IBestMatch& draftMatch) noexcept {
 
 TransformSupport::TransformSupport(
     IMatchEngine& me_,
-    const IMatchSettings& matchSettings_,
+    const p2s::cfg::IMatchSettings& matchSettings_,
     Mat& resized_,
     Mat& resizedBlurred_,
     vector<vector<unique_ptr<IBestMatch>>>& draftMatches_) noexcept
-    : me(me_),
-      matchSettings(matchSettings_),
-      resized(resized_),
-      resizedBlurred(resizedBlurred_),
-      draftMatches(draftMatches_) {}
+    : me(&me_),
+      matchSettings(&matchSettings_),
+      resized(&resized_),
+      resizedBlurred(&resizedBlurred_),
+      draftMatches(&draftMatches_) {}
 
 void TransformSupport::initDrafts(bool isColor,
                                   unsigned patchSz,
                                   unsigned patchesPerCol,
                                   unsigned patchesPerRow) noexcept {
-  draftMatches.clear();
-  draftMatches.resize((size_t)patchesPerCol);
+  draftMatches->clear();
+  draftMatches->resize((size_t)patchesPerCol);
 
+#pragma warning(disable : WARN_CODE_ANALYSIS_IGNORES_OPENMP)
 #pragma omp parallel if (UsingOMP)
 #pragma omp for schedule(static, 1) nowait
-  for (int r = 0; r < (int)patchesPerCol; ++r)
-    initDraftRow(draftMatches, r, patchesPerRow, resized, resizedBlurred,
+  for (int r{}; r < (int)patchesPerCol; ++r)
+    initDraftRow(*draftMatches, r, patchesPerRow, *resized, *resizedBlurred,
                  (int)patchSz, isColor);
+#pragma warning(default : WARN_CODE_ANALYSIS_IGNORES_OPENMP)
 }
 
 void TransformSupport::resetDrafts(unsigned patchesPerCol) noexcept {
 #pragma omp parallel if (UsingOMP)
 #pragma omp for schedule(static, 1) nowait
-  for (int r = 0; r < (int)patchesPerCol; ++r)
-    resetDraftRow(draftMatches, r);
+  for (int r{}; r < (int)patchesPerCol; ++r)
+    resetDraftRow(*draftMatches, r);
 }
 
 void TransformSupport::approxRow(int r,
@@ -149,21 +163,23 @@ void TransformSupport::approxRow(int r,
                                  unsigned fromSymIdx,
                                  unsigned upperSymIdx,
                                  Mat& result) noexcept {
-  const int row = r * (int)patchSz;
-  const Range rowRange(row, row + (int)patchSz);
+  const int row{r * (int)patchSz};
+  const Range rowRange{row, row + (int)patchSz};
   const vector<unique_ptr<IBestMatch>>& draftMatchesRow =
-      draftMatches[(size_t)r];
+      (*draftMatches)[(size_t)r];
 
-  for (int c = 0, patchColumn = 0; c < width;
-       c += (int)patchSz, ++patchColumn) {
+  for (int c{}, patchColumn{}; c < width; c += (int)patchSz, ++patchColumn) {
     // Skip patches who appear rather uniform
     IBestMatch& draftMatch = *draftMatchesRow[(size_t)patchColumn];
     if (checkUnifPatch(draftMatch)) {
-      manageUnifPatch(matchSettings, result, patchSz, draftMatch, rowRange, c);
+      manageUnifPatch(*matchSettings, result, patchSz, draftMatch, rowRange, c);
       continue;
     }
 
-    if (me.improvesBasedOnBatch(fromSymIdx, upperSymIdx, draftMatch, dummy))
+    if (me->improvesBasedOnBatch(fromSymIdx, upperSymIdx, draftMatch, dummy))
       patchImproved(result, patchSz, draftMatch, rowRange, c);
   }  // columns loop
 }
+
+}  // namespace transform
+}  // namespace pic2sym

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,11 +45,16 @@
 
 #include "fontEngineBase.h"
 
+#include "controllerBase.h"
+#include "pmsContBase.h"
+#include "presentCmapBase.h"
+#include "symSettingsBase.h"
+#include "updateSymSettingsBase.h"
+
 #pragma warning(push, 0)
 
-#include <unordered_set>
-
 #include <filesystem>
+#include <unordered_set>
 
 #include <boost/bimap/bimap.hpp>
 
@@ -54,12 +62,7 @@
 
 extern template class std::unordered_set<FT_ULong>;
 
-// Forward declarations
-class IController;
-class IUpdateSymSettings;
-class IPresentCmap;
-class ISymSettings;
-class IPmsCont;
+namespace pic2sym::syms {
 
 /// FontEngine class wraps some necessary FreeType functionality.
 class FontEngine : public IFontEngine {
@@ -75,9 +78,10 @@ class FontEngine : public IFontEngine {
 
   Exception to be only reported, not handled
   */
-  FontEngine(IController& ctrler_, const ISymSettings& ss_) noexcept;
-  ~FontEngine() noexcept;
+  FontEngine(IController& ctrler_, const cfg::ISymSettings& ss_) noexcept;
+  ~FontEngine() noexcept override;
 
+  // Slicing prevention
   FontEngine(const FontEngine&) = delete;
   FontEngine(FontEngine&&) = delete;
   void operator=(const FontEngine&) = delete;
@@ -94,11 +98,14 @@ class FontEngine : public IFontEngine {
   @throw logic_error for an incomplete font configuration
   @throw invalid_argument for fontSz_ outside the range specified in the
   settings or the value cannot actually be used for the glyphs
-  @runtime_error when there are issues loading the resized glyphs
+  @throw runtime_error when there are issues loading the resized glyphs
 
-  Exceptions to be only reported, not handled
+  Exceptions from above to be only reported, not handled
+
+  @throw AbortedJob when user aborts the operation.
+  This must be handled by caller.
   */
-  void setFontSz(unsigned fontSz_) noexcept(!UT) override;
+  void setFontSz(unsigned fontSz_) override;
 
   /**
   Sets an encoding by name
@@ -131,7 +138,7 @@ class FontEngine : public IFontEngine {
 
   Exception to be only reported, not handled
   */
-  const VPixMapSym& symsSet() const noexcept(!UT) override;
+  const syms::VPixMapSym& symsSet() const noexcept(!UT) override;
 
   /**
   Get coverageOfSmallGlyphs
@@ -205,7 +212,7 @@ class FontEngine : public IFontEngine {
       std::filesystem::path& tinySymsDataFile) noexcept;
 
   /// Setting the symbols monitor
-  FontEngine& useSymsMonitor(AbsJobMonitor& symsMonitor_) noexcept override;
+  FontEngine& useSymsMonitor(ui::AbsJobMonitor& symsMonitor_) noexcept override;
 
   PROTECTED :
 
@@ -216,8 +223,8 @@ class FontEngine : public IFontEngine {
       font.
       */
       bool
-      checkFontFile(const std::filesystem::path& fontPath, FT_Face& face_) const
-      noexcept;
+      checkFontFile(const std::filesystem::path& fontPath,
+                    FT_Face& face_) const noexcept;
 
   /**
   Installs a new font
@@ -240,7 +247,7 @@ class FontEngine : public IFontEngine {
 
   @throw invalid_argument if the parameters prevent the adjustments
 
-  Exception to be only reported, not handled
+  Exceptions from above to be only reported, not handled
   */
   void adjustScaling(unsigned sz,
                      FT_BBox& bb,
@@ -250,36 +257,39 @@ class FontEngine : public IFontEngine {
   PRIVATE :
 
       /// Symbol settings updating aspect of the Controller
-      const IUpdateSymSettings& symSettingsUpdater;
+      gsl::not_null<const IUpdateSymSettings*>
+          symSettingsUpdater;
 
   /// Cmap presenting aspect of the Controller
-  const std::unique_ptr<const IPresentCmap>& cmapPresenter;
+  gsl::not_null<const IPresentCmap*> cmapPresenter;
 
   /// observer of the symbols' loading, filtering and clustering, who reports
   /// their progress
-  AbsJobMonitor* symsMonitor = nullptr;
+  ui::AbsJobMonitor* symsMonitor = nullptr;
 
-  FT_Library library = nullptr;  ///< the FreeType lib
-  FT_Face face = nullptr;        ///< a loaded font
+  FT_Library library{nullptr};  ///< the FreeType lib
+  FT_Face face{nullptr};        ///< a loaded font
 
   VTinySyms tinySyms;  ///< small version of all the symbols from current cmap
 
-  const ISymSettings& ss;  ///< settings of this font engine
+  gsl::not_null<const cfg::ISymSettings*> ss;  ///< settings of this font engine
 
   /// indices for each unique Encoding within cmaps array
   boost::bimaps::bimap<FT_Encoding, unsigned> uniqueEncs;
 
   /// Container with the PixMapSym-s of current charmap
-  const std::unique_ptr<IPmsCont> symsCont;
+  std::unique_ptr<IPmsCont> symsCont;
 
   /// Indices of the symbols that couldn't be loaded
   std::unordered_set<FT_ULong> symsUnableToLoad;
 
   /// The index of the selected cmap within face's charmaps array
-  unsigned encodingIndex = 0U;
+  unsigned encodingIndex{};
 
   /// Count of glyphs within current charmap (blanks & duplicates included)
-  unsigned symsCount = 0U;
+  unsigned symsCount{};
 };
+
+}  // namespace pic2sym::syms
 
 #endif  // H_FONT_ENGINE

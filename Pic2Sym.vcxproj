@@ -11,14 +11,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="doc\licenses\Boost.lic" />
-    <Text Include="doc\licenses\FTL.TXT" />
-    <Text Include="doc\licenses\OpenCV.lic" />
-    <Text Include="README.md" />
     <Text Include="res\defaultMatchSettings.txt" />
     <Text Include="res\varConfig.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="doc\licenses\Boost.lic" />
+    <Text Include="doc\licenses\FTL.TXT" />
+    <Text Include="doc\licenses\OpenCV.lic" />
+    <Text Include="doc\licenses\MicrosoftGSL.lic" />
+    <Text Include="doc\licenses\zlib.lic" />
+    <Text Include="Pic2Sym.licenseheader" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\bestMatch.h" />
     <ClInclude Include="src\bestMatchBase.h" />
     <ClInclude Include="src\appStart.h" />
@@ -116,7 +121,6 @@
     <ClInclude Include="src\sievesSymsFilter.h" />
     <ClInclude Include="src\sliderConversion.h" />
     <ClInclude Include="src\sliderConversionBase.h" />
-    <ClInclude Include="src\stackBlur.h" />
     <ClInclude Include="src\structuralSimilarity.h" />
     <ClInclude Include="src\study.h" />
     <ClInclude Include="src\symbolsSupport.h" />
@@ -129,7 +133,7 @@
     <ClInclude Include="src\symFilterCache.h" />
     <ClInclude Include="src\symSettings.h" />
     <ClInclude Include="src\symSettingsBase.h" />
-    <ClInclude Include="src\symsLoadingFailure.h" />
+    <ClInclude Include="src\symsChangeIssues.h" />
     <ClInclude Include="src\symsSerialization.h" />
     <ClInclude Include="src\taskMonitor.h" />
     <ClInclude Include="src\taskMonitorBase.h" />
@@ -214,7 +218,6 @@
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\sievesSymsFilter.cpp" />
     <ClCompile Include="src\sliderConversion.cpp" />
-    <ClCompile Include="src\stackBlur.cpp" />
     <ClCompile Include="src\structuralSimilarity.cpp" />
     <ClCompile Include="src\study.cpp" />
     <ClCompile Include="src\symbolsSupport.cpp" />
@@ -222,7 +225,7 @@
     <ClCompile Include="src\symData.cpp" />
     <ClCompile Include="src\symFilter.cpp" />
     <ClCompile Include="src\symSettings.cpp" />
-    <ClCompile Include="src\symsLoadingFailure.cpp" />
+    <ClCompile Include="src\symsChangeIssues.cpp" />
     <ClCompile Include="src\symsSerialization.cpp" />
     <ClCompile Include="src\taskMonitor.cpp" />
     <ClCompile Include="src\fontErrorsHelper.cpp" />
@@ -243,7 +246,7 @@
     <ClCompile Include="src\zlib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="doc\licenses\zlib.lic" />
+    <None Include="README.md" />
     <None Include="doc\pages\appendix\appendix.md" />
     <None Include="doc\pages\appendix\modules\controller.md" />
     <None Include="doc\pages\appendix\modules\draftImprover.md" />
@@ -263,13 +266,18 @@
     <None Include="doc\pages\results\results.Rmd" />
     <None Include="doc\pages\testBinary\testBinary.md" />
     <None Include="doc\pages\UnitTesting\UnitTesting.md" />
-    <None Include="Pic2Sym.licenseheader" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Pic2Sym.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="GSL.natvis" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{55EC7EFC-7D43-4724-ACBD-6CBE92946D6E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Pic2Sym</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -304,11 +312,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\</IntDir>
     <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -323,8 +333,11 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
-      <EnablePREfast>false</EnablePREfast>
+      <EnablePREfast>true</EnablePREfast>
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -360,6 +373,10 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <EnablePREfast>true</EnablePREfast>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

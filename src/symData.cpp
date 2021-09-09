@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,17 +41,33 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "symData.h"
 
 #include "blurBase.h"
 #include "misc.h"
 #include "pixMapSymBase.h"
 #include "structuralSimilarity.h"
-#include "symData.h"
 
 using namespace std;
 using namespace cv;
 
-unsigned SymData::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+namespace pic2sym {
+
+/*
+SymData_computeFields_STILL_BG and STILL_FG from below are constants for
+foreground / background thresholds.
+
+1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more
+than ideal STILL_BG was set to 0, as there are font families with extremely
+similar glyphs. When Unit Testing shouldn't identify exactly each glyph,
+STILL_BG might be > 0. But testing on 'BPmonoBold.ttf' does tolerate such
+larger values (0.025, for instance).
+*/
+extern const double SymData_computeFields_STILL_BG;  // darkest shades
+
+namespace syms {
 
 SymData::SymData(const Mat& negSym_,
                  const cv::Mat& symMiu0_,
@@ -129,7 +148,7 @@ SymData& SymData::operator=(const SymData& other) noexcept {
   REPLACE_FIELD(symMiu0);
   REPLACE_FIELD(removable);
 
-  for (int i = 0; i < (int)ISymData::MaskType::MATRICES_COUNT; ++i)
+  for (int i{}; i < (int)ISymData::MaskType::MATRICES_COUNT; ++i)
     REPLACE_FIELD(masks[(size_t)i]);
 
 #undef REPLACE_FIELD
@@ -200,7 +219,7 @@ bool SymData::isRemovable() const noexcept {
 
 #pragma warning(disable : WARN_EXPR_ALWAYS_FALSE)
 bool SymData::olderVersionDuringLastIO() noexcept {
-  return VERSION_FROM_LAST_IO_OP < VERSION;
+  return VersionFromLast_IO_op < Version;
 }
 #pragma warning(default : WARN_EXPR_ALWAYS_FALSE)
 
@@ -216,30 +235,19 @@ void SymData::computeFields(const cv::Mat& glyph,
                             bool forTinySym) noexcept {
   computeSymMiu0Related(glyph, sd.avgPixVal, sd);
 
-  /*
-  SymData_computeFields_STILL_BG and STILL_FG from below are constants for
-  foreground / background thresholds.
-
-  1/255 = 0.00392, so 0.004 tolerates pixels with 1 brightness unit less / more
-  than ideal STILL_BG was set to 0, as there are font families with extremely
-  similar glyphs. When Unit Testing shouldn't identify exactly each glyph,
-  STILL_BG might be > 0. But testing on 'BPmonoBold.ttf' does tolerate such
-  larger values (0.025, for instance).
-  */
-  extern const double SymData_computeFields_STILL_BG;  // darkest shades
-
   // brightest shades
-  static const double STILL_FG = 1. - SymData_computeFields_STILL_BG;
+  static const double STILL_FG{1. - SymData_computeFields_STILL_BG};
 
   double minVal, maxVal;
   minMaxIdx(glyph, &minVal, &maxVal);
-  assert(maxVal < EPSp1);
+  assert(maxVal < EpsPlus1);
   // ensures diffMinMax, groundedGlyph and blurOfGroundedGlyph are within 0..1
 
   sd.minVal = minVal;
-  const double diffMinMax = sd.diffMinMax = maxVal - minVal;
-  const Mat groundedGlyph = sd.masks[(size_t)MaskType::GroundedSym] =
-      (minVal == 0. ? glyph.clone() : (glyph - minVal));  // min val on 0
+  const double diffMinMax{sd.diffMinMax = maxVal - minVal};
+  const Mat groundedGlyph{
+      sd.masks[(size_t)MaskType::GroundedSym] =
+          (!minVal ? glyph.clone() : (glyph - minVal))};  // min val on 0
 
   sd.masks[(size_t)MaskType::Fg] = (glyph >= (minVal + STILL_FG * diffMinMax));
   sd.masks[(size_t)MaskType::Bg] =
@@ -248,18 +256,18 @@ void SymData::computeFields(const cv::Mat& glyph,
   // Storing a blurred version of the grounded glyph for structural similarity
   // match aspect
   Mat blurOfGroundedGlyph;
-  StructuralSimilarity::supportBlur.process(groundedGlyph, blurOfGroundedGlyph,
-                                            forTinySym);
+  p2s::match::StructuralSimilarity::supportBlur.process(
+      groundedGlyph, blurOfGroundedGlyph, forTinySym);
   sd.masks[(size_t)MaskType::BlurredGrSym] = blurOfGroundedGlyph;
 
   // edgeMask selects all pixels that are not minVal, nor maxVal
-  inRange(glyph, minVal + EPS, maxVal - EPS, sd.masks[(size_t)MaskType::Edge]);
+  inRange(glyph, minVal + Eps, maxVal - Eps, sd.masks[(size_t)MaskType::Edge]);
 
   // Storing also the variance of the grounded glyph for structural similarity
   // match aspect Actual varianceOfGroundedGlyph is obtained in the subtraction
   // after the blur
   Mat blurOfGroundedGlyphSquared;
-  StructuralSimilarity::supportBlur.process(
+  p2s::match::StructuralSimilarity::supportBlur.process(
       groundedGlyph.mul(groundedGlyph), blurOfGroundedGlyphSquared, forTinySym);
 
   sd.masks[(size_t)MaskType::VarianceGrSym] =
@@ -286,3 +294,6 @@ void SymData::setAvgPixVal(double avgPixVal_) noexcept {
   avgPixVal = avgPixVal_;
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace syms
+}  // namespace pic2sym

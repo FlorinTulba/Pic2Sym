@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,17 +41,22 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "preselectSyms.h"
+
 #include "warnings.h"
 
 #pragma warning(push, 0)
 
-#include <cassert>
+#include <gsl/gsl>
 
 #pragma warning(pop)
 
 using namespace std;
+using namespace gsl;
+
+namespace pic2sym::transform {
 
 /// Clearing containers without clear() method, but which do have empty() and
 /// pop() methods
@@ -73,9 +81,9 @@ TopCandidateMatches::TopCandidateMatches(
     unsigned shortListLength /* = 1U*/,
     double origThreshScore /* = 0.*/) noexcept(!UT)
     : thresholdScore(origThreshScore), n(shortListLength) {
-  if (shortListLength == 0U)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " needs shortListLength>=1",
-                         invalid_argument);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      shortListLength > 0U, invalid_argument,
+      HERE.function_name() + " needs shortListLength>=1"s);
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
@@ -90,21 +98,22 @@ void TopCandidateMatches::reset(double origThreshScore) noexcept {
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 bool TopCandidateMatches::checkCandidate(unsigned candidateIdx,
                                          double score) noexcept(!UT) {
-  if (shortListReady)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " should be called "
-                         "only before prepareReport()!", logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      !shortListReady, logic_error,
+      HERE.function_name() + " should be called only before prepareReport()!"s);
 
   if (score <= thresholdScore)
     return false;
 
-  if ((unsigned)scrapbook.size() == n)
+  if (narrow_cast<unsigned>(size(scrapbook)) == n)
     // If the short list is full at function start
     scrapbook.pop();  // the worst candidate must be removed
 
   // The new better candidate enters the short list
   scrapbook.emplace(candidateIdx, score);
 
-  if ((unsigned)scrapbook.size() == n)  // If the short list is full now
+  if (narrow_cast<unsigned>(size(scrapbook)) == n)
+    // If the short list is full now
     // New threshold is the score of the new worst candidate
     thresholdScore = scrapbook.top().getScore();
 
@@ -132,10 +141,12 @@ bool TopCandidateMatches::foundAny() const noexcept {
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 const CandidatesShortList& TopCandidateMatches::getShortList() const
     noexcept(!UT) {
-  if (!shortListReady)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " should be called "
-                         "only after prepareReport() and "
-                         "not after moveShortList()", logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      shortListReady, logic_error,
+      HERE.function_name() +
+          " should be called only after prepareReport() "
+          "and not after moveShortList()!"s);
+
   return shortList;
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
@@ -143,12 +154,14 @@ const CandidatesShortList& TopCandidateMatches::getShortList() const
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 void TopCandidateMatches::moveShortList(CandidatesShortList& dest) noexcept(
     !UT) {
-  if (!shortListReady)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " should be called "
-                         "only after prepareReport()", logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      shortListReady, logic_error,
+      HERE.function_name() + " should be called only after prepareReport()!"s);
+
   dest = move(shortList);
-  assert(shortList.empty());
 
   shortListReady = false;
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace pic2sym::transform

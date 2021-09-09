@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,8 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #ifndef UNIT_TESTING
+
+#include "appState.h"
 
 #include "controlPanel.h"
 #include "misc.h"
@@ -52,14 +58,19 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
 
 using namespace std;
+using namespace gsl;
 using namespace cv;
 
 extern template class unordered_set<const String*>;
 extern template class unordered_set<String, hash<string>>;
 extern template class unordered_map<const String*, bool>;
+
+namespace pic2sym {
 
 extern const String ControlPanel_aboutLabel;
 extern const String ControlPanel_instructionsLabel;
@@ -87,15 +98,15 @@ extern const String ControlPanel_thresh4BlanksTrName;
 extern const String ControlPanel_outWTrName;
 extern const String ControlPanel_outHTrName;
 
+namespace ui {
+
 namespace {
 const unordered_set<const String*> independentActions{
     &ControlPanel_aboutLabel, &ControlPanel_instructionsLabel,
     &ControlPanel_symsBatchSzTrName};
-const auto itEndIndepActions = independentActions.cend();
 
 const unordered_set<const String*> imgSettingsSliders{&ControlPanel_outWTrName,
                                                       &ControlPanel_outHTrName};
-const auto itEndImgSettSliders = imgSettingsSliders.cend();
 
 const unordered_set<const String*> matchAspectsSliders{
     &ControlPanel_hybridResultTrName,
@@ -109,7 +120,6 @@ const unordered_set<const String*> matchAspectsSliders{
     &ControlPanel_directionTrName,
     &ControlPanel_largerSymTrName,
     &ControlPanel_thresh4BlanksTrName};
-const auto itEndMatchAspSliders = matchAspectsSliders.cend();
 
 // Pairs like: pointer to control's name plus a boolean stating whether the
 // control is a slider or not
@@ -119,15 +129,20 @@ const unordered_map<const String*, bool> symSettingsControls{
     {&ControlPanel_fontSzTrName, true}};
 const auto itEndSymSettCtrls = symSettingsControls.cend();
 
-atomic_flag stateAccess = ATOMIC_FLAG_INIT;
+atomic_flag stateAccess{};
 
 /// Waits until nobody uses appState, then locks it and releases it after
 /// inspecting/changing
 class LockAppState final {
  public:
   LockAppState() noexcept {
+    stateAccess.wait(true);
+
+    // Loops until it is cleared externally
     while (stateAccess.test_and_set())
-      ;
+      stateAccess.wait(true);
+
+    // stateAccess was set by this method, so the lock is owned
     owned = true;
   }
 
@@ -142,16 +157,17 @@ class LockAppState final {
   /// Query the lock state
   bool isOwned() const noexcept { return owned; }
 
-  /// Releases the lock
+  /// Releases the lock only if owned
   void release() noexcept {
     if (owned) {
       stateAccess.clear();
+      stateAccess.notify_one();
       owned = false;
     }
   }
 
  private:
-  bool owned = false;  ///< true while this thread is using appState
+  bool owned{false};  ///< true while this thread is using appState
 };
 
 /// Permit for actions that can be performed without altering the existing
@@ -162,7 +178,6 @@ class NoTraceActionPermit : public ActionPermit {};
 /// the sequential action finishes
 class NormalActionPermit : public ActionPermit {
  public:
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
   /**
   Sets the new application state as the bit-or between appState_ and
   statesToToggle_.
@@ -180,30 +195,21 @@ class NormalActionPermit : public ActionPermit {
       AppStateType statesToToggle_,  ///< the change to inflict on the state
       const LockAppState& lock_      ///< the lock guarding the permit
       ) noexcept
-      :  // First init the appState reference; Change value afterwards in body
-        appState(appState_),
+      : ActionPermit(),
+        // First init the appState reference; Change value afterwards in body
+        appState(&appState_),
         statesToToggle(statesToToggle_) {
-    if (!lock_.isOwned())
-      THROW_WITH_CONST_MSG(__FUNCTION__ " provided a lock that is not owned!",
-                           logic_error);
-    if (0ULL != (AppStateType)(appState_ & statesToToggle_))
-      THROW_WITH_VAR_MSG(
-          __FUNCTION__ " - appState_ (" +
-              bitset<sizeof(AppStateType)>(appState_).to_string() +
-              ") & statesToToggle_ (" +
-              bitset<sizeof(AppStateType)>(statesToToggle_).to_string() +
-              ") != 0!",
-          invalid_argument);
+    Expects(lock_.isOwned());
+    Expects(!(AppStateType)(appState_ & statesToToggle_));
 
-    appState = (AppStateType)(appState_ | statesToToggle_);
+    *appState = (AppStateType)(appState_ | statesToToggle_);
   }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
   /// Reverts the state to the previous one.
-  ~NormalActionPermit() noexcept {
+  ~NormalActionPermit() noexcept override {
     // Mandatory, as the finalization of the action is not guarded
     LockAppState lock;
-    appState = (AppStateType)(appState & ~statesToToggle);
+    *appState = (AppStateType)(*appState & ~statesToToggle);
   }
 
   NormalActionPermit(const NormalActionPermit&) = delete;
@@ -212,51 +218,52 @@ class NormalActionPermit : public ActionPermit {
   void operator=(NormalActionPermit&&) = delete;
 
  private:
-  AppStateType& appState;  ///< application status
+  not_null<AppStateType*> appState;  ///< application status
 
   /// The states to set when starting the action and clear when finishing
-  const AppStateType statesToToggle;
+  AppStateType statesToToggle;
 };
 
 /// Group of parameters for update*SettingDemand() functions
 struct UpdateSettingsParams {
-  IControlPanel& cp;
-  AppStateType& appState;
-  unordered_set<String, hash<string>>& slidersRestoringValue;
-  const String* const pLuckySliderName;
-  const String& controlName;
+  not_null<IControlPanel*> cp;
+  not_null<AppStateType*> appState;
+  not_null<unordered_set<String, hash<string>>*> slidersRestoringValue;
+  const String* pLuckySliderName;
+  not_null<const String*> controlName;
 };
 
 /// Shared body for the controls updating the symbols settings
 unique_ptr<const ActionPermit> updateSettingDemand(
     UpdateSettingsParams& usp,
     AppStateType bannedMask,
-    const string& msgWhenBanned,
+    string_view msgWhenBanned,
     AppStateType statesToSet,
     bool isSlider = true) noexcept {
-  if (isSlider && usp.slidersRestoringValue.end() !=
-                      usp.slidersRestoringValue.find(usp.controlName))
+  if (isSlider && usp.slidersRestoringValue->contains(*usp.controlName))
     return nullptr;  // ignore call, as it's a value restoration maneuver
 
   // Authorize update of the sliders while loading settings without the casual
   // checks. Only one slider must be authorized at a time, to reduce the chances
   // of free rides.
-  if (usp.pLuckySliderName == &usp.controlName)
+  if (usp.pLuckySliderName == usp.controlName)
     return make_unique<const NoTraceActionPermit>();
 
   LockAppState lock;
 
-  if (0U != (bannedMask & usp.appState)) {
+  // Below using bit-and, not a mistake
+  if (bannedMask & *usp.appState) {
     lock.release();
 
     if (isSlider)
-      usp.cp.restoreSliderValue(usp.controlName, msgWhenBanned);
+      usp.cp->restoreSliderValue(*usp.controlName, msgWhenBanned);
     else
       errMsg(msgWhenBanned);
 
     return nullptr;
   }
-  return make_unique<const NormalActionPermit>(usp.appState, statesToSet, lock);
+  return make_unique<const NormalActionPermit>(*usp.appState, statesToSet,
+                                               lock);
 }
 
 /// Shared body for the sliders updating the image settings
@@ -302,22 +309,26 @@ unique_ptr<const ActionPermit> updateMatchSettingDemand(
 }
 }  // anonymous namespace
 
+#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 unique_ptr<const ActionPermit> ControlPanel::actionDemand(
     const String& controlName) noexcept {
-  if (independentActions.find(&controlName) != itEndIndepActions)
+  if (independentActions.contains(&controlName))
     return make_unique<const NoTraceActionPermit>();
 
-  UpdateSettingsParams usp{*this, appState, slidersRestoringValue,
-                           pLuckySliderName, controlName};
+  UpdateSettingsParams usp{.cp = this,
+                           .appState = &appState,
+                           .slidersRestoringValue = &slidersRestoringValue,
+                           .pLuckySliderName = pLuckySliderName,
+                           .controlName = &controlName};
 
-  if (imgSettingsSliders.find(&controlName) != itEndImgSettSliders)
+  if (imgSettingsSliders.contains(&controlName))
     return updateImgSettingDemand(usp);
 
   if (const auto it = symSettingsControls.find(&controlName);
       it != itEndSymSettCtrls)
     return updateSymSettingDemand(usp, it->second);
 
-  if (matchAspectsSliders.find(&controlName) != itEndMatchAspSliders)
+  if (matchAspectsSliders.contains(&controlName))
     return updateMatchSettingDemand(usp);
 
   // The actions from above who affect appState are guarded individually
@@ -432,9 +443,15 @@ unique_ptr<const ActionPermit> ControlPanel::actionDemand(
   }
 
   lock.release();
-  cerr << "No handling yet for " << controlName << " in " __FUNCTION__ << endl;
-  assert(false);
-  return nullptr;
+
+  reportAndThrow<invalid_argument>("Control named '"s + controlName +
+                                   "' is not handled by "s +
+                                   HERE.function_name() + "!"s);
+  return nullptr;  // avoids warning about code paths not returning
 }
+#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace ui
+}  // namespace pic2sym
 
 #endif  // UNIT_TESTING not defined

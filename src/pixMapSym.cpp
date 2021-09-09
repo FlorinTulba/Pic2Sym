@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,15 +41,28 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "pixMapSym.h"
 
 #include "misc.h"
-#include "pixMapSym.h"
+
+#pragma warning(push, 0)
+
+#include <ranges>
+
+#include <gsl/gsl>
+
+#pragma warning(pop)
 
 using namespace std;
 using namespace cv;
+using namespace gsl;
+
+namespace pic2sym::syms {
 
 namespace {
-const Point2d center(.5, .5);
+const Point2d center{.5, .5};
 
 /// Minimal glyph shifting and cropping or none to fit the bounding box
 void fitGlyphToBox(const FT_Bitmap& bm,
@@ -128,7 +144,7 @@ PixMapSym::PixMapSym(
 
   if (rows_ > 0 && cols_ > 0) {
     pixels.resize(size_t(rows_) * cols_);
-    for (int r = 0; r < rows_; ++r)  // copy a row at a time
+    for (int r{}; r < rows_; ++r)  // copy a row at a time
       memcpy_s(&pixels[size_t(r) * cols_], (size_t(rows_) - r) * cols_,
                &bm.buffer[(size_t(r) - diffTop) * bm.pitch - diffLeft],
                (size_t)cols_);
@@ -159,7 +175,7 @@ PixMapSym::PixMapSym(const PixMapSym& other) noexcept
       top(other.top),
       removable(other.removable) {}
 
-PixMapSym::PixMapSym(PixMapSym&& other) noexcept : PixMapSym(other) {
+PixMapSym::PixMapSym(PixMapSym&& other) noexcept : PixMapSym{other} {
   other.rowSums.release();
   other.colSums.release();
 }
@@ -186,37 +202,6 @@ PixMapSym& PixMapSym::operator=(PixMapSym&& other) noexcept {
   return *this;
 }
 
-#ifdef __cpp_lib_three_way_comparison
-strong_equality PixMapSym::operator<=>(const PixMapSym& other) const noexcept {
-  // if (this == &other) // Costly to always perform. Harmless & cheap if cut
-  //  return strong_equality::equivalent;
-
-  if (symCode == other.symCode || symIdx == other.symIdx)
-    return strong_equality::equal;
-
-  if (const auto cmp = (avgPixVal == other.avgPixVal) <=> true; cmp != 0)
-    return cmp;
-
-  if (const auto cmp = left <=> other.left; cmp != 0)
-    return cmp;
-
-  if (const auto cmp = top <=> other.top; cmp != 0)
-    return cmp;
-
-  if (const auto cmp = rows <=> other.rows; cmp != 0)
-    return cmp;
-
-  if (const auto cmp = cols <=> other.cols; cmp != 0)
-    return cmp;
-
-  if (const auto cmp = (mc == other.mc) <=> true; cmp != 0)
-    return cmp;
-
-  const bool cmp = equal(CBOUNDS(pixels), cbegin(other.pixels));
-  return cmp <=> true;
-}
-
-#else   // __cpp_lib_three_way_comparison not defined
 bool PixMapSym::operator==(const PixMapSym& other) const noexcept {
   // if (this == &other) // Costly to always perform. Harmless & cheap if cut
   //  return true;
@@ -242,18 +227,17 @@ bool PixMapSym::operator==(const PixMapSym& other) const noexcept {
   if (mc != other.mc)
     return false;
 
-  return equal(CBOUNDS(pixels), cbegin(other.pixels));
+  return ranges::equal(pixels, other.pixels);
 }
-#endif  // __cpp_lib_three_way_comparison
 
 void PixMapSym::knownSize(int rows_, int cols_) noexcept {
-  rows = (unsigned char)rows_;
-  cols = (unsigned char)cols_;
+  rows = narrow_cast<unsigned char>(rows_);
+  cols = narrow_cast<unsigned char>(cols_);
 }
 
 void PixMapSym::knownPosition(int top_, int left_) noexcept {
-  top = (unsigned char)top_;
-  left = (unsigned char)left_;
+  top = narrow_cast<unsigned char>(top_);
+  left = narrow_cast<unsigned char>(left_);
 }
 
 const Point2d& PixMapSym::getMc() const noexcept {
@@ -305,31 +289,31 @@ void PixMapSym::setRemovable(bool removable_ /* = true*/) noexcept {
 }
 
 Mat PixMapSym::asNarrowMat() const noexcept {
-  return Mat((int)rows, (int)cols, CV_8UC1, (void*)pixels.data());
+  return Mat{(int)rows, (int)cols, CV_8UC1, (void*)pixels.data()};
 }
 
-Mat PixMapSym::toMat(unsigned fontSz, bool inverse /* = false*/) const
-    noexcept {
-  Mat result((int)fontSz, (int)fontSz, CV_8UC1, Scalar(inverse ? 255U : 0U));
+Mat PixMapSym::toMat(unsigned fontSz,
+                     bool inverse /* = false*/) const noexcept {
+  Mat result{(int)fontSz, (int)fontSz, CV_8UC1, Scalar{inverse ? 255. : 0.}};
 
-  const int firstRow = (int)fontSz - (int)top - 1;
-  Mat region(result, Range(firstRow, firstRow + (int)rows),
-             Range((int)left, (int)(left + cols)));
-  const Mat pmsData = inverse ? (255U - asNarrowMat()) : asNarrowMat();
+  const int firstRow{(int)fontSz - (int)top - 1};
+  Mat region{result, Range{firstRow, firstRow + (int)rows},
+             Range{(int)left, (int)(left + cols)}};
+  const Mat pmsData{inverse ? (255U - asNarrowMat()) : asNarrowMat()};
   pmsData.copyTo(region);
 
   return result;
 }
 
 Mat PixMapSym::toMatD01(unsigned fontSz) const noexcept {
-  Mat result((int)fontSz, (int)fontSz, CV_64FC1, Scalar(0.));
+  Mat result{(int)fontSz, (int)fontSz, CV_64FC1, Scalar{}};
 
-  const int firstRow = (int)fontSz - (int)top - 1;
-  Mat region(result, Range(firstRow, firstRow + (int)rows),
-             Range((int)left, (int)(left + cols)));
+  const int firstRow{(int)fontSz - (int)top - 1};
+  Mat region{result, Range{firstRow, firstRow + (int)rows},
+             Range{(int)left, (int)(left + cols)}};
 
-  Mat pmsData = asNarrowMat();
-  pmsData.convertTo(pmsData, CV_64FC1, INV_255);  // convert to double
+  Mat pmsData{asNarrowMat()};
+  pmsData.convertTo(pmsData, CV_64FC1, Inv255);  // convert to double
   pmsData.copyTo(region);
 
   return result;
@@ -348,48 +332,50 @@ void PixMapSym::computeMcAndAvgPixVal(unsigned sz,
                                       double& avgPixVal,
                                       Mat* colSums /* = nullptr*/,
                                       Mat* rowSums /* = nullptr*/) noexcept {
-  const double szM1 = sz - 1.;
+  const double szM1{sz - 1.};
 
   if (colSums)
     *colSums = Mat::zeros(1, (int)sz, CV_64FC1);
   if (rowSums)
     *rowSums = Mat::zeros(1, (int)sz, CV_64FC1);
 
-  if (rows_ == 0U || cols_ == 0U) {
+  if (!rows_ || !cols_) {
     mc = center;
     avgPixVal = 0.;
     return;
   }
 
-  const Mat glyph((int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data());
+  const Mat glyph{(int)rows_, (int)cols_, CV_8UC1, (void*)pixels_.data()};
   Mat sumPerColumn, sumPerRow;
 
   reduce(glyph, sumPerColumn, 0, cv::REDUCE_SUM, CV_64F);  // sum all rows
-  const double glyphSum = *sum(sumPerColumn).val;
+  const double glyphSum{*sum(sumPerColumn).val};
   avgPixVal = glyphSum / maxGlyphSum;
 
   // Checking if the glyph with non-empty bounding box contains only zeros, or
   // only ones (a Blank)
-  if (avgPixVal < EPS || avgPixVal > OneMinEPS) {
+  if (avgPixVal < Eps || avgPixVal > OneMinusEps) {
     mc = center;
     return;
   }
 
   reduce(glyph, sumPerRow, 1, cv::REDUCE_SUM, CV_64F);  // sum all columns
-  const Range leftRange((int)left_, (int)(left_ + cols_)),
-      topRange((int)(sz - top_) - 1, (int)(sz + rows_ - top_) - 1);
+  const Range leftRange{(int)left_, (int)(left_ + cols_)};
+  const Range topRange{(int)(sz - top_) - 1, (int)(sz + rows_ - top_) - 1};
   if (rowSums) {
-    Mat sumPerRowTransposed = sumPerRow.t() / 255.,
-        destRegion(*rowSums, Range::all(), topRange);
+    Mat sumPerRowTransposed{sumPerRow.t() / 255.};
+    Mat destRegion{*rowSums, Range::all(), topRange};
     sumPerRowTransposed.copyTo(destRegion);
   }
   if (colSums) {
-    Mat destRegion(*colSums, Range::all(), leftRange);
-    Mat(sumPerColumn / 255.).copyTo(destRegion);
+    Mat destRegion{*colSums, Range::all(), leftRange};
+    Mat{sumPerColumn / 255.}.copyTo(destRegion);
   }
 
-  const double sumX = sumPerColumn.dot(Mat(consec, Range::all(), leftRange)),
-               sumY = sumPerRow.dot(Mat(revConsec, topRange));
+  const double sumX{sumPerColumn.dot(Mat{consec, Range::all(), leftRange})};
+  const double sumY{sumPerRow.dot(Mat{revConsec, topRange})};
 
-  mc = Point2d(sumX, sumY) / (glyphSum * szM1);
+  mc = Point2d{sumX, sumY} / (glyphSum * szM1);
 }
+
+}  // namespace pic2sym::syms

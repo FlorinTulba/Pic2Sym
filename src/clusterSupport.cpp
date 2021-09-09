@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,12 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "clusterSupport.h"
 
 #include "clusterData.h"
-#include "clusterProcessingBase.h"
-#include "clusterSupport.h"
-#include "misc.h"
-#include "symbolsSupportBase.h"
 
 #pragma warning(push, 0)
 
@@ -52,33 +54,34 @@
 #pragma warning(pop)
 
 using namespace std;
+using namespace gsl;
+
+namespace pic2sym::syms::inline cluster {
 
 ClustersSupport::ClustersSupport(IClusterProcessing& ce_,
                                  unique_ptr<ISymsSupport> ss_,
                                  VSymData& symsSet_) noexcept
-    : ce(ce_), ss(move(ss_)), symsSet(symsSet_) {}
+    : IClustersSupport(), ce(&ce_), ss(move(ss_)), symsSet(&symsSet_) {}
 
-void ClustersSupport::groupSyms(const string& fontType /* = ""*/) noexcept(
-    !UT) {
+void ClustersSupport::groupSyms(const string& fontType /* = ""*/) {
   // Clustering on symsSet
-  ce.process(symsSet, fontType);
+  ce->process(*symsSet, fontType);
 }
 
 void ClustersSupport::delimitGroups(
     vector<vector<unsigned>>& symsIndicesPerCluster,
     VClusterData& clusters,
     set<unsigned>& clusterOffsets) noexcept {
-  const auto symsCount = symsSet.size();
+  const auto symsCount = size(*symsSet);
   vector<unsigned> permutation;
   permutation.reserve(symsCount);
 
-  for (unsigned i = 0U, offset = 0U, lim = ce.getClustersCount(); i < lim;
-       ++i) {
+  for (unsigned i{}, offset{}, lim{ce->getClustersCount()}; i < lim; ++i) {
     vector<unsigned>& symsIndices = symsIndicesPerCluster[(size_t)i];
-    const unsigned clusterSz = (unsigned)symsIndices.size();
+    const unsigned clusterSz{narrow_cast<unsigned>(size(symsIndices))};
     clusterOffsets.emplace_hint(end(clusterOffsets), offset);
     clusters.push_back(make_unique<const ClusterData>(
-        symsSet, offset, symsIndices, *ss));  // needs symsSet[symsIndices] !!
+        *symsSet, offset, symsIndices, *ss));  // needs symsSet[symsIndices] !!
 
     for (const auto idx : symsIndices)
       permutation.push_back(idx);
@@ -87,16 +90,19 @@ void ClustersSupport::delimitGroups(
 
     offset += clusterSz;
   }
-  clusterOffsets.emplace_hint(end(clusterOffsets),
-                              (unsigned)symsCount);  // delimit last cluster
+  clusterOffsets.emplace_hint(
+      end(clusterOffsets),
+      narrow_cast<unsigned>(symsCount));  // delimit last cluster
 
   VSymData newSymsSet;
   newSymsSet.reserve(symsCount);
   for (const auto idx : permutation)
-    newSymsSet.push_back(move(symsSet[(size_t)idx]));
-  symsSet = move(newSymsSet);
+    newSymsSet.push_back(move((*symsSet)[(size_t)idx]));
+  *symsSet = move(newSymsSet);
 }
 
 const VSymData& ClustersSupport::clusteredSyms() const noexcept {
-  return symsSet;
+  return *symsSet;
 }
+
+}  // namespace pic2sym::syms::inline cluster

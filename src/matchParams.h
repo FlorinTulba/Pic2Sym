@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -41,7 +44,10 @@
 #define H_MATCH_PARAMS
 
 #include "matchParamsBase.h"
+
 #include "misc.h"
+
+namespace pic2sym::match {
 
 /// Holds relevant data during patch&glyph matching
 class MatchParams : public IMatchParamsRW {
@@ -88,7 +94,7 @@ class MatchParams : public IMatchParamsRW {
   const std::optional<double>& getFg() const noexcept final;
 
   /// Provides a representation of the parameters
-  const std::wstring toWstring() const noexcept override;
+  std::wstring toWstring() const noexcept override;
 #endif  // defined(_DEBUG) || defined(UNIT_TESTING)
 
   /// Color for bg (range 0..255)
@@ -129,44 +135,52 @@ class MatchParams : public IMatchParamsRW {
 
   // Methods for computing each field
   void computeFg(const cv::Mat& patch,
-                 const ISymData& symData) noexcept override;
+                 const syms::ISymData& symData) noexcept override;
   void computeBg(const cv::Mat& patch,
-                 const ISymData& symData) noexcept override;
+                 const syms::ISymData& symData) noexcept override;
   void computeContrast(const cv::Mat& patch,
-                       const ISymData& symData) noexcept override;
+                       const syms::ISymData& symData) noexcept override;
   void computeSdevFg(const cv::Mat& patch,
-                     const ISymData& symData) noexcept override;
+                     const syms::ISymData& symData) noexcept override;
   void computeSdevBg(const cv::Mat& patch,
-                     const ISymData& symData) noexcept override;
+                     const syms::ISymData& symData) noexcept override;
   void computeSdevEdge(const cv::Mat& patch,
-                       const ISymData& symData) noexcept override;
-  void computeSymDensity(const ISymData& symData) noexcept override;
+                       const syms::ISymData& symData) noexcept override;
+  void computeSymDensity(const syms::ISymData& symData) noexcept override;
   void computePatchSum(const cv::Mat& patch) noexcept override;
   void computePatchSq(const cv::Mat& patch) noexcept override;
-  void computeMcPatch(const cv::Mat& patch,
-                      const CachedData& cachedData) noexcept override;
-  void computeMcPatchApprox(const cv::Mat& patch,
-                            const ISymData& symData,
-                            const CachedData& cachedData) noexcept override;
-  void computeMcsOffset(const cv::Mat& patch,
-                        const ISymData& symData,
-                        const CachedData& cachedData) noexcept override;
+  void computeMcPatch(
+      const cv::Mat& patch,
+      const transform::CachedData& cachedData) noexcept override;
+  void computeMcPatchApprox(
+      const cv::Mat& patch,
+      const syms::ISymData& symData,
+      const transform::CachedData& cachedData) noexcept override;
+  void computeMcsOffset(
+      const cv::Mat& patch,
+      const syms::ISymData& symData,
+      const transform::CachedData& cachedData) noexcept override;
   void computePatchApprox(const cv::Mat& patch,
-                          const ISymData& symData) noexcept override;
-  void computeBlurredPatch(const cv::Mat& patch,
-                           const CachedData& cachedData) noexcept override;
-  void computeBlurredPatchSq(const cv::Mat& patch,
-                             const CachedData& cachedData) noexcept override;
-  void computeVariancePatch(const cv::Mat& patch,
-                            const CachedData& cachedData) noexcept override;
+                          const syms::ISymData& symData) noexcept override;
+  void computeBlurredPatch(
+      const cv::Mat& patch,
+      const transform::CachedData& cachedData) noexcept override;
+  void computeBlurredPatchSq(
+      const cv::Mat& patch,
+      const transform::CachedData& cachedData) noexcept override;
+  void computeVariancePatch(
+      const cv::Mat& patch,
+      const transform::CachedData& cachedData) noexcept override;
   void computeSsim(const cv::Mat& patch,
-                   const ISymData& symData,
-                   const CachedData& cachedData) noexcept override;
-  void computeNormPatchMinMiu(const cv::Mat& patch,
-                              const CachedData& cachedData) noexcept override;
-  void computeAbsCorr(const cv::Mat& patch,
-                      const ISymData& symData,
-                      const CachedData& cachedData) noexcept override;
+                   const syms::ISymData& symData,
+                   const transform::CachedData& cachedData) noexcept override;
+  void computeNormPatchMinMiu(
+      const cv::Mat& patch,
+      const transform::CachedData& cachedData) noexcept override;
+  void computeAbsCorr(
+      const cv::Mat& patch,
+      const syms::ISymData& symData,
+      const transform::CachedData& cachedData) noexcept override;
 
   /**
   Returns an instance as for an ideal match between a symbol and a patch.
@@ -231,5 +245,7 @@ class MatchParams : public IMatchParamsRW {
   std::optional<double> sdevBg;    ///< standard deviation for bg  (0..127.5)
   std::optional<double> sdevEdge;  ///< standard deviation for contour (0..255)
 };
+
+}  // namespace pic2sym::match
 
 #endif  // H_MATCH_PARAMS

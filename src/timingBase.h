@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,12 +43,16 @@
 #ifndef H_TIMING_BASE
 #define H_TIMING_BASE
 
+#include "misc.h"
+
 #pragma warning(push, 0)
 
 #include <string>
-#include "misc.h"
+#include <string_view>
 
 #pragma warning(pop)
+
+namespace pic2sym {
 
 // Timing jobs:
 
@@ -57,35 +64,21 @@ class ITimerActions /*abstract*/ {
 
   /// action to be performed when the timer is paused
   /// @param elapsedS time elapsed this far in seconds
-  virtual void onPause(double elapsedS) noexcept {
-    UNREFERENCED_PARAMETER(elapsedS);
-  }
+  virtual void onPause(double elapsedS [[maybe_unused]]) noexcept {}
 
   /// Action to be performed when the timer is resumed
   virtual void onResume() noexcept {}
 
   /// action to be performed when the timer is released/deleted
   /// @param elapsedS total elapsed time in seconds
-  virtual void onRelease(double elapsedS) noexcept {
-    UNREFERENCED_PARAMETER(elapsedS);
-  }
+  virtual void onRelease(double elapsedS [[maybe_unused]]) noexcept {}
 
   /// action to be performed when the timer is canceled
   /// @param reason explanation for cancellation
-  virtual void onCancel(const std::string& reason = "") noexcept {
-    UNREFERENCED_PARAMETER(reason);
-  }
+  virtual void onCancel(std::string_view reason
+                        [[maybe_unused]] = "") noexcept {}
 
-  virtual ~ITimerActions() noexcept {}
-
-  // No intention to copy / move such trackers
-  ITimerActions(const ITimerActions&) = delete;
-  ITimerActions(ITimerActions&&) = delete;
-  ITimerActions& operator=(const ITimerActions&) = delete;
-  ITimerActions& operator=(ITimerActions&&) = delete;
-
- protected:
-  constexpr ITimerActions() noexcept {}
+  virtual ~ITimerActions() noexcept = 0 {}
 };
 
 /// Getting the duration of a job
@@ -94,16 +87,7 @@ class ITimerResult /*abstract*/ {
   /// Reports elapsed duration depending on valid & paused
   virtual double elapsed() const noexcept = 0;
 
-  virtual ~ITimerResult() noexcept {}
-
-  // Slicing prevention
-  ITimerResult(const ITimerResult&) = delete;
-  ITimerResult(ITimerResult&&) = delete;
-  ITimerResult& operator=(const ITimerResult&) = delete;
-  ITimerResult& operator=(ITimerResult&&) = delete;
-
- protected:
-  constexpr ITimerResult() noexcept {}
+  virtual ~ITimerResult() noexcept = 0 {}
 };
 
 /// Commands for an alive Timer: pause/resume and cancel
@@ -117,18 +101,11 @@ class IActiveTimer /*abstract*/ {
   /// Cancels a timing task.
   /// @param reason explanation for cancellation
   virtual void cancel(
-      const std::string& reason = "The task was canceled") noexcept = 0;
+      std::string_view reason = "The task was canceled") noexcept = 0;
 
-  virtual ~IActiveTimer() noexcept {}
-
-  // Slicing prevention
-  IActiveTimer(const IActiveTimer&) = delete;
-  IActiveTimer(IActiveTimer&&) = delete;
-  IActiveTimer& operator=(const IActiveTimer&) = delete;
-  IActiveTimer& operator=(IActiveTimer&&) = delete;
-
- protected:
-  constexpr IActiveTimer() noexcept {}
+  virtual ~IActiveTimer() noexcept = 0 {}
 };
+
+}  // namespace pic2sym
 
 #endif  // H_TIMING_BASE

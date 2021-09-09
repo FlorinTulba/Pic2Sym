@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,24 +41,28 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "scoreThresholds.h"
+
 #include "warnings.h"
 
 #pragma warning(push, 0)
 
-#include <cassert>
+#include <gsl/gsl>
 
 #pragma warning(pop)
 
 using namespace std;
 
+namespace pic2sym::match {
+
 ScoreThresholds::ScoreThresholds(double multiplier,
                                  const ScoreThresholds& references) noexcept
-    : intermediaries(references.intermediaries.size()),
+    : intermediaries(size(references.intermediaries)),
       total(multiplier * references.total) {
-  const size_t factorsCount = references.intermediaries.size();
-  for (size_t i = 0ULL; i < factorsCount; ++i)
+  const size_t factorsCount{size(references.intermediaries)};
+  for (size_t i{}; i < factorsCount; ++i)
     intermediaries[i] = multiplier * references.intermediaries[i];
 }
 
@@ -63,17 +70,17 @@ double ScoreThresholds::overall() const noexcept {
   return total;
 }
 size_t ScoreThresholds::thresholdsCount() const noexcept {
-  return intermediaries.size();
+  return size(intermediaries);
 }
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 double ScoreThresholds::operator[](size_t idx) const noexcept(!UT) {
-  if (idx >= intermediaries.size())
-    THROW_WITH_VAR_MSG(__FUNCTION__ " - idx=" + to_string(idx) +
-                           " should be less than intermediaries.size()=" +
-                           to_string(intermediaries.size()),
-                       out_of_range);
-  // intermediaries.at(idx) provides less details than the check above
+  EXPECTS_OR_REPORT_AND_THROW(
+      idx < size(intermediaries), out_of_range,
+      HERE.function_name() + " - idx="s + to_string(idx) +
+          " should be less than size(intermediaries)="s +
+          to_string(size(intermediaries)));
+
   return intermediaries[idx];
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
@@ -94,19 +101,21 @@ void ScoreThresholds::update(double totalScore) noexcept {
 void ScoreThresholds::update(double totalScore,
                              const std::vector<double>& multipliers) noexcept {
   total = totalScore;
-  const size_t factorsCount = multipliers.size();
-  if (intermediaries.size() != factorsCount)
+  const size_t factorsCount{size(multipliers)};
+  if (size(intermediaries) != factorsCount)
     intermediaries.resize(factorsCount);
-  for (size_t i = 0ULL; i < factorsCount; ++i)
+  for (size_t i{}; i < factorsCount; ++i)
     intermediaries[i] = totalScore * multipliers[i];
 }
 
 void ScoreThresholds::update(double multiplier,
                              const IScoreThresholds& references) noexcept {
   total = multiplier * references.overall();
-  const size_t factorsCount = references.thresholdsCount();
-  if (intermediaries.size() != factorsCount)
+  const size_t factorsCount{references.thresholdsCount()};
+  if (size(intermediaries) != factorsCount)
     intermediaries.resize(factorsCount);
-  for (size_t i = 0ULL; i < factorsCount; ++i)
+  for (size_t i{}; i < factorsCount; ++i)
     intermediaries[i] = multiplier * references[i];
 }
+
+}  // namespace pic2sym::match

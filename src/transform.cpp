@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,6 +41,9 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "transform.h"
 
 #include "bestMatchBase.h"
 #include "controllerBase.h"
@@ -47,7 +53,6 @@
 #include "matchAssessment.h"
 #include "matchEngineBase.h"
 #include "matchParamsBase.h"
-#include "misc.h"
 #include "ompTrace.h"
 #include "patchBase.h"
 #include "picTransformProgressTracker.h"
@@ -55,19 +60,22 @@
 #include "resizedImg.h"
 #include "settingsBase.h"
 #include "symSettingsBase.h"
-#include "symsLoadingFailure.h"
+#include "symsChangeIssues.h"
 #include "taskMonitor.h"
 #include "timing.h"
-#include "transform.h"
 #include "transformSupportBase.h"
 #include "transformTrace.h"
 
 #pragma warning(push, 0)
 
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 #ifndef UNIT_TESTING
+
+#include "warnings.h"
+
 // The project uses parallelism
 #include <omp.h>
 
@@ -80,17 +88,21 @@ extern int __cdecl omp_get_thread_num(void);
 
 #endif  // UNIT_TESTING
 
-#include <numeric>
-#include <sstream>
-
 #include <filesystem>
+#include <numeric>
+#include <tuple>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
 #pragma warning(pop)
 
+namespace pic2sym {
+
 /// Checks if the user wants to cancel the image transformation by pressing ESC
-extern bool checkCancellationRequest() noexcept;
+extern void checkCancellationRequest(std::future<void>&,
+                                     std::atomic_flag&) noexcept;
+
+}  // namespace pic2sym
 
 #ifndef UNIT_TESTING
 
@@ -102,30 +114,58 @@ extern bool checkCancellationRequest() noexcept;
 
 #pragma warning(pop)
 
-bool checkCancellationRequest() noexcept {
-  // cancel if the user presses ESC and then confirms his abort request
-  return cv::waitKey(1) == 27 &&
-         IDYES == MessageBox(nullptr,
-                             L"Do you want to abort the image transformation?",
-                             L"Question",
-                             MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL |
-                                 MB_SETFOREGROUND);
+namespace pic2sym {
+
+void checkCancellationRequest(std::future<void>& abortHandler,
+                              std::atomic_flag& isCanceled) noexcept {
+  // Allow the user to abort the image transformation.
+  // Wait for the user to answer to the async question without prompting
+  // him/her again
+  if ((!abortHandler.valid() ||
+       abortHandler.wait_for(0ms) == std::future_status::ready) &&
+      EscKeyCode == cv::waitKey(1)) {
+    // Prompt and wait for the user answer asynchronously.
+    // waitKey had to remain within the main thread.
+    abortHandler = std::async(std::launch::async, [&]() noexcept {
+      if (IDYES == MessageBox(nullptr,
+                              L"Do you want to abort the image transformation?",
+                              L"Question",
+                              MB_ICONQUESTION | MB_YESNOCANCEL | MB_TASKMODAL |
+                                  MB_SETFOREGROUND)) {
+        std::ignore = isCanceled.test_and_set();
+      }
+    });
+  }
 }
+
+}  // namespace pic2sym
 
 #endif  // UNIT_TESTING not defined
 
 using namespace std;
 using namespace std::filesystem;
 using namespace cv;
+using namespace gsl;
+
+namespace pic2sym {
 
 /**
 Handy flag during development:
-- without it, same scenario couldn't be tested again unless deleting the result
-file from the Output folder
-- just set it to true within the unit you're updating, do the tests, then remove
-the assignment
+- without it, same scenario couldn't be tested again unless deleting the
+result file from the Output folder
+- just set it to true within the unit you're updating, do the tests, then
+remove the assignment
 */
-extern bool AllowReprocessingCases = false;
+extern bool AllowReprocessingCases{false};
+
+extern const Size BlurWinSize;
+extern const double BlurStandardDeviation;
+extern const bool ParallelizeTr_PatchRowLoops;
+
+using namespace syms;
+using namespace match;
+
+namespace transform {
 
 #ifndef UNIT_TESTING
 
@@ -142,13 +182,13 @@ class ResultFileManager final {
   ResultFileManager(
       const string&
           studiedCase,  ///< unique id describing the transformation params
-      const atomic_bool& isCanceled_,  ///< reference to the cancel flag
+      const atomic_flag& isCanceled_,  ///< reference to the cancel flag
       Mat& result_,                    ///< reference to the result
       IActiveTimer& timer_  ///< reference to the timer used for the current
                             ///< transformation
       ) noexcept
-      : isCanceled(isCanceled_), result(result_), timer(timer_) {
-    if (static bool outputFolderCreated = false; !outputFolderCreated) {
+      : isCanceled(&isCanceled_), result(&result_), timer(&timer_) {
+    if (static bool outputFolderCreated{false}; !outputFolderCreated) {
       createOutputFolder();
       outputFolderCreated = true;
     }
@@ -158,8 +198,8 @@ class ResultFileManager final {
     resultFile.append("Output").append(studiedCase).concat(".jpg");
 
     if (!AllowReprocessingCases && exists(resultFile)) {
-      result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
-      timer.cancel(
+      *result = imread(resultFile.string(), ImreadModes::IMREAD_UNCHANGED);
+      timer->cancel(
           "This image has already been transformed under these settings.\n"
           "Displaying the available result!");
       alreadyProcessedCase = true;
@@ -170,9 +210,9 @@ class ResultFileManager final {
     if (alreadyProcessedCase)
       return;
 
-    const bool canceled = isCanceled.load(memory_order_acquire);
+    const bool canceled{isCanceled->test()};
     if (canceled) {
-      timer.cancel("Image transformation was canceled!");
+      timer->cancel("Image transformation was canceled!");
 
       // Still saving the partial result, but with a timestamp before the jpg
       // extension
@@ -182,19 +222,19 @@ class ResultFileManager final {
                        .concat(".jpg");
 
     } else
-      timer.pause();  // don't time result serialization
+      timer->pause();  // don't time result serialization
 
     cout << "Writing result to " << resultFile << '\n' << endl;
-    imwrite(resultFile.string(), result);
+    imwrite(resultFile.string(), *result);
 
     if (!canceled)
-      timer.resume();  // let any further processing get timed
+      timer->resume();  // let any further processing get timed
   }
 
   /// Creates 'Output' directory which stores generated results
   static void createOutputFolder() noexcept {
     // Ensure there is an Output folder
-    path outputFolder = AppStart::dir();
+    path outputFolder{AppStart::dir()};
     if (!exists(outputFolder.append("Output")))
       create_directory(outputFolder);
   }
@@ -205,16 +245,16 @@ class ResultFileManager final {
 
  private:
   /// Monitors if the process of the file was canceled
-  const atomic_bool& isCanceled;
+  not_null<const atomic_flag*> isCanceled;
 
-  Mat& result;      ///< reference to the result
-  path resultFile;  ///< path of the result
+  not_null<Mat*> result;  ///< reference to the result
+  path resultFile;        ///< path of the result
 
   /// Reference to the timer used for the current transformation
-  IActiveTimer& timer;
+  not_null<IActiveTimer*> timer;
 
   /// Previously studied cases don't need reprocessing
-  bool alreadyProcessedCase = false;
+  bool alreadyProcessedCase{false};
 };
 
 #else  // UNIT_TESTING defined
@@ -223,7 +263,7 @@ class ResultFileManager final {
 class ResultFileManager final {
  public:
   ResultFileManager(const string&,
-                    const atomic_bool&,
+                    const atomic_flag&,
                     Mat&,
                     IActiveTimer&) noexcept {}
   ~ResultFileManager() noexcept = default;
@@ -254,11 +294,11 @@ static void logDataForBestMatches(
     return;
 
   // Log support (DEBUG mode only)
-  TransformTrace tt(studiedCase, sz, usesUnicode);
-  for (int r = 0; r < h; r += sz) {
+  TransformTrace tt{studiedCase, sz, usesUnicode};
+  for (int r{}; r < h; r += sz) {
     const vector<unique_ptr<IBestMatch>>& draftRow =
         draftMatches[size_t((unsigned)r / sz)];
-    for (int c = 0; c < w; c += sz) {
+    for (int c{}; c < w; c += sz) {
       const IBestMatch& draftMatch = *draftRow[size_t((unsigned)c / sz)];
 
       // Log the data about best match (DEBUG mode only)
@@ -268,98 +308,100 @@ static void logDataForBestMatches(
 }
 
 #else  // UNIT_TESTING || !_DEBUG  - ignore the call to logDataForBestMatches
-#define logDataForBestMatches(...)
+static void logDataForBestMatches(auto&&...) noexcept {}
 
 #endif  // _DEBUG, UNIT_TESTING
 
-extern const Size BlurWinSize;
-extern const double BlurStandardDeviation;
-extern const bool ParallelizeTr_PatchRowLoops;
+using namespace match;
 
 Transformer::Transformer(IController& ctrler_,
-                         const ISettings& cfg_,
+                         const p2s::cfg::ISettings& cfg_,
                          IMatchEngine& me_,
-                         IBasicImgData& img_) noexcept
-    : ctrler(ctrler_),
-      ptpt(ctrler_.getPicTransformProgressTracker()),
-      cfg(cfg_),
-      me(me_),
-      img(img_),
-      transformSupport(
+                         p2s::input::IBasicImgData& img_) noexcept
+    : ctrler(&ctrler_),
+      ptpt(&ctrler_.getPicTransformProgressTracker()),
+      cfg(&cfg_),
+      me(&me_),
+      img(&img_),
+      transformSupport{
           IPreselManager::concrete().createTransformSupport(me_,
                                                             cfg_.getMS(),
                                                             resized,
                                                             resizedBlurred,
                                                             draftMatches,
-                                                            me.support())) {}
+                                                            me->support())} {}
 
-void Transformer::run() noexcept(!UT) {
-  isCanceled.store(false, memory_order_release);
+void Transformer::run() {
+  // [j]threads don't have a builtin mechanism to just check if they finished.
+  // future-s however do have it: valid() && wait_for(0ms)==ready
+  future<void> abortHandler;
+  isCanceled.clear();
   durationS = 0.;
 
-  static TaskMonitor preparations(
-      "preparations of the timer, image, symbol sets and result",
-      *transformMonitor);
+  using p2s::ui::TaskMonitor;
 
-  Timer timer = ptpt.createTimerForImgTransform();
+  static TaskMonitor preparations{
+      "preparations of the timer, image, symbol sets and result",
+      *transformMonitor};
+
+  Timer timer{ptpt->createTimerForImgTransform()};
 
   try {
-    me.updateSymbols();  // throws for invalid cmap/size
+    me->updateSymbols();  // throws for invalid cmap/size
   } catch (const TinySymsLoadingFailure&) {
     timer.invalidate();
-    ptpt.transformFailedToStart();
+    ptpt->transformFailedToStart();
     SymsLoadingFailure::informUser(
         "Couldn't load the tiny versions of the selected font, "
         "thus the transformation was aborted!");
     return;
   }
 
-  sz = cfg.getSS().getFontSz();
+  sz = cfg->getSS().getFontSz();
 
   // In UnitTesting throws logic_error when no image
-  const ResizedImg resizedImg(img.original(), cfg.getIS(), sz);
-  const bool newResizedImg = ctrler.updateResizedImg(resizedImg);
+  const p2s::input::ResizedImg resizedImg{img->original(), cfg->getIS(), sz};
+  const bool newResizedImg{ctrler->updateResizedImg(resizedImg)};
   const Mat& resizedVersion = resizedImg.get();
   h = resizedVersion.rows;
   w = resizedVersion.cols;
   updateStudiedCase(h, w);
 
-  ResultFileManager rf(studiedCase, isCanceled, result, timer);
+  ResultFileManager rf{studiedCase, isCanceled, result, timer};
   if (rf.detectedPreviouslyProcessedCase())
     return;
 
-  const unsigned patchesPerRow = (unsigned)w / sz,
-                 patchesPerCol = (unsigned)h / sz;
+  const unsigned patchesPerRow{(unsigned)w / sz};
+  const unsigned patchesPerCol{(unsigned)h / sz};
   initDraftMatches(newResizedImg, resizedVersion, patchesPerCol, patchesPerRow);
 
   try {
-    me.getReady();
+    me->getReady();
   } catch (const exception& e) {
     infoMsg(e.what(), "Manageable Error");
     return;
   }
 
-  symsCount = me.getSymsCount();
+  symsCount = me->getSymsCount();
 
-  result = resizedBlurred.clone();  // initialize the result with a simple blur.
-                                    // Mandatory clone!
-  ptpt.presentTransformationResults();  // show the blur as draft result
+  result = resizedBlurred.clone();       // initialize the result with a simple
+                                         // blur. Mandatory clone!
+  ptpt->presentTransformationResults();  // show the blur as draft result
 
-  const double
-      preparationsDuration = timer.elapsed(),
+  const double preparationsDuration{timer.elapsed()};
 
-      // If the duration of the preparations took more than .7 seconds,
-      // consider the weight of preparations for the transformation to be 10%
-      // Otherwise, the weight of these preparations is negligible, say 0.1%
-      preparationsWeight = (preparationsDuration > .7) ? .1 : .001,
-      transformationWeight = 1. - preparationsWeight;
+  // If the duration of the preparations took more than .7 seconds,
+  // consider the weight of preparations for the transformation to be 10%
+  // Otherwise, the weight of these preparations is negligible, say 0.1%
+  const double preparationsWeight = (preparationsDuration > .7) ? .1 : .001;
+  const double transformationWeight = 1. - preparationsWeight;
 
   transformMonitor->setTasksDetails(
-      {
-          preparationsWeight,   // preparations of the timer, image, symbol sets
-                                // and result
-          transformationWeight  // transformation of the image's patches
-      },
+      {// preparations of the timer, image, symbol sets and result
+       preparationsWeight,
+
+       // transformation of the image's patches
+       transformationWeight},
       timer);
 
   preparations.taskDone();
@@ -369,33 +411,34 @@ void Transformer::run() noexcept(!UT) {
 
   // Transformation task can be aborted only after processing several rows of
   // patches with a new symbols batch. Therefore the total steps required to
-  // complete the task is the symbols count multiplied by the number of rows of
-  // patches.
-  static TaskMonitor imgTransformTaskMonitor(
-      "transformation of the image's patches", *transformMonitor);
+  // complete the task is the symbols count multiplied by the number of rows
+  // of patches.
+  static TaskMonitor imgTransformTaskMonitor{
+      "transformation of the image's patches", *transformMonitor};
 
   imgTransformTaskMonitor.setTotalSteps((size_t)symsCount * patchesPerCol);
 
   // symsBatchSz is `volatile` => every batch might have a different size
-  for (unsigned fromIdx = 0U, batchSz = symsBatchSz.load(memory_order_acquire),
-                upperIdx = min(batchSz, symsCount);
-       !isCanceled.load(memory_order_acquire) && fromIdx < symsCount;
+  for (unsigned fromIdx{}, batchSz{symsBatchSz.load(memory_order_acquire)},
+       upperIdx{min(batchSz, symsCount)};
+       !isCanceled.test() && fromIdx < symsCount;
        fromIdx = upperIdx, batchSz = symsBatchSz.load(memory_order_acquire),
-                upperIdx = ((batchSz == UINT_MAX)
-                                ? symsCount
-                                : min(upperIdx + batchSz, symsCount)))
-    considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor);
+       upperIdx = ((batchSz == UINT_MAX) ? symsCount
+                                         : min(upperIdx + batchSz, symsCount)))
+    considerSymsBatch(fromIdx, upperIdx, imgTransformTaskMonitor, abortHandler);
 
-  if (!isCanceled.load(memory_order_acquire)) {
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-    me.assessor().reportSkippedAspects();
-#endif  // MONITOR_SKIPPED_MATCHING_ASPECTS
+  if (!isCanceled.test()) {
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
+
+    me->assessor().reportSkippedAspects();
+
+#endif  // defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
     imgTransformTaskMonitor.taskDone();
   }
 
-  logDataForBestMatches(isCanceled.load(memory_order_acquire), studiedCase, sz,
-                        h, w, me.usesUnicode(), draftMatches);
+  logDataForBestMatches(isCanceled.test(), studiedCase, sz, h, w,
+                        me->usesUnicode(), draftMatches);
 }
 
 void Transformer::initDraftMatches(bool newResizedImg,
@@ -404,7 +447,7 @@ void Transformer::initDraftMatches(bool newResizedImg,
                                    unsigned patchesPerRow) noexcept {
   // processing new resized image
   if (newResizedImg || draftMatches.empty()) {
-    const bool isColor = img.isColor();
+    const bool isColor{img->isColor()};
     resized = resizedVersion;
     GaussianBlur(resized, resizedBlurred, BlurWinSize, BlurStandardDeviation,
                  BlurStandardDeviation, BORDER_REPLICATE);
@@ -419,26 +462,28 @@ void Transformer::initDraftMatches(bool newResizedImg,
 void Transformer::considerSymsBatch(
     unsigned fromIdx,
     unsigned upperIdx,
-    AbsTaskMonitor& imgTransformTaskMonitor) noexcept {
-  // Cannot set finalizedRows as reduction(+ : finalizedRows) in the for below,
-  // since its value is checked during the loop - the same story as for
+    p2s::ui::AbsTaskMonitor& imgTransformTaskMonitor,
+    future<void>& abortHandler) noexcept {
+  // Cannot set finalizedRows as reduction(+ : finalizedRows) in the for
+  // below, since its value is checked during the loop - the same story as for
   // isCanceled
-  volatile size_t finalizedRows = 0U;  // volatile and omp atomic is enough
+  volatile size_t finalizedRows{};  // volatile and omp atomic is enough
 
-  const int patchesPerCol = h / (int)sz;
-  const size_t rowsOfPatches = size_t(patchesPerCol),
-               batchSz = size_t(upperIdx - fromIdx),
-               prevSteps = (size_t)fromIdx * rowsOfPatches;
+  const int patchesPerCol{h / (int)sz};
+  const size_t rowsOfPatches{size_t(patchesPerCol)};
+  const size_t batchSz{size_t(upperIdx - fromIdx)};
+  const size_t prevSteps{(size_t)fromIdx * rowsOfPatches};
 
+#pragma warning(disable : WARN_CODE_ANALYSIS_IGNORES_OPENMP)
 #pragma omp parallel if (ParallelizeTr_PatchRowLoops)
 #pragma omp for schedule(dynamic) nowait
-  for (int r = 0; r < patchesPerCol; ++r) {
-    if (isCanceled.load(memory_order_acquire))
+  for (int r{}; r < patchesPerCol; ++r) {
+    if (isCanceled.test())
       // OpenMP doesn't accept break, so just continue with empty iterations
       continue;
 
-    ompPrintf(ParallelizeTr_PatchRowLoops, "syms batch: [%d - %d); row = %d",
-              fromIdx, upperIdx, r);
+    OMP_PRINTF(ParallelizeTr_PatchRowLoops, "syms batch: [%d - %d); row = %d",
+               fromIdx, upperIdx, r);
 
     transformSupport->approxRow(r, w, sz, fromIdx, upperIdx, result);
 
@@ -446,15 +491,16 @@ void Transformer::considerSymsBatch(
     ++finalizedRows;
 
     // #pragma omp master not allowed in for
-    if ((omp_get_thread_num() == 0) && (finalizedRows < rowsOfPatches)) {
+    if (!omp_get_thread_num() && (finalizedRows < rowsOfPatches)) {
       imgTransformTaskMonitor.taskAdvanced(prevSteps + batchSz * finalizedRows);
+
       // Only master thread checks cancellation status
-      if (checkCancellationRequest())
-        isCanceled.store(true, memory_order_release);
+      checkCancellationRequest(abortHandler, isCanceled);
     }
   }  // rows loop
+#pragma warning(default : WARN_CODE_ANALYSIS_IGNORES_OPENMP)
 
-  if (isCanceled.load(memory_order_acquire))
+  if (isCanceled.test())
     imgTransformTaskMonitor.taskAborted();
   else
     imgTransformTaskMonitor.taskAdvanced(
@@ -463,10 +509,10 @@ void Transformer::considerSymsBatch(
   // At the end of this batch, display draft result, unless this is the last
   // batch. For the last batch (upperIdx == symsCount), the timer's destructor
   // will display the result (final draft) and it will also report
-  // either the transformation duration or the fact that the transformation was
-  // canceled.
+  // either the transformation duration or the fact that the transformation
+  // was canceled.
   if (upperIdx < symsCount)
-    ptpt.presentTransformationResults();
+    ptpt->presentTransformationResults();
 }
 
 void Transformer::setSymsBatchSize(int symsBatchSz_) noexcept {
@@ -477,7 +523,10 @@ void Transformer::setSymsBatchSize(int symsBatchSz_) noexcept {
 }
 
 Transformer& Transformer::useTransformMonitor(
-    AbsJobMonitor& transformMonitor_) noexcept {
+    p2s::ui::AbsJobMonitor& transformMonitor_) noexcept {
   transformMonitor = &transformMonitor_;
   return *this;
 }
+
+}  // namespace transform
+}  // namespace pic2sym

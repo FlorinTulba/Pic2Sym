@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,21 +41,18 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
-#include "pixMapSymBase.h"
 #include "sievesSymsFilter.h"
-#include "symFilterCache.h"
-
-#pragma warning(push, 0)
-
-#include <iostream>
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning(pop)
 
 using namespace std;
 using namespace cv;
+
+namespace pic2sym {
+
+SYM_FILTER_DEFINE_IS_ENABLED(SievesSymsFilter)
+
+namespace syms::inline filter {
 
 namespace {
 /**
@@ -69,14 +69,14 @@ bool isEvenlyDistributed(const IPixMapSym& pms,
                          unsigned halfSz,
                          unsigned lastSzBit) noexcept {
   // threshold ratio between 1/4 of the symbol sum and the sum of each quadrant
-  static constexpr double SumQuarterThreshold = 1.5364;
+  static constexpr double SumQuarterThreshold{1.5364};
 
-  double sumBrightGlyph =
+  double sumBrightGlyph{
       (toInvert ? (1. - pms.getAvgPixVal()) : pms.getAvgPixVal()) *
-      sfc.getAreaD();
+      sfc.getAreaD()};
 
   // Ignore central lines when sz is odd
-  if (lastSzBit != 0U) {
+  if (lastSzBit) {
     sumBrightGlyph -= *sum(brightGlyph.row((int)halfSz)).val +
                       *sum(brightGlyph.col((int)halfSz)).val;
 
@@ -84,23 +84,26 @@ bool isEvenlyDistributed(const IPixMapSym& pms,
     sumBrightGlyph += brightGlyph.at<double>((int)halfSz, (int)halfSz);
   }
 
-  const double sumQuarterBrightGlyph =
-                   sumBrightGlyph / 4.,  // central average value
+  // central average value
+  const double sumQuarterBrightGlyph{sumBrightGlyph / 4.};
 
-      // min and max limits of the sum within each quadrant
-      minSumQuarterBrightGlyph = sumQuarterBrightGlyph / SumQuarterThreshold,
-               maxSumQuarterBrightGlyph =
-                   sumQuarterBrightGlyph * SumQuarterThreshold;
+  // min and max limits of the sum within each quadrant
+  const double minSumQuarterBrightGlyph{sumQuarterBrightGlyph /
+                                        SumQuarterThreshold};
+  const double maxSumQuarterBrightGlyph{sumQuarterBrightGlyph *
+                                        SumQuarterThreshold};
 
   // The 4 quadrants and their sums (ignoring mid rows & columns for odd sz)
-  const Range firstHalf(0, (int)halfSz),
-      secondHalf(int(halfSz + lastSzBit), (int)sz);
-  const Mat q1(brightGlyph, firstHalf, firstHalf),
-      q2(brightGlyph, firstHalf, secondHalf),
-      q3(brightGlyph, secondHalf, secondHalf),
-      q4(brightGlyph, secondHalf, firstHalf);
-  const double q1Sum = *sum(sum(q1)).val, q2Sum = *sum(sum(q2)).val,
-               q3Sum = *sum(sum(q3)).val, q4Sum = *sum(sum(q4)).val;
+  const Range firstHalf{0, (int)halfSz};
+  const Range secondHalf{int(halfSz + lastSzBit), (int)sz};
+  const Mat q1{brightGlyph, firstHalf, firstHalf};
+  const Mat q2{brightGlyph, firstHalf, secondHalf};
+  const Mat q3{brightGlyph, secondHalf, secondHalf};
+  const Mat q4{brightGlyph, secondHalf, firstHalf};
+  const double q1Sum{*sum(sum(q1)).val};
+  const double q2Sum{*sum(sum(q2)).val};
+  const double q3Sum{*sum(sum(q3)).val};
+  const double q4Sum{*sum(sum(q4)).val};
   const Mat qSums = (Mat_<double>(1, 4) << q1Sum, q2Sum, q3Sum, q4Sum);
 
   // min and max from qSums
@@ -130,22 +133,28 @@ Mat fftShift(const Mat& rawMagnSpectrum,
              unsigned sz,
              unsigned halfSz,
              unsigned lastSzBit) noexcept {
-  Mat result((int)sz, (int)sz, CV_64FC1);
-  const unsigned mid1 = halfSz + lastSzBit, mid2 = sz - mid1;
-  const Range range1(0, (int)mid1),
-      range2((int)mid1, (int)sz),  // ranges within the raw spectrum
-      range1_(0, (int)mid2),
-      range2_((int)mid2, (int)sz);  // ranges within the rearranged spectrum
+  // 0. parameter prevents using initializer_list ctor of Mat
+  Mat result{(int)sz, (int)sz, CV_64FC1, 0.};
+  const unsigned mid1{halfSz + lastSzBit};
+  const unsigned mid2{sz - mid1};
+  const Range range1{0, (int)mid1};
+  const Range range2{(int)mid1, (int)sz};  // ranges within the raw spectrum
+  const Range range1_{0, (int)mid2};
+
+  // ranges within the rearranged spectrum
+  const Range range2_{(int)mid2, (int)sz};
 
   // quadrants of the raw spectrum
-  const Mat q1raw(rawMagnSpectrum, range1, range1),
-      q3raw(rawMagnSpectrum, range2, range2),
-      q4raw(rawMagnSpectrum, range2, range1),
-      q2raw(rawMagnSpectrum, range1, range2);
+  const Mat q1raw{rawMagnSpectrum, range1, range1};
+  const Mat q3raw{rawMagnSpectrum, range2, range2};
+  const Mat q4raw{rawMagnSpectrum, range2, range1};
+  const Mat q2raw{rawMagnSpectrum, range1, range2};
 
   // quadrants of the rearranged spectrum
-  Mat q1(result, range1_, range1_), q2(result, range1_, range2_),
-      q3(result, range2_, range2_), q4(result, range2_, range1_);
+  Mat q1{result, range1_, range1_};
+  Mat q2{result, range1_, range2_};
+  Mat q3{result, range2_, range2_};
+  Mat q4{result, range2_, range1_};
 
   q1raw.copyTo(q3);
   q3raw.copyTo(q1);
@@ -162,7 +171,7 @@ Mat magnitudeSpectrum(const Mat& brightGlyph, unsigned sz) noexcept {
   const Mat cplxGlyphPlanes[] = {brightGlyph,
                                  Mat::zeros((int)sz, (int)sz, CV_64FC1)};
   Mat cplxGlyph, dftGlyph, result, dftGlyphPlanes[2ULL];
-  merge(cplxGlyphPlanes, 2U, cplxGlyph);
+  merge(cplxGlyphPlanes, 2ULL, cplxGlyph);
 
   /*
   Computing DFT for the exact data - no windowing, nor 0-padding,
@@ -210,7 +219,7 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
 #if defined(_DEBUG) && defined(INSPECT_FFT_MAGNITUDE_SPECTRUM)
   // Useful while Debugging, to visualize the spectrum quadrants in natural 1234
   // order
-  Mat shiftedMagnSpectrum = fftShift(rawMagnSpectrum, sz, halfSz, lastSzBit);
+  Mat shiftedMagnSpectrum{fftShift(rawMagnSpectrum, sz, halfSz, lastSzBit)};
 
   // DC value = 0 to maximize the contrast for rest
   shiftedMagnSpectrum.at<double>((int)halfSz, (int)halfSz) = 0;
@@ -219,26 +228,32 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
   /* Building q13 and q24 as representatives for quadrants 1&3 and 2&4 */
 
   // Used ranges
-  const int mid = int(halfSz + lastSzBit);
-  const Range range1(0, mid), range2(mid, (int)sz), range3(1, mid),
-      range4(0, mid - 1);
+  const int mid{int(halfSz + lastSzBit)};
+  const Range range1{0, mid};
+  const Range range2{mid, (int)sz};
+  const Range range3{1, mid};
+  const Range range4{0, mid - 1};
 
-  const Mat q13(rawMagnSpectrum, range2,
-                range2),  // quadrant 3 as representative for 1&3
-      q4raw(rawMagnSpectrum, range2,
-            range3);  // quadrant 4 without DC column from its left
+  // quadrant 3 as representative for 1&3
+  const Mat q13{rawMagnSpectrum, range2, range2};
 
-  Mat q24((int)halfSz, (int)halfSz, CV_64FC1,
-          0.),                            // representative for quadrants 2&4
-      q4Dest(q24, Range::all(), range4);  // where to copy quadrant 4 within q24
+  // quadrant 4 without DC column from its left
+  const Mat q4raw{rawMagnSpectrum, range2, range3};
+
+  // representative for quadrants 2&4; 0. parameter avoids initializer_list ctor
+  Mat q24{(int)halfSz, (int)halfSz, CV_64FC1, 0.};
+
+  // where to copy quadrant 4 within q24
+  Mat q4Dest{q24, Range::all(), range4};
   q4raw.copyTo(q4Dest);
 
   // For even sz, there is additional information for quadrant 2&4
   // to be extracted from 1st column of quadrant 2
-  if (lastSzBit == 0U) {
-    const Range range5(mid, mid + 1), range6((int)halfSz - 1, (int)halfSz);
-    Mat q2rawRest(rawMagnSpectrum, range3, range5);
-    const Mat q2restDest(q24, range3, range6);
+  if (!lastSzBit) {
+    const Range range5{mid, mid + 1};
+    const Range range6{(int)halfSz - 1, (int)halfSz};
+    Mat q2rawRest{rawMagnSpectrum, range3, range5};
+    const Mat q2restDest{q24, range3, range6};
     flip(q2rawRest, q2restDest, 0);  // copy flipped horizontally
   }
 
@@ -246,18 +261,20 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
 
   // Sieves require FT modes magnitudes above MagnitudePercentThreshold of their
   // range
-  static constexpr double MagnitudePercentThreshold = .16;
-  Mat maskDC((int)sz, (int)sz, CV_8UC1, 255U);
+  static constexpr double MagnitudePercentThreshold{.16};
+  Mat maskDC{(int)sz, (int)sz, CV_8UC1, 255.};
   maskDC.at<unsigned char>(0, 0) = 0U;  // mask to ignore DC
   double minV, maxV;                    // limits
   minMaxIdx(rawMagnSpectrum, &minV, &maxV, nullptr, nullptr,
             maskDC);  // min & max ignoring DC
   // Consider only FT modes whose magnitude is larger than the threshold below
-  const double thresholdMagn = minV + (maxV - minV) * MagnitudePercentThreshold;
+  const double thresholdMagn{minV + (maxV - minV) * MagnitudePercentThreshold};
 
-  int maxIdx[2ULL];  // coordinates of the max magnitude FT mode within quadrant
+  // coordinates of the max magnitude FT mode within quadrant
+  array<int, 2ULL> maxIdx;
+
   // Peak for quadrant 1&3
-  minMaxIdx(q13, nullptr, &maxV, nullptr, maxIdx);
+  minMaxIdx(q13, nullptr, &maxV, nullptr, maxIdx.data());
   if (maxV < thresholdMagn) {
     hFreq13 = vFreq13 = 0U;  // flag value
   } else {
@@ -269,7 +286,7 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
   }
 
   // Peak for quadrant 2&4
-  minMaxIdx(q24, nullptr, &maxV, nullptr, maxIdx);
+  minMaxIdx(q24, nullptr, &maxV, nullptr, maxIdx.data());
   if (maxV < thresholdMagn) {
     hFreq24 = vFreq24 = 0U;  // flag value
   } else {
@@ -286,8 +303,7 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
   // For a sieve of even size and dominant FT mode of maximum frequencies in
   // quadrant 1&3, quadrant 2&4 won't be able to store a similar dominant FT
   // mode
-  if (lastSzBit == 0U && hFreq24 == 0U && vFreq24 == 0U &&
-      hFreq13 + vFreq13 == sz) {
+  if (!lastSzBit && !hFreq24 && !vFreq24 && hFreq13 + vFreq13 == sz) {
     hFreq24 = vFreq24 = halfSz;
   }
 }
@@ -295,20 +311,20 @@ void extractDominantFtModes(const Mat& rawMagnSpectrum,
 
 SievesSymsFilter::SievesSymsFilter(
     unique_ptr<ISymFilter> nextFilter_ /* = nullptr*/) noexcept
-    : TSymFilter(4U, "sieve-like symbols", move(nextFilter_)) {}
+    : TSymFilter{4U, "sieve-like symbols", move(nextFilter_)} {}
 
 bool SievesSymsFilter::isDisposable(const IPixMapSym& pms,
                                     const SymFilterCache& sfc) noexcept {
   if (!isEnabled())
     return false;
 
-  const unsigned sz = sfc.getSzU(),  // symbol size
-      halfSz = sz >> 1U,             // floor(sz/2.)
-      lastSzBit = sz & 1U;           // 1 for odd sz, 0 for even sz
+  const unsigned sz{sfc.getSzU()};    // symbol size
+  const unsigned halfSz{sz >> 1U};    // floor(sz/2.)
+  const unsigned lastSzBit{sz & 1U};  // 1 for odd sz, 0 for even sz
 
   // Using inverted glyph if original is too dark
-  const bool toInvert = (pms.getAvgPixVal() < .5);
-  Mat brightGlyph = pms.toMatD01(sz);
+  const bool toInvert{pms.getAvgPixVal() < .5};
+  Mat brightGlyph{pms.toMatD01(sz)};
   if (toInvert)
     brightGlyph = 1. - brightGlyph;
 
@@ -317,7 +333,7 @@ bool SievesSymsFilter::isDisposable(const IPixMapSym& pms,
                            lastSzBit))
     return false;
 
-  const Mat magnSpectrum = magnitudeSpectrum(brightGlyph, sz);
+  const Mat magnSpectrum{magnitudeSpectrum(brightGlyph, sz)};
 
   // Dominant FT modes within quadrants 1&3 and 2&4
   unsigned hFreq13, vFreq13, hFreq24, vFreq24;
@@ -325,7 +341,7 @@ bool SievesSymsFilter::isDisposable(const IPixMapSym& pms,
                          hFreq24, vFreq24);
 
   // All dominant FT modes must be strictly positive (0 means DC value)
-  if (min(hFreq13, vFreq13) == 0U || min(hFreq24, vFreq24) == 0U)
+  if (!min(hFreq13, vFreq13) || !min(hFreq24, vFreq24))
     return false;
 
   // Dominant FT modes from quadrants 1&3 and 2&4 must be at most 1 unit apart
@@ -335,14 +351,17 @@ bool SievesSymsFilter::isDisposable(const IPixMapSym& pms,
 
   // Minimum number of holes within the sieve (product of count per rows and
   // count per columns)
-  static const unsigned MinHolesCount = 9U;
+  static constexpr unsigned MinHolesCount{9U};
 
   // Vertical and horizontal frequencies need to be >1 and the count of holes of
   // the sieves must be >=9
-  const unsigned hFreqMax = max(hFreq13, hFreq24),
-                 vFreqMax = max(vFreq13, vFreq24);
+  const unsigned hFreqMax{max(hFreq13, hFreq24)};
+  const unsigned vFreqMax{max(vFreq13, vFreq24)};
   if (hFreqMax < 2U || vFreqMax < 2U || hFreqMax * vFreqMax < MinHolesCount)
     return false;
 
   return true;
 }
+
+}  // namespace syms::inline filter
+}  // namespace pic2sym

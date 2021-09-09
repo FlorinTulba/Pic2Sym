@@ -36,11 +36,10 @@ _**(I)BlurEngine**_ is the parent of following blur methods:
 - _**GaussBlur**_ wraps the original Gaussian blur from OpenCV (not the CUDA implementation)
 - [_**BoxBlur**_][BoxBlur] wraps the box blur from OpenCV (not the CUDA implementation). This is an averaging blur, which is simpler and faster than the Gaussian blur. However, in order to deliver similar quality compared to the Gaussian blur, it must be applied several times and sometimes with various window widths. The number of iterations is currently hardcoded on 1, to let this method be faster than GaussianBlur, while loosing blur quality
 - [_**ExtBoxBlur**_][ExtBoxBlur] is a more elaborated version of the BoxBlur, with increased accuracy as goal. It deals with the fact that the ideal blur window width is a floating point value, not an integer one. The number of iterations is currently hardcoded on 1. For these settings, it is slightly faster than *BoxBlur*.
-- [_**StackBlur**_][StackBlur] is an adaptation of the 2 (CPU-only and CUDA) algorithms that can be found [here][StackBlurWithCUDA]
 
 Current version of the project relies only on CPU power. In this context and for the reference window width and standard deviation prescribed for the Gaussian blur within ***StructuralSimilarity***, none of the presented alternatives and neither other investigated blurs were able to beat the Gaussian blur from OpenCV while also aiming for similar blur quality.
 
-The [prototypesCUDA](../../../../../prototypesCUDA/ReadMe.md) branch introduced implementations for the *Box* and *Stack* blur algorithms.<br>
+The [prototypesCUDA](../../../../../prototypesCUDA/ReadMe.md) branch introduced implementations for the *Box* and [*Stack*][StackBlurWithCUDA] blur algorithms.<br>
 
 -------
 [Back to the Appendix](../appendix.md) or jump to the [start page](../../../../ReadMe.md)

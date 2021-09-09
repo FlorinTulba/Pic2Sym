@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,19 +41,21 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "symSettings.h"
+
 #include "warnings.h"
 
 #pragma warning(push, 0)
 
-#include <iostream>
+#include <iomanip>
 
 #pragma warning(pop)
 
 using namespace std;
 
-unsigned SymSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+namespace pic2sym::cfg {
 
 void SymSettings::reset() noexcept {
   fontFile = encoding = "";
@@ -66,7 +71,8 @@ void SymSettings::setFontFile(const std::string& fontFile_) noexcept {
     return;
 
   cout << "fontFile"
-       << " : '" << fontFile << "' -> '" << fontFile_ << '\'' << endl;
+       << " : " << quoted(fontFile, '\'') << " -> " << quoted(fontFile_, '\'')
+       << endl;
   fontFile = fontFile_;
 }
 
@@ -75,7 +81,8 @@ void SymSettings::setEncoding(const std::string& encoding_) noexcept {
     return;
 
   cout << "encoding"
-       << " : '" << encoding << "' -> '" << encoding_ << '\'' << endl;
+       << " : " << quoted(encoding, '\'') << " -> " << quoted(encoding_, '\'')
+       << endl;
   encoding = encoding_;
 }
 
@@ -92,22 +99,6 @@ unique_ptr<ISymSettings> SymSettings::clone() const noexcept {
   return make_unique<SymSettings>(*this);
 }
 
-#ifdef __cpp_lib_three_way_comparison
-strong_equality SymSettings::operator<=>(const SymSettings& other) const
-    noexcept {
-  // if (this == &other) // Costly to always perform. Harmless & cheap if cut
-  //  return strong_equality::equivalent;
-
-  if (const auto cmp = (fontSz <=> other.fontSz); cmp != 0)
-    return cmp;
-
-  if (const auto cmp = fontFile.compare(other.fontFile) <=> 0; cmp != 0)
-    return cmp;
-
-  return encoding.compare(other.encoding) <=> 0;
-}
-
-#else   // __cpp_lib_three_way_comparison not defined
 bool SymSettings::operator==(const SymSettings& other) const noexcept {
   // if (this == &other)  // Costly to always perform. Harmless & cheap if cut
   //  return true;
@@ -120,10 +111,11 @@ bool SymSettings::operator==(const SymSettings& other) const noexcept {
 
   return encoding == other.encoding;
 }
-#endif  // __cpp_lib_three_way_comparison
 
 #pragma warning(disable : WARN_EXPR_ALWAYS_FALSE)
 bool SymSettings::olderVersionDuringLastIO() noexcept {
-  return VERSION_FROM_LAST_IO_OP < VERSION;
+  return VersionFromLast_IO_op < Version;
 }
 #pragma warning(default : WARN_EXPR_ALWAYS_FALSE)
+
+}  // namespace pic2sym::cfg

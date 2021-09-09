@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -41,18 +44,27 @@
 #define H_BEST_MATCH
 
 #include "bestMatchBase.h"
+
 #include "matchParamsBase.h"
+
+namespace pic2sym::match {
 
 /// Holds the best match found at a given time
 class BestMatch : public IBestMatch {
  public:
   /// Constructor setting only 'patch'. The other fields need the setters or the
   /// 'update' method.
-  BestMatch(const IPatch& patch_) noexcept;
+  BestMatch(const input::IPatch& patch_) noexcept;
+
+  // Slicing prevention
+  BestMatch(const BestMatch&) = delete;
+  BestMatch(BestMatch&&) = delete;
+  void operator=(const BestMatch&) = delete;
+  void operator=(BestMatch&&) = delete;
 
   /// The patch to approximate, together with some other details. No setter
   /// available
-  const IPatch& getPatch() const noexcept final;
+  const input::IPatch& getPatch() const noexcept final;
 
   /// The approximation of the patch
   const cv::Mat& getApprox() const noexcept final;
@@ -60,16 +72,17 @@ class BestMatch : public IBestMatch {
   /// Parameters of the match (none for blur-only approximations)
   const std::optional<const IMatchParams*> getParams() const noexcept final;
 
-  /// Parameters of the match
-  const std::unique_ptr<IMatchParamsRW>& refParams() const noexcept final;
+  /// Parameters of the match. Requires non-null params for non-blur-only
+  /// approximations
+  IMatchParamsRW& refParams() const noexcept final;
 
   /// Index within vector&lt;DerivedFrom_ISymData&gt;. none if patch
   /// approximation is blur-based only.
   const std::optional<unsigned>& getSymIdx() const noexcept final;
 
   /// Index of last cluster that was worth investigating thoroughly
-  const std::optional<unsigned>& getLastPromisingNontrivialCluster() const
-      noexcept final;
+  const std::optional<unsigned>& getLastPromisingNontrivialCluster()
+      const noexcept final;
 
   /// Set the index of last cluster that was worth investigating thoroughly;
   /// @return itself
@@ -93,7 +106,7 @@ class BestMatch : public IBestMatch {
   BestMatch& update(double score_,
                     unsigned long symCode_,
                     unsigned symIdx_,
-                    const ISymData& sd) noexcept override;
+                    const syms::ISymData& sd) noexcept override;
 
   /**
   It generates the approximation of the patch based on the rest of the fields.
@@ -112,7 +125,8 @@ class BestMatch : public IBestMatch {
 
   @throw logic_error when called for uniform patches - not to be handled
   */
-  BestMatch& updatePatchApprox(const IMatchSettings& ms) noexcept(!UT) override;
+  BestMatch& updatePatchApprox(const cfg::IMatchSettings& ms) noexcept(
+      !UT) override;
 
 #if defined _DEBUG || \
     defined UNIT_TESTING  // Next members are necessary for logging
@@ -127,18 +141,18 @@ class BestMatch : public IBestMatch {
   BestMatch& setUnicode(bool unicode_) noexcept final;
 
   /// Provides a representation of the match
-  const std::wstring toWstring() const noexcept override;
+  std::wstring toWstring() const noexcept override;
 
 #endif  // defined _DEBUG || defined UNIT_TESTING
 
  private:
   /// The patch to approximate, together with some other details
-  const std::unique_ptr<const IPatch> patch;
+  std::unique_ptr<const input::IPatch> patch;
 
   cv::Mat approx;  ///< the approximation of the patch
 
   /// Parameters of the match (none for blur-only approximations)
-  const std::unique_ptr<IMatchParamsRW> params;
+  std::unique_ptr<IMatchParamsRW> params;
 
   /// Index within vector&lt;DerivedFrom_ISymData&gt; none if patch
   /// approximation is blur-based only.
@@ -149,21 +163,23 @@ class BestMatch : public IBestMatch {
 
   /// pointer to vector&lt;DerivedFrom_ISymData&gt;[symIdx] or null when patch
   /// approximation is blur-based only.
-  const ISymData* pSymData = nullptr;
+  const syms::ISymData* pSymData = nullptr;
 
   /// glyph code. none if patch approximation is blur-based only
   std::optional<unsigned long> symCode;
 
   /// score of the best match. If patch approximation is blur-based only, score
   /// will remain 0.
-  double score = 0.;
+  double score{};
 
 #if defined _DEBUG || defined UNIT_TESTING  // Field necessary for logging
   // Unicode symbols are logged in symbol format, while other encodings log
-  // their code
-  bool unicode = false;  ///< is Unicode the charmap's encoding
+  // their code. Important only for logging.
+  bool unicode{false};  ///< is Unicode the charmap's encoding
 
 #endif  // defined _DEBUG || defined UNIT_TESTING
 };
+
+}  // namespace pic2sym::match
 
 #endif  // H_BEST_MATCH

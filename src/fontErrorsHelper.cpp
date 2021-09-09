@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,12 +41,17 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "fontErrorsHelper.h"
 
 #include "warnings.h"
 
 #pragma warning(push, 0)
+
+#include <algorithm>
+
+#include <gsl/gsl>
 
 #include <ft2build.h>
 #include FT_TYPES_H
@@ -59,42 +67,46 @@
   }                       \
   ;
 
+using namespace gsl;
+
+namespace pic2sym {
+
 namespace {
 
 /// Pair describing a FreeType error - the code and the string message
 struct FtError {
-  const char* msg;  ///< error message
-  int code;         ///< error code
+  czstring<> msg;  ///< error message
+  int code;        ///< error code
 };
 
 /// Initializes the vector of FreeType error strings
 static const std::vector<std::string>& initFtErrors() noexcept {
   static std::vector<std::string> _FtErrors;
-  static bool initilized = false;
+  static bool initilized{false};
 
   if (!initilized) {
     const FtError ft_errors[] =
 #pragma warning(push, 0)
 #include FT_ERRORS_H
 #pragma warning(pop)
+        ;  // corrects the formatting of the next statement
+    Expects(sizeof(ft_errors) / sizeof(FtError) > 0);
 
-        int maxErrCode = INT_MIN;
-    for (const FtError& err : ft_errors) {
-      if (err.code > maxErrCode)
-        maxErrCode = err.code;
-    }
+    const int maxErrCode{
+        std::ranges::max(ft_errors, {}, [](const FtError& err) {
+          return err.code;
+        }).code};
 
     _FtErrors.resize(size_t(maxErrCode) + 1ULL);
 
-    for (const FtError& err : ft_errors) {
-      if (err.msg != nullptr)
+    for (const FtError& err : ft_errors)
+      if (err.msg)
         _FtErrors[(size_t)err.code] = err.msg;
-    }
 
-    for (int i = 0; i <= maxErrCode; ++i) {
-      if (_FtErrors[(size_t)i].empty())
-        _FtErrors[(size_t)i] = std::to_string(i);
-    }
+    for (auto& err : _FtErrors)
+      if (err.empty())
+        // Set own index as description when missing description
+        err = std::to_string(std::distance(&_FtErrors[0], &err));
 
     initilized = true;
   }
@@ -104,3 +116,5 @@ static const std::vector<std::string>& initFtErrors() noexcept {
 }  // anonymous namespace
 
 const std::vector<std::string>& FtErrors = initFtErrors();
+
+}  // namespace pic2sym

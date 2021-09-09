@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -41,15 +44,23 @@
 #define H_PMS_CONT
 
 #include "pmsContBase.h"
+
+#include "controllerBase.h"
+#include "pixMapSymBase.h"
 #include "symFilterBase.h"
 
-class IController;  // forward declaration
-class IPixMapSym;
+namespace pic2sym::syms {
 
 /// Convenience container to hold PixMapSym-s of same size
 class PmsCont : public IPmsCont {
  public:
   explicit PmsCont(IController& ctrler_) noexcept;
+
+  // Slicing prevention
+  PmsCont(const PmsCont&) = delete;
+  PmsCont(PmsCont&&) = delete;
+  void operator=(const PmsCont&) = delete;
+  void operator=(PmsCont&&) = delete;
 
   /// Is container ready to provide useful data?
   bool isReady() const noexcept override { return ready; }
@@ -120,7 +131,7 @@ class PmsCont : public IPmsCont {
                  size_t symIdx,
                  FT_GlyphSlot g,
                  FT_BBox& bb,
-                 SymFilterCache& sfc) noexcept(!UT) override;
+                 filter::SymFilterCache& sfc) noexcept(!UT) override;
 
   /// No other symbols to append. Statistics can be now computed
   void setAsReady() noexcept override;
@@ -146,29 +157,31 @@ class PmsCont : public IPmsCont {
   cv::Mat revConsec;  ///< consec reversed
 
   /// Updates Cmap View as soon as there are enough symbols for 1 page
-  IController& ctrler;
+  gsl::not_null<IController*> ctrler;
 
   /// Member that allows setting filters to detect symbols with undesired
   /// features.
-  const std::unique_ptr<ISymFilter> symFilter{new DefSymFilter};
+  std::unique_ptr<ISymFilter> symFilter{new DefSymFilter};
 
   /// Associations: filterId - count of detected syms
   std::unordered_map<unsigned, unsigned> removableSymsByCateg;
 
   /// Max sum of a glyph's pixels
-  double maxGlyphSum = 0.;
+  double maxGlyphSum{};
 
   /// Max ratio for small symbols of glyph area / containing area
-  double coverageOfSmallGlyphs = 0.;
+  double coverageOfSmallGlyphs{};
 
-  unsigned fontSz = 0U;  ///< bounding box size
+  unsigned fontSz{};  ///< bounding box size
 
-  unsigned blanks = 0U;  ///< how many Blank characters were within the charmap
+  unsigned blanks{};  ///< how many Blank characters were within the charmap
 
   /// How many duplicate symbols were within the charmap
-  unsigned duplicates = 0U;
+  unsigned duplicates{};
 
-  bool ready = false;  ///< is container ready to provide useful data?
+  bool ready{false};  ///< is container ready to provide useful data?
 };
+
+}  // namespace pic2sym::syms
 
 #endif  // H_PMS_CONT

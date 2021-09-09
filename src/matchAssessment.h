@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,6 +43,12 @@
 #ifndef H_MATCH_ASSESSMENT
 #define H_MATCH_ASSESSMENT
 
+#include "cachedData.h"
+#include "match.h"
+#include "matchParamsBase.h"
+#include "scoreThresholdsBase.h"
+#include "symbolsSupportBase.h"
+
 #ifndef UNIT_TESTING
 #include "countSkippedAspects.h"
 #endif  // UNIT_TESTING not defined
@@ -49,6 +58,8 @@
 #include <memory>
 #include <vector>
 
+#include <gsl/gsl>
+
 #include <opencv2/core/core.hpp>
 
 #pragma warning(pop)
@@ -56,12 +67,7 @@
 extern template class std::vector<size_t>;
 extern template class std::vector<double>;
 
-// Forward declarations
-class CachedData;
-class ISymData;
-class IMatchParamsRW;
-class IScoreThresholds;
-class MatchAspect;
+namespace pic2sym::match {
 
 /**
 Match manager based on the enabled matching aspects:
@@ -70,13 +76,15 @@ Match manager based on the enabled matching aspects:
 */
 class MatchAssessor /*abstract*/ {
  public:
-  virtual ~MatchAssessor() noexcept {}
+  MatchAssessor() noexcept {}
+
+  virtual ~MatchAssessor() noexcept = 0 {}
 
   // Slicing prevention
   MatchAssessor(const MatchAssessor&) = delete;
   MatchAssessor(MatchAssessor&&) = delete;
-  MatchAssessor& operator=(const MatchAssessor&) = delete;
-  MatchAssessor& operator=(MatchAssessor&&) = delete;
+  void operator=(const MatchAssessor&) = delete;
+  void operator=(MatchAssessor&&) = delete;
 
   MatchAssessor& availableAspects(
       const std::vector<std::unique_ptr<const MatchAspect>>&
@@ -89,28 +97,28 @@ class MatchAssessor /*abstract*/ {
   void updateEnabledMatchAspectsCount() noexcept;
 
   /// Provides enabledAspectsCount
-  size_t enabledMatchAspectsCount() const noexcept;
+  std::size_t enabledMatchAspectsCount() const noexcept;
 
   /**
   Prepares the enabled aspects for an image transformation process.
 
   @param cachedData some precomputed values
   */
-  virtual void getReady(const CachedData& cachedData) noexcept;
+  virtual void getReady(const transform::CachedData& cachedData) noexcept;
 
   /// Determines if symData is a better match for patch than previous matching
   /// symbol
   virtual bool isBetterMatch(
       const cv::Mat& patch,  ///< the patch whose approximation through a symbol
                              ///< is performed
-      const ISymData&
+      const syms::ISymData&
           symData,  ///< data of the new symbol/cluster compared to the patch
-      const CachedData& cd,                  ///< precomputed values
+      const transform::CachedData& cd,       ///< precomputed values
       const IScoreThresholds& scoresToBeat,  ///< scores after each aspect that
                                              ///< beat the current best match
       IMatchParamsRW& mp,  ///< matching parameters resulted from the comparison
       double& score        ///< achieved score of the new assessment
-      ) const noexcept;
+  ) const noexcept;
 
   /**
   Sets the threshold scores which might spare a symbol from evaluating further
@@ -122,41 +130,34 @@ class MatchAssessor /*abstract*/ {
   virtual void scoresToBeat(double draftScore,
                             IScoreThresholds& scoresToBeat) const noexcept = 0;
 
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
-
-  /// While reporting, the particular aspects that were used during the
-  /// transformation are required
-  const std::vector<MatchAspect*>& getEnabledAspects() const noexcept {
-    return enabledAspects;
-  }
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
   /// MatchAssessorSkip will report all skipped matching aspects
   virtual void reportSkippedAspects() const noexcept {}
-#endif  // MONITOR_SKIPPED_MATCHING_ASPECTS
+
+#endif  // defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
  protected:
-  constexpr MatchAssessor() noexcept {}
-
   /// The available matching aspects, enabled or not
   const std::vector<std::unique_ptr<const MatchAspect>>* availAspects = nullptr;
 
-  // matching aspects
-  std::vector<const MatchAspect*> enabledAspects;  ///< the enabled aspects
+  /// the enabled aspects
+  std::vector<gsl::not_null<const MatchAspect*>> enabledAspects;
 
-  size_t enabledAspectsCount = 0ULL;  ///< count of the enabled aspects
+  size_t enabledAspectsCount{};  ///< count of the enabled aspects
 
   /// Count of the enabled aspects minus 1
-  size_t enabledAspectsCountM1 = (size_t)-1LL;
+  size_t enabledAspectsCountM1{(size_t)-1LL};
 
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
   /// Used for reporting skipped aspects
-  mutable size_t totalIsBetterMatchCalls = 0ULL;
+  mutable size_t totalIsBetterMatchCalls{};
 
   /// Used for reporting skipped aspects
   mutable std::vector<size_t> skippedAspects;
 
-#endif  // MONITOR_SKIPPED_MATCHING_ASPECTS
+#endif  // defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 };
 
 /// MatchAssessor version when UseSkipMatchAspectsHeuristic is false
@@ -168,8 +169,8 @@ class MatchAssessorNoSkip : public MatchAssessor {
   @param draftScore a new reference score
   @param scoresToBeat the mentioned threshold scores
   */
-  void scoresToBeat(double draftScore, IScoreThresholds& scoresToBeat) const
-      noexcept override;
+  void scoresToBeat(double draftScore,
+                    IScoreThresholds& scoresToBeat) const noexcept override;
 };
 
 /// MatchAssessor version when UseSkipMatchAspectsHeuristic is true
@@ -196,7 +197,7 @@ class MatchAssessorSkip : public MatchAssessor {
   - for equally complex aspects, consider first those with a higher max score,
     to reduce the chance that other aspects are needed
   */
-  void getReady(const CachedData& cachedData) noexcept override;
+  void getReady(const transform::CachedData& cachedData) noexcept override;
 
   /**
   Sets the threshold scores which might spare a symbol from evaluating further
@@ -205,29 +206,29 @@ class MatchAssessorSkip : public MatchAssessor {
   @param draftScore a new reference score
   @param scoresToBeat the mentioned threshold scores
   */
-  void scoresToBeat(double draftScore, IScoreThresholds& scoresToBeat) const
-      noexcept override;
+  void scoresToBeat(double draftScore,
+                    IScoreThresholds& scoresToBeat) const noexcept override;
 
   /// Determines if symData is a better match for patch than previous matching
   /// symbol
   bool isBetterMatch(
       const cv::Mat& patch,  ///< the patch whose approximation through a symbol
                              ///< is performed
-      const ISymData&
+      const syms::ISymData&
           symData,  ///< data of the new symbol/cluster compared to the patch
-      const CachedData& cd,                  ///< precomputed values
+      const transform::CachedData& cd,       ///< precomputed values
       const IScoreThresholds& scoresToBeat,  ///< scores after each aspect that
                                              ///< beat the current best match
       IMatchParamsRW& mp,  ///< matching parameters resulted from the comparison
       double& score        ///< achieved score of the new assessment
-      ) const noexcept override;
+  ) const noexcept override;
 
-#ifdef MONITOR_SKIPPED_MATCHING_ASPECTS
+#if defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
   /// Reports all skipped matching aspects
   void reportSkippedAspects() const noexcept override;
 
-#endif  // MONITOR_SKIPPED_MATCHING_ASPECTS
+#endif  // defined(MONITOR_SKIPPED_MATCHING_ASPECTS) && !defined(UNIT_TESTING)
 
  private:
   /// 1 over (max possible increase of the score based on remaining aspects)
@@ -247,7 +248,9 @@ class MatchAssessorSkip : public MatchAssessor {
   for a given patch score under this threshold, the heuristic isn't used. The
   first draft match above the threshold enables the heuristic.
   */
-  double thresholdDraftScore = 0.;
+  double thresholdDraftScore{};
 };
+
+}  // namespace pic2sym::match
 
 #endif  // H_MATCH_ASSESSMENT

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -45,14 +48,21 @@
 #ifndef H_CONTROL_PANEL
 #define H_CONTROL_PANEL
 
+#include "controlPanelActionsBase.h"
+
 #include "appState.h"
+#include "settingsBase.h"
+#include "sliderConversionBase.h"
 
 #pragma warning(push, 0)
 
 #include <memory>
-#include <string>
+#include <string_view>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <gsl/gsl>
 
 #include <opencv2/core/core.hpp>
 
@@ -60,24 +70,20 @@
 
 extern template class std::unordered_set<cv::String, std::hash<std::string> >;
 
-// Forward declarations
-class ISettings;
-class IControlPanelActions;
-class IfImgSettings;
-class IMatchSettings;
-class SliderConverter;
+namespace pic2sym::ui {
 
 /// Interface of ControlPanel
 class IControlPanel /*abstract*/ {
  public:
   /// Restores a slider to its previous value.
   virtual void restoreSliderValue(const cv::String& trName,
-                                  const std::string& errText) noexcept = 0;
+                                  std::string_view errText) noexcept = 0;
 
   /**
   Authorizes the action of the control whose name is provided as parameter.
   @return nullptr when the action isn't allowed or the controlName is not
-  recognized. Otherwise it returns a permit for the action
+  recognized. Otherwise it returns a permit for the action.
+  @throw invalid_argument for an unknown controlName
   */
   virtual std::unique_ptr<const ActionPermit> actionDemand(
       const cv::String& controlName) noexcept = 0;
@@ -98,21 +104,12 @@ class IControlPanel /*abstract*/ {
                                  unsigned fontSz_) noexcept = 0;
 
   /// Updates sliders concerning IfImgSettings items
-  virtual void updateImgSettings(const IfImgSettings& is) noexcept = 0;
+  virtual void updateImgSettings(const cfg::IfImgSettings& is) noexcept = 0;
 
   /// Updates sliders concerning IMatchSettings items
-  virtual void updateMatchSettings(const IMatchSettings& ms) noexcept = 0;
+  virtual void updateMatchSettings(const cfg::IMatchSettings& ms) noexcept = 0;
 
-  virtual ~IControlPanel() noexcept {}
-
-  // Slicing prevention
-  IControlPanel(const IControlPanel&) = delete;
-  IControlPanel(IControlPanel&&) = delete;
-  IControlPanel& operator=(const IControlPanel&) = delete;
-  IControlPanel& operator=(IControlPanel&&) = delete;
-
- protected:
-  constexpr IControlPanel() noexcept {}
+  virtual ~IControlPanel() noexcept = 0 {}
 };
 
 /**
@@ -131,8 +128,8 @@ problem and the user needs to correct it.
 class ControlPanel : public IControlPanel {
  public:
   ControlPanel(IControlPanelActions& performer_,
-               const ISettings& cfg_) noexcept;
-  ~ControlPanel() noexcept = default;
+               const cfg::ISettings& cfg_) noexcept;
+  ~ControlPanel() noexcept override = default;
 
   // 'cfg' is supposed to not change for the original / copy
   ControlPanel(const ControlPanel&) noexcept = default;
@@ -167,10 +164,11 @@ class ControlPanel : public IControlPanel {
   can finally proceed at the termination of this thread
   */
   void restoreSliderValue(const cv::String& trName,
-                          const std::string& errText) noexcept override;
+                          std::string_view errText) noexcept override;
 
   /// Authorizes the action of the control whose name is provided as parameter.
   /// When the action isn't allowed returns nullptr.
+  /// Throws invalid_argument for an unknown controlName
   std::unique_ptr<const ActionPermit> actionDemand(
       const cv::String& controlName) noexcept override;
 
@@ -184,10 +182,10 @@ class ControlPanel : public IControlPanel {
   void updateSymSettings(unsigned encIdx, unsigned fontSz_) noexcept override;
 
   /// Updates sliders concerning IfImgSettings items
-  void updateImgSettings(const IfImgSettings& is) noexcept override;
+  void updateImgSettings(const cfg::IfImgSettings& is) noexcept override;
 
   /// Updates sliders concerning IMatchSettings items
-  void updateMatchSettings(const IMatchSettings& ms) noexcept override;
+  void updateMatchSettings(const cfg::IMatchSettings& ms) noexcept override;
 
  protected:
   /**
@@ -210,10 +208,14 @@ class ControlPanel : public IControlPanel {
   static inline const cv::String winName;
 
   /// The delegate responsible to perform selected actions
-  IControlPanelActions& performer;
+  gsl::not_null<IControlPanelActions*> performer;
 
   /// The settings, required to (re)initialize the sliders
-  const ISettings& cfg;
+  gsl::not_null<const cfg::ISettings*> cfg;
+
+  /// Displays the problem and corrects it by restoring previous slider value
+  /// Self joins in ~ControlPanel
+  std::jthread sliderErrorsHandler{};
 
   /// pointers to the names of the sliders that are undergoing value restoration
   std::unordered_set<cv::String, std::hash<std::string> > slidersRestoringValue;
@@ -232,7 +234,7 @@ class ControlPanel : public IControlPanel {
   and the ActionPermit-s generated by that method.
   Its inspection & update are guarded by a lock mechanism.
   */
-  AppStateType appState = ST(Idle);
+  AppStateType appState{ST(Idle)};
 
   // Configuration sliders' positions
   int maxHSyms, maxVSyms;
@@ -250,8 +252,10 @@ class ControlPanel : public IControlPanel {
   The max of the encodings slider won't update unless
   issuing an additional slider move, which has to be ignored.
   */
-  bool updatingEncMax = false;
+  bool updatingEncMax{false};
 };
+
+}  // namespace pic2sym::ui
 
 #endif  // H_CONTROL_PANEL
 

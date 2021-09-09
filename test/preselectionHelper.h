@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,24 +45,28 @@
 
 #include "testMain.h"
 
+namespace pic2sym {
+
 extern const bool PreselectionByTinySyms;
 
 /// Fixture forcing PreselectionByTinySyms on PreselMode during test and
 /// restoring its value at the end
 template <bool PreselMode>
-class PreselFixt : public Fixt {
+class PreselFixt : public ut::Fixt {
  public:
-  const bool oldPreselectionByTinySyms = PreselectionByTinySyms;
-
-  PreselFixt() noexcept : Fixt() {
+  PreselFixt() noexcept : ut::Fixt() {
     if (PreselMode != PreselectionByTinySyms)
       const_cast<bool&>(PreselectionByTinySyms) = PreselMode;
   }
 
-  ~PreselFixt() noexcept {
+  ~PreselFixt() noexcept override {
     if (oldPreselectionByTinySyms != PreselectionByTinySyms)
       const_cast<bool&>(PreselectionByTinySyms) = oldPreselectionByTinySyms;
   }
+
+  bool oldPreselectionByTinySyms{PreselectionByTinySyms};
 };
+
+}  // namespace pic2sym
 
 #endif  // H_PRESELECTION_HELPER

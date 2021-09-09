@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,6 +41,9 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "testMain.h"
 
 #include "controller.h"
 #include "fontEngine.h"
@@ -50,21 +56,26 @@
 #include "selectBranch.h"
 #include "settings.h"
 #include "symSettingsBase.h"
-#include "testMain.h"
 
 #pragma warning(push, 0)
 
 #include <iostream>
 #include <numeric>
-#include <random>
 
 #pragma warning(pop)
 
 using namespace std;
 using namespace boost;
 using namespace cv;
+using namespace gsl;
+
+namespace pic2sym {
 
 extern const bool PreserveRemovableSymbolsForExamination;
+extern const unsigned Settings_MIN_FONT_SIZE;
+extern const unsigned Settings_MAX_FONT_SIZE;
+
+using namespace syms;
 
 namespace ut {
 /// Fixture reducing some declarative effort from tests
@@ -84,7 +95,9 @@ class FontEngineFixtComputations : public Fixt {
     sz = sz_;
     area = double(sz) * sz;
     maxGlyphSum = 255. * area;
-    consec = Mat(1, sz_, CV_64FC1);
+
+    // 0. parameter prevents using initializer_list ctor of Mat
+    consec = Mat{1, (int)sz_, CV_64FC1, 0.};
     iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);  // 0..sz-1
     flip(consec, revConsec, 1);                              // sz-1..0
     revConsec = revConsec.t();
@@ -106,14 +119,16 @@ class FontEngineFixtComputations : public Fixt {
   vector<unsigned char> pixels;
 
   /// Pixels will have rows x cols elements
-  unsigned char rows = 0U, cols = 0U;
+  unsigned char rows{};
+  unsigned char cols{};
 
   /// Location of glyph within the wrapping square
-  unsigned char left = 0U, top = 0U;
+  unsigned char left{};
+  unsigned char top{};
 
  public:
   /// Average pixel value to be computed within each test case
-  double apv = 0.;
+  double apv{};
 
   Point2d mc;  ///< mass-center to be computed within each test case
 };
@@ -122,7 +137,7 @@ class FontEngineFixtComputations : public Fixt {
 class FontEngineFixtConfig : public Fixt {
  public:
   /// Creates the fixture providing a FontEngine object
-  FontEngineFixtConfig() : Fixt(), s(), c(s), jm("", nullptr, 0.) {
+  FontEngineFixtConfig() : Fixt(), s(), c{s}, jm{"", nullptr, 0.} {
     try {
       pfe = dynamic_cast<FontEngine*>(
           &c.getFontEngine(s.getSS()).useSymsMonitor(jm));
@@ -135,54 +150,59 @@ class FontEngineFixtConfig : public Fixt {
       // unaffected by filter changes. Besides, testing on all symbols is
       // sufficient to check the correctness of the covered cases.
       if (!PreserveRemovableSymbolsForExamination)
-        refPreserveRemovableSymbolsForExamination = true;
+        *refPreserveRemovableSymbolsForExamination = true;
     } catch (const runtime_error&) {
       cerr << "Couldn't create FontEngine" << endl;
     }
   }
 
   /// Reestablishes old value of PreserveRemovableSymbolsForExamination
-  ~FontEngineFixtConfig() {
+  ~FontEngineFixtConfig() noexcept override {
     if (PreserveRemovableSymbolsForExamination !=
         origPreserveRemovableSymbolsForExamination)
-      refPreserveRemovableSymbolsForExamination =
+      *refPreserveRemovableSymbolsForExamination =
           origPreserveRemovableSymbolsForExamination;
   }
 
  private:
-  Settings s;  ///< default settings. Tests shouldn't touch it
+  p2s::cfg::Settings s;  ///< default settings. Tests shouldn't touch it
 
   /// Controller using default settings. Tests shouldn't touch it
-  ::Controller c;
+  pic2sym::Controller c;
 
  protected:
-  JobMonitor jm;
+  p2s::ui::JobMonitor jm;
 
   /// Pointer to the FontEngine object needed within tests
   FontEngine* pfe = nullptr;
 
   /// initial value of PreserveRemovableSymbolsForExamination
-  bool origPreserveRemovableSymbolsForExamination =
-      PreserveRemovableSymbolsForExamination;
+  bool origPreserveRemovableSymbolsForExamination{
+      PreserveRemovableSymbolsForExamination};
 
-  /// reference to non-const PreserveRemovableSymbolsForExamination
-  bool& refPreserveRemovableSymbolsForExamination =
-      const_cast<bool&>(PreserveRemovableSymbolsForExamination);
+  /// Pointer to non-const PreserveRemovableSymbolsForExamination
+  not_null<bool*> refPreserveRemovableSymbolsForExamination =
+      const_cast<bool*>(&PreserveRemovableSymbolsForExamination);
 };
 }  // namespace ut
+
+}  // namespace pic2sym
+
+using namespace pic2sym;
+using namespace syms;
 
 // Test suite checking PixMapSym functionality
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Computations,
                          ut::FontEngineFixtComputations)
 TITLED_AUTO_TEST_CASE(ComputeMassCenterAndAvgPixVal_0RowsOfData_CenterAnd0) {
   cols = 5U;
-  top = (unsigned char)(getSz() - 1U);
+  top = narrow_cast<unsigned char>(getSz() - 1U);
 
   PixMapSym::computeMcAndAvgPixVal(
       getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, getConsec(),
       getRevConsec(), mc,
       apv);  // measured based on a DESCENDING vertical axis
-  BOOST_REQUIRE(apv == 0.);
+  BOOST_REQUIRE(!apv);
   BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
   BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
   TITLED_AUTO_TEST_CASE_END
@@ -190,13 +210,13 @@ TITLED_AUTO_TEST_CASE(ComputeMassCenterAndAvgPixVal_0RowsOfData_CenterAnd0) {
 
 TITLED_AUTO_TEST_CASE(ComputeMassCenterAndAvgPixVal_0ColumnsOfData_CenterAnd0) {
   rows = 4U;
-  top = (unsigned char)(getSz() - 1U);
+  top = narrow_cast<unsigned char>(getSz() - 1U);
 
   PixMapSym::computeMcAndAvgPixVal(
       getSz(), getMaxGlyphSum(), pixels, rows, cols, left, top, getConsec(),
       getRevConsec(), mc,
       apv);  // measured based on a DESCENDING vertical axis
-  BOOST_REQUIRE(apv == 0.);
+  BOOST_REQUIRE(!apv);
   BOOST_TEST(mc.x == .5, test_tools::tolerance(1e-4));
   BOOST_TEST(mc.y == .5, test_tools::tolerance(1e-4));
   TITLED_AUTO_TEST_CASE_END
@@ -204,7 +224,7 @@ TITLED_AUTO_TEST_CASE(ComputeMassCenterAndAvgPixVal_0ColumnsOfData_CenterAnd0) {
 
 TITLED_AUTO_TEST_CASE(ComputeMassCenterAndAvgPixVal_AllDataIs0_CenterAnd0) {
   rows = cols = 5U;
-  top = (unsigned char)(getSz() - 1U);
+  top = narrow_cast<unsigned char>(getSz() - 1U);
   pixels.assign((size_t)rows * cols, 0U);
 
   PixMapSym::computeMcAndAvgPixVal(
@@ -224,8 +244,9 @@ TITLED_AUTO_TEST_CASE(
   left = 2U;
   pixels.assign((size_t)rows * cols, 0U);
   // 2 fixed points at a distance of 6: 170(2, 0) and 85(8, 0)
-  pixels[0] = 170;
-  pixels[cols - 1] = 85;  // 170 = 85*2, and 170 + 85 = 255
+  pixels[0] = narrow_cast<unsigned char>(170);
+  pixels[cols - 1] =
+      narrow_cast<unsigned char>(85);  // 170 = 85*2, and 170 + 85 = 255
 
   PixMapSym::computeMcAndAvgPixVal(getSz(), getMaxGlyphSum(), pixels, rows,
                                    cols, left, top, getConsec(), getRevConsec(),
@@ -242,8 +263,8 @@ TITLED_AUTO_TEST_CASE(
 
 TITLED_AUTO_TEST_CASE(
     ComputeMassCenterAndAvgPixVal_UniformPatch_CenterAndAverage) {
-  rows = cols = (unsigned char)getSz();
-  top = (unsigned char)(getSz() - 1U);
+  rows = cols = narrow_cast<unsigned char>(getSz());
+  top = narrow_cast<unsigned char>(getSz() - 1U);
   const auto uc = ut::randUnsignedChar(1U);
   cout << "Checking patch filled with value " << (unsigned)uc << endl;
   pixels.assign((size_t)rows * cols, uc);
@@ -262,8 +283,8 @@ TITLED_AUTO_TEST_CASE(
 TITLED_AUTO_TEST_CASE(
     ComputeMassCenterAndAvgPixVal_SinglePixelNon0_PixelPositionAndPixelValueDivMaxGlyphSum) {
   rows = cols = 1U;
-  left = ut::randUnsignedChar(0U, (unsigned char)(getSz() - 1U));
-  top = ut::randUnsignedChar(0U, (unsigned char)(getSz() - 1U));
+  left = ut::randUnsignedChar(0U, narrow_cast<unsigned char>(getSz() - 1U));
+  top = ut::randUnsignedChar(0U, narrow_cast<unsigned char>(getSz() - 1U));
   const auto uc = ut::randUnsignedChar(1U);
   pixels.push_back(uc);
   cout << "Checking patch with a single non-zero pixel at: top="
@@ -283,8 +304,8 @@ TITLED_AUTO_TEST_CASE(
 TITLED_AUTO_TEST_CASE(
     ComputeMassCenterAndAvgPixVal_3by3UniformArea_CenterOfAreaAnd9MulPixelValueDivMaxGlyphSum) {
   rows = cols = 3U;
-  left = ut::randUnsignedChar(0U, (unsigned char)(getSz() - 3U));
-  top = ut::randUnsignedChar(2U, (unsigned char)(getSz() - 1U));
+  left = ut::randUnsignedChar(0U, narrow_cast<unsigned char>(getSz() - 3U));
+  top = ut::randUnsignedChar(2U, narrow_cast<unsigned char>(getSz() - 1U));
   const auto uc = ut::randUnsignedChar(1U);
   pixels.assign((size_t)rows * cols, uc);  // all pixels are 'uc'
 
@@ -303,31 +324,27 @@ TITLED_AUTO_TEST_CASE(
 
 TITLED_AUTO_TEST_CASE(
     ComputeMassCenterAndAvgPixVal_2RandomChosenPixels_ComputedValues) {
-  rows = cols = (unsigned char)getSz();
-  top = (unsigned char)(getSz() - 1U);
+  rows = cols = narrow_cast<unsigned char>(getSz());
+  top = narrow_cast<unsigned char>(getSz() - 1U);
   pixels.assign((size_t)rows * cols, 0U);
   // random 2 points: p1(x1, y1) and p2(x2, y2)
-  const unsigned char p1 = ut::randUnsignedChar(1U),  // random value 1..255
-      p2 = ut::randUnsignedChar(1U),                  // random value 1..255
-      x1 = ut::randUnsignedChar(
-          0U,
-          (unsigned char)(getSz() - 1U)),  // random value 0..sz-1
-      y1 = ut::randUnsignedChar(
-          0U,
-          (unsigned char)(getSz() - 1U));  // random value 0..sz-1
-  unsigned char x2 = ut::randUnsignedChar(
-                    0U,
-                    (unsigned char)(getSz() - 1U)),  // random value 0..sz-1
-      y2 = ut::randUnsignedChar(
-          0U,
-          (unsigned char)(getSz() - 1U));  // random value 0..sz-1
+  const unsigned char p1{ut::randUnsignedChar(1U)};  // random value 1..255
+  const unsigned char p2{ut::randUnsignedChar(1U)};  // random value 1..255
+  const unsigned char x1{ut::randUnsignedChar(
+      0U, narrow_cast<unsigned char>(getSz() - 1U))};  // random value 0..sz-1
+  const unsigned char y1{ut::randUnsignedChar(
+      0U, narrow_cast<unsigned char>(getSz() - 1U))};  // random value 0..sz-1
+  unsigned char x2{ut::randUnsignedChar(
+      0U, narrow_cast<unsigned char>(getSz() - 1U))};  // random value 0..sz-1
+  unsigned char y2{ut::randUnsignedChar(
+      0U, narrow_cast<unsigned char>(getSz() - 1U))};  // random value 0..sz-1
 
   assert(getSz() >= 2U);
   while (x1 == x2 && y1 == y2) {  // Ensuring the 2 points don't overlap
     x2 = ut::randUnsignedChar(
-        0U, (unsigned char)(getSz() - 1U));  // random value 0..sz-1
+        0U, narrow_cast<unsigned char>(getSz() - 1U));  // random value 0..sz-1
     y2 = ut::randUnsignedChar(
-        0U, (unsigned char)(getSz() - 1U));  // random value 0..sz-1
+        0U, narrow_cast<unsigned char>(getSz() - 1U));  // random value 0..sz-1
   }
 
   pixels[x1 + (size_t)y1 * cols] = p1;
@@ -358,7 +375,7 @@ BOOST_AUTO_TEST_SUITE_END()  // FontEngine_Tests_Computations
 BOOST_FIXTURE_TEST_SUITE(FontEngine_Tests_Config, ut::FontEngineFixtConfig)
 TITLED_AUTO_TEST_CASE(
     IncompleteFontConfig_NoFontFile_logicErrorsForFontOperations) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
   FontEngine& fe = *pfe;
@@ -371,8 +388,8 @@ TITLED_AUTO_TEST_CASE(
   BOOST_CHECK_THROW(fe.uniqueEncodings(), logic_error);
   BOOST_CHECK_THROW(fe.upperSymsCount(), logic_error);
   BOOST_CHECK_THROW(fe.getEncoding(), logic_error);
-  BOOST_CHECK(nullptr != fe.getFamily() && 0ULL == strlen(fe.getStyle()));
-  BOOST_CHECK(nullptr != fe.getStyle() && 0ULL == strlen(fe.getStyle()));
+  BOOST_CHECK(fe.getFamily() && !strlen(fe.getStyle()));
+  BOOST_CHECK(fe.getStyle() && !strlen(fe.getStyle()));
 
   BOOST_REQUIRE_NO_THROW(name = fe.fontFileName());
   BOOST_REQUIRE(name.empty());
@@ -380,30 +397,30 @@ TITLED_AUTO_TEST_CASE(
 }
 
 TITLED_AUTO_TEST_CASE(FontConfig_IncorrectFontFile_CannotSetFont) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
-  bool correct = false;
+  bool correct{false};
   BOOST_CHECK_NO_THROW(correct = pfe->newFont(""));  // bad font file name
   BOOST_REQUIRE(!correct);
   TITLED_AUTO_TEST_CASE_END
 }
 
 TITLED_AUTO_TEST_CASE(FontConfig_NonScalableFont_CannotSetFont) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
-  bool correct = false;
+  bool correct{false};
   BOOST_CHECK_NO_THROW(correct = pfe->newFont("res\\vga855.fon"));
   BOOST_REQUIRE(!correct);
   TITLED_AUTO_TEST_CASE_END
 }
 
 TITLED_AUTO_TEST_CASE(FontConfig_CorrectFontFile_SettingFontOk) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
-  bool correct = false;
+  bool correct{false};
   BOOST_REQUIRE_NO_THROW(correct = pfe->newFont("res\\BPmonoBold.ttf"));
   BOOST_REQUIRE(correct);
   TITLED_AUTO_TEST_CASE_END
@@ -411,11 +428,12 @@ TITLED_AUTO_TEST_CASE(FontConfig_CorrectFontFile_SettingFontOk) {
 
 TITLED_AUTO_TEST_CASE(
     FontConfig_NoFontSize_CannotGetSymsSetNorSmallGlyphCoverage) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
   FontEngine& fe = *pfe;
-  unsigned unEncs = 0U, encIdx = 0U;
+  unsigned unEncs{};
+  unsigned encIdx{};
   string enc, fname;
   FT_String *fam = nullptr, *style = nullptr;
   fe.newFont("res\\BPmonoBold.ttf");
@@ -432,13 +450,13 @@ TITLED_AUTO_TEST_CASE(
   BOOST_REQUIRE(unEncs == 2U);
 
   BOOST_REQUIRE_NO_THROW(enc = fe.getEncoding(&encIdx));
-  BOOST_CHECK(enc == "UNICODE" && encIdx == 0);
+  BOOST_CHECK(enc == "UNICODE" && !encIdx);
 
   BOOST_REQUIRE_NO_THROW(fam = fe.getFamily());
-  BOOST_CHECK(strcmp(fam, "BPmono") == 0);
+  BOOST_CHECK(!strcmp(fam, "BPmono"));
 
   BOOST_REQUIRE_NO_THROW(style = fe.getStyle());
-  BOOST_CHECK(strcmp(style, "Bold") == 0);
+  BOOST_CHECK(!strcmp(style, "Bold"));
 
   // Setting Encodings
   BOOST_REQUIRE_NO_THROW(enc = fe.setEncoding(enc));  // same encoding
@@ -457,14 +475,12 @@ TITLED_AUTO_TEST_CASE(
 }
 
 TITLED_AUTO_TEST_CASE(FontConfig_CompleteConfig_NoProblemsExpected) {
-  if (nullptr == pfe)
+  if (!pfe)
     return;
 
   FontEngine& fe = *pfe;
   fe.newFont("res\\BPmonoBold.ttf");
 
-  extern const unsigned Settings_MIN_FONT_SIZE;
-  extern const unsigned Settings_MAX_FONT_SIZE;
   BOOST_REQUIRE_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE - 1U),
                       invalid_argument);
   BOOST_REQUIRE_NO_THROW(fe.setFontSz(Settings_MIN_FONT_SIZE));  // ok
@@ -474,13 +490,13 @@ TITLED_AUTO_TEST_CASE(FontConfig_CompleteConfig_NoProblemsExpected) {
 
   BOOST_REQUIRE_NO_THROW(fe.setFontSz(10U));  // ok
   BOOST_CHECK_NO_THROW(fe.symsSet());
-  BOOST_TEST(fe.smallGlyphsCoverage() == 0.1077647,
+  BOOST_TEST(fe.smallGlyphsCoverage() == 0.107'764'7,
              test_tools::tolerance(1e-4));
 
   BOOST_REQUIRE(fe.setEncoding("APPLE_ROMAN"));  // APPLE_ROMAN
   BOOST_REQUIRE_NO_THROW(fe.setFontSz(15U));
   BOOST_CHECK_NO_THROW(fe.symsSet());
-  BOOST_TEST(fe.smallGlyphsCoverage() == 0.1074858,
+  BOOST_TEST(fe.smallGlyphsCoverage() == 0.107'485'8,
              test_tools::tolerance(1e-4));
   TITLED_AUTO_TEST_CASE_END
 }

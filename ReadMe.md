@@ -66,7 +66,7 @@ Several **features** from *Pic2Sym* (explained in more detail in the [Appendix][
 	- comparing *initially* **tiny versions** of the glyphs from the symbol set and of the patches from the image
 	- a *second step* tackles normal-size glyphs and patches and just **selects the best matching symbol among the few good candidates** resulted from the *first pass*
 - The user might **specify several aspects of interest** for every transformation (like a preference for results with many *large symbols* \[(*3*) from image above\], or if the patches might get approximated by less similar symbols, but with *better contrast* \[(*4*) from image above\]). See [Control Panel][CtrlPanel] for the entire list of *matching aspects*
-- All requested matching aspects (mentioned above) will use a *heuristic evaluation* and will get rearranged in a *particular order* that allows **detecting as cheap and as early as possible** when a symbol *cannot be the best match for a given patch of the image*. A **surprising consequence** for images with rather coarse texture:
+- All requested matching aspects (mentioned above) will use a *heuristic evaluation* and will get rearranged in a *particular order* that allows **detecting as cheaply and as early as possible** when a symbol *cannot be the best match for a given patch of the image*. A **surprising consequence** for images with rather coarse texture:
 	- when using only a single *complex* enabled matching aspect, this must be evaluated for each pair symbol\-patch
 	- but when using the *same complex matching aspect* *together with a few simpler enabled aspects*, this allows *skipping often enough the evaluation of the most complex ones*. In turn, this means **a faster transformation, despite there are more enabled matching aspects to consider** compared to the first case
 - The application is **faster on multi-core machines** (unless it&#39;s configured for no parallelism)
@@ -103,14 +103,14 @@ Illustrating again the power of this main window:<br>
 
 * * *
 
-Kindly address any observations, suggestions or questions to me using *florintulba@yahoo.com*.<br>&copy; 2016-2019 Florin Tulba (GNU AGPL v3 license)
+Kindly address any observations, suggestions or questions to me using *florintulba@yahoo.com*.<br>&copy; 2016-2021 Florin Tulba (GNU AGPL v3 license)
 
 * * *
 
 **Notes:**
 
 - _Following the [**S.O.L.I.D.**](https://en.wikipedia.org/wiki/SOLID_(object-oriented_design)) design guidelines is important throughout this project. To monitor the compliance with those rules, Pic2Sym has been granted the privilege to use [**AI Reviewer**](http://www.aireviewer.com) (Special thanks for their generous and attentive support). The commits addressing any major issues reported by **AI Reviewer** should be posted under [**Design Optimizations**](https://github.com/FlorinTulba/Pic2Sym/issues/7)._
-- *For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [**Carina Trifa Plesescu**](https://www.facebook.com/trifa.carina), [**Flavia Begov**](https://www.facebook.com/darkfavy) and [**Adrian Rosca**](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
+- *For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [**Carina Trifa Plesescu**](https://www.facebook.com/trifa.carina), [**Flavia Muntean**](https://www.facebook.com/darkfavy) and [**Adrian Rosca**](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
 
 
 [CtrlPanel]:doc/pages/CtrlPanel/CtrlPanel.md

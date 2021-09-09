@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,17 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "matchSettings.h"
+
 #include "warnings.h"
-
-unsigned MatchSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
-
-#pragma warning(push, 0)
-
-#include <iostream>
-
-#pragma warning(pop)
 
 #ifndef UNIT_TESTING
 
@@ -63,20 +60,22 @@ unsigned MatchSettings::VERSION_FROM_LAST_IO_OP = UINT_MAX;
 #pragma warning(pop)
 
 using namespace boost::archive;
-
+using namespace gsl;
 using namespace std;
 using namespace std::filesystem;
+
+namespace pic2sym::cfg {
 
 namespace {
 
 /// Validator for a threshold for blanks-like patches (really poor contrast)
 class BlanksLimit : public ConfigItemValidator<unsigned> {
  public:
-  constexpr BlanksLimit() noexcept {}
+  BlanksLimit() noexcept {}
 
   /// @return false when itemVal is wrong for itemName
-  bool examine(const string& itemName, const unsigned& itemVal) const
-      noexcept override {
+  bool examine(const string& itemName,
+               const unsigned& itemVal) const noexcept override {
     return ISettings::isBlanksThresholdOk(itemVal, itemName);
   }
 };
@@ -93,10 +92,11 @@ VALIDATOR(positiveD, IsGreaterThan, double, 0., true);
 void MatchSettings::configurePaths() noexcept(!UT) {
   if (defCfgPath.empty()) {
     defCfgPath = cfgPath = AppStart::dir();
+    defCfgPath.append("res").append("defaultMatchSettings.txt");
 
-    if (!exists(defCfgPath.append("res").append("defaultMatchSettings.txt")))
-      THROW_WITH_VAR_MSG(__FUNCTION__ " : There's no " + defCfgPath.string(),
-                         runtime_error);
+    EXPECTS_OR_REPORT_AND_THROW(
+        exists(defCfgPath), runtime_error,
+        HERE.function_name() + " : There's no "s + defCfgPath.string());
 
     cfgPath.append("initMatchSettings.cfg");
   }
@@ -104,8 +104,8 @@ void MatchSettings::configurePaths() noexcept(!UT) {
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
 void MatchSettings::replaceByUserDefaults() {
-  ifstream ifs(cfgPath.string(), ios::binary);
-  binary_iarchive ia(ifs);
+  ifstream ifs{cfgPath.string(), ios::binary};
+  binary_iarchive ia{ifs};
 
   // Throws domain_error if loading from an archive with an unsupported
   // version(more recent) or for an obsolete 'initMatchSettings.cfg'
@@ -113,52 +113,51 @@ void MatchSettings::replaceByUserDefaults() {
 }
 
 void MatchSettings::saveAsUserDefaults() const noexcept {
-  ofstream ofs(cfgPath.string(), ios::binary);
-  binary_oarchive oa(ofs);
+  ofstream ofs{cfgPath.string(), ios::binary};
+  binary_oarchive oa{ofs};
   oa << *this;
 }
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 void MatchSettings::createUserDefaults() noexcept(!UT) {
   if (!parseCfg())
-    THROW_WITH_CONST_MSG(__FUNCTION__ " : Invalid Configuration!",
-                         runtime_error);
+    REPORT_AND_THROW_CONST_MSG(
+        runtime_error, HERE.function_name() + " : Invalid Configuration!"s);
 
   saveAsUserDefaults();
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
 bool MatchSettings::parseCfg() noexcept(!UT) {
-  static PropsReader parser(defCfgPath);
+  static PropsReader parser{defCfgPath};
   // Might trigger info_parser_error if unable to find/parse the file
   // The exception terminates the program, unless in UnitTesting, where it
   // propagates
 
-  const bool newResultMode = parser.read<bool>("HYBRID_RESULT").value_or(false);
+  const bool newResultMode{parser.read<bool>("HYBRID_RESULT").value_or(false)};
 
-  const double
-      new_kSsim = parser.read<double>("STRUCTURAL_SIMILARITY", positiveD())
-                      .value_or(0.),
-      new_kCorrel = parser.read<double>("CORRELATION_CORRECTNESS", positiveD())
-                        .value_or(0.),
-      new_kSdevFg = parser.read<double>("UNDER_SYM_CORRECTNESS", positiveD())
-                        .value_or(0.),
-      new_kSdevEdge =
-          parser.read<double>("SYM_EDGE_CORRECTNESS", positiveD()).value_or(0.),
-      new_kSdevBg = parser.read<double>("ASIDE_SYM_CORRECTNESS", positiveD())
-                        .value_or(0.),
-      new_kMCsOffset =
-          parser.read<double>("MORE_CONTRAST_PREF", positiveD()).value_or(0.),
-      new_kCosAngleMCs =
-          parser.read<double>("GRAVITATIONAL_SMOOTHNESS", positiveD())
-              .value_or(0.),
-      new_kContrast = parser.read<double>("DIRECTIONAL_SMOOTHNESS", positiveD())
-                          .value_or(0.),
-      new_kSymDensity =
-          parser.read<double>("LARGER_SYM_PREF", positiveD()).value_or(0.);
+  const double new_kSsim{
+      parser.read<double>("STRUCTURAL_SIMILARITY", positiveD()).value_or(0.)};
+  const double new_kCorrel{
+      parser.read<double>("CORRELATION_CORRECTNESS", positiveD()).value_or(0.)};
+  const double new_kSdevFg{
+      parser.read<double>("UNDER_SYM_CORRECTNESS", positiveD()).value_or(0.)};
+  const double new_kSdevEdge{
+      parser.read<double>("SYM_EDGE_CORRECTNESS", positiveD()).value_or(0.)};
+  const double new_kSdevBg{
+      parser.read<double>("ASIDE_SYM_CORRECTNESS", positiveD()).value_or(0.)};
+  const double new_kMCsOffset{
+      parser.read<double>("MORE_CONTRAST_PREF", positiveD()).value_or(0.)};
+  const double new_kCosAngleMCs{
+      parser.read<double>("GRAVITATIONAL_SMOOTHNESS", positiveD())
+          .value_or(0.)};
+  const double new_kContrast{
+      parser.read<double>("DIRECTIONAL_SMOOTHNESS", positiveD()).value_or(0.)};
+  const double new_kSymDensity{
+      parser.read<double>("LARGER_SYM_PREF", positiveD()).value_or(0.)};
 
-  const unsigned newThreshold4Blank =
-      parser.read<unsigned>("THRESHOLD_FOR_BLANK", blanksLimit).value_or(0U);
+  const unsigned newThreshold4Blank{
+      parser.read<unsigned>("THRESHOLD_FOR_BLANK", blanksLimit).value_or(0U)};
 
   if (parser.anyError())
     return false;
@@ -183,7 +182,7 @@ bool MatchSettings::parseCfg() noexcept(!UT) {
 MatchSettings::MatchSettings() noexcept(!UT) {
   configurePaths();
 
-  ScopeExitAction scopeExitAction([this] {
+  const auto _ = finally([this]() noexcept {
     if (!initialized)
       initialized = true;
   });
@@ -202,7 +201,7 @@ MatchSettings::MatchSettings() noexcept(!UT) {
     }
 
     // Renaming the obsolete file
-    rename(cfgPath, std::filesystem::path(cfgPath)
+    rename(cfgPath, std::filesystem::path{cfgPath}
                         .concat(".")
                         .concat(to_string(time(nullptr)))
                         .concat(".bak"));
@@ -213,9 +212,13 @@ MatchSettings::MatchSettings() noexcept(!UT) {
   createUserDefaults();
 }
 
+}  // namespace pic2sym::cfg
+
 #endif  // UNIT_TESTING not defined
 
 using namespace std;
+
+namespace pic2sym::cfg {
 
 MatchSettings& MatchSettings::setResultMode(bool hybridResultMode_) noexcept {
   if (hybridResultMode != hybridResultMode_) {
@@ -323,6 +326,8 @@ unique_ptr<IMatchSettings> MatchSettings::clone() const noexcept {
 
 #pragma warning(disable : WARN_EXPR_ALWAYS_FALSE)
 bool MatchSettings::olderVersionDuringLastIO() noexcept {
-  return VERSION_FROM_LAST_IO_OP < VERSION;
+  return VersionFromLast_IO_op < Version;
 }
 #pragma warning(default : WARN_EXPR_ALWAYS_FALSE)
+
+}  // namespace pic2sym::cfg

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,7 +45,9 @@
 
 #include "clusterSupport.h"
 
-class ITinySymsProvider;  // Forward declaration
+#include "tinySymsProvider.h"
+
+namespace pic2sym::syms::inline cluster {
 
 /// Helper for clustering the tiny symbols.
 class ClustersSupportWithPreselection : public ClustersSupport {
@@ -60,9 +65,12 @@ class ClustersSupportWithPreselection : public ClustersSupport {
   font type; empty for various unit tests
   @throw logic_error in UnitTesting due to IClusterEngine::process()
 
-  Exception to be checked only within UnitTesting
+  Exceptions from above to be checked only within UnitTesting
+
+  @throw AbortedJob when the user aborts the operation.
+  This exception needs to be handled by the caller
   */
-  void groupSyms(const std::string& fontType = "") noexcept(!UT) override;
+  void groupSyms(const std::string& fontType = "") override;
 
   /**
   Rearranges symsSet and its tiny correspondent version.
@@ -77,8 +85,10 @@ class ClustersSupportWithPreselection : public ClustersSupport {
   const VSymData& clusteredSyms() const noexcept override;
 
  private:
-  ITinySymsProvider& tsp;  ///< provider of tiny symbols
-  VSymData tinySymsSet;    ///< set of most information on each tiny symbol
+  gsl::not_null<ITinySymsProvider*> tsp;  ///< provider of tiny symbols
+  VSymData tinySymsSet;  ///< set of most information on each tiny symbol
 };
+
+}  // namespace pic2sym::syms::inline cluster
 
 #endif  // H_CLUSTER_SUPPORT_WITH_PRESELECTION

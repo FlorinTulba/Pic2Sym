@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <Pic2SymVersion>2.1</Pic2SymVersion>
@@ -10,10 +10,11 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>BOOST_SERIALIZATION_DYN_LINK;BOOST_ALL_NO_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msvcrt$(ConfigurationSuffix).lib;msvcprt$(ConfigurationSuffix).lib;opencv_core$(OpenCvLibConfigSuffix).lib;opencv_imgcodecs$(OpenCvLibConfigSuffix).lib;opencv_imgproc$(OpenCvLibConfigSuffix).lib;freetype$(FreeTypeLibConfigSuffix).lib;libboost_system$(BoostLibConfigSuffix).lib;libboost_filesystem$(BoostLibConfigSuffix).lib;libboost_serialization$(BoostLibConfigSuffix).lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msvcrt$(ConfigurationSuffix).lib;msvcprt$(ConfigurationSuffix).lib;opencv_core$(OpenCvLibConfigSuffix).lib;opencv_imgcodecs$(OpenCvLibConfigSuffix).lib;opencv_imgproc$(OpenCvLibConfigSuffix).lib;freetype.lib;boost_serialization$(BoostLibConfigSuffix).lib;zlib$(ConfigurationSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <Version>$(Pic2SymVersion)</Version>
     </Link>

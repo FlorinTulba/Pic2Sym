@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,9 +41,11 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "tinySym.h"
 
 #include "pixMapSymBase.h"
-#include "tinySym.h"
 
 #pragma warning(push, 0)
 
@@ -51,40 +56,43 @@
 using namespace std;
 using namespace cv;
 
-unsigned TinySym::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+namespace pic2sym {
+
 extern unsigned TinySymsSz();
+
+namespace syms {
 
 namespace {
 
-const unsigned TinySymsSize = TinySymsSz(),
-               RefSymSz = TinySymsSize * ITinySym::RatioRefTiny,
-               DiagsCountTinySym = 2U * TinySymsSize - 1U;
+const unsigned TinySymsSize{TinySymsSz()};
+const unsigned RefSymSz{TinySymsSize * ITinySym::RatioRefTiny};
+const unsigned DiagsCountTinySym{2U * TinySymsSize - 1U};
 
-const double invTinySymSz = 1. / TinySymsSize,
-             invTinySymArea = invTinySymSz * invTinySymSz,
-             invDiagsCountTinySym = 1. / DiagsCountTinySym;
+const double invTinySymSz{1. / TinySymsSize};
+const double invTinySymArea{invTinySymSz * invTinySymSz};
+const double invDiagsCountTinySym{1. / DiagsCountTinySym};
 
-const Size SizeTinySyms((int)TinySymsSize, (int)TinySymsSize);
+const Size SizeTinySyms{(int)TinySymsSize, (int)TinySymsSize};
 
 }  // anonymous namespace
 
 TinySym::TinySym(unsigned long code_ /* = ULONG_MAX*/,
                  size_t symIdx_ /* = 0ULL*/) noexcept
-    : SymData(code_, symIdx_),
-      mat((int)TinySymsSize, (int)TinySymsSize, CV_64FC1, 0.),
-      hAvgProj(1, (int)TinySymsSize, CV_64FC1, 0.),
-      vAvgProj((int)TinySymsSize, 1, CV_64FC1, 0.),
-      backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.),
-      slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1, 0.) {}
+    : SymData{code_, symIdx_},
+      // 0. parameter prevents using initializer_list ctor of Mat
+      mat{(int)TinySymsSize, (int)TinySymsSize, CV_64FC1, 0.},
+      hAvgProj{1, (int)TinySymsSize, CV_64FC1, 0.},
+      vAvgProj{(int)TinySymsSize, 1, CV_64FC1, 0.},
+      backslashDiagAvgProj{1, (int)DiagsCountTinySym, CV_64FC1, 0.},
+      slashDiagAvgProj{1, (int)DiagsCountTinySym, CV_64FC1, 0.} {}
 
 TinySym::TinySym(const IPixMapSym& refSym) noexcept
-    : SymData(refSym.getSymCode(),
-              refSym.getSymIdx(),
-              refSym.getAvgPixVal(),
-              refSym.getMc()),
-      backslashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1),
-      slashDiagAvgProj(1, (int)DiagsCountTinySym, CV_64FC1) {
-  const Mat refSymMat = refSym.toMatD01(RefSymSz);
+    : SymData{refSym.getSymCode(), refSym.getSymIdx(), refSym.getAvgPixVal(),
+              refSym.getMc()},
+      // 0. parameter prevents using initializer_list ctor of Mat
+      backslashDiagAvgProj{1, (int)DiagsCountTinySym, CV_64FC1, 0.},
+      slashDiagAvgProj{1, (int)DiagsCountTinySym, CV_64FC1, 0.} {
+  const Mat refSymMat{refSym.toMatD01(RefSymSz)};
 
   Mat tinySymMat;
   resize(refSymMat, tinySymMat, SizeTinySyms, 0., 0., INTER_AREA);
@@ -102,12 +110,12 @@ TinySym::TinySym(const IPixMapSym& refSym) noexcept
 
   Mat flippedMat;
   flip(mat, flippedMat, 1);  // flip around vertical axis
-  for (int diagIdx = -(int)TinySymsSize + 1, i = 0; diagIdx < (int)TinySymsSize;
+  for (int diagIdx{-(int)TinySymsSize + 1}, i{}; diagIdx < (int)TinySymsSize;
        ++diagIdx, ++i) {
-    const Mat backslashDiag = mat.diag(diagIdx);
+    const Mat backslashDiag{mat.diag(diagIdx)};
     backslashDiagAvgProj.at<double>(i) = *mean(backslashDiag).val;
 
-    const Mat slashDiag = flippedMat.diag(-diagIdx);
+    const Mat slashDiag{flippedMat.diag(-diagIdx)};
     slashDiagAvgProj.at<double>(i) = *mean(slashDiag).val;
   }
 
@@ -142,8 +150,7 @@ const Mat& TinySym::getSlashDiagAvgProj() const noexcept {
 
 #pragma warning(disable : WARN_EXPR_ALWAYS_FALSE)
 bool TinySym::olderVersionDuringLastIO() noexcept {
-  return SymData::olderVersionDuringLastIO() ||
-         VERSION_FROM_LAST_IO_OP < VERSION;
+  return SymData::olderVersionDuringLastIO() || VersionFromLast_IO_op < Version;
 }
 #pragma warning(default : WARN_EXPR_ALWAYS_FALSE)
 
@@ -182,3 +189,6 @@ void TinySym::setBackslashDiagAvgProj(
   backslashDiagAvgProj = backslashDiagAvgProj_;
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace syms
+}  // namespace pic2sym

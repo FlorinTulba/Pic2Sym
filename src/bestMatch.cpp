@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,31 +41,35 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "bestMatch.h"
+
 #include "matchParams.h"
-#include "matchSettingsBase.h"
-#include "patchBase.h"
-#include "symDataBase.h"
 #include "warnings.h"
+
+using namespace std;
+using namespace gsl;
+using namespace cv;
+
+namespace pic2sym {
 
 #if defined(_DEBUG) || defined(UNIT_TESTING)
 
-extern const std::wstring& COMMA() noexcept;
+extern constinit not_null<cwzstring<> const> Comma;
 
 #endif  // defined(_DEBUG) || defined(UNIT_TESTING)
 
-using namespace std;
-using namespace cv;
+namespace match {
 
-BestMatch::BestMatch(const IPatch& patch_) noexcept
+BestMatch::BestMatch(const p2s::input::IPatch& patch_) noexcept
     : patch(patch_.clone()),
       params(patch_.nonUniform() ? make_unique<MatchParams>()
-                                 : unique_ptr<MatchParams>()) {
-  assert(patch);  // clone of a reference
+                                 : unique_ptr<MatchParams>{}) {
+  Ensures(patch);  // clone of a reference
 }
 
-const IPatch& BestMatch::getPatch() const noexcept {
+const p2s::input::IPatch& BestMatch::getPatch() const noexcept {
   return *patch;
 }
 
@@ -76,16 +83,17 @@ const optional<const IMatchParams*> BestMatch::getParams() const noexcept {
   return nullopt;
 }
 
-const unique_ptr<IMatchParamsRW>& BestMatch::refParams() const noexcept {
-  return params;
+IMatchParamsRW& BestMatch::refParams() const noexcept {
+  Expects(params);  // Don't call this for blur-only approximations
+  return *params;
 }
 
 const optional<unsigned>& BestMatch::getSymIdx() const noexcept {
   return symIdx;
 }
 
-const optional<unsigned>& BestMatch::getLastPromisingNontrivialCluster() const
-    noexcept {
+const optional<unsigned>& BestMatch::getLastPromisingNontrivialCluster()
+    const noexcept {
   return lastPromisingNontrivialCluster;
 }
 
@@ -113,7 +121,7 @@ BestMatch& BestMatch::reset() noexcept {
   symCode = nullopt;
   symIdx = lastPromisingNontrivialCluster = nullopt;
   pSymData = nullptr;
-  approx = Mat();
+  approx.release();
   if (params)
     params->reset();  // keeps patch-invariant parameters
   return *this;
@@ -122,7 +130,7 @@ BestMatch& BestMatch::reset() noexcept {
 BestMatch& BestMatch::update(double score_,
                              unsigned long symCode_,
                              unsigned symIdx_,
-                             const ISymData& sd) noexcept {
+                             const p2s::syms::ISymData& sd) noexcept {
   score = score_;
   symCode = symCode_;
   symIdx = symIdx_;
@@ -131,12 +139,14 @@ BestMatch& BestMatch::update(double score_,
 }
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
-BestMatch& BestMatch::updatePatchApprox(const IMatchSettings& ms) noexcept(
-    !UT) {
-  if (nullptr == pSymData) {
+BestMatch& BestMatch::updatePatchApprox(
+    const p2s::cfg::IMatchSettings& ms) noexcept(!UT) {
+  if (!pSymData) {
     approx = patch->getBlurred();
     return *this;
   }
+
+  using namespace syms;
 
   const ISymData& dataOfBest = *pSymData;
   const ISymData::MatArray& matricesForBest = dataOfBest.getMasks();
@@ -152,13 +162,14 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings& ms) noexcept(
     vector<Mat> channels;
     split(patch->getOrig(), channels);
 
-    double diffFgBg = 0.;
-    const size_t channelsCount = channels.size();
+    double diffFgBg{};
+    const size_t channelsCount{size(channels)};
     for (Mat& ch : channels) {
       ch.convertTo(ch, CV_64FC1);  // processing double values
 
-      double miuFg = *mean(ch, fgMask).val, miuBg = *mean(ch, bgMask).val;
-      const double newDiff = miuFg - miuBg;
+      const double miuFg{*mean(ch, fgMask).val};
+      const double miuBg{*mean(ch, bgMask).val};
+      const double newDiff{miuFg - miuBg};
 
       groundedBest.convertTo(ch, CV_8UC1, newDiff / dataOfBest.getDiffMinMax(),
                              miuBg);
@@ -167,21 +178,22 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings& ms) noexcept(
     }
 
     if (diffFgBg < channelsCount * ms.getBlankThreshold())
-      patchResult = Mat(patchSz, patchSz, CV_8UC3, mean(patch->getOrig()));
+      patchResult = Mat{patchSz, patchSz, CV_8UC3, mean(patch->getOrig())};
     else
       merge(channels, patchResult);
 
-  } else {  // grayscale result
-    if (nullptr == params)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " - either the patch is uniformous "
-                           "and doesn't need approximation, "
-                           "or params remained nullptr!", logic_error);
+  } else {
+    // grayscale result
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        params, logic_error,
+        HERE.function_name() +
+            " - params must be set; the patch shouldn't be uniform!"s);
 
     params->computeContrast(patch->getOrig(), *pSymData);
 
     if (abs(*params->getContrast()) < ms.getBlankThreshold())
       patchResult =
-          Mat(patchSz, patchSz, CV_8UC1, Scalar(*mean(patch->getOrig()).val));
+          Mat{patchSz, patchSz, CV_8UC1, Scalar{*mean(patch->getOrig()).val}};
     else
       groundedBest.convertTo(
           patchResult, CV_8UC1,
@@ -199,23 +211,22 @@ BestMatch& BestMatch::updatePatchApprox(const IMatchSettings& ms) noexcept(
   // the less satisfactory the approximation is,
   // the more the weight of the blurred patch should be
   Scalar miu, sdevApproximation, sdevBlurredPatch;
-  meanStdDev(patch->getOrig() - approx, miu, sdevApproximation);
-  meanStdDev(patch->getOrig() - patch->getBlurred(), miu, sdevBlurredPatch);
+  cv::meanStdDev(patch->getOrig() - approx, miu, sdevApproximation);
+  cv::meanStdDev(patch->getOrig() - patch->getBlurred(), miu, sdevBlurredPatch);
 
-  double totalSdevBlurredPatch = *sdevBlurredPatch.val,
-         totalSdevApproximation = *sdevApproximation.val;
+  double totalSdevBlurredPatch{*sdevBlurredPatch.val};
+  double totalSdevApproximation{*sdevApproximation.val};
   if (patch->isColored()) {
     totalSdevBlurredPatch +=
         sdevBlurredPatch.val[1ULL] + sdevBlurredPatch.val[2ULL];
     totalSdevApproximation +=
         sdevApproximation.val[1ULL] + sdevApproximation.val[2ULL];
   }
-  const double sdevSum = totalSdevBlurredPatch + totalSdevApproximation;
-  const double weight =
-      (sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.;
+  const double sdevSum{totalSdevBlurredPatch + totalSdevApproximation};
+  const double weight{(sdevSum > 0.) ? (totalSdevApproximation / sdevSum) : 0.};
   Mat combination;
-  addWeighted(patch->getBlurred(), weight, approx, 1. - weight, 0.,
-              combination);
+  cv::addWeighted(patch->getBlurred(), weight, approx, 1. - weight, 0.,
+                  combination);
   approx = combination;
 
   return *this;
@@ -233,12 +244,12 @@ BestMatch& BestMatch::setUnicode(bool unicode_) noexcept {
   return *this;
 }
 
-const wstring BestMatch::toWstring() const noexcept {
+wstring BestMatch::toWstring() const noexcept {
   wostringstream wos;
   if (!symCode)
     wos << L"--";
   else {
-    const unsigned long theSymCode = *symCode;
+    const unsigned long theSymCode{*symCode};
     if (unicode) {
       switch (theSymCode) {
         case (unsigned long)',':
@@ -265,11 +276,19 @@ const wstring BestMatch::toWstring() const noexcept {
       wos << theSymCode;
   }
 
-  wos << COMMA() << score;
+  wos << Comma << score;
   if (params)
-    wos << COMMA() << *params;
+    wos << Comma << *params;
 
   return wos.str();
 }
 
+wostream& operator<<(wostream& wos, const IBestMatch& bm) noexcept {
+  wos << bm.toWstring();
+  return wos;
+}
+
 #endif  // _DEBUG || UNIT_TESTING
+
+}  // namespace match
+}  // namespace pic2sym

@@ -1,12 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <ConfigurationSuffix />
     <OpenCvLibConfigSuffix />
-    <FreeTypeLibConfigSuffix />
     <BoostLibConfigSuffix />
-    <TbbConfigSuffix />
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifest>false</GenerateManifest>
@@ -19,14 +17,8 @@
     <BuildMacro Include="OpenCvLibConfigSuffix">
       <Value>$(OpenCvLibConfigSuffix)</Value>
     </BuildMacro>
-    <BuildMacro Include="FreeTypeLibConfigSuffix">
-      <Value>$(FreeTypeLibConfigSuffix)</Value>
-    </BuildMacro>
     <BuildMacro Include="BoostLibConfigSuffix">
       <Value>$(BoostLibConfigSuffix)</Value>
-    </BuildMacro>
-    <BuildMacro Include="TbbConfigSuffix">
-      <Value>$(TbbConfigSuffix)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

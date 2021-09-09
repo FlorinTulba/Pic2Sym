@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,9 +43,12 @@
 #ifndef H_SYM_DATA
 #define H_SYM_DATA
 
+#include "symDataBase.h"
+
 #include "matSerialization.h"
 #include "misc.h"
-#include "symDataBase.h"
+#include "pixMapSymBase.h"
+#include "warnings.h"
 
 #pragma warning(push, 0)
 
@@ -53,9 +59,11 @@
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/version.hpp>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
 
-class IPixMapSym;  // Forward declaration
+namespace pic2sym::syms {
 
 /// Most symbol information
 class SymData : public virtual ISymData {
@@ -75,7 +83,7 @@ class SymData : public virtual ISymData {
           bool removable_ = false) noexcept;
   SymData(const IPixMapSym& pms, unsigned sz, bool forTinySym) noexcept;
 
-  ~SymData() noexcept = default;
+  ~SymData() noexcept override = default;
 
   SymData(const SymData& other) noexcept;
 
@@ -156,7 +164,7 @@ class SymData : public virtual ISymData {
 #ifdef UNIT_TESTING
 
   /// Used in the SymData constructor from below
-  typedef std::unordered_map<int, const cv::Mat> IdxMatMap;
+  using IdxMatMap = std::unordered_map<int, const cv::Mat>;
 
   /// Constructor that allows filling only the relevant matrices from MatArray
   SymData(unsigned long code_,
@@ -176,7 +184,8 @@ class SymData : public virtual ISymData {
 #endif  // UNIT_TESTING defined
 
   // BUILD CLEAN WHEN THIS CHANGES!
-  static const unsigned VERSION = 1U;  ///< version of ISymData class
+  /// Version of ISymData class
+  static constexpr unsigned Version{1U};
 
   PROTECTED :
 
@@ -249,12 +258,11 @@ class SymData : public virtual ISymData {
   */
   template <class Archive>
   void serialize(Archive& ar, const unsigned version) noexcept(!UT) {
-    if (version > VERSION)
-      THROW_WITH_VAR_MSG("Cannot serialize(load) future version (" +
-                             std::to_string(version) +
-                             ") of SymData class (now at version " +
-                             std::to_string(VERSION) + ")!",
-                         std::domain_error);
+    EXPECTS_OR_REPORT_AND_THROW(version <= Version, std::domain_error,
+                                "Cannot serialize(load) future version ("s +
+                                    std::to_string(version) +
+                                    ") of SymData class (now at version "s +
+                                    std::to_string(Version) + ")!"s);
 
     ar& code& symIdx& minVal& diffMinMax& avgPixVal;
     ar& mc.x& mc.y;
@@ -266,7 +274,7 @@ class SymData : public virtual ISymData {
         ar& symMiu0& normSymMiu0;
       } else {
         cv::Mat sym = negSym.clone();
-        sym.convertTo(sym, CV_64FC1, INV_255);
+        sym.convertTo(sym, CV_64FC1, Inv255);
         computeSymMiu0Related(sym, avgPixVal, *this);
       }
 
@@ -278,14 +286,14 @@ class SymData : public virtual ISymData {
       ar& symMiu0& normSymMiu0;
     }
 
-    if (version != VERSION_FROM_LAST_IO_OP)
-      VERSION_FROM_LAST_IO_OP = version;
+    if (version != VersionFromLast_IO_op)
+      VersionFromLast_IO_op = version;
   }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
   /// mass center of the symbol given original fg & bg (coordinates are
   /// within a unit-square: 0..1 x 0..1)
-  cv::Point2d mc = cv::Point2d(.5, .5);
+  cv::Point2d mc{.5, .5};
 
   /// Negative of the symbol (0..255 byte for normal symbols; double for tiny)
   cv::Mat negSym;
@@ -296,16 +304,16 @@ class SymData : public virtual ISymData {
 
   MatArray masks;  ///< various masks
 
-  size_t symIdx = 0ULL;  ///< symbol index within cmap
-  double minVal = 0.;    ///< the value of darkest pixel, range 0..1
+  size_t symIdx{};  ///< symbol index within cmap
+  double minVal{};  ///< the value of darkest pixel, range 0..1
 
   /// Difference between brightest and darkest pixels, each in 0..1
-  double diffMinMax = 1.;
+  double diffMinMax{1.};
 
-  double avgPixVal = 0.;    ///< average pixel value, each pixel in 0..1
-  double normSymMiu0 = 0.;  ///< norm L2 of (symbol - average pixel value)
+  double avgPixVal{};    ///< average pixel value, each pixel in 0..1
+  double normSymMiu0{};  ///< norm L2 of (symbol - average pixel value)
 
-  unsigned long code = ULONG_MAX;  ///< the code of the symbol
+  unsigned long code{ULONG_MAX};  ///< the code of the symbol
 
   /**
   Enabled symbol filters might mark this symbol as removable,
@@ -318,13 +326,15 @@ class SymData : public virtual ISymData {
   This field doesn't need to be serialized, as filtering options might be
   different for distinct run sessions.
   */
-  bool removable = false;
+  bool removable{false};
 
   /// UINT_MAX or the class version of the last loaded/saved object
-  static unsigned VERSION_FROM_LAST_IO_OP;
+  static inline unsigned VersionFromLast_IO_op{UINT_MAX};
   // There are no concurrent I/O operations on SymData
 };
 
-BOOST_CLASS_VERSION(SymData, SymData::VERSION);
+}  // namespace pic2sym::syms
+
+BOOST_CLASS_VERSION(pic2sym::syms::SymData, pic2sym::syms::SymData::Version);
 
 #endif  // H_SYM_DATA

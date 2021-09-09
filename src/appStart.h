@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -47,11 +50,18 @@
 
 #pragma warning(push, 0)
 
-#include <string>
-
 #include <filesystem>
+#include <string_view>
+
+#include <gsl/gsl>
 
 #pragma warning(pop)
+
+// Forward declaration of main; For precompiled headers in VS, this declaration
+// needs to be present within the precompiled header, as well.
+extern int main(int, gsl::zstring<>*);
+
+namespace pic2sym {
 
 /**
 Utility for:
@@ -82,7 +92,8 @@ class AppStart {
   static const std::filesystem::path& dir() noexcept;
 
  private:
-  friend int main(int, char*[]);  // The only place where this global can be set
+  // The only place where this global can be set
+  friend int ::main(int, gsl::zstring<>*);
 
   /**
   1. Sets the directory of the executed application provided as parameter.
@@ -91,8 +102,10 @@ class AppStart {
 
   Must be called only once from within main().
   */
-  static void prepareEnv(const std::string& appFile) noexcept;
+  static void prepareEnv(std::string_view appFile) noexcept;
 };
+
+}  // namespace pic2sym
 
 #endif  // H_APP_START
 

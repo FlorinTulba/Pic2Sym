@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,24 +43,31 @@
 #ifndef H_MATCH_ENGINE
 #define H_MATCH_ENGINE
 
-#include "cachedData.h"
 #include "matchEngineBase.h"
+
+#include "cachedData.h"
+#include "clusterEngineBase.h"
+#include "cmapPerspectiveBase.h"
+#include "fontEngineBase.h"
+#include "match.h"
+#include "settingsBase.h"
 #include "symDataBase.h"
 
-// Forward declarations
-class ISettings;
-class IClusterEngine;
-class ICmapPerspective;
-class IFontEngine;
-class MatchAspect;
+namespace pic2sym::match {
 
 /// MatchEngine finds best match for a patch based on current settings and
 /// symbols set.
 class MatchEngine : public IMatchEngine {
  public:
-  MatchEngine(const ISettings& cfg_,
-              IFontEngine& fe_,
-              ICmapPerspective& cmP_) noexcept;
+  MatchEngine(const cfg::ISettings& cfg_,
+              syms::IFontEngine& fe_,
+              ui::ICmapPerspective& cmP_) noexcept;
+
+  // Slicing prevention
+  MatchEngine(const MatchEngine&) = delete;
+  MatchEngine(MatchEngine&&) = delete;
+  void operator=(const MatchEngine&) = delete;
+  void operator=(MatchEngine&&) = delete;
 
   /**
   @return the type of the symbols determined by fe & cfg
@@ -85,6 +95,7 @@ class MatchEngine : public IMatchEngine {
   @throw logic_error for incomplete font configuration
   @throw NormalSymsLoadingFailure
   @throw TinySymsLoadingFailure
+  @throw AbortedJob
 
   Exceptions handled, so no rapid termination via noexcept
   */
@@ -104,7 +115,7 @@ class MatchEngine : public IMatchEngine {
   @return true if a new better match is found within the new batch of symbols
 
   @throw invalid_argument if upperSymIdx is too large or if draftMatch is
-  uniformous
+  uniform
 
   Exception to be only reported, not handled
   */
@@ -116,7 +127,7 @@ class MatchEngine : public IMatchEngine {
                        ///< a match with a symbol from the new batch)
       MatchProgress&
           matchProgress  ///< observer notified for each new improved match
-      ) const noexcept(!UT) override;
+  ) const noexcept(!UT) override;
 
   /**
   Unicode glyphs are logged as symbols, the rest as their code
@@ -127,41 +138,49 @@ class MatchEngine : public IMatchEngine {
   bool usesUnicode() const noexcept(!UT) override;
 
   /// Clustering should be avoided when the obtained clusters are really small
-  const bool& isClusteringUseful() const noexcept override;
+  bool isClusteringUseful() const noexcept override;
 
   /// Setting the symbols monitor
-  MatchEngine& useSymsMonitor(AbsJobMonitor& symsMonitor_) noexcept override;
+  MatchEngine& useSymsMonitor(
+      ui::AbsJobMonitor& symsMonitor_) noexcept override;
 
   PRIVATE :
 
-      const ISettings& cfg;  ///< settings for the engine
-  IFontEngine& fe;           ///< symbols set manager
+      /// settings for the engine
+      gsl::not_null<const cfg::ISettings*>
+          cfg;
+
+  gsl::not_null<syms::IFontEngine*> fe;  ///< symbols set manager
 
   /// Reorganized symbols to be visualized within the cmap viewer
-  ICmapPerspective& cmP;
+  gsl::not_null<ui::ICmapPerspective*> cmP;
 
   /// observer of the symbols' loading, filtering and clustering, who reports
   /// their progress
-  AbsJobMonitor* symsMonitor = nullptr;
+  ui::AbsJobMonitor* symsMonitor = nullptr;
 
   std::string symsIdReady;  ///< type of symbols ready to use for transformation
 
-  VSymData symsSet;  ///< set of most information on each symbol
+  syms::VSymData symsSet;  ///< set of most information on each symbol
 
   /// Data precomputed by matchSupport before performing the matching series
-  CachedDataRW cachedData;
+  transform::CachedDataRW cachedData;
 
   /// Match manager based on the enabled matching aspects
-  MatchAssessor& matchAssessor;
+  gsl::not_null<MatchAssessor*> matchAssessor;
 
-  const std::unique_ptr<IClusterEngine> ce;  ///< clusters manager
+  std::unique_ptr<syms::cluster::IClusterEngine> ce;  ///< clusters manager
 
   // Keep this below the fields, as it depends on them
   /// Cached data management
-  const std::unique_ptr<IMatchSupport> matchSupport;
+  std::unique_ptr<IMatchSupport> matchSupport;
 
-  /// All the available aspects
+  /// All the available aspects.
+  /// vector<not_null<unique_ptr>> not possible because not_null needs
+  /// copy-constructible types. not-nullness checked instead when appended.
   std::vector<std::unique_ptr<const MatchAspect>> availAspects;
 };
+
+}  // namespace pic2sym::match
 
 #endif  // H_MATCH_ENGINE

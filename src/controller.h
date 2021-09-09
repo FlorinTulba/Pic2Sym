@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -41,27 +44,28 @@
 #define H_CONTROLLER
 
 #include "controllerBase.h"
+
+#include "cmapInspectBase.h"
+#include "cmapPerspectiveBase.h"
+#include "comparatorBase.h"
+#include "fontEngineBase.h"
+#include "jobMonitorBase.h"
+#include "matchEngineBase.h"
+#include "selectSymbolsBase.h"
+#include "settingsBase.h"
+#include "transformBase.h"
+#include "transformCompletion.h"
 #include "updateSymsActions.h"
+#include "views.h"
 
 #pragma warning(push, 0)
 
 #include <atomic>
+#include <future>
 
 #pragma warning(pop)
 
-// Forward declarations
-class IFontEngine;
-class IMatchEngine;
-class ISettings;
-class ISettingsRW;
-class ISymSettings;
-class AbsJobMonitor;
-class ITransformCompletion;
-class ITransformer;
-class IComparator;
-class ICmapInspect;
-class ICmapPerspective;
-class ISelectSymbols;
+namespace pic2sym {
 
 /**
 Base interface for the Controller.
@@ -121,16 +125,16 @@ costs.
 class Controller : public IController {
  public:
   /// Initializes controller with ISettingsRW object s
-  explicit Controller(ISettingsRW& s) noexcept;
-  ~Controller() noexcept;  ///< destroys the windows
+  explicit Controller(cfg::ISettingsRW& s) noexcept;
 
+  /// Waits until the user wants to leave and then destroys the windows
+  ~Controller() noexcept override;
+
+  // Slicing prevention
   Controller(const Controller&) = delete;
   Controller(Controller&&) = delete;
   void operator=(const Controller&) = delete;
   void operator=(Controller&&) = delete;
-
-  /// Waits for the user to press ESC and confirm he wants to leave
-  static void handleRequests() noexcept;
 
   // Group 1: 2 methods called so far only by ControlPanelActions
   void ensureExistenceCmapInspect() noexcept override;
@@ -148,19 +152,20 @@ class Controller : public IController {
   void symbolsChanged() override;
 
   // Group 2: 2 methods called so far only by FontEngine
+
+  /// Access to methods for changing the font file or its enconding
   const IUpdateSymSettings& getUpdateSymSettings() const noexcept override;
 
-  /// The ref to unique_ptr solves a circular dependency inside the constructor
-  const std::unique_ptr<const IPresentCmap>& getPresentCmap() const
-      noexcept override;
+  /// Access to methods controlling the displayed Cmap
+  const IPresentCmap& getPresentCmap() const noexcept override;
 
   // Last group of methods used by many different clients without an obvious
   // pattern
-  const IGlyphsProgressTracker& getGlyphsProgressTracker() const
-      noexcept override;
+  const IGlyphsProgressTracker& getGlyphsProgressTracker()
+      const noexcept override;
 
-  IPicTransformProgressTracker& getPicTransformProgressTracker() const
-      noexcept override;
+  IPicTransformProgressTracker& getPicTransformProgressTracker()
+      const noexcept override;
 
   IControlPanelActions& getControlPanelActions() const noexcept override;
 
@@ -169,7 +174,8 @@ class Controller : public IController {
 
   /// Returns true if transforming a new image or the last one, but under other
   /// image parameters
-  bool updateResizedImg(const IResizedImg& resizedImg_) noexcept override;
+  bool updateResizedImg(
+      const input::IResizedImg& resizedImg_) noexcept override;
 
   /**
   Shows a 'Please wait' window and reports progress.
@@ -209,7 +215,7 @@ class Controller : public IController {
 
   Exception to be only reported, not handled
   */
-  void reportDuration(const std::string& text, double durationS) const
+  void reportDuration(std::string_view text, double durationS) const
       noexcept(!UT) override;
 
   /// Displays the resulted image
@@ -223,7 +229,7 @@ class Controller : public IController {
 
   Exception to be only reported, not handled
   */
-  void display1stPageIfFull(const VPixMapSym& syms) const
+  void display1stPageIfFull(const syms::VPixMapSym& syms) const
       noexcept(!UT) override;
 #endif  // UNIT_TESTING not defined
 
@@ -231,82 +237,100 @@ class Controller : public IController {
 
                // Methods for initialization
 
-               static IComparator&
+               static ui::IComparator&
                getComparator() noexcept;
 
-  IFontEngine& getFontEngine(const ISymSettings& ss_) noexcept;
+  syms::IFontEngine& getFontEngine(const cfg::ISymSettings& ss_) noexcept;
 
-  IMatchEngine& getMatchEngine(const ISettings& cfg_) noexcept;
+  match::IMatchEngine& getMatchEngine(const cfg::ISettings& cfg_) noexcept;
 
-  ITransformer& getTransformer(const ISettings& cfg_) noexcept;
+  transform::ITransformer& getTransformer(const cfg::ISettings& cfg_) noexcept;
 
   /// Status bar with font information
-  const std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const
-      noexcept;
+  std::string textForCmapStatusBar(unsigned upperSymsCount = 0U) const noexcept;
 
   /// Progress
-  const std::string textHourGlass(const std::string& prefix,
-                                  double progress) const noexcept;
+  std::string textHourGlass(const std::string& prefix,
+                            double progress) const noexcept;
 
  private:
+  /// The settings for the transformations
+  gsl::not_null<cfg::ISettingsRW*> cfg;
+
   /// Responsible of updating symbol settings
-  const std::unique_ptr<const IUpdateSymSettings> updateSymSettings;
+  std::unique_ptr<const IUpdateSymSettings> updateSymSettings;
 
   /// Responsible for keeping track of the symbols loading process
-  const std::unique_ptr<const IGlyphsProgressTracker> glyphsProgressTracker;
+  std::unique_ptr<const IGlyphsProgressTracker> glyphsProgressTracker;
 
   /// Responsible for monitoring the progress during an image transformation
-  const std::unique_ptr<IPicTransformProgressTracker>
-      picTransformProgressTracker;
+  std::unique_ptr<IPicTransformProgressTracker> picTransformProgressTracker;
 
   // Control of displayed progress
 
   /// In charge of displaying the progress while updating the glyphs
-  const std::unique_ptr<AbsJobMonitor> glyphsUpdateMonitor;
+  std::unique_ptr<ui::AbsJobMonitor> glyphsUpdateMonitor;
 
   /// In charge of displaying the progress while transforming images
-  const std::unique_ptr<AbsJobMonitor> imgTransformMonitor;
+  std::unique_ptr<ui::AbsJobMonitor> imgTransformMonitor;
 
   /// Reorganized symbols to be visualized within the cmap viewer
-  const std::unique_ptr<ICmapPerspective> cmP;
+  std::unique_ptr<ui::ICmapPerspective> cmP;
 
   /**
   Provides read-only access to Cmap data.
   Needed by 'fe' from below.
-  Uses 'me' from below and 'cmP' from above
+  Uses 'cmP' and 'cfg' from above and lazyly 'me' from below
   */
-  const std::unique_ptr<const IPresentCmap> presentCmap;
+  std::unique_ptr<const IPresentCmap> presentCmap;
 
   // Data
 
   /// Pointer to the resized version of most recent image that had to be
   /// transformed
-  std::unique_ptr<const IResizedImg> resizedImg;
-  IFontEngine& fe;          ///< font engine
-  ISettingsRW& cfg;         ///< the settings for the transformations
-  IMatchEngine& me;         ///< matching engine
-  ITransformCompletion& t;  ///< results of the transformation
+  std::unique_ptr<const input::IResizedImg> resizedImg;
+  gsl::not_null<syms::IFontEngine*> fe;    ///< font engine
+  gsl::not_null<match::IMatchEngine*> me;  ///< matching engine
+
+  /// Results of the transformation
+  gsl::not_null<transform::ITransformCompletion*> t;
 
   // Views
 
-  IComparator& comp;                   ///< view for comparing original & result
-  std::unique_ptr<ICmapInspect> pCmi;  ///< view for inspecting the used cmap
+  /// View for comparing original & result
+  gsl::not_null<ui::IComparator*> comp;
+
+  /// View for inspecting the used cmap
+  std::unique_ptr<ui::ICmapInspect> pCmi;
 
   /// Allows saving a selection of symbols pointed within the charmap viewer
-  const std::unique_ptr<const ISelectSymbols> selectSymbols;
+  std::unique_ptr<const ISelectSymbols> selectSymbols;
 
   /// Responsible for the actions triggered by the controls from Control Panel
-  const std::unique_ptr<IControlPanelActions> controlPanelActions;
+  std::unique_ptr<IControlPanelActions> controlPanelActions;
 
   // synchronization items necessary while updating symbols
 
   /// Stores the events occurred while updating the symbols.
-  mutable LockFreeQueue updateSymsActionsQueue;
+  mutable ui::LockFreeQueue updateSymsActionsQueue;
 
-  std::atomic_flag updatingSymbols;  ///< stays true while updating the symbols
+  /// Thread used to update the symbols; Self joins in ~Controller
+  mutable std::jthread updatesSymbols{};
+
+  /// Orders the display of the 1st unofficial Cmap page
+  /// Waited for by 'updatesSymbols'
+  mutable std::future<void> ordersDisplayOfUnofficial1stCmapPage{};
+
+  /// Stays true while updating the symbols; Initially false
+  std::atomic_flag updatingSymbols{};
 
   /// Controls concurrent attempts to update 1st page
-  mutable std::atomic_flag updating1stCmapPage;
+  mutable std::atomic_flag updating1stCmapPage{};
+
+  /// Set when the user wants to leave
+  std::atomic_flag leaving{};
 };
+
+}  // namespace pic2sym
 
 #endif  // H_CONTROLLER

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,11 +41,13 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #ifndef UNIT_TESTING
 
-#include "serializer.h"
 #include "tinySymsDataSerialization.h"
+
+#include "serializer.h"
 
 #pragma warning(push, 0)
 
@@ -57,19 +62,20 @@
 using namespace std;
 using namespace boost::archive;
 
-unsigned VTinySymsIO::VERSION_FROM_LAST_IO_OP = UINT_MAX;
+namespace pic2sym::syms {
 
-VTinySymsIO::VTinySymsIO(VTinySyms& tinySyms_) noexcept : tinySyms(tinySyms_) {}
+VTinySymsIO::VTinySymsIO(VTinySyms& tinySyms_) noexcept
+    : tinySyms(&tinySyms_) {}
 
 bool VTinySymsIO::loadFrom(const string& path) noexcept {
-  ifstream ifs(path, ios::binary);
+  ifstream ifs{path, ios::binary};
   if (!ifs) {
     cerr << "Couldn't find / open: " << path << endl;
     return false;
   }
 
   if (false == load<binary_iarchive>(ifs, path, *this)) {
-    tinySyms.clear();  // leaves *this in a consistent state
+    tinySyms->clear();  // leaves *this in a consistent state
     return false;
   }
 
@@ -89,7 +95,7 @@ bool VTinySymsIO::loadFrom(const string& path) noexcept {
 }
 
 bool VTinySymsIO::saveTo(const string& path) const noexcept {
-  if (ofstream ofs(path, ios::binary | ios::trunc); ofs)
+  if (ofstream ofs{path, ios::binary | ios::trunc})
     return save<binary_oarchive>(ofs, path, *this);
 
   cerr << "Couldn't create / truncate: " << path << endl;
@@ -98,9 +104,10 @@ bool VTinySymsIO::saveTo(const string& path) const noexcept {
 
 #pragma warning(disable : WARN_EXPR_ALWAYS_FALSE)
 bool VTinySymsIO::olderVersionDuringLastIO() noexcept {
-  return TinySym::olderVersionDuringLastIO() ||
-         VERSION_FROM_LAST_IO_OP < VERSION;
+  return TinySym::olderVersionDuringLastIO() || VersionFromLast_IO_op < Version;
 }
 #pragma warning(default : WARN_EXPR_ALWAYS_FALSE)
+
+}  // namespace pic2sym::syms
 
 #endif  // UNIT_TESTING

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,13 +45,27 @@
 
 #include "picTransformProgressTrackerBase.h"
 
-class IController;  // forward declaration
+#include "controllerBase.h"
+
+#pragma warning(push, 0)
+
+#include <gsl/gsl>
+
+#pragma warning(pop)
+
+namespace pic2sym {
 
 /// Implementation of the interface monitoring the progress of transforming an
 /// image.
 class PicTransformProgressTracker : public IPicTransformProgressTracker {
  public:
   explicit PicTransformProgressTracker(IController& ctrler_) noexcept;
+
+  // No intention to copy / move such trackers
+  PicTransformProgressTracker(const PicTransformProgressTracker&) = delete;
+  PicTransformProgressTracker(PicTransformProgressTracker&&) = delete;
+  void operator=(const PicTransformProgressTracker&) = delete;
+  void operator=(PicTransformProgressTracker&&) = delete;
 
   /// Called when unable to load the symbols right when attempting to transform
   /// an image
@@ -59,9 +76,8 @@ class PicTransformProgressTracker : public IPicTransformProgressTracker {
   If showDraft is true, and a draft is available, it will be presented within
   Comparator window.
   */
-  void reportTransformationProgress(double progress,
-                                    bool showDraft = false) const
-      noexcept override;
+  void reportTransformationProgress(double progress, bool showDraft = false)
+      const noexcept override;
 
   /**
   Present the partial / final result after the transformation has been canceled
@@ -72,14 +88,16 @@ class PicTransformProgressTracker : public IPicTransformProgressTracker {
   @param completionDurationS the duration of the transformation in seconds or a
   negative value for aborted transformations
   */
-  void presentTransformationResults(double completionDurationS = -1.) const
-      noexcept override;
+  void presentTransformationResults(
+      double completionDurationS = -1.) const noexcept override;
 
   /// Creates the monitor to time the picture approximation process
   Timer createTimerForImgTransform() const noexcept override;
 
  private:
-  IController& ctrler;
+  gsl::not_null<IController*> ctrler;
 };
+
+}  // namespace pic2sym
 
 #endif  // H_PIC_TRANSFORM_PROGRESS_TRACKER

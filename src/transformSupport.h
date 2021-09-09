@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,17 +45,20 @@
 
 #include "transformSupportBase.h"
 
+#include "bestMatchBase.h"
+#include "matchEngineBase.h"
+#include "matchSettingsBase.h"
+
 #pragma warning(push, 0)
 
 #include <memory>
 #include <vector>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
 
-// Forward declarations
-class IBestMatch;
-class IMatchSettings;
-class IMatchEngine;
+namespace pic2sym::transform {
 
 /**
 Initializes and updates draft matches.
@@ -62,12 +68,18 @@ symbols.
 class TransformSupport : public ITransformSupport {
  public:
   /// Base constructor
-  TransformSupport(IMatchEngine& me_,
-                   const IMatchSettings& matchSettings_,
+  TransformSupport(match::IMatchEngine& me_,
+                   const cfg::IMatchSettings& matchSettings_,
                    cv::Mat& resized_,
                    cv::Mat& resizedBlurred_,
-                   std::vector<std::vector<std::unique_ptr<IBestMatch>>>&
+                   std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>&
                        draftMatches_) noexcept;
+
+  // Slicing prevention
+  TransformSupport(const TransformSupport&) = delete;
+  TransformSupport(TransformSupport&&) = delete;
+  void operator=(const TransformSupport&) = delete;
+  void operator=(TransformSupport&&) = delete;
 
   /// Initializes the drafts when a new image needs to be approximated
   void initDrafts(bool isColor,
@@ -93,7 +105,7 @@ class TransformSupport : public ITransformSupport {
  protected:
   /// Initializes a row of a draft when a new image needs to be approximated
   static void initDraftRow(
-      std::vector<std::vector<std::unique_ptr<IBestMatch>>>& draft,
+      std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>& draft,
       int r,
       unsigned patchesPerRow,
       const cv::Mat& res,
@@ -104,36 +116,40 @@ class TransformSupport : public ITransformSupport {
   /// Resets a row of a draft when current image needs to be approximated in a
   /// different context
   static void resetDraftRow(
-      std::vector<std::vector<std::unique_ptr<IBestMatch>>>& draft,
+      std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>& draft,
       int r) noexcept;
 
   /// Update the visualized draft
   static void patchImproved(cv::Mat& result,
                             unsigned sz,
-                            const IBestMatch& draftMatch,
+                            const match::IBestMatch& draftMatch,
                             const cv::Range& rowRange,
                             int startCol) noexcept;
 
   /// Update PatchApprox for uniform Patch only during the compare with 1st sym
   /// (from 1st batch)
-  static void manageUnifPatch(const IMatchSettings& ms,
+  static void manageUnifPatch(const cfg::IMatchSettings& ms,
                               cv::Mat& result,
                               unsigned sz,
-                              IBestMatch& draftMatch,
+                              match::IBestMatch& draftMatch,
                               const cv::Range& rowRange,
                               int startCol) noexcept;
 
   /// Determines if a given patch is worth approximating (Uniform patches don't
   /// make sense approximating)
-  static bool checkUnifPatch(const IBestMatch& draftMatch) noexcept;
+  static bool checkUnifPatch(const match::IBestMatch& draftMatch) noexcept;
 
-  IMatchEngine& me;                     ///< match engine
-  const IMatchSettings& matchSettings;  ///< match settings
-  cv::Mat& resized;                     ///< resized version of the original
-  cv::Mat& resizedBlurred;  ///< blurred version of the resized original
+  gsl::not_null<match::IMatchEngine*> me;                   ///< match engine
+  gsl::not_null<const cfg::IMatchSettings*> matchSettings;  ///< match settings
+  gsl::not_null<cv::Mat*> resized;  ///< resized version of the original
+  gsl::not_null<cv::Mat*>
+      resizedBlurred;  ///< blurred version of the resized original
 
   /// temporary best matches
-  std::vector<std::vector<std::unique_ptr<IBestMatch>>>& draftMatches;
+  gsl::not_null<std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>*>
+      draftMatches;
 };
+
+}  // namespace pic2sym::transform
 
 #endif  // H_TRANSFORM_SUPPORT

@@ -14,17 +14,18 @@
 *.suo
 *.uml
 *.user
-*_20*.sln
-*_20*.vcxproj
 
 ## Folders to ignore
 [Dd]ebug/
 /doc/cache
+/doc/diagrams
 /doc/doxy
 /doc/pages/watermark.bmp
 include/
 lib/
 [Rr]elease/
+/res/TestImages
 scripts/
+Versions/
 /.vs/
 x64/

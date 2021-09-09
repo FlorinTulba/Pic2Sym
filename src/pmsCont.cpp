@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,14 +41,15 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "pmsCont.h"
 
 #include "bulkySymsFilter.h"
 #include "controllerBase.h"
 #include "filledRectanglesFilter.h"
 #include "gridBarsFilter.h"
-#include "misc.h"
 #include "pixMapSym.h"
-#include "pmsCont.h"
 #include "sievesSymsFilter.h"
 #include "symFilterCache.h"
 #include "unreadableSymsFilter.h"
@@ -59,11 +63,19 @@
 
 using namespace std;
 using namespace cv;
+using namespace gsl;
 
 extern template class optional<unsigned>;
 
+namespace pic2sym {
+
+extern const bool PreserveRemovableSymbolsForExamination;
+extern const double PmsCont_SMALL_GLYPHS_PERCENT;
+
+namespace syms {
+
 PmsCont::PmsCont(IController& ctrler_) noexcept
-    : ctrler(ctrler_),
+    : ctrler(&ctrler_),
 
       // Add any additional filters as 'make_unique<NewFilter>()' in the last
       // set of unfilled '()'
@@ -73,9 +85,9 @@ PmsCont::PmsCont(IController& ctrler_) noexcept
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 unsigned PmsCont::getFontSz() const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return fontSz;
 }
@@ -83,9 +95,9 @@ unsigned PmsCont::getFontSz() const noexcept(!UT) {
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 unsigned PmsCont::getBlanksCount() const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return blanks;
 }
@@ -93,9 +105,9 @@ unsigned PmsCont::getBlanksCount() const noexcept(!UT) {
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 unsigned PmsCont::getDuplicatesCount() const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return duplicates;
 }
@@ -104,9 +116,9 @@ unsigned PmsCont::getDuplicatesCount() const noexcept(!UT) {
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 const unordered_map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg()
     const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return removableSymsByCateg;
 }
@@ -114,9 +126,9 @@ const unordered_map<unsigned, unsigned>& PmsCont::getRemovableSymsByCateg()
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 double PmsCont::getCoverageOfSmallGlyphs() const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return coverageOfSmallGlyphs;
 }
@@ -124,9 +136,9 @@ double PmsCont::getCoverageOfSmallGlyphs() const noexcept(!UT) {
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 const VPixMapSym& PmsCont::getSyms() const noexcept(!UT) {
-  if (!ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " cannot be called before setAsReady()",
-                         logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      ready, logic_error,
+      HERE.function_name() + " cannot be called before setAsReady()"s);
 
   return syms;
 }
@@ -142,10 +154,14 @@ void PmsCont::reset(unsigned fontSz_ /* = 0U*/,
 
   removableSymsByCateg.clear();
   syms.clear();
-  if (symsCount != 0U)
+  if (symsCount)
     syms.reserve(symsCount);
 
-  consec = Mat(1, (int)fontSz_, CV_64FC1);
+  // max ensures consec and revConsec aren't empty when fontSz_ is 0
+  // Transposing revConsec below throws for an empty matrix
+
+  // 0. parameter prevents using initializer_list ctor of Mat
+  consec = Mat{1, max((int)fontSz_, 1), CV_64FC1, 0.};
   revConsec.release();
 
   iota(BOUNDS_FOR_ITEM_TYPE(consec, double), (double)0.);
@@ -162,7 +178,7 @@ bool PmsCont::exactBlank(unsigned height, unsigned width) noexcept {
 }
 
 bool PmsCont::nearBlank(const IPixMapSym& pms) noexcept {
-  if (pms.getAvgPixVal() > EPS && pms.getAvgPixVal() < OneMinEPS)
+  if (pms.getAvgPixVal() > Eps && pms.getAvgPixVal() < OneMinusEps)
     return false;
 
   ++blanks;
@@ -185,19 +201,23 @@ void PmsCont::appendSym(FT_ULong c,
                         FT_GlyphSlot g,
                         FT_BBox& bb,
                         SymFilterCache& sfc) noexcept(!UT) {
-  if (ready)
-    THROW_WITH_CONST_MSG(__FUNCTION__ " not allowed after setAsReady(), "
-                         "unless a reset() clears the container!", logic_error);
+  EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+      !ready, logic_error,
+      HERE.function_name() +
+          " cannot be called after setAsReady(), "
+          "unless a reset() clears the container!"s);
 
-  const FT_Bitmap b = g->bitmap;
-  const unsigned height = b.rows, width = b.width;
+  const FT_Bitmap b{g->bitmap};
+  const unsigned height{b.rows};
+  const unsigned width{b.width};
 
   // Skip Space characters
   if (exactBlank(height, width))
     return;
 
-  PixMapSym pms(c, symIdx, g->bitmap, g->bitmap_left, g->bitmap_top,
-                (int)fontSz, maxGlyphSum, consec, revConsec, bb);
+  PixMapSym pms{
+      c,           symIdx,      g->bitmap, g->bitmap_left, g->bitmap_top,
+      (int)fontSz, maxGlyphSum, consec,    revConsec,      bb};
   // discard disguised Space characters
   if (nearBlank(pms))
     return;
@@ -217,7 +237,6 @@ void PmsCont::appendSym(FT_ULong c,
     else
       ++it->second;
 
-    extern const bool PreserveRemovableSymbolsForExamination;
     if (!PreserveRemovableSymbolsForExamination)
       return;
 
@@ -227,7 +246,7 @@ void PmsCont::appendSym(FT_ULong c,
   syms.emplace_back(make_unique<const PixMapSym>(pms));
 
 #ifndef UNIT_TESTING
-  ctrler.display1stPageIfFull(syms);
+  ctrler->display1stPageIfFull(syms);
 #endif  // UNIT_TESTING not defined
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
@@ -239,11 +258,10 @@ void PmsCont::setAsReady() noexcept {
   // Determine below max box coverage for smallest glyphs from the kept symsSet.
   // This will be used to favor using larger glyphs when this option is
   // selected.
-  extern const double PmsCont_SMALL_GLYPHS_PERCENT;
   const auto smallGlyphsQty =
-      (long)round(syms.size() * PmsCont_SMALL_GLYPHS_PERCENT);
+      narrow_cast<long>(round(size(syms) * PmsCont_SMALL_GLYPHS_PERCENT));
 
-  VPixMapSym::iterator itToNthGlyphSum = next(begin(syms), smallGlyphsQty);
+  VPixMapSym::iterator itToNthGlyphSum{next(begin(syms), smallGlyphsQty)};
   nth_element(begin(syms), itToNthGlyphSum, end(syms),
               [](const unique_ptr<const IPixMapSym>& first,
                  const unique_ptr<const IPixMapSym>& second) noexcept {
@@ -254,3 +272,6 @@ void PmsCont::setAsReady() noexcept {
 
   ready = true;
 }
+
+}  // namespace syms
+}  // namespace pic2sym

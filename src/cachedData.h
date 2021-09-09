@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,17 +43,18 @@
 #ifndef H_CACHED_DATA
 #define H_CACHED_DATA
 
+#include "fontEngineBase.h"
 #include "misc.h"
 
 #pragma warning(push, 0)
 
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include <numbers>
+
 #include <opencv2/core/core.hpp>
 
 #pragma warning(pop)
 
-class IFontEngine;  // forward declaration
+namespace pic2sym::transform {
 
 /// Cached data for computing match parameters and evaluating match aspects
 class CachedData {
@@ -82,7 +86,7 @@ class CachedData {
     and 255. In that case, the mean is 127.5 and the std dev is: sqrt(
     ((-127.5)^2 * sz^2/2 + 127.5^2 * sz^2/2) /sz^2) = 127.5
     */
-    static constexpr double forFgOrBg = 127.5;
+    static constexpr double forFgOrBg{127.5};
 
     /**
     Max possible std dev for edge is 255.
@@ -93,21 +97,21 @@ class CachedData {
     every pixel from the patch covered by the edge mask has a deviation of 255
     from the corresponding zone within the approximated patch.
     */
-    static constexpr double forEdges = 255.;
+    static constexpr double forEdges{255.};
   };
 
   /// Constants for computations concerning mass centers
   struct MassCenters {
     /// acceptable distance between mass centers (1/8)
-    static constexpr double preferredMaxMcDist = .125;
+    static constexpr double preferredMaxMcDist{.125};
 
     /// The center of a square with unit-length sides
     static const cv::Point2d& unitSquareCenter() noexcept;
 
     /// 1 / max possible distance between mass centers: sqrt(2) -
     /// preferredMaxMcDist
-    static constexpr double invComplPrefMaxMcDist =
-        1. / (M_SQRT2 - preferredMaxMcDist);
+    static constexpr double invComplPrefMaxMcDist{
+        1. / (std::numbers::sqrt2 - preferredMaxMcDist)};
 
     // See comment from above the definitions of these static methods in
     // cachedData.cpp, but also from DirectionalSmoothness::score
@@ -122,15 +126,15 @@ class CachedData {
   PROTECTED :
 
       cv::Mat consec;  ///< row matrix with consecutive elements: 0..sz-1
-  double sz_1 = 0.;    ///< double version of sz - 1
-  double szSq = 0.;    ///< double version of sz^2
+  double sz_1{};       ///< double version of sz - 1
+  double szSq{};       ///< double version of sz^2
 
   /// Max density for symbols considered small
-  double smallGlyphsCoverage = 0.;
+  double smallGlyphsCoverage{};
 
  public:
   /// Are all these values used for tiny symbols or for normal symbols?
-  const bool forTinySyms;
+  bool forTinySyms;
 };
 
 /// CachedData with modifiers
@@ -145,9 +149,11 @@ class CachedDataRW : public CachedData {
   void operator=(const CachedDataRW&) = delete;
   void operator=(CachedDataRW&&) = delete;
 
-  void update(unsigned sz_, const IFontEngine& fe_) noexcept;
-  void update(const IFontEngine& fe_) noexcept;
+  void update(unsigned sz_, const syms::IFontEngine& fe_) noexcept;
+  void update(const syms::IFontEngine& fe_) noexcept;
   void useNewSymSize(unsigned sz_) noexcept;
 };
+
+}  // namespace pic2sym::transform
 
 #endif  // H_CACHED_DATA

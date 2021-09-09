@@ -564,7 +564,7 @@ The obtained times from the enumerated diagrams are discussed on the [Performanc
 
 #### Note:
 
-*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Carina Trifa Plesescu](https://www.facebook.com/trifa.carina), [Flavia Begov](https://www.facebook.com/darkfavy) and [Adrian Rosca](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
+*For exemplifying the conversions performed by the project, I&#39;ve applied the transformations on several images provided by 3 friends with well\-developed artistic abilities, all of us sharing the love for nature. So, many thanks to [Carina Trifa Plesescu](https://www.facebook.com/trifa.carina), [Flavia Muntean](https://www.facebook.com/darkfavy) and [Adrian Rosca](https://www.facebook.com/rosca.adrian.9). If you need those beautiful pictures or similar ones, please contact them.*
 
 ----------
 [Back to start page](../../../ReadMe.md)

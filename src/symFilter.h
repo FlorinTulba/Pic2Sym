@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -49,7 +52,11 @@
 #include <string>
 #include <unordered_map>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
+
+namespace pic2sym::syms::inline filter {
 
 /// Base class of the template class TSymFilter from below, to keep the template
 /// as thin as possible
@@ -62,6 +69,12 @@ class SymFilter /*abstract*/ : public ISymFilter {
   Exception to be only reported, not handled
   */
   static const std::string& filterName(unsigned filterId_) noexcept(!UT);
+
+  // Slicing prevention
+  SymFilter(const SymFilter&) = delete;
+  SymFilter(SymFilter&&) = delete;
+  void operator=(const SymFilter&) = delete;
+  void operator=(SymFilter&&) = delete;
 
  private:
   // SymFilter cannot be directly derived, except by the friend TSymFilter
@@ -89,9 +102,9 @@ class SymFilter /*abstract*/ : public ISymFilter {
   static std::unordered_map<unsigned, const std::string> filterTypes;
 
   /// DefSymFilter or a derivate from SymFilter
-  const std::unique_ptr<ISymFilter> nextFilter;
+  std::unique_ptr<ISymFilter> nextFilter;
 
-  const unsigned filterId;  ///< id of the filter
+  unsigned filterId;  ///< id of the filter
 };
 
 /**
@@ -102,7 +115,7 @@ so static methods would be enough - that is static polymorphism does the job.
 
 As a consequence, derived classes from TSymFilter must have 2 public methods
 with following signature:
-- static bool isEnabled() noexcept (using CHECK_ENABLED_SYM_FILTER define)
+- static bool isEnabled() noexcept (using SYM_FILTER_DECLARE_IS_ENABLED define)
 - static bool isDisposable(const IPixMapSym &pms, const SymFilterCache &sfc)
 noexcept
 */
@@ -115,13 +128,14 @@ class TSymFilter /*abstract*/ : public SymFilter {
 
   Derived classes from TSymFilter must have 2 public methods with following
   signature:
-  - static bool isEnabled() noexcept (using CHECK_ENABLED_SYM_FILTER define)
+  - static bool isEnabled() noexcept (using SYM_FILTER_DECLARE_IS_ENABLED
+  define)
   - static bool isDisposable(const IPixMapSym& pms, const SymFilterCache& sfc)
   noexcept
   */
-  std::optional<unsigned> matchingFilterId(const IPixMapSym& pms,
-                                           const SymFilterCache& sfc) const
-      noexcept override {
+  std::optional<unsigned> matchingFilterId(
+      const IPixMapSym& pms,
+      const SymFilterCache& sfc) const noexcept override {
     // Using static polymorphism
     if (DerivedFromTSymFilter::isDisposable(pms, sfc))
       return filterId;
@@ -146,15 +160,21 @@ class TSymFilter /*abstract*/ : public SymFilter {
   TSymFilter(unsigned filterId_,
              const std::string& filterName,
              std::unique_ptr<ISymFilter> nextFilter_) noexcept(!UT)
-      : SymFilter(filterId_, filterName, std::move(nextFilter_)) {}
+      : SymFilter{filterId_, filterName, std::move(nextFilter_)} {}
 };
 
-/// Macro for defining DerivedFromTSymFilter::isEnabled() method within each
+/// MacroS for defining DerivedFromTSymFilter::isEnabled() method within each
 /// DerivedFromTSymFilter class
-#define CHECK_ENABLED_SYM_FILTER(DerivedFromTSymFilter) \
-  static bool isEnabled() noexcept {                    \
-    extern const bool DerivedFromTSymFilter##Enabled;   \
-    return DerivedFromTSymFilter##Enabled;              \
+#define SYM_FILTER_DECLARE_IS_ENABLED(DerivedFromTSymFilter) \
+  static bool isEnabled() noexcept
+
+#define SYM_FILTER_DEFINE_IS_ENABLED(DerivedFromTSymFilter)        \
+  extern const bool DerivedFromTSymFilter##Enabled;                \
+                                                                   \
+  bool syms::filter::DerivedFromTSymFilter::isEnabled() noexcept { \
+    return DerivedFromTSymFilter##Enabled;                         \
   }
+
+}  // namespace pic2sym::syms::inline filter
 
 #endif  // H_SYM_FILTER

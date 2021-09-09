@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,39 +41,38 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "correlationAspect.h"
 
 #include "cachedData.h"
-#include "correlationAspect.h"
 #include "matchParams.h"
-#include "misc.h"
-#include "symDataBase.h"
-
-#pragma warning(push, 0)
-
-#include <opencv2/imgproc/imgproc.hpp>
-
-#pragma warning(pop)
 
 using namespace std;
 using namespace cv;
 
-CorrelationAspect::CorrelationAspect(const IMatchSettings& ms) noexcept
-    : MatchAspect(ms.get_kCorrel()) {}
+namespace pic2sym::match {
+
+using p2s::transform::CachedData;
+
+CorrelationAspect::CorrelationAspect(
+    const p2s::cfg::IMatchSettings& ms) noexcept
+    : MatchAspect{ms.get_kCorrel()} {}
 
 double CorrelationAspect::relativeComplexity() const noexcept {
   return 90.21;
 }
 
-double CorrelationAspect::score(const IMatchParams& mp, const CachedData&) const
-    noexcept {
-  return k * mp.getAbsCorr().value();
+double CorrelationAspect::score(const IMatchParams& mp,
+                                const CachedData&) const noexcept {
+  return *k * mp.getAbsCorr().value();
 }
 
-void CorrelationAspect::fillRequiredMatchParams(const cv::Mat& patch,
-                                                const ISymData& symData,
-                                                const CachedData& cachedData,
-                                                IMatchParamsRW& mp) const
-    noexcept {
+void CorrelationAspect::fillRequiredMatchParams(
+    const cv::Mat& patch,
+    const p2s::syms::ISymData& symData,
+    const CachedData& cachedData,
+    IMatchParamsRW& mp) const noexcept {
   mp.computeAbsCorr(patch, symData, cachedData);
 }
 
@@ -95,15 +97,15 @@ void MatchParams::computeNormPatchMinMiu(
   computePatchSum(patch);
   computePatchSq(patch);
 
-  const double patch_sum = patchSum.value();
+  const double patch_sum{patchSum.value()};
 
   normPatchMinMiu = sqrt(*sum(patchSq.value()).val -
                          patch_sum * patch_sum / cachedData.getSzSq());
 
 #ifdef _DEBUG  // Checking normPatchMinMiu against the official formula
-  const double officialNormPatchMinMiu =
-      norm(patch - patch_sum / cachedData.getSzSq(), NORM_L2);
-  assert(abs(officialNormPatchMinMiu - normPatchMinMiu.value()) < EPS);
+  const double officialNormPatchMinMiu{
+      norm(patch - patch_sum / cachedData.getSzSq(), NORM_L2)};
+  assert(abs(officialNormPatchMinMiu - normPatchMinMiu.value()) < Eps);
 #endif  // _DEBUG
 }
 
@@ -170,27 +172,27 @@ so we get:
  (8) absCorr = abs(sum of (P(i,j) * S0(i,j))) / (normP0 * normS0)
 */
 void MatchParams::computeAbsCorr(const Mat& patch,
-                                 const ISymData& symData,
+                                 const p2s::syms::ISymData& symData,
                                  const CachedData& cachedData) noexcept {
   if (absCorr)
     return;
 
   computeNormPatchMinMiu(patch, cachedData);
 
-  const double numerator = abs(*sum(patch.mul(symData.getSymMiu0())).val),
-               denominator = normPatchMinMiu.value() * symData.getNormSymMiu0();
+  const double numerator{abs(*sum(patch.mul(symData.getSymMiu0())).val)};
+  const double denominator{normPatchMinMiu.value() * symData.getNormSymMiu0()};
 
-  if (denominator != 0.) {
+  if (denominator) {
     absCorr = numerator / denominator;
 
 #ifdef _DEBUG  // checking that absCorr is in 0..1 range
-    assert(*absCorr < EPSp1);
+    assert(*absCorr < EpsPlus1);
 #endif  // _DEBUG
 
     return;
   }
 
-  if (normPatchMinMiu.value() == 0.) {  // uniform patch
+  if (!normPatchMinMiu.value()) {  // uniform patch
     // Perfect match, as the symbol fades perfectly into the patch
     absCorr = 1.;
     return;
@@ -199,3 +201,5 @@ void MatchParams::computeAbsCorr(const Mat& patch,
   // uniform symbol and non-uniform patch
   absCorr = 0.;  // cannot fit a blank on something non-blank
 }
+
+}  // namespace pic2sym::match

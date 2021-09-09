@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,17 +41,23 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "misc.h"
+
+#include "warnings.h"
 
 #pragma warning(push, 0)
 
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 #pragma warning(pop)
 
 using namespace std;
+
+namespace pic2sym {
 
 namespace {
 
@@ -61,30 +70,34 @@ class MsgCateg final {
   void operator=(const MsgCateg&) = delete;
   void operator=(MsgCateg&&) = delete;
 
-  constexpr const char* name() const noexcept { return categName; }
+  constexpr const string& name() const noexcept { return categName; }
   constexpr UINT val() const noexcept { return categVal; }
 
  private:
-  constexpr MsgCateg(const char* categName_, UINT categVal_) noexcept
+  explicit constexpr MsgCateg(string_view categName_, UINT categVal_) noexcept
       : categName(categName_), categVal(categVal_) {}
 
-  const char* categName;
-  const UINT categVal;
+  string categName;
+  UINT categVal;
 
  public:
-  static const MsgCateg INFO_CATEG, WARN_CATEG, ERR_CATEG;
+  /// Declaration of a wrapping struct for the only 3 instances of MsgCateg
+  struct Instances;  // static constexpr fields need fully defined classes
 };
 
-const MsgCateg MsgCateg::INFO_CATEG("Information", MB_ICONINFORMATION);
-const MsgCateg MsgCateg::WARN_CATEG("Warning", MB_ICONWARNING);
-const MsgCateg MsgCateg::ERR_CATEG("Error", MB_ICONERROR);
+struct MsgCateg::Instances {
+  /// The only 3 instances of MsgCateg - which is fully defined here
+  static constexpr MsgCateg InfoCateg{"Information", MB_ICONINFORMATION};
+  static constexpr MsgCateg WarnCateg{"Warning", MB_ICONWARNING};
+  static constexpr MsgCateg ErrCateg{"Error", MB_ICONERROR};
+};
 
 #ifndef UNIT_TESTING
 /// When interacting with the user, the messages are nicer as popup windows
 void msg(const MsgCateg& msgCateg,
-         const string& title_,
-         const string& text) noexcept {
-  string title = title_;
+         string_view title_,
+         string_view text) noexcept {
+  string title{title_};
   if (title.empty())
     title = msgCateg.name();
 
@@ -95,11 +108,11 @@ void msg(const MsgCateg& msgCateg,
 #else  // UNIT_TESTING defined
 /// When performing Unit Testing, the messages will appear on the console
 void msg(const MsgCateg& msgCateg,
-         const string& title,
-         const string& text) noexcept {
+         string_view title,
+         string_view text) noexcept {
   cout.flush();
   cerr.flush();
-  ostream& os = (&msgCateg == &MsgCateg::ERR_CATEG) ? cerr : cout;
+  ostream& os = (&msgCateg == &MsgCateg::Instances::ErrCateg) ? cerr : cout;
   os << msgCateg.name();
   if (title.empty())
     os << " ->\n";
@@ -112,35 +125,26 @@ void msg(const MsgCateg& msgCateg,
 
 }  // anonymous namespace
 
-void infoMsg(const string& text, const string& title /* = ""*/) noexcept {
-  msg(MsgCateg::INFO_CATEG, title, text);
+void infoMsg(string_view text, string_view title /* = ""*/) noexcept {
+  msg(MsgCateg::Instances::InfoCateg, title, text);
 }
 
-void warnMsg(const string& text, const string& title /* = ""*/) noexcept {
-  msg(MsgCateg::WARN_CATEG, title, text);
+void warnMsg(string_view text, string_view title /* = ""*/) noexcept {
+  msg(MsgCateg::Instances::WarnCateg, title, text);
 }
 
-void errMsg(const string& text, const string& title /* = ""*/) noexcept {
-  msg(MsgCateg::ERR_CATEG, title, text);
+void errMsg(string_view text, string_view title /* = ""*/) noexcept {
+  msg(MsgCateg::Instances::ErrCateg, title, text);
 }
 
-wstring str2wstr(const string& str) noexcept {
-  return wstring(CBOUNDS(str));
+wstring str2wstr(string_view str) noexcept {
+  return wstring{CBOUNDS(str)};
 }
 
-string wstr2str(const wstring& wstr) noexcept {
-  return string(CBOUNDS(wstr));
+string wstr2str(wstring_view wstr) noexcept {
+#pragma warning(disable : WARN_LOSSY_CONVERSION_CHANCE)
+  return string{CBOUNDS(wstr)};
+#pragma warning(default : WARN_LOSSY_CONVERSION_CHANCE)
 }
 
-WrappingActions::WrappingActions(const std::function<void()>& fnCtor,
-                                 const function<void()>& fnDtor_) noexcept
-    : fnDtor(fnDtor_) {
-  fnCtor();
-}
-
-WrappingActions::~WrappingActions() noexcept {
-  fnDtor();
-}
-
-ScopeExitAction::ScopeExitAction(const std::function<void()>& fn) noexcept
-    : WrappingActions(WrappingActions::NoAction, fn) {}
+}  // namespace pic2sym

@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,65 +41,65 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "selectSymbols.h"
 
 #include "cmapPerspectiveBase.h"
 #include "controllerBase.h"
 #include "matchEngineBase.h"
 #include "pixMapSymBase.h"
-#include "selectSymbols.h"
 #include "settingsBase.h"
 #include "symDataBase.h"
 #include "symsSerialization.h"
-#include "views.h"
-
-#pragma warning(push, 0)
-
-#include <ctime>
-#include <iostream>
-
-#include <filesystem>
-
-#pragma warning(pop)
 
 using namespace std;
 using namespace std::filesystem;
 
+namespace pic2sym {
+
 #pragma warning(disable : WARN_REF_TO_CONST_UNIQUE_PTR)
-SelectSymbols::SelectSymbols(
-    const IController& ctrler_,
-    const IMatchEngine& me_,
-    const ICmapPerspective& cmP_,
-    const std::unique_ptr<ICmapInspect>& pCmi_) noexcept
-    : ctrler(ctrler_), me(me_), cmP(cmP_), pCmi(pCmi_) {}
+SelectSymbols::SelectSymbols(const IController& ctrler_,
+                             const match::IMatchEngine& me_,
+                             const ui::ICmapPerspective& cmP_,
+                             function<ui::ICmapInspect&()>&& cmiFn_) noexcept
+    : ctrler(&ctrler_), me(&me_), cmP(&cmP_), cmiFn(move(cmiFn_)) {}
 #pragma warning(default : WARN_REF_TO_CONST_UNIQUE_PTR)
+
+}  // namespace pic2sym
 
 #ifndef UNIT_TESTING
 
 #include "appStart.h"
 
-const ISymData* SelectSymbols::pointedSymbol(int x, int y) const noexcept {
-  if (!pCmi->isBrowsable())
+namespace pic2sym {
+
+const syms::ISymData* SelectSymbols::pointedSymbol(int x,
+                                                   int y) const noexcept {
+  const ui::ICmapInspect& cmi = cmiFn();
+  if (!cmi.isBrowsable())
     return nullptr;
 
-  const unsigned cellSide = pCmi->getCellSide(), r = (unsigned)y / cellSide,
-                 c = (unsigned)x / cellSide,
-                 symIdx = pCmi->getPageIdx() * pCmi->getSymsPerPage() +
-                          r * pCmi->getSymsPerRow() + c;
+  const unsigned cellSide{cmi.getCellSide()};
+  const unsigned r{(unsigned)y / cellSide};
+  const unsigned c{(unsigned)x / cellSide};
+  const unsigned symIdx{cmi.getPageIdx() * cmi.getSymsPerPage() +
+                        r * cmi.getSymsPerRow() + c};
 
-  if (symIdx >= me.getSymsCount())
+  if (symIdx >= me->getSymsCount())
     return nullptr;
 
-  return *cmP.getSymsRange(symIdx, 1U).first;
+  return *cmP->getSymsRange(symIdx, 1U).begin();
 }
 
 void SelectSymbols::displaySymCode(unsigned long symCode) const noexcept {
   ostringstream oss;
   oss << " [symbol " << symCode << ']';
-  ctrler.updateStatusBarCmapInspect(0U, oss.str());  // synchronous update
+  ctrler->updateStatusBarCmapInspect(0U, oss.str());  // synchronous update
 }
 
-void SelectSymbols::enlistSymbolForInvestigation(const ISymData& sd) const
-    noexcept {
+void SelectSymbols::enlistSymbolForInvestigation(
+    const syms::ISymData& sd) const noexcept {
   cout << "Appending symbol " << sd.getCode()
        << " to the list needed for further investigations" << endl;
 
@@ -112,16 +115,18 @@ void SelectSymbols::symbolsReadyToInvestigate() const noexcept {
     return;
   }
 
-  path destFile = AppStart::dir();
+  path destFile{AppStart::dir()};
   if (!exists(destFile.append("SymsSelections")))
     create_directory(destFile);
   destFile.append(to_string(time(nullptr))).concat(".txt");
-  cout << "The list of " << symsToInvestigate.size()
+  cout << "The list of " << size(symsToInvestigate)
        << " symbols for further investigations will be saved to file "
        << destFile << " and then cleared." << endl;
 
   ut::saveSymsSelection(destFile.string(), symsToInvestigate);
   symsToInvestigate.clear();
 }
+
+}  // namespace pic2sym
 
 #endif  // UNIT_TESTING

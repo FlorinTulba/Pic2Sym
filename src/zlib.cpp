@@ -13,6 +13,7 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #ifndef UNIT_TESTING
 
@@ -43,6 +44,7 @@
 #include <boost/iostreams/detail/config/dyn_link.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/throw_exception.hpp>
+
 #include "zlib.h"  // Jean-loup Gailly's and Mark Adler's "zlib.h" header.
 // To configure Boost to work with zlib, see the
 // installation instructions here:

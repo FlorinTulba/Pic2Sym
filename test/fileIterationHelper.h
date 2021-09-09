@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -48,22 +51,22 @@
 
 /// Generates [Name][Suffix] while waiting first their evaluation, unlike
 /// Name##Suffix
-#define suffixedItem(Name, Suffix) BOOST_PP_CAT(Name, Suffix)
+#define SUFFIX_ITEM(Name, Suffix) BOOST_PP_CAT(Name, Suffix)
 
 /// Creates test suite [SuiteName][Suffix] that uses the FixtName fixture class
 #define FIXTURE_TEST_SUITE_SUFFIX(FixtName, SuiteName, Suffix) \
-  BOOST_FIXTURE_TEST_SUITE(suffixedItem(SuiteName, Suffix), FixtName)
+  BOOST_FIXTURE_TEST_SUITE(SUFFIX_ITEM(SuiteName, Suffix), FixtName)
 
 /// Defines test case named Name and ensures it will show its name plus some
 /// information when launched
 #define TITLED_AUTO_TEST_CASE_(Name, Info1)                \
-  BOOST_AUTO_TEST_CASE(suffixedItem(Name, Info1)) {        \
+  BOOST_AUTO_TEST_CASE(SUFFIX_ITEM(Name, Info1)) {         \
     BOOST_TEST_MESSAGE("Running " BOOST_PP_STRINGIZE(Name) \
                            BOOST_PP_STRINGIZE(Info1));
 
 /// Defines data test case named Name and ensures it will show its name plus
 /// some information when launched
 #define DATA_TEST_CASE_SUFFIX(Name, Info, ...) \
-  BOOST_DATA_TEST_CASE(suffixedItem(Name, Info), __VA_ARGS__)
+  BOOST_DATA_TEST_CASE(SUFFIX_ITEM(Name, Info), __VA_ARGS__)
 
 #endif  // H_FILE_ITERATION_HELPER

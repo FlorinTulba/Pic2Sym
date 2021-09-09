@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,6 +41,9 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "controller.h"
 
 #include "bestMatchBase.h"
 #include "clusterEngineBase.h"
@@ -45,7 +51,6 @@
 #include "cmapPerspective.h"
 #include "controlPanel.h"
 #include "controlPanelActions.h"
-#include "controller.h"
 #include "fontEngine.h"
 #include "glyphsProgressTracker.h"
 #include "jobMonitor.h"
@@ -65,34 +70,41 @@
 #include "transform.h"
 #include "transformSupportBase.h"
 #include "updateSymSettings.h"
-#include "views.h"
-
-#pragma warning(push, 0)
-
-#include <sstream>
-
-#pragma warning(pop)
 
 using namespace std;
+using namespace gsl;
+
+namespace pic2sym {
 
 extern const double Transform_ProgressReportsIncrement;
 extern const double SymbolsProcessing_ProgressReportsIncrement;
 extern const string Controller_PREFIX_GLYPH_PROGRESS;
+
+using namespace cfg;
+using namespace match;
+using namespace transform;
+using namespace ui;
 
 namespace {
 /// Adapter from IProgressNotifier to IGlyphsProgressTracker
 class SymsUpdateProgressNotifier : public IProgressNotifier {
  public:
   explicit SymsUpdateProgressNotifier(const IController& performer_) noexcept
-      : performer(performer_) {}
+      : performer(&performer_) {}
+
+  // Slicing prevention
+  SymsUpdateProgressNotifier(const SymsUpdateProgressNotifier&) = delete;
+  SymsUpdateProgressNotifier(SymsUpdateProgressNotifier&&) = delete;
+  void operator=(const SymsUpdateProgressNotifier&) = delete;
+  void operator=(SymsUpdateProgressNotifier&&) = delete;
 
   void notifyUser(const std::string&, double progress) noexcept override {
-    performer.hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS,
-                        true);  // async call
+    performer->hourGlass(progress, Controller_PREFIX_GLYPH_PROGRESS,
+                         true);  // async call
   }
 
  private:
-  const IController& performer;
+  not_null<const IController*> performer;
 };
 
 /// Adapter from IProgressNotifier to IPicTransformProgressTracker
@@ -100,20 +112,28 @@ class PicTransformProgressNotifier : public IProgressNotifier {
  public:
   explicit PicTransformProgressNotifier(
       const IPicTransformProgressTracker& performer_) noexcept
-      : performer(performer_) {}
+      : performer(&performer_) {}
+
+  // Slicing prevention
+  PicTransformProgressNotifier(const PicTransformProgressNotifier&) = delete;
+  PicTransformProgressNotifier(PicTransformProgressNotifier&&) = delete;
+  void operator=(const PicTransformProgressNotifier&) = delete;
+  void operator=(PicTransformProgressNotifier&&) = delete;
 
   void notifyUser(const std::string&, double progress) noexcept override {
-    performer.reportTransformationProgress(progress);
+    performer->reportTransformationProgress(progress);
   }
 
  private:
-  const IPicTransformProgressTracker& performer;
+  not_null<const IPicTransformProgressTracker*> performer;
 };
 }  // anonymous namespace
 
 #pragma warning(disable : WARN_BASE_INIT_USING_THIS)
 Controller::Controller(ISettingsRW& s) noexcept
-    : updateSymSettings(make_unique<const UpdateSymSettings>(s.refSS())),
+    : IController(),
+      cfg(&s),
+      updateSymSettings(make_unique<const UpdateSymSettings>(s.refSS())),
       glyphsProgressTracker(make_unique<const GlyphsProgressTracker>(*this)),
       picTransformProgressTracker(
           make_unique<PicTransformProgressTracker>(*this)),
@@ -130,17 +150,26 @@ Controller::Controller(ISettingsRW& s) noexcept
       presentCmap(make_unique<const PresentCmap>(
           *this,
           *cmP,
-          getMatchEngine(s).isClusteringUseful())),
-      fe(getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
-      cfg(s),
-      me(getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
-      t(getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
-      comp(getComparator()),
-      pCmi(),
-      selectSymbols(make_unique<const SelectSymbols>(*this,
-                                                     getMatchEngine(s),
-                                                     *cmP,
-                                                     pCmi)),
+          // Postpone MatchEngine creation, until after presentCmap
+          [this]() noexcept {
+            // presentCmap is owned, so 'this' will not dangle
+            return me->isClusteringUseful();
+          })),
+      fe(&getFontEngine(s.getSS()).useSymsMonitor(*glyphsUpdateMonitor)),
+      me(&getMatchEngine(s).useSymsMonitor(*glyphsUpdateMonitor)),
+      t(&getTransformer(s).useTransformMonitor(*imgTransformMonitor)),
+      comp(&getComparator()),
+      pCmi(),  // empty unique_ptr until calling ensureExistenceCmapInspect()
+      selectSymbols(
+          make_unique<const SelectSymbols>(*this,
+                                           getMatchEngine(s),
+                                           *cmP,
+                                           [this]() noexcept -> ICmapInspect& {
+                                             // selectSymbols is owned,
+                                             // so 'this' will not dangle
+                                             Expects(pCmi);
+                                             return *pCmi;
+                                           })),
       controlPanelActions(
           make_unique<ControlPanelActions>(*this,
                                            s,
@@ -148,19 +177,18 @@ Controller::Controller(ISettingsRW& s) noexcept
                                            getMatchEngine(s).mutableAssessor(),
                                            getTransformer(s),
                                            getComparator(),
-                                           pCmi)) {
-  // The constructor ensures following asserts:
-  assert(updateSymSettings);
-  assert(glyphsProgressTracker);
-  assert(glyphsUpdateMonitor);
-  assert(picTransformProgressTracker);
-  assert(selectSymbols);
-  /*
-   No assert(presentCmap) as this method is also called during Controller's
-   construction within a cyclic dependency while the presentCmap is
-   initialized
-  */
-  assert(controlPanelActions);
+                                           [this]() noexcept -> ICmapInspect* {
+                                             // controlPanelActions is owned,
+                                             // so 'this' will not dangle
+                                             return pCmi.get();
+                                           })) {
+  Ensures(updateSymSettings);
+  Ensures(glyphsProgressTracker);
+  Ensures(glyphsUpdateMonitor);
+  Ensures(picTransformProgressTracker);
+  Ensures(selectSymbols);
+  Ensures(presentCmap);
+  Ensures(controlPanelActions);
 }
 #pragma warning(default : WARN_BASE_INIT_USING_THIS)
 
@@ -168,19 +196,18 @@ const IUpdateSymSettings& Controller::getUpdateSymSettings() const noexcept {
   return *updateSymSettings;
 }
 
-const IGlyphsProgressTracker& Controller::getGlyphsProgressTracker() const
-    noexcept {
+const IGlyphsProgressTracker& Controller::getGlyphsProgressTracker()
+    const noexcept {
   return *glyphsProgressTracker;
 }
 
-IPicTransformProgressTracker& Controller::getPicTransformProgressTracker() const
-    noexcept {
+IPicTransformProgressTracker& Controller::getPicTransformProgressTracker()
+    const noexcept {
   return *picTransformProgressTracker;
 }
 
-const std::unique_ptr<const IPresentCmap>& Controller::getPresentCmap() const
-    noexcept {
-  return presentCmap;
+const IPresentCmap& Controller::getPresentCmap() const noexcept {
+  return *presentCmap;
 }
 
 void Controller::ensureExistenceCmapInspect() noexcept {
@@ -194,33 +221,36 @@ IControlPanelActions& Controller::getControlPanelActions() const noexcept {
 }
 
 const unsigned& Controller::getFontSize() const noexcept {
-  return cfg.getSS().getFontSz();
+  return cfg->getSS().getFontSz();
 }
 
 // Methods from below have different definitions for UnitTesting project
 #ifndef UNIT_TESTING
 
-#define GET_FIELD(FieldType, ...)      \
-  static FieldType field{__VA_ARGS__}; \
-  return field
-
-IComparator& Controller::getComparator() noexcept {
-  GET_FIELD(Comparator);
+template <class Component, typename... CtorArgs>
+Component& getComponent(CtorArgs&&... ctorArgs) {
+  static Component comp{std::forward<CtorArgs>(ctorArgs)...};
+  return comp;
 }
 
-IFontEngine& Controller::getFontEngine(const ISymSettings& ss_) noexcept {
-  GET_FIELD(FontEngine, *this, ss_);
+IComparator& Controller::getComparator() noexcept {
+  return getComponent<Comparator>();
+}
+
+syms::IFontEngine& Controller::getFontEngine(const ISymSettings& ss_) noexcept {
+  return getComponent<syms::FontEngine>(*this, ss_);
 }
 
 IMatchEngine& Controller::getMatchEngine(const ISettings& cfg_) noexcept {
-  GET_FIELD(MatchEngine, cfg_, getFontEngine(cfg_.getSS()), *cmP);
+  return getComponent<MatchEngine>(cfg_, getFontEngine(cfg_.getSS()), *cmP);
 }
 
 ITransformer& Controller::getTransformer(const ISettings& cfg_) noexcept {
-  GET_FIELD(Transformer, *this, cfg_, getMatchEngine(cfg_),
-            (IBasicImgData&)ControlPanelActions::getImg());
+  return getComponent<Transformer>(
+      *this, cfg_, getMatchEngine(cfg_),
+      (input::IBasicImgData&)ControlPanelActions::getImg());
 }
 
-#undef GET_FIELD
-
 #endif  // UNIT_TESTING not defined
+
+}  // namespace pic2sym

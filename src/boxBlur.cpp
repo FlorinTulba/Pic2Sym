@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,44 +41,39 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
 
 #include "boxBlur.h"
+
 #include "warnings.h"
 
 #pragma warning(push, 0)
 
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <gsl/gsl>
+
 #pragma warning(pop)
 
 using namespace std;
 using namespace cv;
 
+namespace pic2sym {
+
+extern const double StructuralSimilarity_SIGMA;
+
+namespace blur {
+
 // Handle class
 class BoxBlur::Impl {
   friend class BoxBlur;
 
-  static BoxBlur::Impl _tinySyms, _nonTinySyms;
+  // Inline static initialization complains about undefined BoxBlur::Impl type
+  static BoxBlur::Impl _tinySyms;
+  static BoxBlur::Impl _nonTinySyms;
 
   /// Default anchor point for a given kernel (its center)
-  static const Point midPoint;
-
-  /// First odd width of the box mask less than the ideal width
-  unsigned wl = 0U;
-
-  /// First odd width of the box mask greater than the ideal width
-  unsigned wu = 0U;
-
-  /// The number of times to iterate the filter of width wl
-  unsigned countWl = 0U;
-
-  /// The number of times to iterate the filter of width wu
-  unsigned countWu = 0U;
-
-  /// Desired number of iterations (countWl + countWu)
-  unsigned iterations = 0U;
-
-  constexpr Impl() noexcept {}
+  static inline const Point midPoint{-1, -1};
 
 #pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
   /**
@@ -89,16 +87,16 @@ class BoxBlur::Impl {
   Exception only to be reported, not handled.
   */
   Impl& setSigma(double desiredSigma, unsigned iterations_ = 1U) noexcept(!UT) {
-    if (0U == iterations_)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " needs iterations_ >= 1!",
-                           invalid_argument);
-    if (desiredSigma <= 0.)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " needs desiredSigma > 0!",
-                           invalid_argument);
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        0U < iterations_, invalid_argument,
+        HERE.function_name() + " needs iterations_ >= 1!"s);
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        desiredSigma > 0., invalid_argument,
+        HERE.function_name() + " needs desiredSigma > 0!"s);
 
     iterations = iterations_;
-    const double common = 12. * desiredSigma * desiredSigma,
-                 idealBoxWidth = sqrt(1. + common / iterations_);
+    const double common{12. * desiredSigma * desiredSigma};
+    const double idealBoxWidth{sqrt(1. + common / iterations_)};
     wl = (((unsigned((idealBoxWidth - 1.) / 2.)) << 1) | 1U);
     wu = wl + 2U;  // next odd value
 
@@ -121,9 +119,9 @@ class BoxBlur::Impl {
   Exception only to be reported, not handled.
   */
   Impl& setWidth(unsigned boxWidth_) noexcept(!UT) {
-    if ((boxWidth_ & 1U) != 1U)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " boxWidth_ should be an odd value!",
-                           invalid_argument);
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        (boxWidth_ & 1U) == 1U, invalid_argument,
+        HERE.function_name() + " boxWidth_ should be an odd value!"s);
 
     wl = boxWidth_;
     countWu = 0U;  // cancels any iterations for filters with width wu
@@ -142,9 +140,9 @@ class BoxBlur::Impl {
   Exception only to be reported, not handled.
   */
   Impl& setIterations(unsigned iterations_) noexcept(!UT) {
-    if (0U == iterations_)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " needs iterations_ >= 1!",
-                           invalid_argument);
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        0U < iterations_, invalid_argument,
+        HERE.function_name() + " needs iterations_ >= 1!"s);
 
     iterations = countWl = iterations_;
     countWu = 0U;  // cancels any iterations for filters with width wu
@@ -158,48 +156,61 @@ class BoxBlur::Impl {
   /// http://www.web.uwa.edu.au/__data/assets/file/0008/826172/filterdesign.pdf
   /// for details
   void apply(const cv::Mat& toBlur, cv::Mat& blurred) noexcept {
-    if (countWl == 0U && countWu == 0U) {
+    if (!countWl && !countWu) {
       toBlur.copyTo(blurred);
       return;
     }
 
-    bool applied = false;
+    bool applied{false};
 
     // The smaller mask (wl) can be a single-point mask (wl == 1), which can be
     // skipped, as it doesn't affect the result at all
     if (wl > 1U && countWl > 0U) {
-      const Size boxL((int)wl, (int)wl);
+      const Size boxL{(int)wl, (int)wl};
 
       // 1st time with mask wl
-      blur(toBlur, blurred, boxL, midPoint, BORDER_REPLICATE);
+      cv::blur(toBlur, blurred, boxL, midPoint, BORDER_REPLICATE);
 
       // rest of the times with mask wu
-      for (unsigned i = 1U; i < countWl; ++i)
-        blur(blurred, blurred, boxL, midPoint, BORDER_REPLICATE);
+      for (unsigned i{1U}; i < countWl; ++i)
+        cv::blur(blurred, blurred, boxL, midPoint, BORDER_REPLICATE);
 
       applied = true;
     }
 
     if (countWu > 0U) {
-      const Size boxU((int)wu, (int)wu);
+      const Size boxU{(int)wu, (int)wu};
 
       // 1st time with mask wu
       if (!applied)
-        blur(toBlur, blurred, boxU, midPoint, BORDER_REPLICATE);
+        cv::blur(toBlur, blurred, boxU, midPoint, BORDER_REPLICATE);
       else
-        blur(blurred, blurred, boxU, midPoint, BORDER_REPLICATE);
+        cv::blur(blurred, blurred, boxU, midPoint, BORDER_REPLICATE);
 
       // rest of the times with mask wu
-      for (unsigned i = 1U; i < countWu; ++i)
-        blur(blurred, blurred, boxU, midPoint, BORDER_REPLICATE);
+      for (unsigned i{1U}; i < countWu; ++i)
+        cv::blur(blurred, blurred, boxU, midPoint, BORDER_REPLICATE);
     }
   }
+
+  /// First odd width of the box mask less than the ideal width
+  unsigned wl{};
+
+  /// First odd width of the box mask greater than the ideal width
+  unsigned wu{};
+
+  /// The number of times to iterate the filter of width wl
+  unsigned countWl{};
+
+  /// The number of times to iterate the filter of width wu
+  unsigned countWu{};
+
+  /// Desired number of iterations (countWl + countWu)
+  unsigned iterations{};
 };
 
-BoxBlur::Impl BoxBlur::Impl::_nonTinySyms;
 BoxBlur::Impl BoxBlur::Impl::_tinySyms;
-
-const Point BoxBlur::Impl::midPoint(-1, -1);
+BoxBlur::Impl BoxBlur::Impl::_nonTinySyms;
 
 BoxBlur::Impl& BoxBlur::nonTinySyms() noexcept {
   return BoxBlur::Impl::_nonTinySyms;
@@ -250,9 +261,8 @@ void BoxBlur::doProcess(const cv::Mat& toBlur,
 }
 
 const BoxBlur& BoxBlur::configuredInstance() noexcept(!UT) {
-  extern const double StructuralSimilarity_SIGMA;
   static BoxBlur result;
-  static bool initialized = false;
+  static bool initialized{false};
 
   if (!initialized) {
     // Box blur with single iteration and desired standard deviation
@@ -261,3 +271,6 @@ const BoxBlur& BoxBlur::configuredInstance() noexcept(!UT) {
   }
   return result;
 }
+
+}  // namespace blur
+}  // namespace pic2sym

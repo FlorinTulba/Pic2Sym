@@ -24,7 +24,7 @@ By now (v2.1), the application:
 - allows multiple *non\-conflicting user commands* running in *parallel*
 - tackles well transformations based on font families with *less than 1500 symbols*
 
-Further speed improvements could be obtained by involving __modern__ *accelerator devices* from one&#39;s machine, like GPU\-s. Using [this old GPU](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) for the *Box* and *Stack* blur algorithms (sources available on the [prototypesCUDA](../../../../prototypesCUDA/ReadMe.md) branch) showed poor time performance. Newer GPU-s might still outperform the CPU-only versions of these algorithms.
+Further speed improvements could be obtained by involving __modern__ *accelerator devices* from one&#39;s machine, like GPU\-s. Using [this old GPU](https://www.notebookcheck.net/NVIDIA-GeForce-9600M-GS.9450.0.html) for the *Box* blur showed poor time performance. Newer GPU-s might still outperform the CPU-only versions of these algorithms.
 
  Older GPU generations might help in areas of the application like computing the **Cross Correlation** matching aspect, where it can store beforehand the data for a batch of symbols and for several patches to approximate and then just reuse them for multiple output values.
 

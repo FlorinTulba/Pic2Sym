@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,14 +43,17 @@
 #ifndef H_PRESELECT_SYMS
 #define H_PRESELECT_SYMS
 
-#include "misc.h"
 #include "preselectSymsBase.h"
+
+#include "misc.h"
 
 #pragma warning(push, 0)
 
 #include <queue>
 
 #pragma warning(pop)
+
+namespace pic2sym::transform {
 
 /**
 Obtaining the top n candidate matches close-enough to or better than
@@ -65,6 +71,12 @@ class TopCandidateMatches : public ITopCandidateMatches {
   */
   TopCandidateMatches(unsigned shortListLength = 1U,
                       double origThreshScore = 0.) noexcept(!UT);
+
+  // Slicing prevention
+  TopCandidateMatches(const TopCandidateMatches&) = delete;
+  TopCandidateMatches(TopCandidateMatches&&) = delete;
+  void operator=(const TopCandidateMatches&) = delete;
+  void operator=(TopCandidateMatches&&) = delete;
 
   /// Clears the short list and establishes a new threshold score
   void reset(double origThreshScore) noexcept override;
@@ -110,17 +122,7 @@ class TopCandidateMatches : public ITopCandidateMatches {
     virtual double getScore() const noexcept = 0;
     virtual CandidateId getIdx() const noexcept = 0;
 
-    virtual ~ICandidate() noexcept {}
-
-    // If slicing is observed and becomes a severe problem, use `= delete` for
-    // all
-    ICandidate(const ICandidate&) noexcept = default;
-    ICandidate(ICandidate&&) noexcept = default;
-    ICandidate& operator=(const ICandidate&) noexcept = default;
-    ICandidate& operator=(ICandidate&&) noexcept = default;
-
-   protected:
-    constexpr ICandidate() noexcept {}
+    virtual ~ICandidate() noexcept = 0 {}
   };
 
   /// Data for a candidate who enters the short list
@@ -134,8 +136,8 @@ class TopCandidateMatches : public ITopCandidateMatches {
     /// Comparator based on the score
     class Greater {
      public:
-      bool operator()(const ICandidate& c1, const ICandidate& c2) const
-          noexcept;
+      bool operator()(const ICandidate& c1,
+                      const ICandidate& c2) const noexcept;
     };
 
    private:
@@ -162,7 +164,9 @@ class TopCandidateMatches : public ITopCandidateMatches {
   unsigned n;  ///< length of the short list of candidates
 
   /// Set to true by prepareReport(); set to false by moveShortList()
-  bool shortListReady = false;
+  bool shortListReady{false};
 };
+
+}  // namespace pic2sym::transform
 
 #endif  // H_PRESELECT_SYMS

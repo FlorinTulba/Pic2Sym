@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -40,12 +43,20 @@
 #ifndef H_CONTROLLER_BASE
 #define H_CONTROLLER_BASE
 
+#include "controlPanelActionsBase.h"
+#include "glyphsProgressTrackerBase.h"
 #include "misc.h"
+#include "picTransformProgressTrackerBase.h"
+#include "presentCmapBase.h"
+#include "resizedImgBase.h"
+#include "updateSymSettingsBase.h"
 
 #ifndef UNIT_TESTING
+
 #include "pixMapSymBase.h"
 
 #else  // UNIT_TESTING defined
+
 #pragma warning(push, 0)
 
 #include <memory>
@@ -56,28 +67,16 @@
 
 #pragma warning(push, 0)
 
-#include <string>
+#include <string_view>
 
 #pragma warning(pop)
 
-// Forward declarations
-class IUpdateSymSettings;
-class IGlyphsProgressTracker;
-class IPicTransformProgressTracker;
-class IPresentCmap;
-class IControlPanelActions;
-class IResizedImg;
+namespace pic2sym {
 
 /// Base interface for the Controller.
 class IController /*abstract*/ {
  public:
-  virtual ~IController() noexcept {}
-
-  // Slicing prevention
-  IController(const IController&) = delete;
-  IController(IController&&) = delete;
-  IController& operator=(const IController&) = delete;
-  IController& operator=(IController&&) = delete;
+  virtual ~IController() noexcept = 0 {}
 
   // Group 1: 2 methods called so far only by ControlPanelActions
   /**
@@ -95,26 +94,28 @@ class IController /*abstract*/ {
   virtual void ensureExistenceCmapInspect() noexcept = 0;
 
   // Group 2: 2 methods called so far only by FontEngine
+
+  /// Access to methods for changing the font file or its enconding
   virtual const IUpdateSymSettings& getUpdateSymSettings() const noexcept = 0;
 
-  /// The ref to unique_ptr solves a circular dependency inside the constructor
-  virtual const std::unique_ptr<const IPresentCmap>& getPresentCmap() const
-      noexcept = 0;
+  /// Access to methods controlling the displayed Cmap
+  virtual const IPresentCmap& getPresentCmap() const noexcept = 0;
 
   // Last group of methods used by many different clients without an obvious
   // pattern
-  virtual const IGlyphsProgressTracker& getGlyphsProgressTracker() const
-      noexcept = 0;
+  virtual const IGlyphsProgressTracker& getGlyphsProgressTracker()
+      const noexcept = 0;
 
-  virtual IPicTransformProgressTracker& getPicTransformProgressTracker() const
-      noexcept = 0;
+  virtual IPicTransformProgressTracker& getPicTransformProgressTracker()
+      const noexcept = 0;
 
   /// Font size determines grid size
   virtual const unsigned& getFontSize() const noexcept = 0;
 
   /// Returns true if transforming a new image or the last one, but under other
   /// image parameters
-  virtual bool updateResizedImg(const IResizedImg& resizedImg_) noexcept = 0;
+  virtual bool updateResizedImg(
+      const input::IResizedImg& resizedImg_) noexcept = 0;
 
   /**
   Shows a 'Please wait' window and reports progress.
@@ -157,7 +158,7 @@ class IController /*abstract*/ {
 
   Exception to be only reported, not handled
   */
-  virtual void reportDuration(const std::string& text, double durationS) const
+  virtual void reportDuration(std::string_view text, double durationS) const
       noexcept(!UT) = 0;
 
   virtual IControlPanelActions& getControlPanelActions() const noexcept = 0;
@@ -170,12 +171,11 @@ class IController /*abstract*/ {
 
   Exception to be only reported, not handled
   */
-  virtual void display1stPageIfFull(const VPixMapSym& syms) const
+  virtual void display1stPageIfFull(const syms::VPixMapSym& syms) const
       noexcept(!UT) = 0;
 #endif  // UNIT_TESTING not defined
-
- protected:
-  constexpr IController() noexcept {}
 };
+
+}  // namespace pic2sym
 
 #endif  // H_CONTROLLER_BASE

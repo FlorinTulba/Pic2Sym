@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -38,32 +41,30 @@
  *****************************************************************************/
 
 #include "precompiled.h"
+// This keeps precompiled.h first; Otherwise header sorting might move it
+
+#include "ttsasClustering.h"
 
 #include "clusterEngine.h"
 #include "clusterSerialization.h"
 #include "jobMonitorBase.h"
 #include "taskMonitor.h"
-#include "tinySym.h"
-#include "tinySymsProvider.h"
-#include "ttsasClustering.h"
+#include "warnings.h"
 
 #pragma warning(push, 0)
 
 #include <algorithm>
+#include <cassert>
 #include <map>
-#include <set>
-
-#define _USE_MATH_DEFINES
-#include <math.h>
-
-#include <optional>
-
-#include <opencv2/imgproc/imgproc.hpp>
+#include <numbers>
 
 #pragma warning(pop)
 
 using namespace std;
 using namespace cv;
+using namespace gsl;
+
+namespace pic2sym {
 
 extern const bool FastDistSymToClusterComputation;
 extern const bool TTSAS_Accept1stClusterThatQualifiesAsParent;
@@ -71,11 +72,13 @@ extern const double TTSAS_Threshold_Member;
 extern const double MaxRelMcOffsetForTTSAS_Clustering;
 extern const double MaxDiffAvgPixelValForTTSAS_Clustering;
 
+namespace syms::inline cluster {
+
 namespace {
-typedef unsigned ClusterIdx;
-typedef unsigned SymIdx;
-typedef double Dist;
-typedef vector<ClusterIdx> NearbyClusters;
+using ClusterIdx = unsigned;
+using SymIdx = unsigned;
+using Dist = double;
+using NearbyClusters = vector<ClusterIdx>;
 
 /**
 Produces the values of a Basel-like series:
@@ -87,13 +90,13 @@ First value from the cache is the limit of the Basel sum: pi^2/6.
 Every new value is the previous minus 1/i^2
 */
 double threshOutsider(size_t clustSz) noexcept {
-  static vector<double> vals{M_PI * M_PI / 6.};
+  static vector<double> vals{numbers::pi * numbers::pi / 6.};
 
-  if (static size_t lastSz = 1U; lastSz <= clustSz) {
-    static constexpr size_t IncrementSz = 50ULL;
-    const size_t newSz = clustSz + IncrementSz;
+  if (static size_t lastSz{1U}; lastSz <= clustSz) {
+    static constexpr size_t IncrementSz{50ULL};
+    const size_t newSz{clustSz + IncrementSz};
     vals.resize(newSz, 0.);
-    for (size_t i = lastSz; i < newSz; ++i)
+    for (size_t i{lastSz}; i < newSz; ++i)
       vals[i] = max(0., vals[i - 1ULL] - 1. / (i * i));
     lastSz = newSz;
   }
@@ -113,8 +116,8 @@ class ICentroid /*abstract*/ : public virtual ITinySym {
   @return the distance between the centroid and sym or infinity for detected
   `outsiders`
   */
-  virtual Dist distTo(const ITinySym& sym, const double thresholdOutsider) const
-      noexcept = 0;
+  virtual Dist distTo(const ITinySym& sym,
+                      const double thresholdOutsider) const noexcept = 0;
 
   /// Moves the centroid of a cluster towards a new member for a distance
   /// depending on a weight
@@ -153,10 +156,10 @@ class Cluster {
     @return the distance between the centroid and sym or infinity for detected
     `outsiders`
     */
-    Dist distTo(const ITinySym& sym, const double thresholdOutsider) const
-        noexcept override {
+    Dist distTo(const ITinySym& sym,
+                const double thresholdOutsider) const noexcept override {
       if (!FastDistSymToClusterComputation) {
-        const double l1Dist = norm(getMat() - sym.getMat(), NORM_L1);
+        const double l1Dist{norm(getMat() - sym.getMat(), NORM_L1)};
         if (l1Dist > thresholdOutsider * TTSAS_Threshold_Member)
           return numeric_limits<Dist>::infinity();
         return l1Dist;
@@ -169,57 +172,69 @@ class Cluster {
         return numeric_limits<Dist>::infinity();
 
       // Comparing glyph & cluster mass-centers
-      const Point2d mcDelta = sym.getMc() - getMc();
-      const double mcDeltaY = abs(mcDelta.y) / thresholdOutsider;
+      const Point2d mcDelta{sym.getMc() - getMc()};
+      const double mcDeltaY{abs(mcDelta.y) / thresholdOutsider};
 
       // vertical mass-centers offset
       if (mcDeltaY > MaxRelMcOffsetForTTSAS_Clustering)
         // Skip the rest for very distant mass-centers
         return numeric_limits<Dist>::infinity();
-      const double mcDeltaX = abs(mcDelta.x) / thresholdOutsider;
+      const double mcDeltaX{abs(mcDelta.x) / thresholdOutsider};
 
       // horizontal mass-centers offset
       if (mcDeltaX > MaxRelMcOffsetForTTSAS_Clustering)
         // Skip the rest for very distant mass-centers
         return numeric_limits<Dist>::infinity();
 
-      static const double SqMaxRelMcOffsetForClustering =
-          MaxRelMcOffsetForTTSAS_Clustering * MaxRelMcOffsetForTTSAS_Clustering;
+      static const double SqMaxRelMcOffsetForClustering{
+          MaxRelMcOffsetForTTSAS_Clustering *
+          MaxRelMcOffsetForTTSAS_Clustering};
 
       if (mcDeltaX * mcDeltaX + mcDeltaY * mcDeltaY >
           SqMaxRelMcOffsetForClustering)
         // Skip the rest for very distant mass-centers
         return numeric_limits<Dist>::infinity();
 
-      const double *pDataA = nullptr, *pDataAEnd = nullptr, *pDataB = nullptr,
-                   ThresholdOutsider =
-                       thresholdOutsider * TTSAS_Threshold_Member;
+      const double ThresholdOutsider{thresholdOutsider *
+                                     TTSAS_Threshold_Member};
 
-#define CheckProjections(ProjectionField)                                     \
-  pDataA = reinterpret_cast<const double*>(sym.ProjectionField.datastart);    \
-  pDataAEnd = reinterpret_cast<const double*>(sym.ProjectionField.datalimit); \
-  pDataB = reinterpret_cast<const double*>(ProjectionField.datastart);        \
-  for (double sumOfAbsDiffs = 0.; pDataA != pDataAEnd;) {                     \
-    sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);                              \
-    if (sumOfAbsDiffs > ThresholdOutsider)                                    \
-      /* stop as soon as projections appear too different */                  \
-      return numeric_limits<Dist>::infinity();                                \
-  }
+      const auto checkProjections =
+          [ThresholdOutsider](const Mat& matA, const Mat& matB) noexcept {
+            const double *pDataA = nullptr, *pDataAEnd = nullptr,
+                         *pDataB = nullptr;
+            pDataA = reinterpret_cast<const double*>(matA.datastart);
+            pDataAEnd = reinterpret_cast<const double*>(matA.datalimit);
+            pDataB = reinterpret_cast<const double*>(matB.datastart);
+            for (double sumOfAbsDiffs{}; pDataA != pDataAEnd;) {
+              sumOfAbsDiffs += abs(*pDataA++ - *pDataB++);
+              if (sumOfAbsDiffs > ThresholdOutsider)
+                // stop as soon as projections appear too different
+                return false;
+            }
+            return true;
+          };
+
+#define ORIENTATION(Orientation) \
+  sym.get##Orientation##AvgProj(), get##Orientation##AvgProj()
 
       // Comparing glyph & cluster horizontal, vertical and both diagonal
       // projections
-      CheckProjections(getVAvgProj());
-      CheckProjections(getHAvgProj());
-      CheckProjections(getBackslashDiagAvgProj());
-      CheckProjections(getSlashDiagAvgProj());
+      if (!checkProjections(ORIENTATION(V)))
+        return numeric_limits<Dist>::infinity();
+      if (!checkProjections(ORIENTATION(H)))
+        return numeric_limits<Dist>::infinity();
+      if (!checkProjections(ORIENTATION(BackslashDiag)))
+        return numeric_limits<Dist>::infinity();
+      if (!checkProjections(ORIENTATION(SlashDiag)))
+        return numeric_limits<Dist>::infinity();
 
-#undef CheckProjections
+#undef ORIENTATION
 
       // Comparing glyph & cluster L1 norm
-      MatConstIterator_<double> itA = sym.getMat().begin<double>(),
-                                itB = getMat().begin<double>();
-      const MatConstIterator_<double> itAEnd = sym.getMat().end<double>();
-      double sumOfAbsDiffs = 0.;
+      MatConstIterator_<double> itA{sym.getMat().begin<double>()};
+      MatConstIterator_<double> itB{getMat().begin<double>()};
+      const MatConstIterator_<double> itAEnd{sym.getMat().end<double>()};
+      double sumOfAbsDiffs{};
       while (itA != itAEnd) {
         sumOfAbsDiffs += abs(*itA++ - *itB++);
         if (sumOfAbsDiffs > ThresholdOutsider)
@@ -233,7 +248,7 @@ class Cluster {
     /// Moves the centroid of a cluster towards a new member for a distance
     /// depending on a weight
     void shiftTowards(const ITinySym& sym, double weight) noexcept override {
-      const double oneMinusWeight = 1. - weight;
+      const double oneMinusWeight{1. - weight};
 
       setMc(getMc() * oneMinusWeight + weight * sym.getMc());
       setAvgPixVal(getAvgPixVal() * oneMinusWeight +
@@ -258,7 +273,7 @@ class Cluster {
   Cluster(const ITinySym& sym, SymIdx symIdx) noexcept
       : memberIndices({symIdx}), centroid(sym) {}
 
-  size_t membersCount() const noexcept { return memberIndices.size(); }
+  size_t membersCount() const noexcept { return size(memberIndices); }
 
   /// Last added member to the cluster
   SymIdx idxOfLastMember() const noexcept { return memberIndices.back(); }
@@ -267,7 +282,7 @@ class Cluster {
   /// member
   void addMember(const ITinySym& sym, SymIdx symIdx) noexcept {
     memberIndices.push_back(symIdx);
-    centroid.shiftTowards(sym, 1. / memberIndices.size());
+    centroid.shiftTowards(sym, 1. / size(memberIndices));
   }
 };
 
@@ -301,7 +316,7 @@ class ParentClusterFinder final {
  public:
   ParentClusterFinder(const ITinySym& sym_,
                       const vector<Cluster>& clusters_) noexcept
-      : sym(sym_), clusters(clusters_) {}
+      : sym(&sym_), clusters(&clusters_) {}
   ~ParentClusterFinder() noexcept = default;
 
   ParentClusterFinder(const ParentClusterFinder&) noexcept = default;
@@ -330,7 +345,6 @@ class ParentClusterFinder final {
   */
   void moveReserveCandidates(NearbyClusters& dest) noexcept {
     dest = move(reserves);
-    assert(reserves.empty());
   }
 
   /**
@@ -358,14 +372,14 @@ class ParentClusterFinder final {
     if (TTSAS_Accept1stClusterThatQualifiesAsParent && found())
       return clustIdx == idxOfParentCluster.value();  // keep current parent
 
-    const Cluster& cluster = clusters[(size_t)clustIdx];
+    const Cluster& cluster = (*clusters)[(size_t)clustIdx];
     const ICentroid& centroidCluster = cluster.centroid;
-    const size_t clusterSz = cluster.membersCount();
-    const double expandedClusterSz = double(clusterSz + (size_t)1U);
+    const size_t clusterSz{cluster.membersCount()};
+    const double expandedClusterSz{double(clusterSz + 1ULL)};
 
     // Inf for really distant clusters or if their centroid could become
     // too distant for previous members when including this symbol
-    const Dist dist = centroidCluster.distTo(sym, threshOutsider(clusterSz));
+    const Dist dist{centroidCluster.distTo(*sym, threshOutsider(clusterSz))};
     if (dist * expandedClusterSz <
         TTSAS_Threshold_Member) {  // qualifies as parent
       if (TTSAS_Accept1stClusterThatQualifiesAsParent ||
@@ -391,8 +405,10 @@ class ParentClusterFinder final {
   @return true if clusters within first..last range contain the best match so
   far
   */
-  template <class It>
-  bool examine(It first, It last) noexcept {
+  template <ranges::forward_range R>
+  bool examine(R&& range) noexcept {
+    auto first = begin(range);
+    const auto last = end(range);
     if (TTSAS_Accept1stClusterThatQualifiesAsParent) {
       if (found())
         // Keep current parent
@@ -404,11 +420,10 @@ class ParentClusterFinder final {
           return true;
 
       return false;  // keep current parent
-
     } else {
       // TTSAS_Accept1stClusterThatQualifiesAsParent == false - finding best
       // parent
-      bool foundBetterMatch = false;
+      bool foundBetterMatch{false};
       while (first != last)
         if (examine(*first++))
           foundBetterMatch = true;
@@ -418,8 +433,9 @@ class ParentClusterFinder final {
   }
 
  private:
-  const ITinySym& sym;  ///< the symbol whose parent cluster needs to be found
-  const vector<Cluster>& clusters;  ///< the clusters known so far
+  not_null<const ITinySym*>
+      sym;  ///< the symbol whose parent cluster needs to be found
+  not_null<const vector<Cluster>*> clusters;  ///< the clusters known so far
 
   /// clusters located in TTSAS_Threshold_Member*[1/(Cluster_Size+1) ..
   /// threshOutsider(Cluster_Size)] range from sym
@@ -430,7 +446,7 @@ class ParentClusterFinder final {
   optional<ClusterIdx> idxOfParentCluster;
 
   /// Distance to considered parents
-  Dist distToParentCluster = numeric_limits<Dist>::infinity();
+  Dist distToParentCluster{numeric_limits<Dist>::infinity()};
 };
 }  // anonymous namespace
 
@@ -438,30 +454,32 @@ class ParentClusterFinder final {
 unsigned TTSAS_Clustering::formGroups(
     const VSymData& symsToGroup,
     vector<vector<unsigned>>& symsIndicesPerCluster,
-    const string& fontType /* = ""*/) noexcept(!UT) {
-  static TaskMonitor ttsasClustering("TTSAS clustering", *symsMonitor);
+    const string& fontType /* = ""*/) {
+  assert(symsMonitor);  // Call only after useSymsMonitor()
+  static p2s::ui::TaskMonitor ttsasClustering{"TTSAS clustering", *symsMonitor};
 
   std::filesystem::path clusteredSetFile;
   ClusterIO rawClustersIO;
   if (!ClusterEngine::clusteredAlready(fontType, Name, clusteredSetFile) ||
       !rawClustersIO.loadFrom(clusteredSetFile.string())) {
-    if (tsp == nullptr)
-      THROW_WITH_CONST_MSG(__FUNCTION__ " should be called only after calling "
-                           "setTinySymsProvider()!", logic_error);
+    EXPECTS_OR_REPORT_AND_THROW_CONST_MSG(
+        tsp, logic_error,
+        HERE.function_name() +
+            " should be called only after calling setTinySymsProvider()!"s);
 
     const VTinySyms& tinySyms = tsp->getTinySyms();
 
-    const size_t countOfTinySymsToGroup = tinySyms.size();
+    const size_t countOfTinySymsToGroup{size(tinySyms)};
     ttsasClustering.setTotalSteps(countOfTinySymsToGroup);
 
     vector<int> clusterLabels(countOfTinySymsToGroup);
 
-    size_t clusteredTinySyms = 0ULL;
+    size_t clusteredTinySyms{};
 
     // Symbols that still don't belong to the known clusters together with their
     // known neighbor clusters
     map<SymIdx, NearbyClusters> ambiguousTinySyms;
-    for (SymIdx i = 0U, tinySymsCount = (unsigned)countOfTinySymsToGroup;
+    for (SymIdx i{}, tinySymsCount{narrow_cast<SymIdx>(countOfTinySymsToGroup)};
          i < tinySymsCount; ++i)
       ambiguousTinySyms.emplace_hint(ambiguousTinySyms.end(), i,
                                      NearbyClusters());
@@ -484,16 +502,16 @@ unsigned TTSAS_Clustering::formGroups(
       auto itAmbigSym = ambiguousTinySyms.begin();
 
       // First index of the remaining ambiguous symbol
-      SymIdx ambigSymIdx = itAmbigSym->first;
+      SymIdx ambigSymIdx{itAmbigSym->first};
 
-      const auto newSymClustered = [&]() noexcept {
+      const auto newSymClustered = [&] {
         itAmbigSym = ambiguousTinySyms.erase(itAmbigSym);
         ttsasClustering.taskAdvanced(++clusteredTinySyms);
       };
 
-      const auto createNewCluster = [&]() noexcept {
+      const auto createNewCluster = [&] {
         newClusters.emplace_hint(newClusters.end(),
-                                 (unsigned)rawClusters.size());
+                                 narrow_cast<unsigned>(size(rawClusters)));
         rawClusters.emplace_back(tinySyms[(size_t)ambigSymIdx], ambigSymIdx);
         newSymClustered();
       };
@@ -511,19 +529,20 @@ unsigned TTSAS_Clustering::formGroups(
       by all ambiguous symbols with indices >= ambigSymIdx, since it was already
       checked:
       */
-      const auto ignoreAlreadyCheckedClusters = [&](set<ClusterIdx> &
-                                                    prevClusters) noexcept {
-        // Remove_if doesn't work on sets, so here's the required code
-        for (auto itPrevClust = prevClusters.begin();
-             itPrevClust != prevClusters.end();) {
-          if (rawClusters[size_t(*itPrevClust)].idxOfLastMember() < ambigSymIdx)
-            // Remove already processed cluster
-            itPrevClust = prevClusters.erase(itPrevClust);
-          else  // > ambigSymIdx
-            // cluster yet to be processed, keeping it
-            ++itPrevClust;
-        }
-      };
+      const auto ignoreAlreadyCheckedClusters =
+          [&](set<ClusterIdx>& prevClusters) noexcept {
+            // Remove_if doesn't work on sets, so here's the required code
+            for (auto itPrevClust = prevClusters.begin();
+                 itPrevClust != prevClusters.end();) {
+              if (rawClusters[size_t(*itPrevClust)].idxOfLastMember() <
+                  ambigSymIdx)
+                // Remove already processed cluster
+                itPrevClust = prevClusters.erase(itPrevClust);
+              else  // > ambigSymIdx
+                // cluster yet to be processed, keeping it
+                ++itPrevClust;
+            }
+          };
 
       /*
       If previous loop didn't introduce/affect any cluster,
@@ -546,14 +565,14 @@ unsigned TTSAS_Clustering::formGroups(
         // Reference to its modifiable set of neighbors
         NearbyClusters& neighborClusters = itAmbigSym->second;
 
-        ParentClusterFinder pcf(tinySyms[(size_t)ambigSymIdx], rawClusters);
+        ParentClusterFinder pcf{tinySyms[(size_t)ambigSymIdx], rawClusters};
         if (TTSAS_Accept1stClusterThatQualifiesAsParent) {
           // Clusters created/updated later than the previous examination of
           // this symbol must always be checked for paternal match.
-          if (!pcf.examine(BOUNDS(newClusters))) {
+          if (!pcf.examine(newClusters)) {
             // Shrink set before the next check
             ignoreAlreadyCheckedClusters(prevNewClusters);
-            if (!pcf.examine(BOUNDS(prevNewClusters))) {
+            if (!pcf.examine(prevNewClusters)) {
               /*
               The symbol ambigSymIdx was already aware at the start of this loop
               of the clusters updated during previous and current loop.
@@ -569,10 +588,8 @@ unsigned TTSAS_Clustering::formGroups(
               // Shrink set before the checks from next for loop
 
               for (const ClusterIdx neighborIdx : neighborClusters) {
-                if (updatedClusters.find(neighborIdx) !=
-                        updatedClusters.end() ||
-                    prevUpdatedClusters.find(neighborIdx) !=
-                        prevUpdatedClusters.end()) {
+                if (updatedClusters.contains(neighborIdx) ||
+                    prevUpdatedClusters.contains(neighborIdx)) {
                   if (pcf.examine(neighborIdx))
                     // reachable as demonstrated in Unit Test:
                     // CheckMemberPromotingReserves_CarefullyOrderedAndChosenSyms_ReserveBecomesParentCluster
@@ -586,11 +603,11 @@ unsigned TTSAS_Clustering::formGroups(
         } else {  // TTSAS_Accept1stClusterThatQualifiesAsParent == false
           // Clusters created/updated later than the previous examination of
           // this symbol must always be checked for paternal match.
-          pcf.examine(BOUNDS(newClusters));
+          pcf.examine(newClusters);
           ignoreAlreadyCheckedClusters(prevNewClusters);
           // Shrink set before the next check
 
-          pcf.examine(BOUNDS(prevNewClusters));
+          pcf.examine(prevNewClusters);
 
           /*
           The symbol ambigSymIdx was already aware at the start of this loop
@@ -607,9 +624,8 @@ unsigned TTSAS_Clustering::formGroups(
           // Shrink set before the checks from next for loop
 
           for (const ClusterIdx neighborIdx : neighborClusters) {
-            if (updatedClusters.find(neighborIdx) != updatedClusters.end() ||
-                prevUpdatedClusters.find(neighborIdx) !=
-                    prevUpdatedClusters.end())
+            if (updatedClusters.contains(neighborIdx) ||
+                prevUpdatedClusters.contains(neighborIdx))
               pcf.examine(neighborIdx);
             else if (!pcf.found())
               // Reserves don't matter after a parent has been found
@@ -620,7 +636,7 @@ unsigned TTSAS_Clustering::formGroups(
         pcf.prepareReport();
 
         if (pcf.found()) {  // identified a cluster for this symbol
-          const ClusterIdx parentClusterIdx = pcf.result().value();
+          const ClusterIdx parentClusterIdx{pcf.result().value()};
           Cluster& updatedCluster = rawClusters[(size_t)parentClusterIdx];
           updatedCluster.addMember(tinySyms[(size_t)ambigSymIdx], ambigSymIdx);
 
@@ -628,18 +644,17 @@ unsigned TTSAS_Clustering::formGroups(
           // Check that centroid's parameters stay within
           // 0.645*Original_Threshold from each member. (see Doxy comment for
           // ParentClusterFinder for details)
-          static constexpr double BaselSum_1 = M_PI * M_PI / 6. - 1.;  // ~0.645
-          static const double maxDiffAvgPixelVal =
-                                  BaselSum_1 *
-                                  MaxDiffAvgPixelValForTTSAS_Clustering,
-                              maxRelMcOffset =
-                                  BaselSum_1 *
-                                  MaxRelMcOffsetForTTSAS_Clustering,
-                              threshold_Member =
-                                  BaselSum_1 * TTSAS_Threshold_Member;
+          static constexpr double BaselSum_1{numbers::pi * numbers::pi / 6. -
+                                             1.};  // ~0.645
+          static const double maxDiffAvgPixelVal{
+              BaselSum_1 * MaxDiffAvgPixelValForTTSAS_Clustering};
+          static const double maxRelMcOffset{BaselSum_1 *
+                                             MaxRelMcOffsetForTTSAS_Clustering};
+          static const double threshold_Member{BaselSum_1 *
+                                               TTSAS_Threshold_Member};
 
-          const double threshold_Outsider =
-              threshOutsider(updatedCluster.membersCount());
+          const double threshold_Outsider{
+              threshOutsider(updatedCluster.membersCount())};
           const ICentroid& centroid = updatedCluster.centroid;
           for (const auto& memberIdx : updatedCluster.memberIndices) {
             const ITinySym& member = tinySyms[(size_t)memberIdx];
@@ -679,14 +694,15 @@ unsigned TTSAS_Clustering::formGroups(
       } while (itAmbigSym != ambiguousTinySyms.end());
     }
 
-    for (int i = 0, lim = (int)rawClusters.size(); i < lim; ++i) {
+    for (int i{}, lim{(int)size(rawClusters)}; i < lim; ++i) {
       const vector<SymIdx>& clustMembers = rawClusters[(size_t)i].memberIndices;
       for (const auto member : clustMembers)
         clusterLabels[(size_t)member] = i;
     }
 
     // Fill in rawClustersIO fields
-    rawClustersIO.reset((unsigned)rawClusters.size(), move(clusterLabels));
+    rawClustersIO.reset(narrow_cast<unsigned>(size(rawClusters)),
+                        move(clusterLabels));
     cout << "\nAll the " << countOfTinySymsToGroup
          << " symbols of the charmap were clustered in "
          << rawClustersIO.getClustersCount() << " groups" << endl;
@@ -697,18 +713,23 @@ unsigned TTSAS_Clustering::formGroups(
   // Adapt rawClusters for filtered cmap
   symsIndicesPerCluster.assign(rawClustersIO.getClustersCount(),
                                vector<unsigned>());
-  for (unsigned i = 0U, lim = (unsigned)symsToGroup.size(); i < lim; ++i)
+  for (unsigned i{}, lim{narrow_cast<unsigned>(size(symsToGroup))}; i < lim;
+       ++i)
     symsIndicesPerCluster[(size_t)rawClustersIO.getClusterLabels()
                               [symsToGroup[(size_t)i]->getSymIdx()]]
         .push_back(i);
-  const auto newEndIt = remove_if(BOUNDS(symsIndicesPerCluster), [
-  ](const vector<unsigned>& elem) noexcept { return elem.empty(); });
+  const auto& [newEndIt, _] = ranges::remove_if(
+      symsIndicesPerCluster,
+      [](const vector<unsigned>& elem) noexcept { return elem.empty(); });
 
   symsIndicesPerCluster.resize(
       (size_t)distance(symsIndicesPerCluster.begin(), newEndIt));
 
   ttsasClustering.taskDone();
 
-  return (unsigned)symsIndicesPerCluster.size();
+  return narrow_cast<unsigned>(size(symsIndicesPerCluster));
 }
 #pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
+
+}  // namespace syms::inline cluster
+}  // namespace pic2sym

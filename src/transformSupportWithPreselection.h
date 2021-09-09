@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -42,16 +45,16 @@
 
 #include "transformSupport.h"
 
+#include "matchSupportBase.h"
+#include "matchSupportWithPreselection.h"
+
 #pragma warning(push, 0)
 
 #include <vector>
 
 #pragma warning(pop)
 
-// Forward declarations
-class IBestMatch;
-class IMatchSupport;
-class MatchSupportWithPreselection;
+namespace pic2sym::transform {
 
 /**
 Initializes and updates draft matches.
@@ -62,12 +65,13 @@ class TransformSupportWithPreselection : public TransformSupport {
   /// Requires an additional IMatchSupport parameter compared to the base
   /// constructor
   TransformSupportWithPreselection(
-      IMatchEngine& me_,
-      const IMatchSettings& matchSettings_,
+      match::IMatchEngine& me_,
+      const cfg::IMatchSettings& matchSettings_,
       cv::Mat& resized_,
       cv::Mat& resizedBlurred_,
-      std::vector<std::vector<std::unique_ptr<IBestMatch>>>& draftMatches_,
-      IMatchSupport& matchSupport_) noexcept;
+      std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>&
+          draftMatches_,
+      match::IMatchSupport& matchSupport_) noexcept;
 
   /// Initializes the drafts when a new image needs to be approximated
   void initDrafts(bool isColor,
@@ -98,9 +102,13 @@ class TransformSupportWithPreselection : public TransformSupport {
   cv::Mat resBlForTinySyms;
 
   /// temporary best matches used by tiny symbols preselection
-  std::vector<std::vector<std::unique_ptr<IBestMatch>>> draftMatchesForTinySyms;
+  std::vector<std::vector<std::unique_ptr<match::IBestMatch>>>
+      draftMatchesForTinySyms;
 
-  MatchSupportWithPreselection& matchSupport;  ///< match support
+  /// Match support
+  gsl::not_null<match::MatchSupportWithPreselection*> matchSupport;
 };
+
+}  // namespace pic2sym::transform
 
 #endif  // H_TRANSFORM_SUPPORT_WITH_PRESELECTION

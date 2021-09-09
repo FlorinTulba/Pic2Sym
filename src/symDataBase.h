@@ -3,24 +3,27 @@
  grid of colored symbols with colored backgrounds.
 
  Copyrights from the libraries used by the program:
- - (c) 2003 Boost (www.boost.org)
+ - (c) 2003-2021 Boost (www.boost.org)
      License: doc/licenses/Boost.lic
      http://www.boost.org/LICENSE_1_0.txt
- - (c) 2015-2016 OpenCV (www.opencv.org)
+ - (c) 2015-2021 OpenCV (www.opencv.org)
      License: doc/licenses/OpenCV.lic
      http://opencv.org/license/
- - (c) 1996-2002, 2006 The FreeType Project (www.freetype.org)
+ - (c) 1996-2021 The FreeType Project (www.freetype.org)
      License: doc/licenses/FTL.txt
      http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT
- - (c) 1997-2002 OpenMP Architecture Review Board (www.openmp.org)
+ - (c) 1997-2021 OpenMP Architecture Review Board (www.openmp.org)
    (c) Microsoft Corporation (implementation for OpenMP C/C++ v2.0 March 2002)
      See: https://msdn.microsoft.com/en-us/library/8y6825x5.aspx
- - (c) 1995-2017 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
+ - (c) 1995-2021 zlib software (Jean-loup Gailly and Mark Adler - www.zlib.net)
      License: doc/licenses/zlib.lic
      http://www.zlib.net/zlib_license.html
+ - (c) 2015-2021 Microsoft Guidelines Support Library - github.com/microsoft/GSL
+     License: doc/licenses/MicrosoftGSL.lic
+     https://raw.githubusercontent.com/microsoft/GSL/main/LICENSE
 
 
- (c) 2016-2019 Florin Tulba <florintulba@yahoo.com>
+ (c) 2016-2021 Florin Tulba <florintulba@yahoo.com>
 
  This program is free software: you can use its results,
  redistribute it and/or modify it under the terms of the GNU
@@ -41,24 +44,26 @@
 #define H_SYM_DATA_BASE
 
 #include "misc.h"
-#include "warnings.h"
 
 #pragma warning(push, 0)
 
 #include <array>
 #include <memory>
+#include <opencv2/core/core.hpp>
 #include <stdexcept>
 #include <vector>
 
-#include <opencv2/core/core.hpp>
+#include <gsl/gsl>
 
 #pragma warning(pop)
+
+namespace pic2sym::syms {
 
 /// Interface for symbol data
 class ISymData /*abstract*/ {
  public:
   /// Indices of each matrix type within a MatArray object
-  enum class MaskType {
+  enum struct MaskType {
     Fg,    ///< mask isolating the foreground of the glyph
     Bg,    ///< mask isolating the background of the glyph
     Edge,  ///< mask isolating the edge of the glyph (transition region fg-bg)
@@ -76,21 +81,14 @@ class ISymData /*abstract*/ {
   // For each symbol from cmap, there'll be several additional helpful matrices
   // to store along with the one for the given glyph. The enum from above should
   // be used for selection.
-  typedef std::array<cv::Mat, (size_t)MaskType::MATRICES_COUNT> MatArray;
+  using MatArray = std::array<cv::Mat, (size_t)MaskType::MATRICES_COUNT>;
 
-#pragma warning(disable : WARN_THROWS_ALTHOUGH_NOEXCEPT)
   /// Retrieve specific mask
   const cv::Mat& getMask(MaskType maskIdx) const noexcept {
-    if (maskIdx >= MaskType::MATRICES_COUNT)
-      THROW_WITH_VAR_MSG(
-          __FUNCTION__ " - got maskIdx=" + std::to_string((size_t)maskIdx) +
-              " which is >= MaskType::MATRICES_COUNT=" +
-              std::to_string((size_t)MaskType::MATRICES_COUNT),
-          std::out_of_range);
-    // getMasks().at(maskIdx) returns less details than the check above
+    Expects(maskIdx < MaskType::MATRICES_COUNT);
+
     return getMasks()[(size_t)maskIdx];
   }
-#pragma warning(default : WARN_THROWS_ALTHOUGH_NOEXCEPT)
 
   /// mass center of the symbol given original fg & bg (coordinates are within a
   /// unit-square: 0..1 x 0..1)
@@ -139,19 +137,12 @@ class ISymData /*abstract*/ {
   */
   virtual bool isRemovable() const noexcept = 0;
 
-  virtual ~ISymData() noexcept {}
-
-  // If slicing is observed and becomes a severe problem, use `= delete` for all
-  ISymData(const ISymData&) noexcept = default;
-  ISymData(ISymData&&) noexcept = default;
-  ISymData& operator=(const ISymData&) noexcept = default;
-  ISymData& operator=(ISymData&&) noexcept = default;
-
- protected:
-  constexpr ISymData() noexcept {}
+  virtual ~ISymData() noexcept = 0 {}
 };
 
 /// VSymData - vector with most information about each symbol
-typedef std::vector<std::unique_ptr<const ISymData>> VSymData;
+using VSymData = std::vector<std::unique_ptr<const ISymData>>;
+
+}  // namespace pic2sym::syms
 
 #endif  // H_SYM_DATA_BASE
