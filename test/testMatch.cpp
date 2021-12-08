@@ -180,7 +180,6 @@ void addWhiteNoise(Mat& patchD255,
   const int affectedCount{narrow_cast<int>(affectedPercentage01 * area)};
 
   int noise;
-  const unsigned twiceMaxAmplitude{((unsigned)maxAmplitude0255) << 1};
   int prevVal, below, above, newVal;
   unordered_set<unsigned> affected;
   unsigned linearized;
@@ -804,11 +803,11 @@ DATA_TEST_CASE_SUFFIX(
                                  // accurate approximation allowed
     // Normally, less than 55% of the altered symbols are not identified
     // correctly.
-    BOOST_CHECK((double)size(mismatches) < .55 * symsCount);
+    BOOST_CHECK((double)std::size(mismatches) < .55 * symsCount);
   } else {  // No Preselection - much more accurate approximation expected
     // Normally, less than 3% of the altered symbols are not identified
     // correctly.
-    BOOST_CHECK((double)size(mismatches) < .03 * symsCount);
+    BOOST_CHECK((double)std::size(mismatches) < .03 * symsCount);
   }
 
   if (!mismatches.empty()) {
@@ -873,7 +872,6 @@ TITLED_AUTO_TEST_CASE_(
 TITLED_AUTO_TEST_CASE_(
     CheckMeanSdevMassCenter_Half0Half255AndNoMask_127dot5MeanAndSdevAndPredictedMassCenter,
     SUITE_SUFFIX) {
-  const auto valRand = randUnsignedChar();
   Mat halfD255{getEmptyD().clone()};
   halfD255.rowRange(0, getSz() / 2) = 255.;
 
@@ -1332,7 +1330,6 @@ TITLED_AUTO_TEST_CASE_(
     SUITE_SUFFIX) {
   ms.set_kSdevFg(1.);
   const FgMatch fm{ms};
-  const auto valRand = randUnsignedChar(1U);
 
   // Using a symbol with a diagonal foreground mask
   const Mat diagFgMask{Mat::diag(Mat{1, getSzInt(), CV_8UC1, Scalar{255.}})};
@@ -1492,7 +1489,6 @@ TITLED_AUTO_TEST_CASE_(
     SUITE_SUFFIX) {
   ms.set_kSdevEdge(1);
   const EdgeMatch em{ms};
-  const auto valRand = randUnsignedChar(1U);
 
   // Using a symbol with a diagonal foreground mask
   const Mat diagFgMask{Mat::diag(Mat{1, getSzInt(), CV_8UC1, Scalar{255.}})};
@@ -1701,7 +1697,6 @@ TITLED_AUTO_TEST_CASE_(
     SUITE_SUFFIX) {
   ms.set_kSdevBg(1.);
   const BgMatch bm{ms};
-  const auto valRand = randUnsignedChar(1U);
 
   // Using a symbol with a background mask full except the main 3
   // diagonals
@@ -1786,7 +1781,6 @@ TITLED_AUTO_TEST_CASE_(
     SUITE_SUFFIX) {
   ms.set_kContrast(1.);
   const BetterContrast bc{ms};
-  const auto valRand = randUnsignedChar(1U);
 
   // Using a symbol with a diagonal foreground mask
   const Mat diagFgMask{Mat::diag(Mat{1, getSzInt(), CV_8UC1, Scalar{255.}})};
@@ -1825,7 +1819,6 @@ TITLED_AUTO_TEST_CASE_(
     SUITE_SUFFIX) {
   ms.set_kContrast(1.);
   const BetterContrast bc{ms};
-  const auto valRand = randUnsignedChar(1U);
 
   // Using a symbol with a diagonal foreground mask
   const Mat diagFgMask{Mat::diag(Mat{1, getSzInt(), CV_8UC1, Scalar{255.}})};

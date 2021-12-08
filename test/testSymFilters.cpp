@@ -145,7 +145,7 @@ class TestSymFilter {
     vector<Mat> symsToTest;
     loadSymsSelection(pathForCateg, symsToTest);
 
-    const unsigned symsCount{narrow_cast<unsigned>(size(symsToTest))};
+    const unsigned symsCount{narrow_cast<unsigned>(std::size(symsToTest))};
 
     // Keep pointers to miscategorized symbols
     vector<std::unique_ptr<const IPixMapSym>> wrongCateg;
@@ -163,7 +163,6 @@ class TestSymFilter {
     for (unsigned symIdx{}; symIdx < symsCount; ++symIdx) {
       const Mat& symMat = symsToTest[symIdx];
       const unsigned rows{(unsigned)symMat.rows};
-      const unsigned cols{(unsigned)symMat.cols};
       SymFilterCache sfc;
       sfc.setFontSz(rows);
       sfc.setBoundingBox(rows, rows);
@@ -191,11 +190,11 @@ class TestSymFilter {
     ostringstream oss;
     oss << prefixStem << " false "
         << (disposableCateg ? "negatives" : "positives") << ':'
-        << size(wrongCateg);
+        << std::size(wrongCateg);
     const string misfilteredText{oss.str()};
     cerr << misfilteredText << endl;
 
-    if (size(wrongCateg) > symsCount * WrongCategThreshold) {
+    if (std::size(wrongCateg) > symsCount * WrongCategThreshold) {
       showMisfiltered(misfilteredText, wrongCateg);
       return false;  // too many miscategorized symbols in group
     }

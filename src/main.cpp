@@ -170,7 +170,9 @@ void timingScenario(
   }
 
   if (!reportFilePath.empty()) {
-    ofstream ofs{reportFilePath, ios::app};
+    // reportFilePath.data() is NULL-terminated, as it is one of the parameters
+    // passed to main
+    ofstream ofs{reportFilePath.data(), ios::app};
     ofs << caseName << '\t' << durationS << endl;
   }
 }
