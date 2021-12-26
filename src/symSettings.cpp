@@ -71,8 +71,7 @@ void SymSettings::setFontFile(const std::string& fontFile_) noexcept {
     return;
 
   cout << "fontFile"
-       << " : " << quoted(fontFile, '\'') << " -> " << quoted(fontFile_, '\'')
-       << endl;
+       << " : '" << fontFile << "' -> '" << fontFile_ << '\'' << endl;
   fontFile = fontFile_;
 }
 

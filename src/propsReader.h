@@ -302,8 +302,9 @@ class PropsReader {
       return std::nullopt;
 
     } catch (const boost::property_tree::ptree_bad_path&) {
-      std::cerr << "Property " << std::quoted(prop, '\'') << " is missing from "
-                << std::quoted(propsFile.string(), '\'') << " !" << std::endl;
+      std::cerr << "Property " << std::quoted(prop, '\'')
+                << " is missing from '" << propsFile.string() << "' !"
+                << std::endl;
     } catch (const boost::property_tree::ptree_bad_data&) {
       std::cerr << "Property " << std::quoted(prop, '\'')
                 << " cannot be converted to its required type!" << std::endl;

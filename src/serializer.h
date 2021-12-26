@@ -114,8 +114,8 @@ bool load(Source& src, const std::string& srcName, T& obj) noexcept {
     return true;
 
   } catch (const std::exception& e) {
-    std::cerr << "Couldn't load data from: " << std::quoted(srcName, '`')
-              << "!\nReason: " << e.what() << std::endl;
+    std::cerr << "Couldn't load data from: '" << srcName
+              << "'!\nReason: " << e.what() << std::endl;
     return false;
   }
 #pragma warning(default : WARN_SEH_NOT_CAUGHT)
@@ -167,8 +167,8 @@ bool save(Sink& sink, const std::string& sinkName, const T& obj) noexcept {
     return true;
 
   } catch (const std::exception& e) {
-    std::cerr << "Couldn't save data to: " << std::quoted(sinkName, '`')
-              << "!\nReason: " << e.what() << std::endl;
+    std::cerr << "Couldn't save data to: '" << sinkName
+              << "'!\nReason: " << e.what() << std::endl;
     return false;
   }
 #pragma warning(default : WARN_SEH_NOT_CAUGHT)

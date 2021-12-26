@@ -90,7 +90,7 @@ bool Img::reset(const string& picName) noexcept {
 
   imgName = imgPath.stem().string();
 
-  cout << "The image to process is " << imgPath.string() << " (";
+  cout << "The image to process is '" << imgPath.string() << "' (";
   if (color)
     cout << "Color";
   else

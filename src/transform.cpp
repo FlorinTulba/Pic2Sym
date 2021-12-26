@@ -224,7 +224,7 @@ class ResultFileManager final {
     } else
       timer->pause();  // don't time result serialization
 
-    cout << "Writing result to " << resultFile << '\n' << endl;
+    cout << "Writing result to '" << resultFile.string() << "'\n" << endl;
     imwrite(resultFile.string(), *result);
 
     if (!canceled)

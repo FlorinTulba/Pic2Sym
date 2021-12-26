@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -75,8 +75,12 @@
       <Command>"$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -107,8 +111,12 @@
       <Command>"$(TargetPath)" --result_code=no --report_level=no --detect_memory_leaks=0 --log_level=message &amp;&amp; cd $(TargetDir).. &amp;&amp; .\issues.bat</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>xcopy /YD "$(SolutionDir)res\TestSymFilters\*.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\TestSymFilters\" &amp;&amp; xcopy /YD "$(SolutionDir)res\vga855.fon" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\BPmonoBold.ttf" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)res\varConfig.txt" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\res\" &amp;&amp; xcopy /YD "$(SolutionDir)bin\DLLs\For$(Configuration)\*.dll" "$(TargetPath).local\" &amp;&amp; copy /Y nul $(TargetDir)..\issues.bat</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\bestMatch.cpp" />

@@ -59,7 +59,7 @@ PropsReader::PropsReader(const std::filesystem::path& propsFile_) noexcept(!UT)
   try {
     read_info(propsFile.string(), props);
   } catch (const info_parser_error&) {
-    cerr << "Couldn't read " << quoted(propsFile.string(), '\'') << endl;
+    cerr << "Couldn't read '" << propsFile.string() << '\'' << endl;
     throw;
   }
 }

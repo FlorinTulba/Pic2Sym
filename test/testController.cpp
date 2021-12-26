@@ -84,8 +84,8 @@ class ControllerFixtUsingACertainFont : public ControllerFixt {
     try {
       cpa->newFontFamily(fontPath, (unsigned)fontSize());
     } catch (const exception& e) {
-      cerr << "Couldn't set " << quoted(fontPath, '`')
-           << " font!\nReason: " << e.what() << endl;
+      cerr << "Couldn't set '" << fontPath << "' font!\nReason: " << e.what()
+           << endl;
     }
   }
 };

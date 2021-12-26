@@ -63,6 +63,8 @@
 
 #include FT_TRUETYPE_IDS_H
 
+#include <iomanip>
+
 #pragma warning(pop)
 
 using namespace std;
@@ -153,15 +155,15 @@ void FontEngine::invalidateFont() noexcept {
 bool FontEngine::checkFontFile(const path& fontPath,
                                FT_Face& face_) const noexcept {
   if (!exists(fontPath)) {
-    cerr << "No such file: " << fontPath << endl;
+    cerr << "No such file: '" << fontPath.string() << '\'' << endl;
     return false;
   }
 
   if (const FT_Error error{
           FT_New_Face(library, fontPath.string().c_str(), 0, &face_)};
       error != FT_Err_Ok) {
-    cerr << "Invalid font file: " << fontPath
-         << "  Error: " << FtErrors[(size_t)error] << endl;
+    cerr << "Invalid font file: '" << fontPath.string()
+         << "'  Error: " << FtErrors[(size_t)error] << endl;
     return false;
   }
   /*
@@ -169,15 +171,16 @@ bool FontEngine::checkFontFile(const path& fontPath,
   // left of the square
 
   if (!FT_IS_FIXED_WIDTH(face_)) {
-    cerr << "The font file " << fontPath
-         << " isn't a fixed-width (monospace) font! Flags: 0x" << hex
+    cerr << "The font file '" << fontPath.string()
+         << "' isn't a fixed-width (monospace) font! Flags: 0x" << hex
          << face_->face_flags << dec << endl;
     return false;
   }
   */
 
   if (!FT_IS_SCALABLE(face_)) {
-    cerr << "The font file " << fontPath << " isn't a scalable font!" << endl;
+    cerr << "The font file '" << fontPath.string() << "' isn't a scalable font!"
+         << endl;
     return false;
   }
 
@@ -206,8 +209,8 @@ bool FontEngine::setNthUniqueEncoding(unsigned idx) noexcept(!UT) {
   encodingIndex = idx;
   const string& encName =
       encodingsMap().left.find(face->charmap->encoding)->second;
-  cout << "Using encoding " << encName << " (index " << encodingIndex << ')'
-       << endl;
+  cout << "Using encoding " << quoted(encName, '\'') << " (index "
+       << encodingIndex << ')' << endl;
 
   tinySyms.clear();
   symsCont->reset();
@@ -272,7 +275,8 @@ void FontEngine::setFace(FT_Face face_,
   uniqueEncs.clear();
   face = face_;
 
-  cout << "Using " << face->family_name << ' ' << face->style_name << endl;
+  cout << "Using " << quoted(face->family_name, '\'') << ' ' << face->style_name
+       << endl;
 
   for (int i{}, charmapsCount{face->num_charmaps}; i < charmapsCount; ++i)
     uniqueEncs.insert(bimap<FT_Encoding, unsigned>::value_type(
@@ -280,7 +284,7 @@ void FontEngine::setFace(FT_Face face_,
 
   cout << "The available encodings are:";
   for (const auto& enc : uniqueEncs.right)
-    cout << ' ' << encodingsMap().left.find(enc.second)->second;
+    cout << ' ' << quoted(encodingsMap().left.find(enc.second)->second, '\'');
   cout << endl;
 
   encodingIndex = UINT_MAX;

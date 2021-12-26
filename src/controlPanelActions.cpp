@@ -220,7 +220,7 @@ bool ControlPanelActions::loadSettings(const string& from /* = ""*/) {
   // Keep a copy of old SymSettings
   const unique_ptr<ISymSettings> prevSymSettings = cfg->getSS().clone();
 
-  cout << "Loading settings from " << quoted(sourceFile, '\'') << endl;
+  cout << "Loading settings from '" << sourceFile << '\'' << endl;
 
 #pragma warning(disable : WARN_SEH_NOT_CAUGHT)
   try {
@@ -292,11 +292,11 @@ bool ControlPanelActions::loadSettings(const string& from /* = ""*/) {
       ofstream ofs{sourceFile, ios::binary};
       binary_oarchive oa{ofs};
       oa << dynamic_cast<const Settings&>(*cfg);
-      cout << "Rewritten settings to " << quoted(sourceFile, '`')
-           << " because it used older versions of some classes!" << endl;
+      cout << "Rewritten settings to '" << sourceFile
+           << "' because it used older versions of some classes!" << endl;
     } catch (const exception& e) {
-      cout << "Information: Unable to upgrade the file "
-           << quoted(sourceFile, '`') << "!\nReason: " << e.what() << endl;
+      cout << "Information: Unable to upgrade the file '" << sourceFile
+           << "'!\nReason: " << e.what() << endl;
     }
 #pragma warning(default : WARN_SEH_NOT_CAUGHT)
 
@@ -320,7 +320,7 @@ void ControlPanelActions::saveSettings() const noexcept {
   if (!ss.promptForUserChoice())
     return;
 
-  cout << "Saving settings to " << quoted(ss.selection(), '\'') << endl;
+  cout << "Saving settings to '" << ss.selection() << '\'' << endl;
 
 #pragma warning(disable : WARN_SEH_NOT_CAUGHT)
   try {
@@ -363,7 +363,7 @@ bool ControlPanelActions::newImage(const string& imgPath,
   if (!img->reset(imgPath)) {
     if (!silent) {
       ostringstream oss;
-      oss << "Invalid image file: " << quoted(imgPath, '\'');
+      oss << "Invalid image file: '" << imgPath << '\'';
       errMsg(oss.str());
     }
     return false;
@@ -404,7 +404,7 @@ bool ControlPanelActions::_newFontFamily(
 
   if (!fe->newFont(fontFile)) {
     ostringstream oss;
-    oss << "Invalid font file: " << quoted(fontFile, '\'');
+    oss << "Invalid font file: '" << fontFile << '\'';
     errMsg(oss.str());
     return false;
   }
